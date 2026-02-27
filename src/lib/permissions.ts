@@ -87,6 +87,11 @@ export const RESOURCES = {
   'audit.documents': '/internal-audit/document-library',
   'audit.settings': '/internal-audit/settings',
   'audit.risk-universe': '/internal-audit/risk-universe',
+
+  // TPRM Module (Third-Party Risk Management)
+  'tprm.account-overview': '/tprm/account-overview',
+  'tprm.assessments': '/tprm/assessments',
+  'tprm.task-queue': '/tprm/task-queue',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -139,6 +144,19 @@ export const ROLES = {
     name: 'DepartmentContributor',
     description: 'Creates/edits content within own department',
   },
+  // TPRM Module roles
+  TPRMCustomerAdmin: {
+    name: 'TPRMCustomerAdmin',
+    description: 'Customer-level TPRM administrator, manages vendor assessments for their account',
+  },
+  FactoryAdmin: {
+    name: 'FactoryAdmin',
+    description: 'Assessment Factory administrator, manages factory assessments',
+  },
+  TPRMAdmin: {
+    name: 'TPRMAdmin',
+    description: 'TPRM super administrator, full TPRM module access across all accounts',
+  },
 } as const;
 
 export type RoleName = keyof typeof ROLES;
@@ -169,6 +187,10 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.governance', actions: ['*'], scope: 'all' },
     { resource: 'compliance.evidence', actions: ['*'], scope: 'all' },
     { resource: 'compliance.domain', actions: ['*'], scope: 'all' },
+    // TPRM module - full access
+    { resource: 'tprm.account-overview', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
     // NOTE: GRCAdministrator does NOT have access to: Configuration, Master Data, Organization, Asset Management, Risk Management, Internal Audit
   ],
 
@@ -390,6 +412,27 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister (NO Settings)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
+  ],
+
+  // TPRM Customer Admin - TPRM access scoped to their customer account
+  TPRMCustomerAdmin: [
+    { resource: 'tprm.account-overview', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+  ],
+
+  // Factory Admin - TPRM access for assessment factory management
+  FactoryAdmin: [
+    { resource: 'tprm.account-overview', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.task-queue', actions: ['view'], scope: 'all' },
+  ],
+
+  // TPRM Admin - Full TPRM module access (super admin level)
+  TPRMAdmin: [
+    { resource: 'tprm.account-overview', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
   ],
 };
 

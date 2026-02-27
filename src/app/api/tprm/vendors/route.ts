@@ -1,0 +1,104 @@
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+
+// GET all vendors with search and pagination
+export const GET = withAuth(
+  async (req, context, session) => {
+    try {
+      const { searchParams } = new URL(req.url);
+      const search = searchParams.get("search") || "";
+      const status = searchParams.get("status");
+      const limit = parseInt(searchParams.get("limit") || "50");
+      const offset = parseInt(searchParams.get("offset") || "0");
+
+      const tenantFilter = getTenantFilter(session);
+
+      const where: Record<string, unknown> = { ...tenantFilter };
+
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: "insensitive" } },
+          { vendorCode: { contains: search, mode: "insensitive" } },
+          { serviceCategory: { contains: search, mode: "insensitive" } },
+        ];
+      }
+
+      if (status) where.status = status;
+
+      const [vendors, total] = await Promise.all([
+        prisma.tPRMVendor.findMany({
+          where,
+          include: {
+            department: { select: { id: true, name: true } },
+            _count: { select: { assessments: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: offset,
+        }),
+        prisma.tPRMVendor.count({ where }),
+      ]);
+
+      return NextResponse.json({
+        data: vendors,
+        pagination: {
+          total,
+          limit,
+          offset,
+          hasMore: offset + vendors.length < total,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching TPRM vendors:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch vendors" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "tprm.assessments", action: "view" }
+);
+
+// POST create a new vendor
+export const POST = withAuth(
+  async (req, context, session) => {
+    try {
+      const body = await req.json();
+      const customerAccountId = getCustomerAccountId(session);
+
+      // Generate vendor code
+      const count = await prisma.tPRMVendor.count({
+        where: { customerAccountId },
+      });
+      const vendorCode = `VEN${String(count + 1).padStart(3, "0")}`;
+
+      const vendor = await prisma.tPRMVendor.create({
+        data: {
+          customerAccountId,
+          vendorCode,
+          name: body.name,
+          contactEmail: body.contactEmail,
+          contactPhone: body.contactPhone,
+          accountManagerName: body.accountManagerName,
+          serviceCategory: body.serviceCategory,
+          departmentId: body.departmentId,
+          status: body.status || "Onboarding",
+          onboardedDate: body.onboardedDate ? new Date(body.onboardedDate) : null,
+        },
+        include: {
+          department: { select: { id: true, name: true } },
+        },
+      });
+
+      return NextResponse.json(vendor, { status: 201 });
+    } catch (error) {
+      console.error("Error creating TPRM vendor:", error);
+      return NextResponse.json(
+        { error: "Failed to create vendor" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "tprm.assessments", action: "create" }
+);

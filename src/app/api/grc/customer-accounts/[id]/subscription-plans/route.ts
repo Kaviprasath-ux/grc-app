@@ -39,19 +39,41 @@ export async function GET(
       orderBy: { createdAt: "desc" },
     });
 
+    // Fetch assessmentLimit/vendorLimit via raw SQL (Prisma client may not have these fields yet)
+    const planIds = plans.map((p) => p.id);
+    let limitsMap = new Map<string, { assessmentLimit: number; vendorLimit: number }>();
+    if (planIds.length > 0) {
+      try {
+        const limits = await prisma.$queryRawUnsafe<
+          Array<{ id: string; assessmentLimit: number; vendorLimit: number }>
+        >(
+          `SELECT id, "assessmentLimit", "vendorLimit" FROM "SubscriptionPlan" WHERE id IN (${planIds.map((_, i) => `$${i + 1}`).join(",")})`,
+          ...planIds
+        );
+        limitsMap = new Map(limits.map((l) => [l.id, { assessmentLimit: l.assessmentLimit, vendorLimit: l.vendorLimit }]));
+      } catch {
+        // If columns don't exist yet, default to 0
+      }
+    }
+
     // Format the response to match frontend expectations
-    const formattedPlans = plans.map((plan) => ({
-      id: plan.id,
-      frameworksAvailable: plan.maxFrameworksAllowed - plan.frameworksUsed,
-      accountsAvailable: plan.maxAccountsAllowed - plan.accountsUsed,
-      maxFrameworksAllowed: plan.maxFrameworksAllowed,
-      maxAccountsAllowed: plan.maxAccountsAllowed,
-      frameworksUsed: plan.frameworksUsed,
-      accountsUsed: plan.accountsUsed,
-      startDate: plan.startDate.toISOString().split("T")[0],
-      expiryDate: plan.expiryDate.toISOString().split("T")[0],
-      status: plan.status,
-    }));
+    const formattedPlans = plans.map((plan) => {
+      const limits = limitsMap.get(plan.id);
+      return {
+        id: plan.id,
+        frameworksAvailable: plan.maxFrameworksAllowed - plan.frameworksUsed,
+        accountsAvailable: plan.maxAccountsAllowed - plan.accountsUsed,
+        maxFrameworksAllowed: plan.maxFrameworksAllowed,
+        maxAccountsAllowed: plan.maxAccountsAllowed,
+        assessmentLimit: limits?.assessmentLimit ?? 0,
+        vendorLimit: limits?.vendorLimit ?? 0,
+        frameworksUsed: plan.frameworksUsed,
+        accountsUsed: plan.accountsUsed,
+        startDate: plan.startDate.toISOString().split("T")[0],
+        expiryDate: plan.expiryDate.toISOString().split("T")[0],
+        status: plan.status,
+      };
+    });
 
     return NextResponse.json(formattedPlans);
   } catch (error) {
@@ -82,7 +104,7 @@ export async function POST(
 
     const { id } = await params;
     const body = await req.json();
-    const { startDate, expiryDate, maxFrameworks, maxAccounts, status } = body;
+    const { startDate, expiryDate, maxFrameworks, maxAccounts, assessmentLimit, vendorLimit, status } = body;
 
     // Validate required fields
     if (!startDate || !expiryDate) {
@@ -112,6 +134,13 @@ export async function POST(
         status: status || "Active",
       },
     });
+    // Set assessmentLimit/vendorLimit via raw SQL
+    const actualAssessmentLimit = assessmentLimit || 0;
+    const actualVendorLimit = vendorLimit || 0;
+    await prisma.$executeRawUnsafe(
+      `UPDATE "SubscriptionPlan" SET "assessmentLimit" = $1, "vendorLimit" = $2 WHERE id = $3`,
+      actualAssessmentLimit, actualVendorLimit, plan.id
+    );
 
     return NextResponse.json({
       success: true,
@@ -122,6 +151,8 @@ export async function POST(
         accountsAvailable: plan.maxAccountsAllowed - plan.accountsUsed,
         maxFrameworksAllowed: plan.maxFrameworksAllowed,
         maxAccountsAllowed: plan.maxAccountsAllowed,
+        assessmentLimit: actualAssessmentLimit,
+        vendorLimit: actualVendorLimit,
         frameworksUsed: plan.frameworksUsed,
         accountsUsed: plan.accountsUsed,
         startDate: plan.startDate.toISOString().split("T")[0],
@@ -163,7 +194,7 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { startDate, expiryDate, maxFrameworks, maxAccounts, status } = body;
+    const { startDate, expiryDate, maxFrameworks, maxAccounts, assessmentLimit, vendorLimit, status } = body;
 
     // Validate required fields
     if (!startDate || !expiryDate) {
@@ -189,7 +220,20 @@ export async function PUT(
       return NextResponse.json({ error: "Subscription plan not found" }, { status: 404 });
     }
 
-    // Update the subscription plan
+    // Get existing assessmentLimit/vendorLimit via raw SQL
+    let existingAssessmentLimit = 0;
+    let existingVendorLimit = 0;
+    try {
+      const existing = await prisma.$queryRawUnsafe<Array<{ assessmentLimit: number; vendorLimit: number }>>(
+        `SELECT "assessmentLimit", "vendorLimit" FROM "SubscriptionPlan" WHERE id = $1`, planId
+      );
+      if (existing[0]) {
+        existingAssessmentLimit = existing[0].assessmentLimit;
+        existingVendorLimit = existing[0].vendorLimit;
+      }
+    } catch { /* columns may not exist yet */ }
+
+    // Update the subscription plan (without new fields)
     const plan = await prisma.subscriptionPlan.update({
       where: { id: planId },
       data: {
@@ -201,6 +245,14 @@ export async function PUT(
       },
     });
 
+    // Update assessmentLimit/vendorLimit via raw SQL
+    const finalAssessmentLimit = assessmentLimit ?? existingAssessmentLimit;
+    const finalVendorLimit = vendorLimit ?? existingVendorLimit;
+    await prisma.$executeRawUnsafe(
+      `UPDATE "SubscriptionPlan" SET "assessmentLimit" = $1, "vendorLimit" = $2 WHERE id = $3`,
+      finalAssessmentLimit, finalVendorLimit, plan.id
+    );
+
     return NextResponse.json({
       success: true,
       message: "Subscription plan updated successfully",
@@ -210,6 +262,8 @@ export async function PUT(
         accountsAvailable: plan.maxAccountsAllowed - plan.accountsUsed,
         maxFrameworksAllowed: plan.maxFrameworksAllowed,
         maxAccountsAllowed: plan.maxAccountsAllowed,
+        assessmentLimit: finalAssessmentLimit,
+        vendorLimit: finalVendorLimit,
         frameworksUsed: plan.frameworksUsed,
         accountsUsed: plan.accountsUsed,
         startDate: plan.startDate.toISOString().split("T")[0],

@@ -53,6 +53,8 @@ interface CustomerAccount {
   language?: string;
   timeZone?: string;
   logoUrl?: string;
+  isTprmAdded?: boolean;
+  isGrcAdded?: boolean;
 }
 
 interface SubscriptionPlan {
@@ -61,6 +63,8 @@ interface SubscriptionPlan {
   accountsAvailable: number;
   maxFrameworksAllowed?: number;
   maxAccountsAllowed?: number;
+  assessmentLimit?: number;
+  vendorLimit?: number;
   frameworksUsed?: number;
   accountsUsed?: number;
   startDate?: string;
@@ -205,6 +209,8 @@ export default function CustomerAccountsPage() {
     confirmPassword: "",
     blocked: false,
     active: true,
+    isGrcAdded: true, // Always true when creating from GRC; loaded from customer data when editing
+    isTprmAdded: false,
     language: "en-US",
     timeZone: "Asia/Qatar",
     logoFile: null as File | null,
@@ -220,6 +226,8 @@ export default function CustomerAccountsPage() {
     expiryDate: "",
     maxFrameworks: 0,
     maxAccounts: 0,
+    assessmentLimit: 0,
+    vendorLimit: 0,
     status: "Active",
   });
 
@@ -229,6 +237,8 @@ export default function CustomerAccountsPage() {
     expiryDate: "",
     maxFrameworks: 0,
     maxAccounts: 0,
+    assessmentLimit: 0,
+    vendorLimit: 0,
     status: "Active",
   });
 
@@ -273,6 +283,8 @@ export default function CustomerAccountsPage() {
       confirmPassword: "",
       blocked: false,
       active: true,
+      isGrcAdded: true,
+      isTprmAdded: false,
       language: "en-US",
       timeZone: "Asia/Qatar",
       logoFile: null,
@@ -295,6 +307,8 @@ export default function CustomerAccountsPage() {
       expiryDate: "",
       maxFrameworks: 0,
       maxAccounts: 0,
+      assessmentLimit: 0,
+      vendorLimit: 0,
       status: "Active",
     });
     setSubscriptionErrors({});
@@ -413,6 +427,7 @@ export default function CustomerAccountsPage() {
           password: formData.newPassword,
           blocked: formData.blocked,
           active: formData.active,
+          isTprmAdded: formData.isTprmAdded,
           language: formData.language,
           timeZone: formData.timeZone,
           role: "CustomerAdministrator",
@@ -421,6 +436,8 @@ export default function CustomerAccountsPage() {
             expiryDate: plan.expiryDate,
             maxFrameworks: plan.maxFrameworksAllowed || 0,
             maxAccounts: plan.maxAccountsAllowed || 0,
+            assessmentLimit: plan.assessmentLimit || 0,
+            vendorLimit: plan.vendorLimit || 0,
             status: plan.status,
           })),
         }),
@@ -499,6 +516,7 @@ export default function CustomerAccountsPage() {
           userName: formData.userName,
           blocked: formData.blocked,
           active: formData.active,
+          isTprmAdded: formData.isTprmAdded,
           language: formData.language,
           timeZone: formData.timeZone,
         }),
@@ -643,11 +661,21 @@ export default function CustomerAccountsPage() {
     } else if (newSubscriptionData.startDate && newSubscriptionData.expiryDate <= newSubscriptionData.startDate) {
       errors.expiryDate = t("Expiry date is required and should be greater than the start date!");
     }
-    if (!newSubscriptionData.maxFrameworks || newSubscriptionData.maxFrameworks <= 0) {
-      errors.maxFrameworks = t("Please enter the maximum allowed frameworks.");
+    if (formData.isGrcAdded) {
+      if (!newSubscriptionData.maxFrameworks || newSubscriptionData.maxFrameworks <= 0) {
+        errors.maxFrameworks = t("Please enter the maximum allowed frameworks.");
+      }
     }
     if (!newSubscriptionData.maxAccounts || newSubscriptionData.maxAccounts <= 0) {
       errors.maxAccounts = t("Please enter the maximum allowed accounts.");
+    }
+    if (formData.isTprmAdded) {
+      if (!newSubscriptionData.assessmentLimit || newSubscriptionData.assessmentLimit <= 0) {
+        errors.assessmentLimit = t("Please enter the assessment limit.");
+      }
+      if (!newSubscriptionData.vendorLimit || newSubscriptionData.vendorLimit <= 0) {
+        errors.vendorLimit = t("Please enter the vendor limit.");
+      }
     }
     if (!newSubscriptionData.status) {
       errors.status = t("Status is required!");
@@ -666,6 +694,8 @@ export default function CustomerAccountsPage() {
         accountsAvailable: newSubscriptionData.maxAccounts,
         maxFrameworksAllowed: newSubscriptionData.maxFrameworks,
         maxAccountsAllowed: newSubscriptionData.maxAccounts,
+        assessmentLimit: newSubscriptionData.assessmentLimit,
+        vendorLimit: newSubscriptionData.vendorLimit,
         frameworksUsed: 0,
         accountsUsed: 0,
         startDate: newSubscriptionData.startDate,
@@ -704,6 +734,8 @@ export default function CustomerAccountsPage() {
           expiryDate: newSubscriptionData.expiryDate,
           maxFrameworks: newSubscriptionData.maxFrameworks,
           maxAccounts: newSubscriptionData.maxAccounts,
+          assessmentLimit: newSubscriptionData.assessmentLimit,
+          vendorLimit: newSubscriptionData.vendorLimit,
           status: newSubscriptionData.status,
         }),
       });
@@ -821,11 +853,21 @@ export default function CustomerAccountsPage() {
     } else if (editSubscriptionData.startDate && editSubscriptionData.expiryDate <= editSubscriptionData.startDate) {
       errors.expiryDate = t("Expiry date is required and should be greater than the start date!");
     }
-    if (!editSubscriptionData.maxFrameworks || editSubscriptionData.maxFrameworks <= 0) {
-      errors.maxFrameworks = t("Please enter the maximum allowed frameworks.");
+    if (formData.isGrcAdded) {
+      if (!editSubscriptionData.maxFrameworks || editSubscriptionData.maxFrameworks <= 0) {
+        errors.maxFrameworks = t("Please enter the maximum allowed frameworks.");
+      }
     }
     if (!editSubscriptionData.maxAccounts || editSubscriptionData.maxAccounts <= 0) {
       errors.maxAccounts = t("Please enter the maximum allowed accounts.");
+    }
+    if (formData.isTprmAdded) {
+      if (!editSubscriptionData.assessmentLimit || editSubscriptionData.assessmentLimit <= 0) {
+        errors.assessmentLimit = t("Please enter the assessment limit.");
+      }
+      if (!editSubscriptionData.vendorLimit || editSubscriptionData.vendorLimit <= 0) {
+        errors.vendorLimit = t("Please enter the vendor limit.");
+      }
     }
     if (!editSubscriptionData.status) {
       errors.status = t("Status is required!");
@@ -844,6 +886,8 @@ export default function CustomerAccountsPage() {
         accountsAvailable: editSubscriptionData.maxAccounts,
         maxFrameworksAllowed: editSubscriptionData.maxFrameworks,
         maxAccountsAllowed: editSubscriptionData.maxAccounts,
+        assessmentLimit: editSubscriptionData.assessmentLimit,
+        vendorLimit: editSubscriptionData.vendorLimit,
         frameworksUsed: 0,
         accountsUsed: 0,
         startDate: editSubscriptionData.startDate,
@@ -888,6 +932,8 @@ export default function CustomerAccountsPage() {
             expiryDate: editSubscriptionData.expiryDate,
             maxFrameworks: editSubscriptionData.maxFrameworks,
             maxAccounts: editSubscriptionData.maxAccounts,
+            assessmentLimit: editSubscriptionData.assessmentLimit,
+            vendorLimit: editSubscriptionData.vendorLimit,
             status: editSubscriptionData.status,
           }),
         }
@@ -932,6 +978,8 @@ export default function CustomerAccountsPage() {
       expiryDate: plan.expiryDate,
       maxFrameworks: plan.maxFrameworksAllowed || 0,
       maxAccounts: plan.maxAccountsAllowed || 0,
+      assessmentLimit: plan.assessmentLimit || 0,
+      vendorLimit: plan.vendorLimit || 0,
       status: plan.status,
     });
     setShowEditSubscriptionDialog(true);
@@ -947,6 +995,8 @@ export default function CustomerAccountsPage() {
       confirmPassword: "",
       blocked: customer.blocked,
       active: customer.active,
+      isGrcAdded: customer.isGrcAdded !== false, // Default to true if not set
+      isTprmAdded: customer.isTprmAdded || false,
       language: customer.language || "en-US",
       timeZone: customer.timeZone || "Asia/Qatar",
       logoFile: null,
@@ -1304,7 +1354,7 @@ export default function CustomerAccountsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
                     <div className="flex gap-4 h-9 items-center">
@@ -1359,6 +1409,29 @@ export default function CustomerAccountsPage() {
                           onChange={() => setFormData({ ...formData, active: false })}
                           className="accent-primary"
                         /> {t("No")}
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Is TPRM Added")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isTprmAddedNew"
+                          checked={!formData.isTprmAdded}
+                          onChange={() => setFormData({ ...formData, isTprmAdded: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isTprmAddedNew"
+                          checked={formData.isTprmAdded}
+                          onChange={() => setFormData({ ...formData, isTprmAdded: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
                       </label>
                     </div>
                   </div>
@@ -1591,7 +1664,7 @@ export default function CustomerAccountsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
                     <div className="flex gap-4 h-9 items-center">
@@ -1646,6 +1719,29 @@ export default function CustomerAccountsPage() {
                           onChange={() => setFormData({ ...formData, active: false })}
                           className="accent-primary"
                         /> {t("No")}
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Is TPRM Added")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isTprmAddedEdit"
+                          checked={!formData.isTprmAdded}
+                          onChange={() => setFormData({ ...formData, isTprmAdded: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isTprmAddedEdit"
+                          checked={formData.isTprmAdded}
+                          onChange={() => setFormData({ ...formData, isTprmAdded: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
                       </label>
                     </div>
                   </div>
@@ -1748,8 +1844,16 @@ export default function CustomerAccountsPage() {
               <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Frameworks Available")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Accounts Available")}</TableHead>
+                    {formData.isGrcAdded && (
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Frameworks Available")}</TableHead>
+                    )}
+                    <TableHead className={`text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ${!formData.isGrcAdded ? "pl-5" : ""}`}>{t("Accounts Available")}</TableHead>
+                    {formData.isTprmAdded && (
+                      <>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assessment Limit")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Vendor Limit")}</TableHead>
+                      </>
+                    )}
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Expiry date")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
@@ -1758,7 +1862,7 @@ export default function CustomerAccountsPage() {
                 <TableBody>
                   {subscriptionPlans.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-0">
+                      <TableCell colSpan={(formData.isGrcAdded ? 1 : 0) + (formData.isTprmAdded ? 2 : 0) + 4} className="py-0">
                         <div className="py-16 text-center">
                           <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
                             <FileText className="h-6 w-6 text-primary-500" />
@@ -1775,8 +1879,16 @@ export default function CustomerAccountsPage() {
                   ) : (
                     subscriptionPlans.map((plan) => (
                       <TableRow key={plan.id} className="border-b border-slate-100 last:border-0">
-                        <TableCell className="py-3 pl-5 text-sm text-slate-700">{plan.frameworksAvailable}</TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{plan.accountsAvailable}</TableCell>
+                        {formData.isGrcAdded && (
+                          <TableCell className="py-3 pl-5 text-sm text-slate-700">{plan.frameworksAvailable}</TableCell>
+                        )}
+                        <TableCell className={`py-3 text-sm text-slate-700 ${!formData.isGrcAdded ? "pl-5" : ""}`}>{plan.accountsAvailable}</TableCell>
+                        {formData.isTprmAdded && (
+                          <>
+                            <TableCell className="py-3 text-sm text-slate-700">{plan.assessmentLimit || 0}</TableCell>
+                            <TableCell className="py-3 text-sm text-slate-700">{plan.vendorLimit || 0}</TableCell>
+                          </>
+                        )}
                         <TableCell className="py-3 text-sm text-slate-700">{plan.expiryDate}</TableCell>
                         <TableCell className="py-3">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -1873,22 +1985,24 @@ export default function CustomerAccountsPage() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-4">
-              <Label htmlFor="maxFrameworks" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
-              <div className="col-span-3 space-y-1.5">
-                <Input
-                  id="maxFrameworks"
-                  type="number"
-                  min="0"
-                  value={newSubscriptionData.maxFrameworks}
-                  onChange={(e) => { setNewSubscriptionData({ ...newSubscriptionData, maxFrameworks: parseInt(e.target.value) || 0 }); setSubscriptionErrors((prev) => { const { maxFrameworks, ...rest } = prev; return rest; }); }}
-                  className={subscriptionErrors.maxFrameworks ? "border-red-400" : ""}
-                />
-                {subscriptionErrors.maxFrameworks && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.maxFrameworks}</div>
-                )}
+            {formData.isGrcAdded && (
+              <div className="grid grid-cols-4 gap-4">
+                <Label htmlFor="maxFrameworks" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
+                <div className="col-span-3 space-y-1.5">
+                  <Input
+                    id="maxFrameworks"
+                    type="number"
+                    min="0"
+                    value={newSubscriptionData.maxFrameworks}
+                    onChange={(e) => { setNewSubscriptionData({ ...newSubscriptionData, maxFrameworks: parseInt(e.target.value) || 0 }); setSubscriptionErrors((prev) => { const { maxFrameworks, ...rest } = prev; return rest; }); }}
+                    className={subscriptionErrors.maxFrameworks ? "border-red-400" : ""}
+                  />
+                  {subscriptionErrors.maxFrameworks && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.maxFrameworks}</div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             <div className="grid grid-cols-4 gap-4">
               <Label htmlFor="maxAccounts" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max accounts")}</Label>
               <div className="col-span-3 space-y-1.5">
@@ -1905,6 +2019,42 @@ export default function CustomerAccountsPage() {
                 )}
               </div>
             </div>
+            {formData.isTprmAdded && (
+              <>
+                <div className="grid grid-cols-4 gap-4">
+                  <Label htmlFor="assessmentLimit" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Assessment limit")}</Label>
+                  <div className="col-span-3 space-y-1.5">
+                    <Input
+                      id="assessmentLimit"
+                      type="number"
+                      min="0"
+                      value={newSubscriptionData.assessmentLimit}
+                      onChange={(e) => { setNewSubscriptionData({ ...newSubscriptionData, assessmentLimit: parseInt(e.target.value) || 0 }); setSubscriptionErrors((prev) => { const { assessmentLimit, ...rest } = prev; return rest; }); }}
+                      className={subscriptionErrors.assessmentLimit ? "border-red-400" : ""}
+                    />
+                    {subscriptionErrors.assessmentLimit && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.assessmentLimit}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                  <Label htmlFor="vendorLimit" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Vendor limit")}</Label>
+                  <div className="col-span-3 space-y-1.5">
+                    <Input
+                      id="vendorLimit"
+                      type="number"
+                      min="0"
+                      value={newSubscriptionData.vendorLimit}
+                      onChange={(e) => { setNewSubscriptionData({ ...newSubscriptionData, vendorLimit: parseInt(e.target.value) || 0 }); setSubscriptionErrors((prev) => { const { vendorLimit, ...rest } = prev; return rest; }); }}
+                      className={subscriptionErrors.vendorLimit ? "border-red-400" : ""}
+                    />
+                    {subscriptionErrors.vendorLimit && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subscriptionErrors.vendorLimit}</div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
             <div className="grid grid-cols-4 gap-4">
               <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Status")}</Label>
               <div className="col-span-3 space-y-1.5">
@@ -1989,22 +2139,24 @@ export default function CustomerAccountsPage() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-4">
-              <Label htmlFor="editMaxFrameworks" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
-              <div className="col-span-3 space-y-1.5">
-                <Input
-                  id="editMaxFrameworks"
-                  type="number"
-                  min="0"
-                  value={editSubscriptionData.maxFrameworks}
-                  onChange={(e) => { setEditSubscriptionData({ ...editSubscriptionData, maxFrameworks: parseInt(e.target.value) || 0 }); setEditSubscriptionErrors((prev) => { const { maxFrameworks, ...rest } = prev; return rest; }); }}
-                  className={editSubscriptionErrors.maxFrameworks ? "border-red-400" : ""}
-                />
-                {editSubscriptionErrors.maxFrameworks && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.maxFrameworks}</div>
-                )}
+            {formData.isGrcAdded && (
+              <div className="grid grid-cols-4 gap-4">
+                <Label htmlFor="editMaxFrameworks" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
+                <div className="col-span-3 space-y-1.5">
+                  <Input
+                    id="editMaxFrameworks"
+                    type="number"
+                    min="0"
+                    value={editSubscriptionData.maxFrameworks}
+                    onChange={(e) => { setEditSubscriptionData({ ...editSubscriptionData, maxFrameworks: parseInt(e.target.value) || 0 }); setEditSubscriptionErrors((prev) => { const { maxFrameworks, ...rest } = prev; return rest; }); }}
+                    className={editSubscriptionErrors.maxFrameworks ? "border-red-400" : ""}
+                  />
+                  {editSubscriptionErrors.maxFrameworks && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.maxFrameworks}</div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             <div className="grid grid-cols-4 gap-4">
               <Label htmlFor="editMaxAccounts" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max accounts")}</Label>
               <div className="col-span-3 space-y-1.5">
@@ -2021,6 +2173,42 @@ export default function CustomerAccountsPage() {
                 )}
               </div>
             </div>
+            {formData.isTprmAdded && (
+              <>
+                <div className="grid grid-cols-4 gap-4">
+                  <Label htmlFor="editAssessmentLimit" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Assessment limit")}</Label>
+                  <div className="col-span-3 space-y-1.5">
+                    <Input
+                      id="editAssessmentLimit"
+                      type="number"
+                      min="0"
+                      value={editSubscriptionData.assessmentLimit}
+                      onChange={(e) => { setEditSubscriptionData({ ...editSubscriptionData, assessmentLimit: parseInt(e.target.value) || 0 }); setEditSubscriptionErrors((prev) => { const { assessmentLimit, ...rest } = prev; return rest; }); }}
+                      className={editSubscriptionErrors.assessmentLimit ? "border-red-400" : ""}
+                    />
+                    {editSubscriptionErrors.assessmentLimit && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.assessmentLimit}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                  <Label htmlFor="editVendorLimit" className="text-right text-sm font-medium text-slate-700 pt-2">{t("Vendor limit")}</Label>
+                  <div className="col-span-3 space-y-1.5">
+                    <Input
+                      id="editVendorLimit"
+                      type="number"
+                      min="0"
+                      value={editSubscriptionData.vendorLimit}
+                      onChange={(e) => { setEditSubscriptionData({ ...editSubscriptionData, vendorLimit: parseInt(e.target.value) || 0 }); setEditSubscriptionErrors((prev) => { const { vendorLimit, ...rest } = prev; return rest; }); }}
+                      className={editSubscriptionErrors.vendorLimit ? "border-red-400" : ""}
+                    />
+                    {editSubscriptionErrors.vendorLimit && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{editSubscriptionErrors.vendorLimit}</div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
             <div className="grid grid-cols-4 gap-4">
               <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Status")}</Label>
               <div className="col-span-3 space-y-1.5">

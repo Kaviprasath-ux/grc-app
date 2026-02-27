@@ -35,6 +35,9 @@ import {
   FileOutput,
   FolderOpen,
   CircleDot,
+  ShieldCheck,
+  ListChecks,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 import { UserPermission, hasPermission, Action } from "@/lib/permissions";
@@ -182,6 +185,19 @@ export const navigation: NavItem[] = [
   },
   // ==================== End Internal Audit Section ====================
 
+  // ==================== TPRM Section ====================
+  {
+    name: "TPRM",
+    icon: ShieldCheck,
+    permission: "tprm.account-overview:view",
+    children: [
+      { name: "Account Overview", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
+      { name: "Assessment Workspace", href: "/tprm/assessments", icon: ListChecks, permission: "tprm.assessments:view" },
+      { name: "Task Queue", href: "/tprm/task-queue", icon: Inbox, permission: "tprm.task-queue:view" },
+    ],
+  },
+  // ==================== End TPRM Section ====================
+
   {
     name: "Log Out",
     href: "/login",
@@ -294,6 +310,9 @@ const ROLE_PATH_MAP: Record<string, string> = {
   "Contributor": "contributor",
   "DepartmentReviewer": "department-reviewer",
   "DepartmentContributor": "department-contributor",
+  "TPRMCustomerAdmin": "tprm-customer-admin",
+  "FactoryAdmin": "factory-admin",
+  "TPRMAdmin": "tprm-admin",
 };
 
 /**
@@ -377,6 +396,9 @@ function getPrimaryRole(roles: string[]): string {
     "DepartmentReviewer",
     "Contributor",
     "DepartmentContributor",
+    "TPRMCustomerAdmin",
+    "FactoryAdmin",
+    "TPRMAdmin",
   ];
 
   for (const role of rolePriority) {

@@ -21,6 +21,8 @@ model CustomerAccount {
   name                   String                   // Customer organization name
   logoUrl                String?                  // Customer logo
   isActive               Boolean                  @default(true)
+  isGrcAdded             Boolean                  @default(false) // Whether this account was onboarded via GRC
+  isTprmAdded            Boolean                  @default(false) // Whether this account was onboarded via TPRM
   emailNotificationsEnabled Boolean               @default(true) // Toggle for non-mandatory email notifications
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
@@ -115,6 +117,10 @@ model CustomerAccount {
   biaScoringRanges           BIAScoringRange[]
   bcpLabels                  BCPLabel[]
   dynamicTranslations        DynamicTranslation[]
+  // TPRM relations
+  tprmVendors                TPRMVendor[]
+  tprmAssessments            TPRMAssessment[]
+  tprmAssessmentLogs         TPRMAssessmentLog[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -126,6 +132,8 @@ model SubscriptionPlan {
   expiryDate          DateTime
   maxFrameworksAllowed Int            @default(0)
   maxAccountsAllowed   Int            @default(0)
+  assessmentLimit     Int             @default(0) // TPRM: max assessments allowed
+  vendorLimit         Int             @default(0) // TPRM: max vendors allowed
   frameworksUsed      Int             @default(0)
   accountsUsed        Int             @default(0)
   status              String          @default("Active") // Active, Inactive, Expired
@@ -282,6 +290,7 @@ model Department {
   auditableEntities     AuditableEntity[]
   auditEngagements      AuditEngagement[]
   internalAuditFindings InternalAuditFinding[]
+  tprmVendors           TPRMVendor[]           @relation("TPRMVendorDepartment")
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
@@ -388,6 +397,10 @@ model User {
   notificationPreferences    NotificationPreference[]
   // OAuth/SSO relations
   oauthAccounts              OAuthAccount[]
+  // TPRM relations
+  tprmInitiated              TPRMAssessment[]  @relation("TPRMInitiator")
+  tprmAssessed               TPRMAssessment[]  @relation("TPRMAssessor")
+  tprmApproved               TPRMAssessment[]  @relation("TPRMApprover")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -3243,6 +3256,87 @@ model EmailTemplate {
   updatedAt         DateTime         @updatedAt
 
   @@index([code])
+}
+
+// ==================== TPRM (Third-Party Risk Management) ====================
+
+// TPRMVendor — Third-party vendors managed for risk assessment
+model TPRMVendor {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  vendorCode        String          // e.g., VEN001
+  name              String
+  contactEmail      String?
+  contactPhone      String?
+  accountManagerName String?
+  serviceCategory   String?         // e.g., "IT Services", "Cloud Infrastructure"
+  departmentId      String?
+  department        Department?     @relation("TPRMVendorDepartment", fields: [departmentId], references: [id])
+  status            String          @default("Onboarding") // Onboarding, Onboarded, Offboarding, Offboarded
+  onboardedDate     DateTime?
+  offboardedDate    DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  assessments       TPRMAssessment[]
+
+  @@unique([customerAccountId, vendorCode])
+  @@index([customerAccountId])
+  @@index([customerAccountId, status])
+}
+
+// TPRMAssessment — Vendor risk assessments
+model TPRMAssessment {
+  id                    String          @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessmentCode        String          // e.g., ASM001
+  vendorId              String
+  vendor                TPRMVendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  assessmentType        String          // "Assessment Factory", "Onboarding Assessment", "Periodic Assessment", "On-Demand Assessment"
+  status                String          @default("Draft") // Draft, In Progress, Submitted, Under Review, Reviewed, Approved, Rejected, Returned, Completed, Cancelled, Expired, Reassessment Initiated
+  assessmentResult      String?         // Satisfactory, Unsatisfactory, Deficient
+  vendorSubmissionDate  DateTime?
+  assessorCompletionDate DateTime?
+  approvalDate          DateTime?
+  completionDate        DateTime?
+  initiatedById         String?
+  initiatedBy           User?           @relation("TPRMInitiator", fields: [initiatedById], references: [id])
+  assessorId            String?
+  assessor              User?           @relation("TPRMAssessor", fields: [assessorId], references: [id])
+  approverId            String?
+  approver              User?           @relation("TPRMApprover", fields: [approverId], references: [id])
+  questionnaireTemplate String?         // Template name used for assessment
+  approverComment       String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  logs                  TPRMAssessmentLog[]
+
+  @@unique([customerAccountId, assessmentCode])
+  @@index([customerAccountId])
+  @@index([customerAccountId, assessmentType])
+  @@index([customerAccountId, status])
+}
+
+// TPRMAssessmentLog — Audit logs for assessment activities
+model TPRMAssessmentLog {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessmentId      String
+  assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  domainName        String?
+  questionNo        String?
+  questionTitle     String?
+  logDate           DateTime        @default(now())
+  logMessage        String?
+  apiUrl            String?
+  documentName      String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
+  @@index([assessmentId])
 }
 
 // ==================== DYNAMIC DATA TRANSLATIONS ====================

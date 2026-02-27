@@ -74,6 +74,10 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'AuditImpact', fields: [{ name: 'label' }], priority: 4 },
   { modelName: 'AuditScoringRange', fields: [{ name: 'label' }], priority: 4 },
 
+  // Priority 5 — TPRM
+  { modelName: 'TPRMVendor', fields: [{ name: 'name' }, { name: 'serviceCategory' }], priority: 5 },
+  { modelName: 'TPRMAssessment', fields: [{ name: 'questionnaireTemplate' }, { name: 'approverComment' }], priority: 5 },
+
   // Priority 5 — Organization & assets
   { modelName: 'User', fields: [{ name: 'fullName' }, { name: 'firstName' }, { name: 'lastName' }, { name: 'designation' }], priority: 5 },
   { modelName: 'Organization', fields: [{ name: 'name' }, { name: 'description' }, { name: 'vision' }, { name: 'mission' }, { name: 'value' }, { name: 'ceoMessage' }, { name: 'headOfficeLocation' }, { name: 'headOfficeAddress' }], priority: 5 },

@@ -5,6 +5,8 @@ CREATE TABLE "CustomerAccount" (
     "name" TEXT NOT NULL,
     "logoUrl" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isGrcAdded" BOOLEAN NOT NULL DEFAULT false,
+    "isTprmAdded" BOOLEAN NOT NULL DEFAULT false,
     "emailNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -2353,6 +2355,68 @@ CREATE TABLE "EmailTemplate" (
 );
 
 -- CreateTable
+CREATE TABLE "TPRMVendor" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "vendorCode" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "contactEmail" TEXT,
+    "contactPhone" TEXT,
+    "accountManagerName" TEXT,
+    "serviceCategory" TEXT,
+    "departmentId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Onboarding',
+    "onboardedDate" TIMESTAMP(3),
+    "offboardedDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMVendor_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMAssessment" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "assessmentCode" TEXT NOT NULL,
+    "vendorId" TEXT NOT NULL,
+    "assessmentType" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'Draft',
+    "assessmentResult" TEXT,
+    "vendorSubmissionDate" TIMESTAMP(3),
+    "assessorCompletionDate" TIMESTAMP(3),
+    "approvalDate" TIMESTAMP(3),
+    "completionDate" TIMESTAMP(3),
+    "initiatedById" TEXT,
+    "assessorId" TEXT,
+    "approverId" TEXT,
+    "questionnaireTemplate" TEXT,
+    "approverComment" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMAssessment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMAssessmentLog" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "domainName" TEXT,
+    "questionNo" TEXT,
+    "questionTitle" TEXT,
+    "logDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "logMessage" TEXT,
+    "apiUrl" TEXT,
+    "documentName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMAssessmentLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "DynamicTranslation" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -3065,6 +3129,33 @@ CREATE UNIQUE INDEX "EmailTemplate_code_key" ON "EmailTemplate"("code");
 
 -- CreateIndex
 CREATE INDEX "EmailTemplate_code_idx" ON "EmailTemplate"("code");
+
+-- CreateIndex
+CREATE INDEX "TPRMVendor_customerAccountId_idx" ON "TPRMVendor"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMVendor_customerAccountId_status_idx" ON "TPRMVendor"("customerAccountId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMVendor_customerAccountId_vendorCode_key" ON "TPRMVendor"("customerAccountId", "vendorCode");
+
+-- CreateIndex
+CREATE INDEX "TPRMAssessment_customerAccountId_idx" ON "TPRMAssessment"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMAssessment_customerAccountId_assessmentType_idx" ON "TPRMAssessment"("customerAccountId", "assessmentType");
+
+-- CreateIndex
+CREATE INDEX "TPRMAssessment_customerAccountId_status_idx" ON "TPRMAssessment"("customerAccountId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMAssessment_customerAccountId_assessmentCode_key" ON "TPRMAssessment"("customerAccountId", "assessmentCode");
+
+-- CreateIndex
+CREATE INDEX "TPRMAssessmentLog_customerAccountId_idx" ON "TPRMAssessmentLog"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMAssessmentLog_assessmentId_idx" ON "TPRMAssessmentLog"("assessmentId");
 
 -- CreateIndex
 CREATE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId");
@@ -3884,6 +3975,33 @@ ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_cust
 
 -- AddForeignKey
 ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendor" ADD CONSTRAINT "TPRMVendor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendor" ADD CONSTRAINT "TPRMVendor_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "TPRMVendor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_initiatedById_fkey" FOREIGN KEY ("initiatedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_assessorId_fkey" FOREIGN KEY ("assessorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_approverId_fkey" FOREIGN KEY ("approverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessmentLog" ADD CONSTRAINT "TPRMAssessmentLog_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessmentLog" ADD CONSTRAINT "TPRMAssessmentLog_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DynamicTranslation" ADD CONSTRAINT "DynamicTranslation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

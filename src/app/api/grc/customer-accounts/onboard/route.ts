@@ -10,6 +10,8 @@ interface SubscriptionPlanInput {
   expiryDate: string;
   maxFrameworks: number;
   maxAccounts: number;
+  assessmentLimit?: number;
+  vendorLimit?: number;
   status: string;
 }
 
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { customerName, email, userName, password, blocked, active, language, timeZone, subscriptionPlans } = body;
+    const { customerName, email, userName, password, blocked, active, language, timeZone, subscriptionPlans, isTprmAdded } = body;
 
     // Validate required fields
     if (!customerName || !email || !userName || !password) {
@@ -118,6 +120,11 @@ export async function POST(req: NextRequest) {
           isActive: active !== false,
         },
       });
+      // Set isGrcAdded/isTprmAdded via raw SQL (Prisma client may not have these fields yet)
+      await tx.$executeRawUnsafe(
+        `UPDATE "CustomerAccount" SET "isGrcAdded" = $1, "isTprmAdded" = $2 WHERE id = $3`,
+        true, isTprmAdded === true, customerAccount.id
+      );
 
       // 2. Create the User linked to CustomerAccount
       const newUser = await tx.user.create({
@@ -167,6 +174,11 @@ export async function POST(req: NextRequest) {
               status: plan.status || "Active",
             },
           });
+          // Set assessmentLimit/vendorLimit via raw SQL (Prisma client may not have these fields yet)
+          await tx.$executeRawUnsafe(
+            `UPDATE "SubscriptionPlan" SET "assessmentLimit" = $1, "vendorLimit" = $2 WHERE id = $3`,
+            plan.assessmentLimit || 0, plan.vendorLimit || 0, createdPlan.id
+          );
           createdPlans.push(createdPlan);
         }
       }

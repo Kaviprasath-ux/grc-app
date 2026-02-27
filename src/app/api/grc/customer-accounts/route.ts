@@ -20,16 +20,29 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden - GRCAdministrator role required" }, { status: 403 });
     }
 
-    // Get all users with CustomerAdministrator role (these represent customer accounts)
+    // Get all users with any admin role (these represent customer accounts)
+    // Includes accounts created from both GRC and TPRM flows
+    // Also checks legacy 'role' field for backward compatibility
+    const rbacAdminRoles = ["CustomerAdministrator", "TPRMCustomerAdmin", "FactoryAdmin", "TPRMAdmin"];
+    // Legacy role field may have "Administrator" instead of "CustomerAdministrator"
+    const legacyAdminRoles = [...rbacAdminRoles, "Administrator"];
     const customerAccounts = await prisma.user.findMany({
       where: {
-        userRoles: {
-          some: {
-            role: {
-              name: "CustomerAdministrator",
+        OR: [
+          {
+            userRoles: {
+              some: {
+                role: {
+                  name: { in: rbacAdminRoles },
+                },
+              },
             },
           },
-        },
+          {
+            role: { in: legacyAdminRoles },
+            customerCode: { not: null },
+          },
+        ],
       },
       select: {
         id: true,
@@ -48,29 +61,56 @@ export async function GET(req: NextRequest) {
         language: true,
         timezone: true,
         departmentId: true,
+        customerAccountId: true,
       },
       orderBy: {
         createdAt: "desc",
       },
     });
 
+    // Fetch customer account flags (isGrcAdded, isTprmAdded) via raw query
+    // because the Prisma client may not be regenerated yet with these new fields
+    const accountIds = customerAccounts
+      .map((u) => u.customerAccountId)
+      .filter((id): id is string => !!id);
+
+    let accountFlagsMap = new Map<string, { isGrcAdded: boolean; isTprmAdded: boolean }>();
+    if (accountIds.length > 0) {
+      try {
+        const flags = await prisma.$queryRawUnsafe<
+          Array<{ id: string; isGrcAdded: boolean; isTprmAdded: boolean }>
+        >(
+          `SELECT id, "isGrcAdded", "isTprmAdded" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
+          ...accountIds
+        );
+        accountFlagsMap = new Map(flags.map((f) => [f.id, { isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded }]));
+      } catch {
+        // If raw query fails (e.g., columns don't exist yet), default to false
+      }
+    }
+
     // Transform the data to match the expected format
-    const formattedAccounts = customerAccounts.map((user, index) => ({
-      id: user.id,
-      customerCode: user.customerCode || `GRC_${String(index + 1).padStart(3, "0")}`,
-      customerName: user.fullName || `${user.firstName} ${user.lastName}`,
-      email: user.email,
-      userName: user.userName,
-      isLocalUser: true,
-      name: user.userName,
-      lastLogin: user.lastLogin?.toLocaleString() || user.updatedAt?.toLocaleDateString() || null,
-      blocked: user.isBlocked || false,
-      blockedSince: null,
-      active: user.isActive !== false,
-      logoUrl: user.logoUrl || null,
-      language: user.language || "en-US",
-      timeZone: user.timezone || "Asia/Qatar",
-    }));
+    const formattedAccounts = customerAccounts.map((user, index) => {
+      const flags = user.customerAccountId ? accountFlagsMap.get(user.customerAccountId) : null;
+      return {
+        id: user.id,
+        customerCode: user.customerCode || `GRC_${String(index + 1).padStart(3, "0")}`,
+        customerName: user.fullName || `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        userName: user.userName,
+        isLocalUser: true,
+        name: user.userName,
+        lastLogin: user.lastLogin?.toLocaleString() || user.updatedAt?.toLocaleDateString() || null,
+        blocked: user.isBlocked || false,
+        blockedSince: null,
+        active: user.isActive !== false,
+        logoUrl: user.logoUrl || null,
+        language: user.language || "en-US",
+        timeZone: user.timezone || "Asia/Qatar",
+        isTprmAdded: flags?.isTprmAdded || false,
+        isGrcAdded: flags?.isGrcAdded || false,
+      };
+    });
 
     return NextResponse.json(formattedAccounts);
   } catch (error) {

@@ -249,6 +249,10 @@ async function main() {
     { name: "Contributor", description: "Creates and edits content across modules", isSystem: true },
     { name: "DepartmentReviewer", description: "Reviews content within own department", isSystem: true },
     { name: "DepartmentContributor", description: "Creates/edits content within own department", isSystem: true },
+    // TPRM Module roles
+    { name: "TPRMCustomerAdmin", description: "Customer-level TPRM administrator", isSystem: true },
+    { name: "FactoryAdmin", description: "Assessment Factory administrator", isSystem: true },
+    { name: "TPRMAdmin", description: "TPRM super administrator", isSystem: true },
   ];
 
   const createdRoles: { [key: string]: string } = {};
@@ -4531,6 +4535,149 @@ async function main() {
     }
   }
   console.log("✅ Audit Reports created");
+
+  // ==================== TPRM (Third-Party Risk Management) ====================
+
+  // Create TPRM Vendors
+  const tprmVendors = [
+    { vendorCode: "VEN001", name: "IBM Corporation", contactEmail: "vendor@ibm.com", contactPhone: "+1-800-IBM-7378", accountManagerName: "James Watson", serviceCategory: "IT Services", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-01-15") },
+    { vendorCode: "VEN002", name: "Microsoft Azure", contactEmail: "azure@microsoft.com", contactPhone: "+1-800-642-7676", accountManagerName: "Sarah Chen", serviceCategory: "Cloud Infrastructure", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-02-01") },
+    { vendorCode: "VEN003", name: "Deloitte Consulting", contactEmail: "info@deloitte.com", contactPhone: "+1-212-489-1600", accountManagerName: "Robert Miller", serviceCategory: "Consulting", department: "Compliance", status: "Onboarding" },
+    { vendorCode: "VEN004", name: "Palo Alto Networks", contactEmail: "sales@paloaltonetworks.com", contactPhone: "+1-408-753-4000", accountManagerName: "Emily Davis", serviceCategory: "Cybersecurity", department: "IT Support", status: "Onboarding" },
+    { vendorCode: "VEN005", name: "SAP SE", contactEmail: "info@sap.com", contactPhone: "+49-6227-7-47474", accountManagerName: "Hans Mueller", serviceCategory: "ERP Systems", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2024-11-20") },
+    { vendorCode: "VEN006", name: "Accenture", contactEmail: "contact@accenture.com", contactPhone: "+1-312-842-5012", accountManagerName: "Lisa Park", serviceCategory: "Digital Transformation", department: "Product Development", status: "Onboarding" },
+    { vendorCode: "VEN007", name: "AWS (Amazon)", contactEmail: "aws-sales@amazon.com", contactPhone: "+1-206-266-1000", accountManagerName: "David Kim", serviceCategory: "Cloud Infrastructure", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-03-10") },
+    { vendorCode: "VEN008", name: "Oracle", contactEmail: "info@oracle.com", contactPhone: "+1-650-506-7000", accountManagerName: "Maria Garcia", serviceCategory: "Database Services", department: "IT Operations", status: "Offboarding", onboardedDate: new Date("2023-06-15") },
+    { vendorCode: "VEN009", name: "Wipro Technologies", contactEmail: "info@wipro.com", contactPhone: "+91-80-2844-0011", accountManagerName: "Ravi Sharma", serviceCategory: "IT Outsourcing", department: "IT Support", status: "Onboarding" },
+    { vendorCode: "VEN010", name: "CrowdStrike", contactEmail: "sales@crowdstrike.com", contactPhone: "+1-888-512-8906", accountManagerName: "Alex Johnson", serviceCategory: "Endpoint Security", department: "IT Support", status: "Onboarded", onboardedDate: new Date("2025-04-01") },
+  ];
+
+  const createdVendors: { [key: string]: string } = {};
+  for (const vendor of tprmVendors) {
+    const existing = await prisma.tPRMVendor.findFirst({
+      where: { customerAccountId: grcAdminCustomerAccountId, vendorCode: vendor.vendorCode },
+    });
+    if (!existing) {
+      const created = await prisma.tPRMVendor.create({
+        data: {
+          customerAccountId: grcAdminCustomerAccountId,
+          vendorCode: vendor.vendorCode,
+          name: vendor.name,
+          contactEmail: vendor.contactEmail,
+          contactPhone: vendor.contactPhone,
+          accountManagerName: vendor.accountManagerName,
+          serviceCategory: vendor.serviceCategory,
+          status: vendor.status,
+          onboardedDate: vendor.onboardedDate || null,
+        },
+      });
+      createdVendors[vendor.vendorCode] = created.id;
+    } else {
+      createdVendors[vendor.vendorCode] = existing.id;
+    }
+  }
+  console.log("✅ TPRM Vendors created");
+
+  // Create TPRM Assessments
+  const tprmAssessments = [
+    { assessmentCode: "ASM001", vendorCode: "VEN001", assessmentType: "Onboarding Assessment", status: "Completed", assessmentResult: "Satisfactory", vendorSubmissionDate: new Date("2025-01-10"), completionDate: new Date("2025-01-20"), questionnaireTemplate: "Standard Onboarding v2" },
+    { assessmentCode: "ASM002", vendorCode: "VEN002", assessmentType: "Onboarding Assessment", status: "Approved", assessmentResult: "Satisfactory", vendorSubmissionDate: new Date("2025-01-25"), approvalDate: new Date("2025-02-05"), completionDate: new Date("2025-02-05"), questionnaireTemplate: "Cloud Provider Assessment" },
+    { assessmentCode: "ASM003", vendorCode: "VEN003", assessmentType: "Onboarding Assessment", status: "In Progress", vendorSubmissionDate: new Date("2025-06-01"), questionnaireTemplate: "Consulting Firm Assessment" },
+    { assessmentCode: "ASM004", vendorCode: "VEN004", assessmentType: "Onboarding Assessment", status: "Submitted", vendorSubmissionDate: new Date("2025-05-15"), questionnaireTemplate: "Security Vendor Assessment" },
+    { assessmentCode: "ASM005", vendorCode: "VEN001", assessmentType: "Periodic Assessment", status: "Under Review", vendorSubmissionDate: new Date("2025-07-01"), assessorCompletionDate: new Date("2025-07-10"), questionnaireTemplate: "Annual Review Template" },
+    { assessmentCode: "ASM006", vendorCode: "VEN005", assessmentType: "On-Demand Assessment", status: "Completed", assessmentResult: "Satisfactory", vendorSubmissionDate: new Date("2025-03-01"), completionDate: new Date("2025-03-15"), questionnaireTemplate: "ERP Security Assessment" },
+    { assessmentCode: "ASM007", vendorCode: "VEN006", assessmentType: "Onboarding Assessment", status: "Draft", questionnaireTemplate: "Standard Onboarding v2" },
+    { assessmentCode: "ASM008", vendorCode: "VEN007", assessmentType: "Onboarding Assessment", status: "Completed", assessmentResult: "Satisfactory", vendorSubmissionDate: new Date("2025-02-20"), completionDate: new Date("2025-03-01"), questionnaireTemplate: "Cloud Provider Assessment" },
+    { assessmentCode: "ASM009", vendorCode: "VEN008", assessmentType: "On-Demand Assessment", status: "Returned", assessmentResult: "Deficient", vendorSubmissionDate: new Date("2025-04-01"), approverComment: "Missing critical security documentation. Please resubmit.", questionnaireTemplate: "Database Vendor Assessment" },
+    { assessmentCode: "ASM010", vendorCode: "VEN009", assessmentType: "Onboarding Assessment", status: "In Progress", vendorSubmissionDate: new Date("2025-06-10"), questionnaireTemplate: "Standard Onboarding v2" },
+    { assessmentCode: "ASM011", vendorCode: "VEN010", assessmentType: "Onboarding Assessment", status: "Approved", assessmentResult: "Satisfactory", vendorSubmissionDate: new Date("2025-03-20"), approvalDate: new Date("2025-04-01"), completionDate: new Date("2025-04-01"), questionnaireTemplate: "Security Vendor Assessment" },
+    { assessmentCode: "ASM012", vendorCode: "VEN002", assessmentType: "On-Demand Assessment", status: "Submitted", vendorSubmissionDate: new Date("2025-07-15"), questionnaireTemplate: "Cloud Security Review" },
+    { assessmentCode: "ASM013", vendorCode: "VEN005", assessmentType: "Assessment Factory", status: "Completed", assessmentResult: "Unsatisfactory", vendorSubmissionDate: new Date("2025-02-01"), completionDate: new Date("2025-02-20"), questionnaireTemplate: "Factory Assessment Template" },
+    { assessmentCode: "ASM014", vendorCode: "VEN001", assessmentType: "Assessment Factory", status: "In Progress", vendorSubmissionDate: new Date("2025-08-01"), questionnaireTemplate: "Factory Assessment Template" },
+    { assessmentCode: "ASM015", vendorCode: "VEN007", assessmentType: "Assessment Factory", status: "Draft", questionnaireTemplate: "Factory Assessment Template" },
+    { assessmentCode: "ASM016", vendorCode: "VEN003", assessmentType: "On-Demand Assessment", status: "Rejected", assessmentResult: "Deficient", vendorSubmissionDate: new Date("2025-05-01"), approverComment: "Vendor does not meet minimum security requirements.", questionnaireTemplate: "Consulting Firm Assessment" },
+    { assessmentCode: "ASM017", vendorCode: "VEN004", assessmentType: "On-Demand Assessment", status: "Cancelled", vendorSubmissionDate: new Date("2025-04-20"), questionnaireTemplate: "Security Vendor Assessment" },
+    { assessmentCode: "ASM018", vendorCode: "VEN006", assessmentType: "Onboarding Assessment", status: "Submitted", vendorSubmissionDate: new Date("2025-07-01"), questionnaireTemplate: "Standard Onboarding v2" },
+    { assessmentCode: "ASM019", vendorCode: "VEN009", assessmentType: "On-Demand Assessment", status: "Under Review", vendorSubmissionDate: new Date("2025-06-20"), questionnaireTemplate: "IT Outsourcing Assessment" },
+    { assessmentCode: "ASM020", vendorCode: "VEN010", assessmentType: "On-Demand Assessment", status: "Completed", assessmentResult: "Satisfactory", vendorSubmissionDate: new Date("2025-05-10"), completionDate: new Date("2025-05-25"), questionnaireTemplate: "Security Vendor Assessment" },
+  ];
+
+  const createdAssessments: { [key: string]: string } = {};
+  for (const assessment of tprmAssessments) {
+    const existing = await prisma.tPRMAssessment.findFirst({
+      where: { customerAccountId: grcAdminCustomerAccountId, assessmentCode: assessment.assessmentCode },
+    });
+    if (!existing) {
+      const created = await prisma.tPRMAssessment.create({
+        data: {
+          customerAccountId: grcAdminCustomerAccountId,
+          assessmentCode: assessment.assessmentCode,
+          vendorId: createdVendors[assessment.vendorCode],
+          assessmentType: assessment.assessmentType,
+          status: assessment.status,
+          assessmentResult: assessment.assessmentResult || null,
+          vendorSubmissionDate: assessment.vendorSubmissionDate || null,
+          assessorCompletionDate: assessment.assessorCompletionDate || null,
+          approvalDate: assessment.approvalDate || null,
+          completionDate: assessment.completionDate || null,
+          initiatedById: superadminUser.id,
+          questionnaireTemplate: assessment.questionnaireTemplate || null,
+          approverComment: assessment.approverComment || null,
+        },
+      });
+      createdAssessments[assessment.assessmentCode] = created.id;
+    } else {
+      createdAssessments[assessment.assessmentCode] = existing.id;
+    }
+  }
+  console.log("✅ TPRM Assessments created");
+
+  // Create TPRM Assessment Logs
+  const tprmLogs = [
+    { assessmentCode: "ASM001", domainName: "Information Security", questionNo: "IS-01", questionTitle: "Data Encryption Policy", logMessage: "Vendor confirmed AES-256 encryption for data at rest", apiUrl: "/api/v1/assessment/submit" },
+    { assessmentCode: "ASM001", domainName: "Information Security", questionNo: "IS-02", questionTitle: "Access Control Mechanisms", logMessage: "Multi-factor authentication implemented across all systems", apiUrl: "/api/v1/assessment/submit" },
+    { assessmentCode: "ASM001", domainName: "Business Continuity", questionNo: "BC-01", questionTitle: "Disaster Recovery Plan", logMessage: "DR plan reviewed and approved. RTO: 4 hours, RPO: 1 hour", documentName: "IBM_DR_Plan_2025.pdf" },
+    { assessmentCode: "ASM002", domainName: "Cloud Security", questionNo: "CS-01", questionTitle: "Data Residency", logMessage: "All data stored in EU region as per contract", apiUrl: "/api/v1/cloud/compliance" },
+    { assessmentCode: "ASM002", domainName: "Cloud Security", questionNo: "CS-02", questionTitle: "Service Level Agreement", logMessage: "99.99% uptime SLA confirmed", documentName: "Azure_SLA_2025.pdf" },
+    { assessmentCode: "ASM002", domainName: "Compliance", questionNo: "CO-01", questionTitle: "SOC 2 Type II", logMessage: "SOC 2 Type II report provided and verified", documentName: "Azure_SOC2_Report.pdf" },
+    { assessmentCode: "ASM003", domainName: "Professional Services", questionNo: "PS-01", questionTitle: "Staff Background Checks", logMessage: "Background check policy document submitted for review" },
+    { assessmentCode: "ASM003", domainName: "Data Protection", questionNo: "DP-01", questionTitle: "GDPR Compliance", logMessage: "GDPR compliance assessment in progress" },
+    { assessmentCode: "ASM005", domainName: "Information Security", questionNo: "IS-01", questionTitle: "Annual Security Review", logMessage: "Periodic security assessment initiated for IBM", apiUrl: "/api/v1/periodic/review" },
+    { assessmentCode: "ASM005", domainName: "Risk Management", questionNo: "RM-01", questionTitle: "Risk Register Update", logMessage: "Vendor risk profile updated with new threat landscape", documentName: "IBM_Risk_Register_2025.pdf" },
+    { assessmentCode: "ASM006", domainName: "ERP Security", questionNo: "ERP-01", questionTitle: "User Access Review", logMessage: "Quarterly user access review completed successfully", apiUrl: "/api/v1/sap/access-review" },
+    { assessmentCode: "ASM006", domainName: "ERP Security", questionNo: "ERP-02", questionTitle: "Patch Management", logMessage: "All critical patches applied within SLA", documentName: "SAP_Patch_Report_Q1.pdf" },
+    { assessmentCode: "ASM008", domainName: "Cloud Security", questionNo: "CS-01", questionTitle: "Infrastructure Security", logMessage: "AWS infrastructure security assessment completed", apiUrl: "/api/v1/aws/security-scan" },
+    { assessmentCode: "ASM008", domainName: "Compliance", questionNo: "CO-01", questionTitle: "ISO 27001 Certification", logMessage: "Valid ISO 27001 certificate verified", documentName: "AWS_ISO27001_Cert.pdf" },
+    { assessmentCode: "ASM009", domainName: "Database Security", questionNo: "DB-01", questionTitle: "Encryption at Rest", logMessage: "Critical: Database encryption not enabled on legacy systems", apiUrl: "/api/v1/oracle/db-scan" },
+    { assessmentCode: "ASM009", domainName: "Database Security", questionNo: "DB-02", questionTitle: "Backup Procedures", logMessage: "Backup documentation incomplete - returned to vendor", documentName: "Oracle_Backup_Policy_Draft.pdf" },
+    { assessmentCode: "ASM011", domainName: "Endpoint Security", questionNo: "ES-01", questionTitle: "EDR Capabilities", logMessage: "Advanced EDR capabilities verified and tested", apiUrl: "/api/v1/crowdstrike/edr-test" },
+    { assessmentCode: "ASM011", domainName: "Threat Intelligence", questionNo: "TI-01", questionTitle: "Threat Feed Integration", logMessage: "Threat intelligence feed integration confirmed operational", documentName: "CrowdStrike_ThreatFeed_Config.pdf" },
+    { assessmentCode: "ASM013", domainName: "ERP Security", questionNo: "ERP-03", questionTitle: "Custom Code Review", logMessage: "Critical vulnerabilities found in custom ABAP code", apiUrl: "/api/v1/sap/code-review" },
+    { assessmentCode: "ASM013", domainName: "Compliance", questionNo: "CO-02", questionTitle: "License Compliance", logMessage: "License audit revealed discrepancies in user count", documentName: "SAP_License_Audit.pdf" },
+    { assessmentCode: "ASM016", domainName: "Professional Services", questionNo: "PS-02", questionTitle: "NDA Compliance", logMessage: "NDA terms not met - confidential data handling concerns" },
+    { assessmentCode: "ASM016", domainName: "Data Protection", questionNo: "DP-02", questionTitle: "Data Handling Procedures", logMessage: "Vendor data handling procedures do not meet minimum requirements", documentName: "Deloitte_DataHandling_Review.pdf" },
+    { assessmentCode: "ASM020", domainName: "Endpoint Security", questionNo: "ES-02", questionTitle: "Incident Response", logMessage: "Incident response SLA met - average response time: 15 minutes", apiUrl: "/api/v1/crowdstrike/incident-metrics" },
+    { assessmentCode: "ASM020", domainName: "Compliance", questionNo: "CO-03", questionTitle: "PCI DSS Compliance", logMessage: "PCI DSS Level 1 compliance verified", documentName: "CrowdStrike_PCI_Cert.pdf" },
+  ];
+
+  for (const log of tprmLogs) {
+    const assessmentId = createdAssessments[log.assessmentCode];
+    if (assessmentId) {
+      await prisma.tPRMAssessmentLog.create({
+        data: {
+          customerAccountId: grcAdminCustomerAccountId,
+          assessmentId,
+          domainName: log.domainName,
+          questionNo: log.questionNo,
+          questionTitle: log.questionTitle,
+          logMessage: log.logMessage,
+          apiUrl: log.apiUrl || null,
+          documentName: log.documentName || null,
+        },
+      });
+    }
+  }
+  console.log("✅ TPRM Assessment Logs created");
 
   // ==================== EMAIL TEMPLATES (GLOBAL - SYSTEM DEFAULT) ====================
   // Seed all 73 English email templates as system defaults
