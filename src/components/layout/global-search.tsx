@@ -75,11 +75,15 @@ export function GlobalSearch() {
     const filtered = filterNavigationByPermissionsAndRole(
       navigation,
       session.user.permissions,
-      session.user.roles
+      session.user.roles,
+      {
+        isGrcAdded: session.user.isGrcAdded ?? false,
+        isTprmAdded: session.user.isTprmAdded ?? false,
+      }
     );
 
     return flattenNavItems(filtered);
-  }, [session?.user?.permissions, session?.user?.roles]);
+  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded]);
 
   // Group items by their parent module
   const groupedItems = useMemo(() => {

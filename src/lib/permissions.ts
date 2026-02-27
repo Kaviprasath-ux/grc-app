@@ -92,6 +92,16 @@ export const RESOURCES = {
   'tprm.account-overview': '/tprm/account-overview',
   'tprm.assessments': '/tprm/assessments',
   'tprm.task-queue': '/tprm/task-queue',
+  'tprm.program-monitor': '/tprm/program-monitor',
+  'tprm.control-center': '/tprm/control-center',
+  'tprm.user-management': '/tprm/user-management',
+  'tprm.vendor-management': '/tprm/vendor-management',
+  'tprm.reports': '/tprm/reports',
+  'tprm.monitoring': '/tprm/monitoring',
+  'tprm.configurations': '/tprm/configurations',
+  'tprm.master-data': '/tprm/master-data',
+  'tprm.settings': '/tprm/settings',
+  'tprm.support': '/tprm/support',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -187,7 +197,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.governance', actions: ['*'], scope: 'all' },
     { resource: 'compliance.evidence', actions: ['*'], scope: 'all' },
     { resource: 'compliance.domain', actions: ['*'], scope: 'all' },
-    // TPRM module - full access
+    // TPRM module - GRCAdministrator only has access to admin-level pages
     { resource: 'tprm.account-overview', actions: ['*'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
@@ -218,6 +228,20 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     // CustomerAdmin can view the settings page but NOT access internal pages (User Management, etc.)
     // Only AuditHead has full access to audit.settings internal pages
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // TPRM module — same access as TPRMCustomerAdmin
+    { resource: 'tprm.program-monitor', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.control-center', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.user-management', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.vendor-management', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.reports', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.monitoring', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.configurations', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.master-data', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.settings', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.support', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.account-overview', actions: ['view'], scope: 'all' },
   ],
 
   // Audit Head - Full access to Internal Audit module ONLY
@@ -414,11 +438,41 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
   ],
 
-  // TPRM Customer Admin - TPRM access scoped to their customer account
+  // TPRM Customer Admin - Equivalent to CustomerAdministrator for TPRM customers.
+  // Has both GRC + TPRM permissions defined; module flag filtering (isGrcAdded/isTprmAdded)
+  // controls which modules are actually visible at runtime.
   TPRMCustomerAdmin: [
+    // GRC modules (only active when isGrcAdded=true via module flag filtering)
+    { resource: 'organization.*', actions: ['*'], scope: 'all' },
+    { resource: 'compliance.*', actions: ['*'], scope: 'all' },
+    { resource: 'asset.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'asset.inventory', actions: ['*'], scope: 'all' },
+    { resource: 'asset.classification', actions: ['*'], scope: 'all' },
+    { resource: 'asset.settings', actions: ['*'], scope: 'all' },
+    { resource: 'asset.reports', actions: ['*'], scope: 'all' },
+    { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.reports', actions: ['view'], scope: 'all' },
+    { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
+    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // TPRM modules (only active when isTprmAdded=true via module flag filtering)
     { resource: 'tprm.account-overview', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.program-monitor', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.control-center', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.user-management', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.vendor-management', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.reports', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.monitoring', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.configurations', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.master-data', actions: ['*'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.settings', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.support', actions: ['view'], scope: 'all' },
   ],
 
   // Factory Admin - TPRM access for assessment factory management
@@ -428,7 +482,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.task-queue', actions: ['view'], scope: 'all' },
   ],
 
-  // TPRM Admin - Full TPRM module access (super admin level)
+  // TPRM Admin - Super admin level, only admin-level pages (not customer admin pages)
   TPRMAdmin: [
     { resource: 'tprm.account-overview', actions: ['*'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
@@ -497,11 +551,52 @@ function resourceMatches(pattern: string, resource: string): boolean {
 }
 
 /**
- * Expand role permissions to flat permission list
+ * Module flag options for filtering permissions.
+ * When provided, TPRM resources are excluded if isTprmAdded=false,
+ * and GRC/organization resources are excluded if isGrcAdded=false.
+ * GRCAdministrator and TPRMAdmin roles ignore these flags (system-level roles).
  */
-export function expandRolePermissions(roleNames: string[]): UserPermission[] {
+interface ModuleFlags {
+  isGrcAdded?: boolean;
+  isTprmAdded?: boolean;
+}
+
+/**
+ * Check if a resource belongs to the TPRM module
+ */
+function isTprmResource(resource: string): boolean {
+  return resource.startsWith('tprm.');
+}
+
+/**
+ * Check if a resource belongs to GRC modules (organization, compliance, asset, risk, audit)
+ * Excludes 'grc.' prefix since that is GRCAdministrator-specific system admin pages.
+ */
+function isGrcModuleResource(resource: string): boolean {
+  return (
+    resource.startsWith('organization.') ||
+    resource.startsWith('compliance.') ||
+    resource.startsWith('asset.') ||
+    resource.startsWith('risk.') ||
+    resource.startsWith('audit.')
+  );
+}
+
+/**
+ * Expand role permissions to flat permission list.
+ * Optionally filters by module flags (isGrcAdded / isTprmAdded) for CustomerAdministrator.
+ */
+export function expandRolePermissions(
+  roleNames: string[],
+  moduleFlags?: ModuleFlags
+): UserPermission[] {
   const permissions: UserPermission[] = [];
   const seen = new Set<string>();
+
+  // System-level roles are not filtered by module flags
+  const isSystemRole = roleNames.some(r =>
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin'
+  );
 
   for (const roleName of roleNames) {
     const rolePerms = ROLE_PERMISSIONS[roleName as RoleName];
@@ -519,6 +614,12 @@ export function expandRolePermissions(roleNames: string[]): UserPermission[] {
         : perm.actions as Action[];
 
       for (const resource of resources) {
+        // Apply module flag filtering for non-system roles
+        if (!isSystemRole && moduleFlags) {
+          if (!moduleFlags.isTprmAdded && isTprmResource(resource)) continue;
+          if (!moduleFlags.isGrcAdded && isGrcModuleResource(resource)) continue;
+        }
+
         for (const action of actions) {
           const key = `${resource}:${action}:${perm.scope}`;
           if (!seen.has(key)) {

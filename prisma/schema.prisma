@@ -21,7 +21,7 @@ model CustomerAccount {
   name                   String                   // Customer organization name
   logoUrl                String?                  // Customer logo
   isActive               Boolean                  @default(true)
-  isGrcAdded             Boolean                  @default(false) // Whether this account was onboarded via GRC
+  isGrcAdded             Boolean                  @default(true) // Whether this account has GRC module access (default true for legacy accounts)
   isTprmAdded            Boolean                  @default(false) // Whether this account was onboarded via TPRM
   emailNotificationsEnabled Boolean               @default(true) // Toggle for non-mandatory email notifications
   createdAt              DateTime                 @default(now())
@@ -121,6 +121,7 @@ model CustomerAccount {
   tprmVendors                TPRMVendor[]
   tprmAssessments            TPRMAssessment[]
   tprmAssessmentLogs         TPRMAssessmentLog[]
+  tprmConfigurations         TPRMConfiguration[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -397,6 +398,9 @@ model User {
   notificationPreferences    NotificationPreference[]
   // OAuth/SSO relations
   oauthAccounts              OAuthAccount[]
+  // TPRM fields
+  tprmRole                   String?           // Approver, Assessor, Auditor, BusinessOwner, InternalITTeam, RelationshipManager
+  tprmFunctionCategory       String?           // "TPRM Team" or "Business"
   // TPRM relations
   tprmInitiated              TPRMAssessment[]  @relation("TPRMInitiator")
   tprmAssessed               TPRMAssessment[]  @relation("TPRMAssessor")
@@ -3262,23 +3266,35 @@ model EmailTemplate {
 
 // TPRMVendor — Third-party vendors managed for risk assessment
 model TPRMVendor {
-  id                String          @id @default(cuid())
-  customerAccountId String
-  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
-  vendorCode        String          // e.g., VEN001
-  name              String
-  contactEmail      String?
-  contactPhone      String?
-  accountManagerName String?
-  serviceCategory   String?         // e.g., "IT Services", "Cloud Infrastructure"
-  departmentId      String?
-  department        Department?     @relation("TPRMVendorDepartment", fields: [departmentId], references: [id])
-  status            String          @default("Onboarding") // Onboarding, Onboarded, Offboarding, Offboarded
-  onboardedDate     DateTime?
-  offboardedDate    DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  assessments       TPRMAssessment[]
+  id                  String          @id @default(cuid())
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  vendorCode          String          // e.g., VEN001
+  name                String
+  contactEmail        String?
+  contactPhone        String?
+  accountManagerName  String?
+  accountManagerEmail String?
+  serviceCategory     String?         // e.g., "IT Services", "Cloud Infrastructure"
+  departmentId        String?
+  department          Department?     @relation("TPRMVendorDepartment", fields: [departmentId], references: [id])
+  status              String          @default("Onboarding") // Onboarding, Onboarded, Offboarding, Offboarded
+  engagementId        String?         // External engagement identifier
+  vrr                 String?         // Vendor Risk Rating: Critical, High, Moderate, Low, Nominal
+  serviceDescription  String?         @db.Text
+  contractStartDate   DateTime?
+  contractEndDate     DateTime?
+  accessToNetwork     Boolean         @default(false)
+  cloud               Boolean         @default(false)
+  accessToData        Boolean         @default(false)
+  pii                 Boolean         @default(false)
+  businessJustification String?       @db.Text
+  vendorCertification String?
+  onboardedDate       DateTime?
+  offboardedDate      DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  assessments         TPRMAssessment[]
 
   @@unique([customerAccountId, vendorCode])
   @@index([customerAccountId])
@@ -3337,6 +3353,27 @@ model TPRMAssessmentLog {
 
   @@index([customerAccountId])
   @@index([assessmentId])
+}
+
+// TPRMConfiguration — Due Diligence & Scorecard configuration per customer
+model TPRMConfiguration {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  configType        String          // "DueDiligence" or "Scorecard"
+  category          String          // Critical, High, Moderate, Low, Nominal (or Excellent, Good for Scorecard)
+  vrr               Int?            @default(0)          // VRR threshold
+  cadenceMonths     Int?            @default(0)          // Assessment cadence in months
+  remediationDays   Int?            @default(0)          // Days allowed for remediation
+  reminderDays      Int?            @default(0)          // Days before due date for reminder
+  dueDateDays       Int?            @default(0)          // Due date in days
+  securityScore     Int?            @default(0)          // Scorecard score
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, configType, category])
+  @@index([customerAccountId])
+  @@index([customerAccountId, configType])
 }
 
 // ==================== DYNAMIC DATA TRANSLATIONS ====================

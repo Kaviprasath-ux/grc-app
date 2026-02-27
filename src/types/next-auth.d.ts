@@ -16,6 +16,9 @@ declare module "next-auth" {
       customerAccountName: string | null;
       // Audit Head isolation: auditHeadId for audit team members
       auditHeadId: string | null;
+      // Module flags from CustomerAccount
+      isGrcAdded: boolean;
+      isTprmAdded: boolean;
       roles: string[];
       permissions: UserPermission[];
     } & DefaultSession["user"];
@@ -32,6 +35,9 @@ declare module "next-auth" {
     customerAccountName: string | null;
     // Audit Head isolation: auditHeadId for audit team members
     auditHeadId: string | null;
+    // Module flags from CustomerAccount
+    isGrcAdded: boolean;
+    isTprmAdded: boolean;
     roles: string[];
     permissions: UserPermission[];
   }
@@ -49,6 +55,9 @@ declare module "next-auth/jwt" {
     customerAccountName: string | null;
     // Audit Head isolation: auditHeadId for audit team members
     auditHeadId: string | null;
+    // Module flags from CustomerAccount
+    isGrcAdded: boolean;
+    isTprmAdded: boolean;
     roles: string[];
     permissions: UserPermission[];
   }

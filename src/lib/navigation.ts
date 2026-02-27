@@ -38,6 +38,11 @@ import {
   ShieldCheck,
   ListChecks,
   Inbox,
+  Activity,
+  Sliders,
+  Radar,
+  Database,
+  HelpCircle,
   type LucideIcon,
 } from "lucide-react";
 import { UserPermission, hasPermission, Action } from "@/lib/permissions";
@@ -186,13 +191,24 @@ export const navigation: NavItem[] = [
   // ==================== End Internal Audit Section ====================
 
   // ==================== TPRM Section ====================
+  // Grouped under TPRM parent. For TPRMCustomerAdmin this is the only sidebar group.
+  // For CustomerAdministrator it appears as a TPRM module alongside Organization, Compliance, etc.
   {
     name: "TPRM",
     icon: ShieldCheck,
-    permission: "tprm.account-overview:view",
     children: [
-      { name: "Account Overview", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
+      { name: "Program Monitor", href: "/tprm/program-monitor", icon: Activity, permission: "tprm.program-monitor:view" },
+      { name: "Control Center", href: "/tprm/control-center", icon: Sliders, permission: "tprm.control-center:view" },
+      { name: "User Management", href: "/tprm/user-management", icon: Users, permission: "tprm.user-management:view" },
+      { name: "Vendor Management", href: "/tprm/vendor-management", icon: Building2, permission: "tprm.vendor-management:view" },
+      { name: "Report", href: "/tprm/reports", icon: BarChart3, permission: "tprm.reports:view" },
+      { name: "Monitoring", href: "/tprm/monitoring", icon: Radar, permission: "tprm.monitoring:view" },
+      { name: "Configurations", href: "/tprm/configurations", icon: Settings, permission: "tprm.configurations:view" },
+      { name: "Master Data", href: "/tprm/master-data", icon: Database, permission: "tprm.master-data:view" },
       { name: "Assessment Workspace", href: "/tprm/assessments", icon: ListChecks, permission: "tprm.assessments:view" },
+      { name: "Settings", href: "/tprm/settings", icon: Settings2, permission: "tprm.settings:view" },
+      { name: "Support", href: "/tprm/support", icon: HelpCircle, permission: "tprm.support:view" },
+      { name: "Account Overview", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
       { name: "Task Queue", href: "/tprm/task-queue", icon: Inbox, permission: "tprm.task-queue:view" },
     ],
   },
@@ -432,21 +448,70 @@ function transformNavItemsForRole(items: NavItem[], userRole: string): NavItem[]
 }
 
 /**
- * Filter and transform navigation items based on user permissions and role.
+ * Module flags for conditional navigation rendering.
+ * Controls whether GRC and TPRM modules appear in navigation.
+ */
+interface NavModuleFlags {
+  isGrcAdded?: boolean;
+  isTprmAdded?: boolean;
+}
+
+/**
+ * Filter and transform navigation items based on user permissions, role, and module flags.
  * Returns navigation with role-specific paths.
+ *
+ * Module flag behavior:
+ * - If customer has ONLY TPRM (isTprmAdded=true, isGrcAdded=false):
+ *   TPRM children are promoted to top-level (flat, no "TPRM" parent group)
+ * - If customer has BOTH (isTprmAdded=true, isGrcAdded=true):
+ *   TPRM stays grouped under "TPRM" parent alongside other modules
+ * - System roles (GRCAdministrator, TPRMAdmin, FactoryAdmin) are not affected by flags
  */
 export function filterNavigationByPermissionsAndRole(
   items: NavItem[],
   userPermissions: UserPermission[],
-  userRoles: string[]
+  userRoles: string[],
+  moduleFlags?: NavModuleFlags
 ): NavItem[] {
   const primaryRole = getPrimaryRole(userRoles);
 
+  // System roles ignore module flags
+  const isSystemRole = userRoles.some(r =>
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin'
+  );
+
+  let navItems = items;
+
+  // For non-system roles with ONLY TPRM (no GRC), flatten TPRM children to top-level
+  if (!isSystemRole && moduleFlags?.isTprmAdded && !moduleFlags?.isGrcAdded) {
+    navItems = flattenTprmNavigation(items);
+  }
+
   // First filter by permissions
-  const filteredItems = filterNavigationByPermissions(items, userPermissions);
+  const filteredItems = filterNavigationByPermissions(navItems, userPermissions);
 
   // Then transform to role-specific paths
   return transformNavItemsForRole(filteredItems, primaryRole);
+}
+
+/**
+ * Flatten TPRM navigation: replace the "TPRM" parent group with its children as top-level items.
+ * All non-TPRM groups (Organization, Compliance, etc.) are kept as-is (they'll be filtered out
+ * by permissions since the user won't have GRC permissions).
+ */
+function flattenTprmNavigation(items: NavItem[]): NavItem[] {
+  const result: NavItem[] = [];
+
+  for (const item of items) {
+    if (item.name === 'TPRM' && item.children && item.children.length > 0) {
+      // Promote TPRM children to top level
+      result.push(...item.children);
+    } else {
+      result.push(item);
+    }
+  }
+
+  return result;
 }
 
 /**

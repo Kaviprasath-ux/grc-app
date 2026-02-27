@@ -5,7 +5,7 @@ CREATE TABLE "CustomerAccount" (
     "name" TEXT NOT NULL,
     "logoUrl" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "isGrcAdded" BOOLEAN NOT NULL DEFAULT false,
+    "isGrcAdded" BOOLEAN NOT NULL DEFAULT true,
     "isTprmAdded" BOOLEAN NOT NULL DEFAULT false,
     "emailNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -22,6 +22,8 @@ CREATE TABLE "SubscriptionPlan" (
     "expiryDate" TIMESTAMP(3) NOT NULL,
     "maxFrameworksAllowed" INTEGER NOT NULL DEFAULT 0,
     "maxAccountsAllowed" INTEGER NOT NULL DEFAULT 0,
+    "assessmentLimit" INTEGER NOT NULL DEFAULT 0,
+    "vendorLimit" INTEGER NOT NULL DEFAULT 0,
     "frameworksUsed" INTEGER NOT NULL DEFAULT 0,
     "accountsUsed" INTEGER NOT NULL DEFAULT 0,
     "status" TEXT NOT NULL DEFAULT 'Active',
@@ -181,6 +183,8 @@ CREATE TABLE "User" (
     "createdById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "tprmRole" TEXT,
+    "tprmFunctionCategory" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -2363,9 +2367,21 @@ CREATE TABLE "TPRMVendor" (
     "contactEmail" TEXT,
     "contactPhone" TEXT,
     "accountManagerName" TEXT,
+    "accountManagerEmail" TEXT,
     "serviceCategory" TEXT,
     "departmentId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'Onboarding',
+    "engagementId" TEXT,
+    "vrr" TEXT,
+    "serviceDescription" TEXT,
+    "contractStartDate" TIMESTAMP(3),
+    "contractEndDate" TIMESTAMP(3),
+    "accessToNetwork" BOOLEAN NOT NULL DEFAULT false,
+    "cloud" BOOLEAN NOT NULL DEFAULT false,
+    "accessToData" BOOLEAN NOT NULL DEFAULT false,
+    "pii" BOOLEAN NOT NULL DEFAULT false,
+    "businessJustification" TEXT,
+    "vendorCertification" TEXT,
     "onboardedDate" TIMESTAMP(3),
     "offboardedDate" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2414,6 +2430,24 @@ CREATE TABLE "TPRMAssessmentLog" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TPRMAssessmentLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMConfiguration" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "configType" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "vrr" INTEGER DEFAULT 0,
+    "cadenceMonths" INTEGER DEFAULT 0,
+    "remediationDays" INTEGER DEFAULT 0,
+    "reminderDays" INTEGER DEFAULT 0,
+    "dueDateDays" INTEGER DEFAULT 0,
+    "securityScore" INTEGER DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMConfiguration_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -3156,6 +3190,15 @@ CREATE INDEX "TPRMAssessmentLog_customerAccountId_idx" ON "TPRMAssessmentLog"("c
 
 -- CreateIndex
 CREATE INDEX "TPRMAssessmentLog_assessmentId_idx" ON "TPRMAssessmentLog"("assessmentId");
+
+-- CreateIndex
+CREATE INDEX "TPRMConfiguration_customerAccountId_idx" ON "TPRMConfiguration"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMConfiguration_customerAccountId_configType_idx" ON "TPRMConfiguration"("customerAccountId", "configType");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMConfiguration_customerAccountId_configType_category_key" ON "TPRMConfiguration"("customerAccountId", "configType", "category");
 
 -- CreateIndex
 CREATE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId");
@@ -4002,6 +4045,9 @@ ALTER TABLE "TPRMAssessmentLog" ADD CONSTRAINT "TPRMAssessmentLog_customerAccoun
 
 -- AddForeignKey
 ALTER TABLE "TPRMAssessmentLog" ADD CONSTRAINT "TPRMAssessmentLog_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMConfiguration" ADD CONSTRAINT "TPRMConfiguration_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DynamicTranslation" ADD CONSTRAINT "DynamicTranslation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

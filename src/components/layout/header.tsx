@@ -78,8 +78,11 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
   const { data: translatedUser } = useTranslatedRecord(userRecord, { modelName: 'User' });
   const displayName = translatedUser?.fullName || session?.user?.name || t("User");
 
-  // Format role name for display
-  const rawRole = session?.user?.roles?.[0]?.replace(/([A-Z])/g, ' $1').trim() || "";
+  // Format role name for display (handles acronyms like TPRM, GRC)
+  const rawRole = session?.user?.roles?.[0]
+    ?.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim() || "";
   const displayRole = rawRole ? t(rawRole) : t("User");
 
   // Notifications hook

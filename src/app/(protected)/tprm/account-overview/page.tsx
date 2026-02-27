@@ -37,6 +37,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Loader2, Pencil, Trash2, FileText } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
@@ -1266,6 +1276,10 @@ function CustomerAccountsTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editUserId, setEditUserId] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteAccountId, setDeleteAccountId] = useState("");
+  const [deleteAccountName, setDeleteAccountName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -1283,6 +1297,27 @@ function CustomerAccountsTab() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleDeleteAccount = async () => {
+    if (!deleteAccountId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/tprm/account-overview?tab=customers&accountId=${deleteAccountId}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const json = await res.json();
+        console.error("Delete failed:", json.error);
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+      setDeleteAccountId("");
+      setDeleteAccountName("");
+    }
+  };
 
   const columns: ColumnDef<CustomerAccount>[] = [
     {
@@ -1346,6 +1381,13 @@ function CustomerAccountsTab() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
+          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => {
+            setDeleteAccountId(row.original.id);
+            setDeleteAccountName(row.original.companyName);
+            setDeleteConfirmOpen(true);
+          }}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       ),
     },
@@ -1388,6 +1430,27 @@ function CustomerAccountsTab() {
         showIsGrcAdded={true}
         onSuccess={fetchData}
       />
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete Account")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to delete the account")} <strong>{deleteAccountName}</strong>? {t("This will permanently delete the account, all associated users, vendors, assessments, and subscription plans. This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -1598,6 +1661,10 @@ function AssessmentFactoryTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editUserId, setEditUserId] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteAccountId, setDeleteAccountId] = useState("");
+  const [deleteAccountName, setDeleteAccountName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -1615,6 +1682,27 @@ function AssessmentFactoryTab() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleDeleteAccount = async () => {
+    if (!deleteAccountId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/tprm/account-overview?tab=factory&accountId=${deleteAccountId}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const json = await res.json();
+        console.error("Delete failed:", json.error);
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+      setDeleteAccountId("");
+      setDeleteAccountName("");
+    }
+  };
 
   const columns: ColumnDef<FactoryAccount>[] = [
     {
@@ -1661,6 +1749,13 @@ function AssessmentFactoryTab() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
+          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => {
+            setDeleteAccountId(row.original.id);
+            setDeleteAccountName(row.original.companyName);
+            setDeleteConfirmOpen(true);
+          }}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       ),
     },
@@ -1703,6 +1798,27 @@ function AssessmentFactoryTab() {
         showIsGrcAdded={false}
         onSuccess={fetchData}
       />
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete Account")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to delete the account")} <strong>{deleteAccountName}</strong>? {t("This will permanently delete the account, all associated users, vendors, assessments, and subscription plans. This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -1716,6 +1832,10 @@ function SuperAdminTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editUserId, setEditUserId] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteUserId, setDeleteUserId] = useState("");
+  const [deleteUserName, setDeleteUserName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -1733,6 +1853,27 @@ function SuperAdminTab() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/tprm/account-overview?tab=superadmin&userId=${deleteUserId}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const json = await res.json();
+        console.error("Delete failed:", json.error);
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+      setDeleteUserId("");
+      setDeleteUserName("");
+    }
+  };
 
   const columns: ColumnDef<SuperAdmin>[] = [
     {
@@ -1783,7 +1924,11 @@ function SuperAdminTab() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="destructive" size="icon" className="h-8 w-8">
+          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => {
+            setDeleteUserId(row.original.id);
+            setDeleteUserName(row.original.fullName);
+            setDeleteConfirmOpen(true);
+          }}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -1821,6 +1966,27 @@ function SuperAdminTab() {
         showIsGrcAdded={false}
         onSuccess={fetchData}
       />
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete Super Admin")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to delete")} <strong>{deleteUserName}</strong>? {t("This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeleteUser}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -774,3 +774,98 @@ export const PATCH = withAuth(
   },
   { resource: "tprm.account-overview", action: "edit" }
 );
+
+// ==================== DELETE — Delete account + associated users ====================
+export const DELETE = withAuth(
+  async (req) => {
+    try {
+      const { searchParams } = new URL(req.url);
+      const tab = searchParams.get("tab");
+      const accountId = searchParams.get("accountId");
+      const userId = searchParams.get("userId");
+
+      if (!tab) {
+        return NextResponse.json({ error: "tab is required" }, { status: 400 });
+      }
+
+      if (tab === "superadmin") {
+        // For super admin tab, delete the user directly
+        if (!userId) {
+          return NextResponse.json({ error: "userId is required for superadmin delete" }, { status: 400 });
+        }
+
+        await prisma.$transaction(async (tx) => {
+          // Delete user roles first
+          await tx.userRole.deleteMany({ where: { userId } });
+          // Delete the user
+          await tx.user.delete({ where: { id: userId } });
+        });
+
+        return NextResponse.json({ success: true });
+      }
+
+      // For customers and factory tabs, delete the customer account and all associated data
+      if (!accountId) {
+        return NextResponse.json({ error: "accountId is required" }, { status: 400 });
+      }
+
+      // Verify the account exists
+      const account = await prisma.customerAccount.findUnique({
+        where: { id: accountId },
+        select: { id: true, name: true },
+      });
+      if (!account) {
+        return NextResponse.json({ error: "Account not found" }, { status: 404 });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        // 1. Delete user roles for all users in this account
+        const accountUsers = await tx.user.findMany({
+          where: { customerAccountId: accountId },
+          select: { id: true },
+        });
+        const userIds = accountUsers.map((u) => u.id);
+
+        if (userIds.length > 0) {
+          await tx.userRole.deleteMany({ where: { userId: { in: userIds } } });
+          // Delete OAuth accounts
+          await tx.oAuthAccount.deleteMany({ where: { userId: { in: userIds } } });
+        }
+
+        // 2. Delete TPRM-related data
+        await tx.tPRMAssessmentLog.deleteMany({
+          where: { assessment: { customerAccountId: accountId } },
+        });
+        await tx.tPRMAssessment.deleteMany({ where: { customerAccountId: accountId } });
+        await tx.tPRMVendor.deleteMany({ where: { customerAccountId: accountId } });
+
+        // 3. Delete TPRM configurations
+        try {
+          await tx.$executeRawUnsafe(
+            `DELETE FROM "TPRMConfiguration" WHERE "customerAccountId" = $1`,
+            accountId
+          );
+        } catch {
+          // Table may not exist yet
+        }
+
+        // 4. Delete subscription plans
+        await tx.subscriptionPlan.deleteMany({ where: { customerAccountId: accountId } });
+
+        // 5. Delete users
+        if (userIds.length > 0) {
+          await tx.user.deleteMany({ where: { id: { in: userIds } } });
+        }
+
+        // 6. Delete the customer account itself
+        await tx.customerAccount.delete({ where: { id: accountId } });
+      });
+
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      return NextResponse.json({ error: "Failed to delete account" }, { status: 500 });
+    }
+  },
+  { resource: "tprm.account-overview", action: "delete" }
+);
