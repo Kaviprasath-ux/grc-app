@@ -1531,7 +1531,7 @@ export default function FieldworkDetailsPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ evidenceRequestIds: selectedEvidenceIds }),
+          body: JSON.stringify({ evidenceRequestIds: selectedEvidenceIds, target_language: locale }),
         }
       );
 

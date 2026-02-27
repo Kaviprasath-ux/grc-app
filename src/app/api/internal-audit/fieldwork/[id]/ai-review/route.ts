@@ -51,9 +51,9 @@ export const POST = withAuth(
     try {
       const { id: engagementId } = await context.params;
 
-      let body: { evidenceRequestIds?: string[]; question?: string };
+      let body: { evidenceRequestIds?: string[]; question?: string; target_language?: string };
       try {
-        body = (await req.json()) as { evidenceRequestIds?: string[]; question?: string };
+        body = (await req.json()) as { evidenceRequestIds?: string[]; question?: string; target_language?: string };
       } catch {
         return NextResponse.json(
           { error: 'Invalid JSON body' },
@@ -290,7 +290,11 @@ export const POST = withAuth(
           ? body.question.trim()
           : [titles.join('; '), descriptions.join(' | ')].filter(Boolean).join(' ') || 'Review evidence';
 
+      // Get target language from request body or cookie (defaults to 'en')
+      const targetLanguage = body.target_language || req.cookies.get('NEXT_LOCALE')?.value || 'en';
+
       console.log('[AI Review] Ingest completed, calling audit_query...');
+      console.log('[AI Review] Target language:', targetLanguage);
 
       const queryUrl = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_query');
       const queryPayload = {
@@ -298,6 +302,7 @@ export const POST = withAuth(
         customer_id: customerId,
         audit_id: auditId,
         artifact_id: artifactId,
+        target_language: targetLanguage,
       };
 
       console.log('[AI Review] Calling RunPod POST ' + queryUrl);
