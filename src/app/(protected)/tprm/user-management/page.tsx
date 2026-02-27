@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +21,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -30,6 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +53,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
+import { validateEmail } from "@/lib/validations/email";
 
 // ==================== ROLE CONFIGURATION ====================
 // Roles are conditional on Function selection (matches VerifAI reference)
@@ -67,6 +74,8 @@ const FUNCTION_OPTIONS = ["TPRM Team", "Business"];
 interface TPRMUser {
   id: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   userName: string;
   isActive: boolean;
@@ -77,6 +86,8 @@ interface TPRMUser {
 }
 
 interface UserFormData {
+  firstName: string;
+  lastName: string;
   fullName: string;
   userName: string;
   email: string;
@@ -88,6 +99,8 @@ interface UserFormData {
 }
 
 const emptyForm: UserFormData = {
+  firstName: "",
+  lastName: "",
   fullName: "",
   userName: "",
   email: "",
@@ -100,7 +113,7 @@ const emptyForm: UserFormData = {
 
 // ==================== COMPONENT ====================
 export default function UserManagementPage() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { toast } = useToast();
   const { data: session } = useSession();
   const { canCreate, canEdit, canDelete } = usePermissions("tprm.user-management");
@@ -118,6 +131,11 @@ export default function UserManagementPage() {
   const [selectedUser, setSelectedUser] = useState<TPRMUser | null>(null);
   const [formData, setFormData] = useState<UserFormData>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+
+  // Validation errors (field-level)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const addScrollRef = useRef<HTMLDivElement>(null);
+  const editScrollRef = useRef<HTMLDivElement>(null);
 
   // Company name from session (read-only in form)
   const companyName = session?.user?.customerAccountName || "";
@@ -156,33 +174,70 @@ export default function UserManagementPage() {
   }, [fetchUsers]);
 
   // ==================== FORM VALIDATION ====================
-  const validateForm = (isEdit: boolean): string | null => {
-    if (!formData.fullName.trim()) return t("Full Name is required");
-    if (!formData.userName.trim() && !isEdit) return t("Username is required");
-    if (!formData.email.trim()) return t("Email is required");
-    if (!formData.tprmFunctionCategory) return t("Function is required");
-    if (!formData.tprmRole) return t("User Role is required");
-    if (!isEdit && !formData.password) return t("Password is required");
-    if (formData.password && formData.password !== formData.confirmPassword) {
-      return t("Passwords do not match");
+  const validateForm = (isEdit: boolean): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    if (!formData.firstName.trim()) {
+      errors.firstName = t("Please Enter the First Name");
+    } else if (!isAlphaWithSpaces(formData.firstName.trim())) {
+      errors.firstName = t("Only letters and spaces are allowed");
     }
-    return null;
+    if (!formData.lastName.trim()) {
+      errors.lastName = t("Please Enter the Last Name");
+    } else if (!isAlphaWithSpaces(formData.lastName.trim())) {
+      errors.lastName = t("Only letters and spaces are allowed");
+    }
+    if (!formData.fullName.trim()) {
+      errors.fullName = t("Please Enter the Name");
+    }
+    if (!isEdit) {
+      if (!formData.userName.trim()) {
+        errors.userName = t("Please Enter the UserName");
+      } else if (!isAlphanumeric(formData.userName.trim())) {
+        errors.userName = t("Only letters, numbers, and underscores are allowed");
+      }
+    }
+    const emailError = validateEmail(formData.email);
+    if (emailError) errors.email = t(emailError);
+    if (!formData.tprmFunctionCategory) errors.tprmFunctionCategory = t("Please Select the Function");
+    if (!formData.tprmRole) errors.tprmRole = t("Please Select the Role");
+    if (!isEdit) {
+      if (!formData.password) errors.password = t("Password can not be empty");
+      if (!formData.confirmPassword) errors.confirmPassword = t("Password can not be empty");
+    }
+    if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = t("Passwords do not match");
+    }
+    return errors;
+  };
+
+  // Clear a specific field error on change
+  const clearError = (field: string) => {
+    if (formErrors[field]) {
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   // ==================== HANDLERS ====================
   const handleCreate = async () => {
-    const error = validateForm(false);
-    if (error) {
-      toast({ title: t("Validation Error"), description: error, variant: "destructive" });
+    const errors = validateForm(false);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      addScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-
+    setFormErrors({});
     setSubmitting(true);
     try {
       const res = await fetch("/api/tprm/user-management", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           fullName: formData.fullName,
           userName: formData.userName,
           email: formData.email,
@@ -197,6 +252,7 @@ export default function UserManagementPage() {
         toast({ title: t("User created successfully") });
         setShowCreateDialog(false);
         setFormData(emptyForm);
+        setFormErrors({});
         fetchUsers();
       } else {
         const err = await res.json();
@@ -215,16 +271,19 @@ export default function UserManagementPage() {
 
   const handleEdit = async () => {
     if (!selectedUser) return;
-    const error = validateForm(true);
-    if (error) {
-      toast({ title: t("Validation Error"), description: error, variant: "destructive" });
+    const errors = validateForm(true);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      editScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-
+    setFormErrors({});
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {
         id: selectedUser.id,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         fullName: formData.fullName,
         email: formData.email,
         tprmRole: formData.tprmRole,
@@ -246,6 +305,7 @@ export default function UserManagementPage() {
         setShowEditDialog(false);
         setSelectedUser(null);
         setFormData(emptyForm);
+        setFormErrors({});
         fetchUsers();
       } else {
         const err = await res.json();
@@ -293,7 +353,11 @@ export default function UserManagementPage() {
 
   const openEditDialog = (user: TPRMUser) => {
     setSelectedUser(user);
+    const firstName = user.firstName || user.fullName.split(" ")[0] || "";
+    const lastName = user.lastName || user.fullName.split(" ").slice(1).join(" ") || "";
     setFormData({
+      firstName,
+      lastName,
       fullName: user.fullName,
       userName: user.userName,
       email: user.email,
@@ -303,6 +367,7 @@ export default function UserManagementPage() {
       password: "",
       confirmPassword: "",
     });
+    setFormErrors({});
     setShowEditDialog(true);
   };
 
@@ -320,121 +385,253 @@ export default function UserManagementPage() {
       tprmFunctionCategory: fn,
       tprmRole: roleStillValid ? formData.tprmRole : "",
     });
+    clearError("tprmFunctionCategory");
   };
 
   // Account Manager users cannot be deleted (matches reference app behavior)
   const canDeleteUser = (user: TPRMUser) =>
     canDelete && user.tprmRole !== "Account Manager";
 
-  // ==================== FORM FIELDS (shared between Create & Edit) ====================
-  const renderFormFields = (isEdit: boolean) => (
-    <div className="space-y-4">
-      <div>
-        <Label>{t("Full Name")} *</Label>
-        <Input
-          placeholder={t("Enter the Full Name")}
-          value={formData.fullName}
-          onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-        />
+  // ==================== FORM CONTENT (shared between Create & Edit) ====================
+  const renderFormContent = (isEdit: boolean) => (
+    <div className="space-y-4 sm:space-y-6">
+      {/* Account Credentials Section */}
+      <div className="space-y-3 sm:space-y-4">
+        <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Credentials")}</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {/* Username - full width */}
+          <div className="sm:col-span-2">
+            <Label htmlFor="userName" className="text-sm font-medium text-slate-700">{t("Username")} {!isEdit && "*"}</Label>
+            <Input
+              id="userName"
+              value={formData.userName}
+              disabled={isEdit}
+              onChange={(e) => { setFormData({ ...formData, userName: e.target.value }); clearError("userName"); }}
+              placeholder={t("Enter username")}
+              className={`mt-1.5 bg-white ${formErrors.userName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+            />
+            {formErrors.userName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.userName}</p></div>)}
+          </div>
+          {/* Email - full width */}
+          <div className="sm:col-span-2">
+            <Label htmlFor="email" className="text-sm font-medium text-slate-700">{t("Email")} *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => { setFormData({ ...formData, email: e.target.value }); clearError("email"); }}
+              placeholder={t("Enter email")}
+              className={`mt-1.5 bg-white ${formErrors.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+            />
+            {formErrors.email && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.email}</p></div>)}
+          </div>
+          {/* Password and Confirm Password - side by side */}
+          {!isEdit && (
+            <>
+              <div>
+                <Label htmlFor="password" className="text-sm font-medium text-slate-700">{t("Password")} *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => { setFormData({ ...formData, password: e.target.value }); clearError("password"); }}
+                  placeholder={t("Enter password")}
+                  autoComplete="new-password"
+                  className={`mt-1.5 bg-white ${formErrors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                />
+                {formErrors.password && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.password}</p></div>)}
+              </div>
+              <div>
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">{t("Confirm Password")} *</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => { setFormData({ ...formData, confirmPassword: e.target.value }); clearError("confirmPassword"); }}
+                  placeholder={t("Confirm password")}
+                  autoComplete="new-password"
+                  className={`mt-1.5 bg-white ${formErrors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                />
+                {formErrors.confirmPassword && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.confirmPassword}</p></div>)}
+              </div>
+            </>
+          )}
+          {/* Edit mode: optional password change */}
+          {isEdit && (
+            <>
+              <div>
+                <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">{t("New password")}</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => { setFormData({ ...formData, password: e.target.value }); clearError("password"); }}
+                  placeholder={t("Leave blank to keep current")}
+                  autoComplete="new-password"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+              <div>
+                <Label htmlFor="confirmNewPassword" className="text-sm font-medium text-slate-700">{t("Confirm Password")}</Label>
+                <Input
+                  id="confirmNewPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => { setFormData({ ...formData, confirmPassword: e.target.value }); clearError("confirmPassword"); }}
+                  placeholder={t("Confirm new password")}
+                  autoComplete="new-password"
+                  className={`mt-1.5 bg-white ${formErrors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                />
+                {formErrors.confirmPassword && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.confirmPassword}</p></div>)}
+              </div>
+            </>
+          )}
+        </div>
       </div>
-      <div>
-        <Label>{t("Username")} {!isEdit && "*"}</Label>
-        <Input
-          placeholder={t("Username")}
-          value={formData.userName}
-          disabled={isEdit}
-          onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-        />
+
+      {/* Personal Information Section */}
+      <div className="space-y-3 sm:space-y-4">
+        <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Personal Information")}</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {/* First Name and Last Name - side by side */}
+          <div>
+            <Label htmlFor="firstName" className="text-sm font-medium text-slate-700">{t("First Name")} *</Label>
+            <Input
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) => {
+                const newFirst = e.target.value;
+                const autoFull = `${newFirst} ${formData.lastName}`.trim();
+                setFormData({ ...formData, firstName: newFirst, fullName: autoFull });
+                clearError("firstName");
+                clearError("fullName");
+              }}
+              placeholder={t("Enter first name")}
+              className={`mt-1.5 bg-white ${formErrors.firstName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+            />
+            {formErrors.firstName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.firstName}</p></div>)}
+          </div>
+          <div>
+            <Label htmlFor="lastName" className="text-sm font-medium text-slate-700">{t("Last Name")} *</Label>
+            <Input
+              id="lastName"
+              value={formData.lastName}
+              onChange={(e) => {
+                const newLast = e.target.value;
+                const autoFull = `${formData.firstName} ${newLast}`.trim();
+                setFormData({ ...formData, lastName: newLast, fullName: autoFull });
+                clearError("lastName");
+                clearError("fullName");
+              }}
+              placeholder={t("Enter last name")}
+              className={`mt-1.5 bg-white ${formErrors.lastName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+            />
+            {formErrors.lastName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.lastName}</p></div>)}
+          </div>
+          {/* Full Name - full width, auto-generated */}
+          <div className="sm:col-span-2">
+            <Label htmlFor="fullName" className="text-sm font-medium text-slate-700">{t("Full Name")} *</Label>
+            <Input
+              id="fullName"
+              value={formData.fullName}
+              onChange={(e) => { setFormData({ ...formData, fullName: e.target.value }); clearError("fullName"); }}
+              placeholder={t("Enter full name")}
+              className={`mt-1.5 bg-white ${formErrors.fullName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+            />
+            {formErrors.fullName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.fullName}</p></div>)}
+          </div>
+        </div>
       </div>
-      <div>
-        <Label>{t("Email")} *</Label>
-        <Input
-          type="email"
-          placeholder={t("Enter the Email address")}
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        />
+
+      {/* Organization & Role Section */}
+      <div className="space-y-3 sm:space-y-4">
+        <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Organization & Role")}</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {/* Function - full width */}
+          <div className="sm:col-span-2">
+            <Label htmlFor="function" className="text-sm font-medium text-slate-700">{t("Function")} *</Label>
+            <Select
+              value={formData.tprmFunctionCategory}
+              onValueChange={handleFunctionChange}
+            >
+              <SelectTrigger className={`mt-1.5 w-full bg-white ${formErrors.tprmFunctionCategory ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
+                <SelectValue placeholder={t("Select Function")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                {FUNCTION_OPTIONS.map((fn) => (
+                  <SelectItem key={fn} value={fn}>
+                    {t(fn)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formErrors.tprmFunctionCategory && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.tprmFunctionCategory}</p></div>)}
+          </div>
+          {/* Role - full width */}
+          <div className="sm:col-span-2">
+            <Label htmlFor="role" className="text-sm font-medium text-slate-700">{t("User Role")} *</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Select
+                      value={formData.tprmRole}
+                      onValueChange={(v) => { setFormData({ ...formData, tprmRole: v }); clearError("tprmRole"); }}
+                      disabled={!formData.tprmFunctionCategory}
+                    >
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${!formData.tprmFunctionCategory ? "cursor-not-allowed opacity-50" : ""} ${formErrors.tprmRole ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
+                        <SelectValue
+                          placeholder={
+                            formData.tprmFunctionCategory
+                              ? t("Select Role")
+                              : t("Select Function first")
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                        {availableRoles.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {t(role)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TooltipTrigger>
+                {!formData.tprmFunctionCategory && (
+                  <TooltipContent>
+                    <p>{t("Please select a function first")}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+            {formErrors.tprmRole && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.tprmRole}</p></div>)}
+          </div>
+          {/* Company Name - read-only */}
+          <div className="sm:col-span-2">
+            <Label className="text-sm font-medium text-slate-700">{t("Company Name")}</Label>
+            <Input value={companyName} disabled className="mt-1.5 bg-slate-50" />
+          </div>
+        </div>
       </div>
-      <div>
-        <Label>{t("Function")} *</Label>
-        <Select
-          value={formData.tprmFunctionCategory}
-          onValueChange={handleFunctionChange}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder={t("Select Function")} />
-          </SelectTrigger>
-          <SelectContent>
-            {FUNCTION_OPTIONS.map((fn) => (
-              <SelectItem key={fn} value={fn}>
-                {t(fn)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <Label>{t("User Role")} *</Label>
-        <Select
-          value={formData.tprmRole}
-          onValueChange={(v) => setFormData({ ...formData, tprmRole: v })}
-          disabled={!formData.tprmFunctionCategory}
-        >
-          <SelectTrigger>
-            <SelectValue
-              placeholder={
-                formData.tprmFunctionCategory
-                  ? t("Select Role")
-                  : t("Select Function first")
+
+      {/* Account Status Section */}
+      <div className="space-y-3 sm:space-y-4">
+        <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Status")}</h4>
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+          <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
+            <Checkbox
+              id={isEdit ? "editIsActive" : "createIsActive"}
+              checked={formData.isActive}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, isActive: !!checked })
               }
             />
-          </SelectTrigger>
-          <SelectContent>
-            {availableRoles.map((role) => (
-              <SelectItem key={role} value={role}>
-                {t(role)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <Label>{t("Company Name")}</Label>
-        <Input value={companyName} disabled />
-      </div>
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id={isEdit ? "editIsActive" : "createIsActive"}
-          checked={formData.isActive}
-          onCheckedChange={(checked) =>
-            setFormData({ ...formData, isActive: !!checked })
-          }
-        />
-        <Label htmlFor={isEdit ? "editIsActive" : "createIsActive"}>
-          {t("Active")}
-        </Label>
-      </div>
-      <div>
-        <Label>
-          {isEdit ? t("New password") : t("New password")} {!isEdit && "*"}
-        </Label>
-        <Input
-          type="password"
-          value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-        />
-      </div>
-      <div>
-        <Label>
-          {t("Confirm password")} {!isEdit && formData.password ? "*" : ""}
-        </Label>
-        <Input
-          type="password"
-          value={formData.confirmPassword}
-          onChange={(e) =>
-            setFormData({ ...formData, confirmPassword: e.target.value })
-          }
-        />
+            <Label htmlFor={isEdit ? "editIsActive" : "createIsActive"} className="font-normal">
+              {t("Active")}
+            </Label>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -449,6 +646,7 @@ export default function UserManagementPage() {
           <Button
             onClick={() => {
               setFormData(emptyForm);
+              setFormErrors({});
               setShowCreateDialog(true);
             }}
           >
@@ -487,7 +685,7 @@ export default function UserManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Users Table — matches reference: Name, Email, Role, Action */}
+      {/* Users Table */}
       <Card>
         <CardContent className="pt-6">
           {loading ? (
@@ -550,45 +748,59 @@ export default function UserManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Create User Dialog — "New Account" */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("New Account")}</DialogTitle>
-          </DialogHeader>
-          {renderFormFields(false)}
-          <DialogFooter>
-            <Button onClick={handleCreate} disabled={submitting}>
-              {submitting && (
-                <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />
-              )}
-              {t("Save")}
-            </Button>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+      {/* Create User Dialog — matches Organization Users layout */}
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (!open) { setFormErrors({}); setFormData(emptyForm); }
+      }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("New Account")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div ref={addScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+            {renderFormContent(false)}
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg" style={{ direction: 'ltr' }}>
+            <Button variant="outline" onClick={() => { setShowCreateDialog(false); setFormErrors({}); setFormData(emptyForm); }}>
               {t("Cancel")}
             </Button>
-          </DialogFooter>
+            <Button onClick={handleCreate} disabled={submitting}>
+              {submitting ? t("Saving...") : t("Save")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit User Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("Edit Account")}</DialogTitle>
-          </DialogHeader>
-          {renderFormFields(true)}
-          <DialogFooter>
-            <Button onClick={handleEdit} disabled={submitting}>
-              {submitting && (
-                <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />
-              )}
-              {t("Save")}
-            </Button>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+        setShowEditDialog(open);
+        if (!open) { setFormErrors({}); setSelectedUser(null); setFormData(emptyForm); }
+      }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Account")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div ref={editScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+            {renderFormContent(true)}
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg" style={{ direction: 'ltr' }}>
+            <Button variant="outline" onClick={() => { setShowEditDialog(false); setFormErrors({}); setSelectedUser(null); setFormData(emptyForm); }}>
               {t("Cancel")}
             </Button>
-          </DialogFooter>
+            <Button onClick={handleEdit} disabled={submitting}>
+              {submitting ? t("Saving...") : t("Save")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

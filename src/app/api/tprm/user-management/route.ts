@@ -53,6 +53,8 @@ export const GET = withAuth(
           where,
           select: {
             id: true,
+            firstName: true,
+            lastName: true,
             fullName: true,
             email: true,
             userName: true,
@@ -95,7 +97,7 @@ export const POST = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { fullName, email, userName, password, tprmRole, tprmFunctionCategory, isActive } = body;
+      const { firstName: bodyFirstName, lastName: bodyLastName, fullName, email, userName, password, tprmRole, tprmFunctionCategory, isActive } = body;
 
       if (!fullName || !email || !userName || !password || !tprmRole) {
         return NextResponse.json(
@@ -128,10 +130,9 @@ export const POST = withAuth(
       const userCount = await prisma.user.count({ where: { customerAccountId } });
       const userId = `TPRM_${customerAccountId.substring(0, 6)}_${String(userCount + 1).padStart(3, '0')}`;
 
-      // Split fullName into first/last
-      const nameParts = fullName.trim().split(/\s+/);
-      const firstName = nameParts[0] || fullName;
-      const lastName = nameParts.slice(1).join(' ') || '-';
+      // Use firstName/lastName from body if provided, otherwise split fullName
+      const firstName = bodyFirstName || fullName.trim().split(/\s+/)[0] || fullName;
+      const lastName = bodyLastName || fullName.trim().split(/\s+/).slice(1).join(' ') || '-';
 
       // Create user with TPRM-specific fields
       const user = await prisma.user.create({
@@ -178,7 +179,7 @@ export const PATCH = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { id, fullName, email, password, tprmRole, tprmFunctionCategory, isActive } = body;
+      const { id, firstName, lastName, fullName, email, password, tprmRole, tprmFunctionCategory, isActive } = body;
 
       if (!id) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -212,6 +213,8 @@ export const PATCH = withAuth(
 
       const updateData: Record<string, unknown> = {};
       if (fullName !== undefined) updateData.fullName = fullName;
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
       if (email !== undefined) updateData.email = email;
       if (tprmRole !== undefined) updateData.tprmRole = tprmRole;
       if (tprmFunctionCategory !== undefined) updateData.tprmFunctionCategory = tprmFunctionCategory;
