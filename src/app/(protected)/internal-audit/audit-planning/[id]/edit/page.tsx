@@ -37,6 +37,8 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Building2, Info } from "lucide-react";
 
 interface Department {
   id: string;
@@ -132,13 +134,21 @@ export default function EditEngagementPage({ params }: PageProps) {
     processId: "",
     auditRating: "",
     auditType: "",
-    auditorId: "",
-    auditeeId: "",
+    auditorIds: [] as string[],
+    auditeeIds: [] as string[],
     startDate: "",
     targetDate: "",
     initialObservation: "",
     relatedPolicies: "",
   });
+
+  // Audit ID for group detection
+  const [auditId, setAuditId] = useState("");
+  const auditGroupBase = auditId.includes('.') ? auditId.split('.')[0] : null;
+
+  // Per-department filtered users
+  const [deptAuditors, setDeptAuditors] = useState<User[]>([]);
+  const [deptAuditees, setDeptAuditees] = useState<User[]>([]);
 
   // Tasks — initialize with English keys, then translate via effect
   const [tasks, setTasks] = useState<AuditTask[]>(() =>
@@ -236,6 +246,8 @@ export default function EditEngagementPage({ params }: PageProps) {
         const engagement = await engagementRes.json();
         console.log("Loaded engagement:", engagement);
 
+        setAuditId(engagement.auditId || "");
+
         setFormData({
           engagementTitle: engagement.engagementTitle || "",
           engagementObjective: engagement.engagementObjective || "",
@@ -245,13 +257,33 @@ export default function EditEngagementPage({ params }: PageProps) {
           processId: engagement.processId || "",
           auditRating: engagement.auditRating || "",
           auditType: engagement.auditType || "",
-          auditorId: engagement.assignedAuditorId || "",
-          auditeeId: engagement.auditeeId || "",
-          startDate: engagement.plannedStartDate ? engagement.plannedStartDate.split("T")[0] : "",
-          targetDate: engagement.plannedEndDate ? engagement.plannedEndDate.split("T")[0] : "",
+          auditorIds: engagement.assignedAuditorId ? [engagement.assignedAuditorId] : [],
+          auditeeIds: engagement.auditeeId ? [engagement.auditeeId] : [],
+          startDate: (engagement.plannedStartDate || engagement.startDate) ? (engagement.plannedStartDate || engagement.startDate).split("T")[0] : "",
+          targetDate: (engagement.plannedEndDate || engagement.endDate) ? (engagement.plannedEndDate || engagement.endDate).split("T")[0] : "",
           initialObservation: engagement.initialObservation || "",
           relatedPolicies: engagement.relatedPolicies || "",
         });
+
+        // Fetch department-filtered auditors/auditees
+        if (engagement.departmentId) {
+          try {
+            const [deptAuditorsRes, deptAuditeesRes] = await Promise.all([
+              fetch(`/api/internal-audit/users?role=auditors&departmentId=${engagement.departmentId}`),
+              fetch(`/api/internal-audit/users?role=Auditee&departmentId=${engagement.departmentId}`),
+            ]);
+            if (deptAuditorsRes.ok) {
+              const data = await deptAuditorsRes.json();
+              setDeptAuditors(Array.isArray(data) ? data : (data.users || []));
+            }
+            if (deptAuditeesRes.ok) {
+              const data = await deptAuditeesRes.json();
+              setDeptAuditees(Array.isArray(data) ? data : (data.users || []));
+            }
+          } catch (e) {
+            console.error("Failed to fetch dept-filtered users:", e);
+          }
+        }
 
       } else {
         const errorData = await engagementRes.json();
@@ -386,6 +418,10 @@ export default function EditEngagementPage({ params }: PageProps) {
       toast({ title: t("Error"), description: t("Department is required"), variant: "destructive" });
       return;
     }
+    if (!formData.auditorIds.length) {
+      toast({ title: t("Error"), description: t("Auditor is required"), variant: "destructive" });
+      return;
+    }
     if (!formData.startDate) {
       toast({ title: t("Error"), description: t("Start Date is required"), variant: "destructive" });
       return;
@@ -399,6 +435,9 @@ export default function EditEngagementPage({ params }: PageProps) {
     try {
       const payload = {
         ...formData,
+        // Send primary auditor/auditee for backwards compat with PUT endpoint
+        auditorId: formData.auditorIds[0] || "",
+        auditeeId: formData.auditeeIds[0] || "",
         tasks,
         plannedHours: calculateTotalHours("plannedHours"),
       };
@@ -496,6 +535,17 @@ export default function EditEngagementPage({ params }: PageProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        {/* Audit Group Indicator */}
+        {auditGroupBase && (
+          <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <Info className="h-4 w-4 text-slate-500 shrink-0" />
+            <span className="text-sm text-slate-700">
+              {t("Part of audit group")} <span className="font-semibold">{auditGroupBase}</span>
+              {auditId && <span className="text-slate-500 ml-1">({auditId})</span>}
+            </span>
+          </div>
+        )}
+
         {/* Engagement Title */}
         <div className="space-y-2">
           <Label className="text-slate-800">
@@ -541,7 +591,28 @@ export default function EditEngagementPage({ params }: PageProps) {
           </Label>
           <Select
             value={formData.departmentId}
-            onValueChange={(value) => setFormData({ ...formData, departmentId: value, linkedRiskIds: [] })}
+            onValueChange={(value) => {
+              setFormData({ ...formData, departmentId: value, linkedRiskIds: [] });
+              // Re-fetch department-filtered auditors/auditees
+              (async () => {
+                try {
+                  const [deptAuditorsRes, deptAuditeesRes] = await Promise.all([
+                    fetch(`/api/internal-audit/users?role=auditors&departmentId=${value}`),
+                    fetch(`/api/internal-audit/users?role=Auditee&departmentId=${value}`),
+                  ]);
+                  if (deptAuditorsRes.ok) {
+                    const data = await deptAuditorsRes.json();
+                    setDeptAuditors(Array.isArray(data) ? data : (data.users || []));
+                  }
+                  if (deptAuditeesRes.ok) {
+                    const data = await deptAuditeesRes.json();
+                    setDeptAuditees(Array.isArray(data) ? data : (data.users || []));
+                  }
+                } catch (e) {
+                  console.error("Failed to fetch dept-filtered users:", e);
+                }
+              })();
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder={t("Select Department")} />
@@ -680,58 +751,34 @@ export default function EditEngagementPage({ params }: PageProps) {
           </Select>
         </div>
 
-        {/* Auditor (Audit Manager) */}
+        {/* Auditor — multi-select, filtered by department */}
         <div className="space-y-2">
           <Label className="text-slate-800">
             {t("Auditor")} <span className="text-red-500">*</span>
           </Label>
-          <Select
-            value={formData.auditorId}
-            onValueChange={(value) => setFormData({ ...formData, auditorId: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("Select Auditor")} />
-            </SelectTrigger>
-            <SelectContent>
-              {translatedAuditors.length > 0 ? (
-                translatedAuditors.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.fullName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  {t("No auditors available")}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            options={(deptAuditors.length > 0 ? deptAuditors : translatedAuditors).map(u => ({ value: u.id, label: u.fullName }))}
+            selected={formData.auditorIds}
+            onChange={(val) => setFormData({ ...formData, auditorIds: val })}
+            placeholder={t("Select Auditor")}
+          />
+          {deptAuditors.length === 0 && translatedAuditors.length === 0 && (
+            <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>
+          )}
         </div>
 
-        {/* Auditee */}
+        {/* Auditee — multi-select, filtered by department */}
         <div className="space-y-2">
           <Label className="text-slate-800">{t("Auditee")}</Label>
-          <Select
-            value={formData.auditeeId}
-            onValueChange={(value) => setFormData({ ...formData, auditeeId: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("Select Auditee")} />
-            </SelectTrigger>
-            <SelectContent>
-              {translatedAuditees.length > 0 ? (
-                translatedAuditees.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.fullName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  {t("No auditees assigned to you")}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            options={(deptAuditees.length > 0 ? deptAuditees : translatedAuditees).map(u => ({ value: u.id, label: u.fullName }))}
+            selected={formData.auditeeIds}
+            onChange={(val) => setFormData({ ...formData, auditeeIds: val })}
+            placeholder={t("Select Auditee")}
+          />
+          {deptAuditees.length === 0 && translatedAuditees.length === 0 && (
+            <p className="text-xs text-amber-600">{t("No auditees found in this department")}</p>
+          )}
         </div>
 
         {/* Dates */}

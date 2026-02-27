@@ -131,22 +131,21 @@ export const POST = withAuth(
       const originalName = file.name;
       const ext = path.extname(originalName);
 
-      // Generate document code - find the highest existing code and increment, scoped to tenant
-      const lastDoc = await prisma.internalAuditDocument.findFirst({
+      // Generate document code - find the highest existing number across ALL codes, scoped to tenant
+      const allDocs = await prisma.internalAuditDocument.findMany({
         where: { ...(customerAccountId ? { customerAccountId } : {}) },
-        orderBy: { documentCode: "desc" },
         select: { documentCode: true },
       });
 
-      let nextNum = 1;
-      if (lastDoc?.documentCode) {
-        // Extract trailing number from any format: DOC-0001, DOC0001
-        const match = lastDoc.documentCode.match(/(\d+)$/);
+      let maxNum = 0;
+      for (const doc of allDocs) {
+        const match = doc.documentCode.match(/(\d+)$/);
         if (match) {
-          nextNum = parseInt(match[1], 10) + 1;
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
         }
       }
-      const documentCode = `DOC-${String(nextNum).padStart(4, "0")}`;
+      const documentCode = `DOC-${String(maxNum + 1).padStart(4, "0")}`;
 
       // Create document record in database
       const document = await prisma.internalAuditDocument.create({

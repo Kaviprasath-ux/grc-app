@@ -65,6 +65,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Building2 } from "lucide-react";
 
 interface Department {
   id: string;
@@ -138,17 +140,28 @@ interface EngagementFormData {
   engagementTitle: string;
   engagementObjective: string;
   engagementScope: string;
-  departmentId: string;
-  linkedRiskIds: string[];
   auditRating: string;
   auditType: string;
-  auditorId: string;
-  auditeeId: string;
   processId: string;
   startDate: string;
   targetDate: string;
   initialObservation: string;
   relatedPolicies: string;
+}
+
+// Per-department configuration for multi-department mode
+interface DeptConfig {
+  auditorIds: string[];
+  auditeeIds: string[];
+  linkedRiskIds: string[];
+}
+
+// Per-department fetched data
+interface DeptData {
+  auditors: User[];
+  auditees: User[];
+  risks: Risk[];
+  loading: boolean;
 }
 
 const defaultTasks: AuditTask[] = [
@@ -164,12 +177,8 @@ const emptyFormData: EngagementFormData = {
   engagementTitle: "",
   engagementObjective: "",
   engagementScope: "",
-  departmentId: "",
-  linkedRiskIds: [],
   auditRating: "",
   auditType: "",
-  auditorId: "",
-  auditeeId: "",
   processId: "",
   startDate: "",
   targetDate: "",
@@ -225,6 +234,14 @@ export default function AuditPlanningPage() {
   const [engagementForm, setEngagementForm] = useState<EngagementFormData>(emptyFormData);
   const [tasks, setTasks] = useState<AuditTask[]>([...defaultTasks]);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
+  // Multi-department state for add/edit dialog
+  const [selectedDeptIds, setSelectedDeptIds] = useState<string[]>([]);
+  const [deptConfigs, setDeptConfigs] = useState<Record<string, DeptConfig>>({});
+  const [deptData, setDeptData] = useState<Record<string, DeptData>>({});
+  // Track original department during edit so we know which are newly added
+  const [originalDeptId, setOriginalDeptId] = useState<string | null>(null);
+  const [editingAuditId, setEditingAuditId] = useState<string>("");
 
   // Task dialog
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
@@ -384,6 +401,70 @@ export default function AuditPlanningPage() {
     setAttachedFiles([]);
     setWorkpaperFiles([]);
     setValidationErrors({});
+    setSelectedDeptIds([]);
+    setDeptConfigs({});
+    setDeptData({});
+    setOriginalDeptId(null);
+    setEditingAuditId("");
+  };
+
+  // Multi-department handlers
+  const fetchDeptUsers = async (deptId: string) => {
+    setDeptData(prev => ({
+      ...prev,
+      [deptId]: { auditors: [], auditees: [], risks: [], loading: true }
+    }));
+    try {
+      const [auditorsRes, auditeesRes, risksRes] = await Promise.all([
+        fetch(`/api/internal-audit/users?role=auditors&departmentId=${deptId}`),
+        fetch(`/api/internal-audit/users?role=Auditee&departmentId=${deptId}`),
+        fetch(`/api/internal-audit/risks?departmentId=${deptId}&status=Open`),
+      ]);
+      const auditors = auditorsRes.ok ? await auditorsRes.json() : [];
+      const auditees = auditeesRes.ok ? await auditeesRes.json() : [];
+      const risks = risksRes.ok ? await risksRes.json() : [];
+      setDeptData(prev => ({
+        ...prev,
+        [deptId]: {
+          auditors: Array.isArray(auditors) ? auditors : (auditors.users || []),
+          auditees: Array.isArray(auditees) ? auditees : (auditees.users || []),
+          risks: Array.isArray(risks) ? risks : [],
+          loading: false,
+        }
+      }));
+    } catch {
+      setDeptData(prev => ({
+        ...prev,
+        [deptId]: { auditors: [], auditees: [], risks: [], loading: false }
+      }));
+    }
+  };
+
+  const handleDeptSelectionChange = (newIds: string[]) => {
+    setSelectedDeptIds(newIds);
+    setDeptConfigs(prev => {
+      const updated = { ...prev };
+      for (const id of newIds) {
+        if (!updated[id]) updated[id] = { auditorIds: [], auditeeIds: [], linkedRiskIds: [] };
+      }
+      return updated;
+    });
+    for (const id of newIds) {
+      if (!deptData[id]) fetchDeptUsers(id);
+    }
+  };
+
+  const removeDept = (deptId: string) => {
+    setSelectedDeptIds(prev => prev.filter(id => id !== deptId));
+    setDeptConfigs(prev => { const u = { ...prev }; delete u[deptId]; return u; });
+  };
+
+  const updateDeptConfig = (deptId: string, field: keyof DeptConfig, value: string[]) => {
+    setDeptConfigs(prev => ({ ...prev, [deptId]: { ...prev[deptId], [field]: value } }));
+  };
+
+  const getDeptName = (deptId: string) => {
+    return translatedDepartments.find(d => d.id === deptId)?.name || departments.find(d => d.id === deptId)?.name || deptId;
   };
 
   const openAddDialog = async () => {
@@ -406,28 +487,33 @@ export default function AuditPlanningPage() {
       const response = await fetch(`/api/internal-audit/engagements/${engagement.id}`);
       if (response.ok) {
         const data = await response.json();
-        // Use translated fields from the translatedEngagements item (already translated by useTranslatedData)
         const te = engagement as unknown as Record<string, unknown>;
         setEngagementForm({
           engagementTitle: (te.engagementTitle as string) || data.engagementTitle || "",
           engagementObjective: (te.engagementObjective as string) || data.engagementObjective || "",
           engagementScope: (te.engagementScope as string) || data.engagementScope || "",
-          departmentId: data.departmentId || "",
-          linkedRiskIds: data.linkedRiskIds || [],
           auditRating: data.auditRating || "",
           auditType: data.auditType || "",
-          auditorId: data.assignedAuditorId || "",
-          auditeeId: data.auditeeId || "",
           processId: data.processId || "",
-          startDate: data.plannedStartDate ? data.plannedStartDate.split("T")[0] : "",
-          targetDate: data.plannedEndDate ? data.plannedEndDate.split("T")[0] : "",
+          startDate: (data.plannedStartDate || data.startDate) ? (data.plannedStartDate || data.startDate).split("T")[0] : "",
+          targetDate: (data.plannedEndDate || data.endDate) ? (data.plannedEndDate || data.endDate).split("T")[0] : "",
           initialObservation: (te.initialObservation as string) || data.initialObservation || "",
           relatedPolicies: (te.relatedPolicies as string) || data.relatedPolicies || "",
         });
 
-        // Fetch risks for the department
+        // Set department for edit mode and track original
+        setOriginalDeptId(data.departmentId || null);
+        setEditingAuditId(data.auditId || "");
         if (data.departmentId) {
-          await fetchRisksForDepartment(data.departmentId);
+          setSelectedDeptIds([data.departmentId]);
+          setDeptConfigs({
+            [data.departmentId]: {
+              auditorIds: data.assignedAuditorId ? [data.assignedAuditorId] : [],
+              auditeeIds: data.auditeeId ? [data.auditeeId] : [],
+              linkedRiskIds: data.linkedRiskIds || [],
+            }
+          });
+          await fetchDeptUsers(data.departmentId);
           await fetchHistoricalRisks(data.departmentId);
         }
       } else {
@@ -443,15 +529,9 @@ export default function AuditPlanningPage() {
     }
   };
 
+  // Legacy handler kept for reference - now handled by handleDeptSelectionChange
   const handleEngagementDepartmentChange = async (departmentId: string) => {
-    setEngagementForm({ ...engagementForm, departmentId, linkedRiskIds: [] });
-    if (departmentId) {
-      await fetchRisksForDepartment(departmentId);
-      await fetchHistoricalRisks(departmentId);
-    } else {
-      setRisks([]);
-      setHistoricalRisks([]);
-    }
+    handleDeptSelectionChange(departmentId ? [departmentId] : []);
   };
 
   // File upload handlers
@@ -554,11 +634,16 @@ export default function AuditPlanningPage() {
     if (!engagementForm.engagementScope.trim()) {
       errors.engagementScope = t("Engagement Scope is required") || "Engagement Scope is required";
     }
-    if (!engagementForm.departmentId) {
-      errors.departmentId = t("Department is required") || "Department is required";
+    if (selectedDeptIds.length === 0) {
+      errors.departmentId = t("At least one department must be selected") || "At least one department must be selected";
     }
-    if (!engagementForm.auditorId) {
-      errors.auditorId = t("Auditor is required") || "Auditor is required";
+    // Validate each department has at least one auditor
+    for (const deptId of selectedDeptIds) {
+      const config = deptConfigs[deptId];
+      if (!config?.auditorIds?.length) {
+        errors.auditorId = t("Auditor is required") + ` (${getDeptName(deptId)})`;
+        break;
+      }
     }
     if (!engagementForm.startDate) {
       errors.startDate = t("Start Date is required") || "Start Date is required";
@@ -576,20 +661,34 @@ export default function AuditPlanningPage() {
 
     setSaving(true);
     try {
+      const departmentsPayload = selectedDeptIds.map(deptId => ({
+        departmentId: deptId,
+        auditorIds: deptConfigs[deptId]?.auditorIds || [],
+        auditeeIds: deptConfigs[deptId]?.auditeeIds || [],
+        linkedRiskIds: deptConfigs[deptId]?.linkedRiskIds || [],
+      }));
+
       const response = await fetch("/api/internal-audit/engagements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...engagementForm,
+          departments: departmentsPayload,
           tasks,
           plannedHours: calculateTotalHours("plannedHours"),
         }),
       });
 
       if (response.ok) {
-        const savedEngagement = await response.json();
-        triggerTranslation('AuditEngagement', savedEngagement.id, { engagementTitle: savedEngagement.engagementTitle, engagementObjective: savedEngagement.engagementObjective, engagementScope: savedEngagement.engagementScope, initialObservation: savedEngagement.initialObservation, relatedPolicies: savedEngagement.relatedPolicies });
-        toast.success(t("Engagement created successfully"));
+        const result = await response.json();
+        const engList = Array.isArray(result) ? result : [result];
+        for (const eng of engList) {
+          if (eng?.id) {
+            triggerTranslation('AuditEngagement', eng.id, { engagementTitle: eng.engagementTitle, engagementObjective: eng.engagementObjective, engagementScope: eng.engagementScope, initialObservation: eng.initialObservation, relatedPolicies: eng.relatedPolicies });
+          }
+        }
+        const count = engList.length;
+        toast.success(count > 1 ? `${count} ${t("engagements created successfully")}` : t("Engagement created successfully"));
         setAddDialogOpen(false);
         resetFormState();
         fetchEngagements();
@@ -610,28 +709,95 @@ export default function AuditPlanningPage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/internal-audit/engagements/${editingEngagementId}`, {
+      // Separate original department (PUT update) from new departments (POST create)
+      const origDeptId = originalDeptId || selectedDeptIds[0];
+      const origConfig = deptConfigs[origDeptId] || {};
+      const newDeptIds = selectedDeptIds.filter(id => id !== origDeptId);
+
+      // 1. Update the existing engagement with its (possibly changed) department
+      const updateResponse = await fetch(`/api/internal-audit/engagements/${editingEngagementId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...engagementForm,
+          departmentId: origDeptId || "",
+          auditorId: origConfig.auditorIds?.[0] || "",
+          auditeeId: origConfig.auditeeIds?.[0] || "",
+          linkedRiskIds: origConfig.linkedRiskIds || [],
           tasks,
           plannedHours: calculateTotalHours("plannedHours"),
         }),
       });
 
-      if (response.ok) {
-        const savedEngagement = await response.json();
-        triggerTranslation('AuditEngagement', savedEngagement.id, { engagementTitle: savedEngagement.engagementTitle, engagementObjective: savedEngagement.engagementObjective, engagementScope: savedEngagement.engagementScope, initialObservation: savedEngagement.initialObservation, relatedPolicies: savedEngagement.relatedPolicies });
-        toast.success(t("Engagement updated successfully"));
-        setEditDialogOpen(false);
-        setEditingEngagementId(null);
-        resetFormState();
-        fetchEngagements();
-      } else {
-        const error = await response.json();
+      if (!updateResponse.ok) {
+        const error = await updateResponse.json();
         toast.error(error.error || t("Failed to update engagement"));
+        setSaving(false);
+        return;
       }
+
+      const savedEngagement = await updateResponse.json();
+      triggerTranslation('AuditEngagement', savedEngagement.id, {
+        engagementTitle: savedEngagement.engagementTitle,
+        engagementObjective: savedEngagement.engagementObjective,
+        engagementScope: savedEngagement.engagementScope,
+        initialObservation: savedEngagement.initialObservation,
+        relatedPolicies: savedEngagement.relatedPolicies,
+      });
+
+      // 2. Create new engagements for any newly added departments
+      let newCount = 0;
+      if (newDeptIds.length > 0) {
+        const newDepartmentsPayload = newDeptIds.map(deptId => ({
+          departmentId: deptId,
+          auditorIds: deptConfigs[deptId]?.auditorIds || [],
+          auditeeIds: deptConfigs[deptId]?.auditeeIds || [],
+          linkedRiskIds: deptConfigs[deptId]?.linkedRiskIds || [],
+        }));
+
+        const createResponse = await fetch("/api/internal-audit/engagements", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...engagementForm,
+            parentAuditId: editingAuditId, // e.g. "AUD012" → new ones become AUD012.2, AUD012.3
+            departments: newDepartmentsPayload,
+            tasks,
+            plannedHours: calculateTotalHours("plannedHours"),
+          }),
+        });
+
+        if (createResponse.ok) {
+          const created = await createResponse.json();
+          const createdList = Array.isArray(created) ? created : [created];
+          newCount = createdList.length;
+          for (const eng of createdList) {
+            if (eng?.id) {
+              triggerTranslation('AuditEngagement', eng.id, {
+                engagementTitle: engagementForm.engagementTitle,
+                engagementObjective: engagementForm.engagementObjective,
+                engagementScope: engagementForm.engagementScope,
+                initialObservation: engagementForm.initialObservation,
+                relatedPolicies: engagementForm.relatedPolicies,
+              });
+            }
+          }
+        } else {
+          const error = await createResponse.json();
+          toast.error(error.error || t("Failed to create engagement"));
+        }
+      }
+
+      if (newCount > 0) {
+        toast.success(`${t("Engagement updated successfully")} + ${newCount} ${t("engagements created successfully")}`);
+      } else {
+        toast.success(t("Engagement updated successfully"));
+      }
+
+      setEditDialogOpen(false);
+      setEditingEngagementId(null);
+      resetFormState();
+      fetchEngagements();
     } catch (error) {
       console.error("Failed to update engagement:", error);
       toast.error(t("Failed to update engagement"));
@@ -845,77 +1011,91 @@ export default function AuditPlanningPage() {
         )}
       </div>
 
-      {/* Department */}
+      {/* Departments — Multi-select */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-slate-700">
-          {t("Department")} <span className="text-red-500">*</span>
+          {t("Select Departments")} <span className="text-red-500">*</span>
         </Label>
-        <Select
-          value={engagementForm.departmentId}
-          onValueChange={handleEngagementDepartmentChange}
-        >
-          <SelectTrigger className={`w-full bg-white ${validationErrors.departmentId ? 'border-red-500' : ''}`}>
-            <SelectValue placeholder={t("Select department")} />
-          </SelectTrigger>
-          <SelectContent>
-            {translatedDepartments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>
-                {dept.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelect
+          options={translatedDepartments.map(d => ({ value: d.id, label: d.name }))}
+          selected={selectedDeptIds}
+          onChange={handleDeptSelectionChange}
+          placeholder={t("Select Departments")}
+        />
+        {selectedDeptIds.length > 0 && (
+          <p className="text-xs text-slate-500">{selectedDeptIds.length} {t("departments selected")}</p>
+        )}
         {validationErrors.departmentId && (
           <p className="text-sm text-red-600 mt-1">{validationErrors.departmentId}</p>
         )}
       </div>
 
-      {/* Link Open Risks */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-700">
-          {t("Link Open Risks in this Department")}
-        </Label>
-        <Select
-          value={engagementForm.linkedRiskIds[0] || ""}
-          onValueChange={(value) => setEngagementForm({ ...engagementForm, linkedRiskIds: value ? [value] : [] })}
-        >
-          <SelectTrigger className="w-full bg-white">
-            <SelectValue placeholder={t("Select risk")} />
-          </SelectTrigger>
-          <SelectContent>
-            {translatedRisks.length > 0 ? (
-              translatedRisks.map((risk) => (
-                <SelectItem key={risk.id} value={risk.id}>
-                  {risk.riskId} - {risk.riskName}
-                </SelectItem>
-              ))
-            ) : (
-              <SelectItem value="none" disabled>
-                {engagementForm.departmentId ? t("No open risks found") : t("Select a department first")}
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Per-Department Configuration Cards */}
+      {selectedDeptIds.length > 0 && (
+        <div className="space-y-3">
+          {selectedDeptIds.map((deptId) => {
+            const deptName = getDeptName(deptId);
+            const config = deptConfigs[deptId] || { auditorIds: [], auditeeIds: [], linkedRiskIds: [] };
+            const data = deptData[deptId] || { auditors: [], auditees: [], risks: [], loading: true };
 
-      {/* Historical Risks */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-700">{t("Historical Risks (For reference, last year)")}</Label>
-        <div className="border border-slate-200 rounded-xl px-4 py-3 min-h-[60px] bg-slate-50/50">
-          {translatedHistoricalRisks.length > 0 ? (
-            <ul className="space-y-2">
-              {translatedHistoricalRisks.map((risk) => (
-                <li key={risk.id} className="text-sm text-slate-600 flex items-start gap-2">
-                  <span className="text-slate-400 mt-0.5">•</span>
-                  <span className="flex-1">{risk.riskId} - {risk.riskName} ({risk.riskLevel || t("N/A")})</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-slate-400 text-center text-sm py-2">{t("No items found")}</p>
-          )}
+            return (
+              <div key={deptId} className="border border-slate-200 rounded-xl bg-white p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-slate-500" />
+                    <span className="text-sm font-medium text-slate-800">{deptName}</span>
+                  </div>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => removeDept(deptId)} className="h-7 w-7 p-0 text-red-500 hover:text-red-700">
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                {data.loading ? (
+                  <div className="flex items-center gap-2 py-3 justify-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                    <span className="text-xs text-slate-500">{t("Loading...")}</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600">{t("Auditor")} <span className="text-red-500">*</span></Label>
+                      <MultiSelect
+                        options={data.auditors.map(u => ({ value: u.id, label: u.fullName }))}
+                        selected={config.auditorIds}
+                        onChange={(val) => updateDeptConfig(deptId, 'auditorIds', val)}
+                        placeholder={t("Select Auditor")}
+                      />
+                      {data.auditors.length === 0 && <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600">{t("Auditee")}</Label>
+                      <MultiSelect
+                        options={data.auditees.map(u => ({ value: u.id, label: u.fullName }))}
+                        selected={config.auditeeIds}
+                        onChange={(val) => updateDeptConfig(deptId, 'auditeeIds', val)}
+                        placeholder={t("Select Auditee")}
+                      />
+                      {data.auditees.length === 0 && <p className="text-xs text-amber-600">{t("No auditees found in this department")}</p>}
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label className="text-xs font-medium text-slate-600">{t("Link Open Risks in this Department")}</Label>
+                      <MultiSelect
+                        options={data.risks.map(r => ({ value: r.id, label: `${r.riskId} - ${r.riskName}` }))}
+                        selected={config.linkedRiskIds}
+                        onChange={(val) => updateDeptConfig(deptId, 'linkedRiskIds', val)}
+                        placeholder={t("Select Risk")}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
+      {validationErrors.auditorId && (
+        <p className="text-sm text-red-600">{validationErrors.auditorId}</p>
+      )}
 
       {/* Process */}
       <div className="space-y-2">
@@ -1001,62 +1181,7 @@ export default function AuditPlanningPage() {
         </div>
       </div>
 
-      {/* Two columns for Auditor and Auditee */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-slate-700">
-            {t("Auditor")} <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={engagementForm.auditorId}
-            onValueChange={(value) => setEngagementForm({ ...engagementForm, auditorId: value })}
-          >
-            <SelectTrigger className={`w-full bg-white ${validationErrors.auditorId ? 'border-red-500' : ''}`}>
-              <SelectValue placeholder={t("Select auditor")} />
-            </SelectTrigger>
-            <SelectContent>
-              {translatedAuditors.length > 0 ? (
-                translatedAuditors.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.fullName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  {t("No auditors available")}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          {validationErrors.auditorId && (
-            <p className="text-sm text-red-600 mt-1">{validationErrors.auditorId}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-slate-700">{t("Auditee")}</Label>
-          <Select
-            value={engagementForm.auditeeId}
-            onValueChange={(value) => setEngagementForm({ ...engagementForm, auditeeId: value })}
-          >
-            <SelectTrigger className="w-full bg-white">
-              <SelectValue placeholder={t("Select auditee")} />
-            </SelectTrigger>
-            <SelectContent>
-              {translatedAuditees.length > 0 ? (
-                translatedAuditees.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.fullName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  {t("No auditees available")}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      {/* Auditor/Auditee now handled per-department above */}
 
       {/* Two columns for Start Date and Target Date */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

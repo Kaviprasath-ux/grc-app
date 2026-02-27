@@ -3578,6 +3578,15 @@ const translations: [string, string, string][] = [
   ['No risks in the risk register yet', 'لا توجد مخاطر في سجل المخاطر بعد', 'Risku reģistrā vēl nav risku'],
   ['Risk Map', 'خريطة المخاطر', 'Risku karte'],
   ['risk(s)', 'مخاطر', 'risks(-i)'],
+  // Multi-department audit planning
+  ['Select Departments', 'اختر الأقسام', 'Atlasīt nodaļas'],
+  ['departments selected', 'أقسام مختارة', 'nodaļas atlasītas'],
+  ['No auditors found in this department', 'لم يتم العثور على مدققين في هذا القسم', 'Šajā nodaļā nav atrasti auditori'],
+  ['No auditees found in this department', 'لم يتم العثور على متلقي التدقيق في هذا القسم', 'Šajā nodaļā nav atrasti auditējamie'],
+  ['Part of audit group', 'جزء من مجموعة التدقيق', 'Daļa no audita grupas'],
+  ['At least one department must be selected', 'يجب اختيار قسم واحد على الأقل', 'Jāizvēlas vismaz viena nodaļa'],
+  ['engagements created successfully', 'تم إنشاء المهام بنجاح', 'iesaistes veiksmīgi izveidotas'],
+  ['No department', 'لا يوجد قسم', 'Nav nodaļas'],
 ];
 
 function createExcelFile(): void {

@@ -51,6 +51,7 @@ import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData
 
 interface User {
   id: string;
+  userId: string;
   userName: string;
   email: string;
   firstName: string;
@@ -166,9 +167,9 @@ export default function UserManagementPage() {
       if (usersRes.ok) {
         const data = await usersRes.json();
         setUsers(data);
-        // Generate next user ID
+        // Generate next user ID based on existing userId values (BA0001, BA0002, etc.)
         const maxId = data.reduce((max: number, user: User) => {
-          const match = user.userName?.match(/BA(\d+)/);
+          const match = user.userId?.match(/BA(\d+)/);
           if (match) {
             return Math.max(max, parseInt(match[1]));
           }
@@ -636,7 +637,7 @@ export default function UserManagementPage() {
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("User ID")} <span className="text-xs text-slate-500">({t("Auto-generated")})</span></Label>
                   <Input
-                    value={editItem ? editItem.userName : nextUserId}
+                    value={editItem ? editItem.userId : nextUserId}
                     disabled
                     className="mt-1.5 w-full bg-slate-50"
                   />

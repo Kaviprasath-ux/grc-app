@@ -96,8 +96,14 @@ export const PUT = withAuth(
       if (auditRating !== undefined) updateData.auditRating = auditRating;
       if (auditorId !== undefined) updateData.assignedAuditorId = auditorId || null;
       if (auditeeId !== undefined) updateData.auditeeId = auditeeId || null;
-      if (startDate !== undefined) updateData.plannedStartDate = startDate ? new Date(startDate) : null;
-      if (targetDate !== undefined) updateData.plannedEndDate = targetDate ? new Date(targetDate) : null;
+      if (startDate !== undefined) {
+        updateData.plannedStartDate = startDate ? new Date(startDate) : null;
+        updateData.startDate = startDate ? new Date(startDate) : null;
+      }
+      if (targetDate !== undefined) {
+        updateData.plannedEndDate = targetDate ? new Date(targetDate) : null;
+        updateData.endDate = targetDate ? new Date(targetDate) : null;
+      }
       if (plannedHours !== undefined) updateData.plannedHours = plannedHours || 0;
       if (initialObservation !== undefined) updateData.initialObservation = initialObservation;
       if (relatedPolicies !== undefined) updateData.relatedPolicies = relatedPolicies;

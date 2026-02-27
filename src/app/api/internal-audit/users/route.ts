@@ -27,6 +27,7 @@ export const GET = withAuth(
       const tenantFilter = getTenantFilter(session);
       const { searchParams } = new URL(req.url);
       const roleFilter = searchParams.get("role");
+      const departmentIdFilter = searchParams.get("departmentId");
 
       // Determine audit head context
       const isAuditHead = session.roles.includes('AuditHead');
@@ -37,6 +38,11 @@ export const GET = withAuth(
       let whereClause: Record<string, unknown> = {
         ...tenantFilter,
       };
+
+      // Filter by department if provided
+      if (departmentIdFilter) {
+        whereClause.departmentId = departmentIdFilter;
+      }
 
       if (roleFilter === "Auditee") {
         // Return only auditees associated with this audit head

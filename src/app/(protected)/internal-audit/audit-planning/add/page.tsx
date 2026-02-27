@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatLocalDate } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ import {
   FileText,
   X,
   Loader2,
+  Building2,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 
@@ -91,6 +93,21 @@ interface UploadedFile {
   type: string;
 }
 
+// Per-department configuration
+interface DepartmentConfig {
+  auditorIds: string[];
+  auditeeIds: string[];
+  linkedRiskIds: string[];
+}
+
+// Per-department fetched data
+interface DepartmentData {
+  auditors: User[];
+  auditees: User[];
+  risks: Risk[];
+  loading: boolean;
+}
+
 const defaultTaskKeys = [
   "Audit Preparation & Update",
   "Documentation Review",
@@ -108,32 +125,30 @@ export default function AddEngagementPage() {
 
   // Reference data
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [risks, setRisks] = useState<Risk[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [auditees, setAuditees] = useState<User[]>([]);
-  const [auditors, setAuditors] = useState<User[]>([]);
-  const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
   const [auditRatings, setAuditRatings] = useState<ScoringRange[]>([]);
   const [processes, setProcesses] = useState<Process[]>([]);
+  // Global auditors list for the task table
+  const [globalAuditors, setGlobalAuditors] = useState<User[]>([]);
 
-  // Form data
+  // Form data — shared fields (same for all engagements)
   const [formData, setFormData] = useState({
     engagementTitle: "",
     engagementObjective: "",
     engagementScope: "",
-    departmentId: "",
-    linkedRiskIds: [] as string[],
     auditRating: "",
     auditType: "",
-    auditorId: "",
-    auditeeId: "",
     processId: "",
     startDate: "",
     targetDate: "",
     initialObservation: "",
     relatedPolicies: "",
   });
+
+  // Multi-department state
+  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
+  const [departmentConfigs, setDepartmentConfigs] = useState<Record<string, DepartmentConfig>>({});
+  const [departmentData, setDepartmentData] = useState<Record<string, DepartmentData>>({});
 
   // Tasks — initialize with English keys, then translate via effect
   const [tasks, setTasks] = useState<AuditTask[]>(() =>
@@ -176,40 +191,94 @@ export default function AddEngagementPage() {
     fetchReferenceData();
   }, []);
 
-  useEffect(() => {
-    if (formData.departmentId) {
-      fetchRisksForDepartment(formData.departmentId);
-      fetchHistoricalRisks(formData.departmentId);
-    } else {
-      setRisks([]);
-      setHistoricalRisks([]);
+  // Fetch per-department data when departments are selected/deselected
+  const fetchDepartmentUsers = useCallback(async (deptId: string) => {
+    setDepartmentData(prev => ({
+      ...prev,
+      [deptId]: { ...prev[deptId], auditors: prev[deptId]?.auditors || [], auditees: prev[deptId]?.auditees || [], risks: prev[deptId]?.risks || [], loading: true }
+    }));
+
+    try {
+      const [auditorsRes, auditeesRes, risksRes] = await Promise.all([
+        fetch(`/api/internal-audit/users?role=auditors&departmentId=${deptId}`),
+        fetch(`/api/internal-audit/users?role=Auditee&departmentId=${deptId}`),
+        fetch(`/api/internal-audit/risks?departmentId=${deptId}&status=Open`),
+      ]);
+
+      const auditors = auditorsRes.ok ? (await auditorsRes.json()) : [];
+      const auditees = auditeesRes.ok ? (await auditeesRes.json()) : [];
+      const risks = risksRes.ok ? (await risksRes.json()) : [];
+
+      setDepartmentData(prev => ({
+        ...prev,
+        [deptId]: {
+          auditors: Array.isArray(auditors) ? auditors : (auditors.users || []),
+          auditees: Array.isArray(auditees) ? auditees : (auditees.users || []),
+          risks: Array.isArray(risks) ? risks : [],
+          loading: false,
+        }
+      }));
+    } catch (error) {
+      console.error(`Failed to fetch data for department ${deptId}:`, error);
+      setDepartmentData(prev => ({
+        ...prev,
+        [deptId]: { auditors: [], auditees: [], risks: [], loading: false }
+      }));
     }
-  }, [formData.departmentId]);
+  }, []);
+
+  const handleDepartmentSelectionChange = useCallback((newSelectedIds: string[]) => {
+    setSelectedDepartmentIds(newSelectedIds);
+
+    // Initialize configs for newly added departments
+    setDepartmentConfigs(prev => {
+      const updated = { ...prev };
+      for (const deptId of newSelectedIds) {
+        if (!updated[deptId]) {
+          updated[deptId] = { auditorIds: [], auditeeIds: [], linkedRiskIds: [] };
+        }
+      }
+      return updated;
+    });
+
+    // Fetch data for newly added departments
+    for (const deptId of newSelectedIds) {
+      if (!departmentData[deptId]) {
+        fetchDepartmentUsers(deptId);
+      }
+    }
+  }, [departmentData, fetchDepartmentUsers]);
+
+  const removeDepartment = useCallback((deptId: string) => {
+    setSelectedDepartmentIds(prev => prev.filter(id => id !== deptId));
+    setDepartmentConfigs(prev => {
+      const updated = { ...prev };
+      delete updated[deptId];
+      return updated;
+    });
+  }, []);
+
+  const updateDepartmentConfig = useCallback((deptId: string, field: keyof DepartmentConfig, value: string[]) => {
+    setDepartmentConfigs(prev => ({
+      ...prev,
+      [deptId]: { ...prev[deptId], [field]: value }
+    }));
+  }, []);
 
   const fetchReferenceData = async () => {
     try {
-      const [deptRes, usersRes, auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, processesRes] = await Promise.all([
+      const [deptRes, auditorsRes, auditTypesRes, scoringRangesRes, processesRes] = await Promise.all([
         fetch("/api/departments"),
-        fetch("/api/users"),
-        fetch("/api/internal-audit/users?role=Auditee"), // Auditees associated with this Audit Head
-        fetch("/api/internal-audit/users?role=auditors"), // Audit Head + Audit Managers
-        fetch("/api/internal-audit/audit-types"), // Audit Types from settings
-        fetch("/api/internal-audit/scoring-ranges"), // Scoring Ranges for audit ratings
-        fetch("/api/internal-audit/processes"), // Internal Audit Processes
+        fetch("/api/internal-audit/users?role=auditors"),
+        fetch("/api/internal-audit/audit-types"),
+        fetch("/api/internal-audit/scoring-ranges"),
+        fetch("/api/internal-audit/processes"),
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        setUsers(usersData.users || usersData || []);
-      }
-      if (auditeesRes.ok) {
-        const auditeesData = await auditeesRes.json();
-        setAuditees(auditeesData.users || auditeesData || []);
-      }
       if (auditorsRes.ok) {
-        const auditorsData = await auditorsRes.json();
-        setAuditors(auditorsData.users || auditorsData || []);
+        const data = await auditorsRes.json();
+        setGlobalAuditors(data.users || data || []);
       }
       if (auditTypesRes.ok) {
         const auditTypesData = await auditTypesRes.json();
@@ -217,7 +286,6 @@ export default function AddEngagementPage() {
       }
       if (scoringRangesRes.ok) {
         const scoringRangesData = await scoringRangesRes.json();
-        // Get unique labels from scoring ranges for audit ratings
         const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
         setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
       }
@@ -229,41 +297,6 @@ export default function AddEngagementPage() {
       console.error("Failed to fetch reference data:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchRisksForDepartment = async (departmentId: string) => {
-    try {
-      const response = await fetch(`/api/internal-audit/risks?departmentId=${departmentId}&status=Open`);
-      if (response.ok) {
-        const data = await response.json();
-        setRisks(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch risks:", error);
-    }
-  };
-
-  const fetchHistoricalRisks = async (departmentId: string) => {
-    try {
-      // Fetch Closed risks from selected department
-      const response = await fetch(`/api/internal-audit/risks?departmentId=${departmentId}&status=Closed`);
-      if (response.ok) {
-        const data = await response.json();
-
-        // Filter to include only risks from current year or last year
-        const currentYear = new Date().getFullYear();
-        const lastYear = currentYear - 1;
-
-        const filteredRisks = data.filter((risk: any) => {
-          const riskYear = new Date(risk.creationDate).getFullYear();
-          return riskYear === currentYear || riskYear === lastYear;
-        });
-
-        setHistoricalRisks(filteredRisks);
-      }
-    } catch (error) {
-      console.error("Failed to fetch historical risks:", error);
     }
   };
 
@@ -357,12 +390,8 @@ export default function AddEngagementPage() {
       toast.error(t("Engagement Scope is required"));
       return;
     }
-    if (!formData.departmentId) {
-      toast.error(t("Department is required"));
-      return;
-    }
-    if (!formData.auditorId) {
-      toast.error(t("Auditor is required"));
+    if (selectedDepartmentIds.length === 0) {
+      toast.error(t("At least one department must be selected"));
       return;
     }
     if (!formData.startDate) {
@@ -374,30 +403,57 @@ export default function AddEngagementPage() {
       return;
     }
 
+    // Validate each department has at least one auditor
+    for (const deptId of selectedDepartmentIds) {
+      const config = departmentConfigs[deptId];
+      if (!config?.auditorIds?.length) {
+        const dept = departments.find(d => d.id === deptId);
+        toast.error(t("Auditor is required") + ` (${dept?.name || deptId})`);
+        return;
+      }
+    }
+
     setSaving(true);
     try {
+      // Build batch request
+      const departmentsPayload = selectedDepartmentIds.map(deptId => ({
+        departmentId: deptId,
+        auditorIds: departmentConfigs[deptId]?.auditorIds || [],
+        auditeeIds: departmentConfigs[deptId]?.auditeeIds || [],
+        linkedRiskIds: departmentConfigs[deptId]?.linkedRiskIds || [],
+      }));
+
       const response = await fetch("/api/internal-audit/engagements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          departments: departmentsPayload,
           tasks,
           plannedHours: calculateTotalHours("plannedHours"),
         }),
       });
 
       if (response.ok) {
-        const savedEngagement = await response.json().catch(() => null);
-        if (savedEngagement?.id) {
-          triggerTranslation('AuditEngagement', savedEngagement.id, {
-            engagementTitle: formData.engagementTitle,
-            engagementObjective: formData.engagementObjective,
-            engagementScope: formData.engagementScope,
-            initialObservation: formData.initialObservation || null,
-            relatedPolicies: formData.relatedPolicies || null,
-          });
+        const savedEngagements = await response.json();
+        // Trigger translations for each created engagement
+        const engagementList = Array.isArray(savedEngagements) ? savedEngagements : [savedEngagements];
+        for (const eng of engagementList) {
+          if (eng?.id) {
+            triggerTranslation('AuditEngagement', eng.id, {
+              engagementTitle: formData.engagementTitle,
+              engagementObjective: formData.engagementObjective,
+              engagementScope: formData.engagementScope,
+              initialObservation: formData.initialObservation || null,
+              relatedPolicies: formData.relatedPolicies || null,
+            });
+          }
         }
-        toast.success(t("Engagement created successfully"));
+        const count = engagementList.length;
+        toast.success(count > 1
+          ? `${count} ${t("engagements created successfully")}`
+          : t("Engagement created successfully")
+        );
         router.push("/internal-audit/audit-planning");
       } else {
         const error = await response.json();
@@ -413,13 +469,14 @@ export default function AddEngagementPage() {
 
   // Dynamic data translation hooks — BEFORE early returns
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
-  const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'InternalAuditRisk' });
-  const { data: translatedHistoricalRisks } = useTranslatedData(historicalRisks, { modelName: 'InternalAuditRisk' });
   const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
   const { data: translatedAuditRatings } = useTranslatedData(auditRatings, { modelName: 'AuditScoringRange' });
   const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
-  const { data: translatedAuditors } = useTranslatedData(auditors, { modelName: 'User' });
-  const { data: translatedAuditees } = useTranslatedData(auditees, { modelName: 'User' });
+
+  // Helper to get department name
+  const getDeptName = useCallback((deptId: string) => {
+    return translatedDepartments.find(d => d.id === deptId)?.name || departments.find(d => d.id === deptId)?.name || deptId;
+  }, [translatedDepartments, departments]);
 
   if (loading) {
     return (
@@ -515,73 +572,107 @@ export default function AddEngagementPage() {
           />
         </div>
 
-        {/* Department */}
+        {/* Departments — Multi-select */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            {t("Department")} <span className="text-red-500">*</span>
+            {t("Select Departments")} <span className="text-red-500">*</span>
           </Label>
-          <Select
-            value={formData.departmentId}
-            onValueChange={(value) => setFormData({ ...formData, departmentId: value, linkedRiskIds: [] })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("Select Department")} />
-            </SelectTrigger>
-            <SelectContent>
-              {translatedDepartments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            options={translatedDepartments.map(d => ({ value: d.id, label: d.name }))}
+            selected={selectedDepartmentIds}
+            onChange={handleDepartmentSelectionChange}
+            placeholder={t("Select Departments")}
+          />
+          {selectedDepartmentIds.length > 0 && (
+            <p className="text-sm text-gray-500">
+              {selectedDepartmentIds.length} {t("departments selected")}
+            </p>
+          )}
         </div>
 
-        {/* Link Open Risks */}
-        <div className="space-y-2">
-          <Label className="text-blue-800">
-            {t("Link Open Risks in this Department")} <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.linkedRiskIds[0] || ""}
-            onValueChange={(value) => setFormData({ ...formData, linkedRiskIds: [value] })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("Select Risk")} />
-            </SelectTrigger>
-            <SelectContent>
-              {translatedRisks.length > 0 ? (
-                translatedRisks.map((risk) => (
-                  <SelectItem key={risk.id} value={risk.id}>
-                    {risk.riskId} - {risk.riskName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  {t("No open risks found")}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Per-Department Configuration Cards */}
+        {selectedDepartmentIds.length > 0 && (
+          <div className="space-y-4">
+            {selectedDepartmentIds.map((deptId) => {
+              const deptName = getDeptName(deptId);
+              const config = departmentConfigs[deptId] || { auditorIds: [], auditeeIds: [], linkedRiskIds: [] };
+              const data = departmentData[deptId] || { auditors: [], auditees: [], risks: [], loading: true };
 
-        {/* Historical Risks */}
-        <div className="space-y-2">
-          <Label className="text-blue-800">{t("Historical Risks (For reference, last year)")}</Label>
-          <div className="border rounded-lg p-4 min-h-[60px] bg-gray-50">
-            {translatedHistoricalRisks.length > 0 ? (
-              <ul className="space-y-1">
-                {translatedHistoricalRisks.map((risk) => (
-                  <li key={risk.id} className="text-sm">
-                    {risk.riskId} - {risk.riskName} ({risk.riskLevel || t("N/A")})
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 text-center">{t("No items found")}</p>
-            )}
+              return (
+                <div key={deptId} className="border border-gray-200 rounded-lg bg-white p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-gray-500" />
+                      <h3 className="font-medium text-gray-800">{deptName}</h3>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeDepartment(deptId)}
+                      className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {data.loading ? (
+                    <div className="flex items-center gap-2 py-4 justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                      <span className="text-sm text-gray-500">{t("Loading...")}</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Auditor multi-select */}
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 text-sm">
+                          {t("Auditor")} <span className="text-red-500">*</span>
+                        </Label>
+                        <MultiSelect
+                          options={data.auditors.map(u => ({ value: u.id, label: u.fullName }))}
+                          selected={config.auditorIds}
+                          onChange={(val) => updateDepartmentConfig(deptId, 'auditorIds', val)}
+                          placeholder={t("Select Auditor")}
+                        />
+                        {data.auditors.length === 0 && (
+                          <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>
+                        )}
+                      </div>
+
+                      {/* Auditee multi-select */}
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 text-sm">{t("Auditee")}</Label>
+                        <MultiSelect
+                          options={data.auditees.map(u => ({ value: u.id, label: u.fullName }))}
+                          selected={config.auditeeIds}
+                          onChange={(val) => updateDepartmentConfig(deptId, 'auditeeIds', val)}
+                          placeholder={t("Select Auditee")}
+                        />
+                        {data.auditees.length === 0 && (
+                          <p className="text-xs text-amber-600">{t("No auditees found in this department")}</p>
+                        )}
+                      </div>
+
+                      {/* Linked Risks multi-select */}
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label className="text-gray-700 text-sm">{t("Link Open Risks in this Department")}</Label>
+                        <MultiSelect
+                          options={data.risks.map(r => ({ value: r.id, label: `${r.riskId} - ${r.riskName}` }))}
+                          selected={config.linkedRiskIds}
+                          onChange={(val) => updateDepartmentConfig(deptId, 'linkedRiskIds', val)}
+                          placeholder={t("Select Risk")}
+                        />
+                        {data.risks.length === 0 && (
+                          <p className="text-xs text-gray-500">{t("No open risks found")}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
 
         {/* Audit Rating */}
         <div className="space-y-2">
@@ -629,60 +720,6 @@ export default function AddEngagementPage() {
               ) : (
                 <SelectItem value="none" disabled>
                   {t("No audit types configured. Add in Settings > Audit Type.")}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Auditor (Audit Manager) */}
-        <div className="space-y-2">
-          <Label className="text-blue-800">
-            {t("Auditor")} <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={formData.auditorId}
-            onValueChange={(value) => setFormData({ ...formData, auditorId: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("Select Auditor")} />
-            </SelectTrigger>
-            <SelectContent>
-              {translatedAuditors.length > 0 ? (
-                translatedAuditors.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.fullName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  {t("No auditors available")}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Auditee */}
-        <div className="space-y-2">
-          <Label className="text-blue-800">{t("Auditee")}</Label>
-          <Select
-            value={formData.auditeeId}
-            onValueChange={(value) => setFormData({ ...formData, auditeeId: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("Select Auditee")} />
-            </SelectTrigger>
-            <SelectContent>
-              {translatedAuditees.length > 0 ? (
-                translatedAuditees.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.fullName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  {t("No auditees assigned to you")}
                 </SelectItem>
               )}
             </SelectContent>
@@ -902,8 +939,8 @@ export default function AddEngagementPage() {
                             <SelectValue placeholder={t("Select Auditor")} />
                           </SelectTrigger>
                           <SelectContent>
-                            {auditors.length > 0 ? (
-                              auditors.map((user) => (
+                            {globalAuditors.length > 0 ? (
+                              globalAuditors.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
                                   {user.fullName}
                                 </SelectItem>

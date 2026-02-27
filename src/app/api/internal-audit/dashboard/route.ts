@@ -37,6 +37,7 @@ export const GET = withAuth(
       const auditeeFilter = isAuditee
         ? { ...tenantFilter, auditeeId: session.id }
         : engagementFilter;
+      // CAPA filter: for AuditHead, include CAPAs with matching auditHeadId OR null (legacy/unassigned)
       const capaFilter = isAuditee ? {
         ...tenantFilter,
         finding: {
@@ -45,7 +46,9 @@ export const GET = withAuth(
             { department: { id: session.departmentId || '' } }
           ]
         }
-      } : { ...tenantFilter, ...riskFilter };
+      } : auditHeadIdValue
+        ? { ...tenantFilter, OR: [{ auditHeadId: auditHeadIdValue }, { auditHeadId: null }] }
+        : { ...tenantFilter };
 
       // Get risk register stats (with tenant + audit head filter)
       // Handle different riskLevel case variations
@@ -161,35 +164,45 @@ export const GET = withAuth(
         : ongoingAudits;
 
       // Get CAPA stats by department and severity
-      const capaByDepartment = await prisma.internalAuditCAPA.findMany({
-        where: capaFilter,
-        include: {
-          finding: {
+      // Use InternalAuditFinding (same data source as CAPA tracking page) so findings show up
+      const findingFilter = auditHeadIdValue
+        ? {
+            ...tenantFilter,
+            engagement: {
+              OR: [{ auditHeadId: auditHeadIdValue }, { auditHeadId: null }],
+            },
+          }
+        : isAuditee
+          ? { ...tenantFilter, responsiblePersonId: session.id }
+          : { ...tenantFilter };
+
+      const findingsByDepartment = await prisma.internalAuditFinding.findMany({
+        where: findingFilter,
+        select: {
+          id: true,
+          severity: true,
+          status: true,
+          engagement: {
             select: {
-              severity: true,
-              engagement: {
-                select: {
-                  department: {
-                    select: { id: true, name: true }
-                  }
-                }
+              department: {
+                select: { id: true, name: true }
               }
             }
           }
         }
       });
 
-      // Process CAPA data by department
+      // Process finding data by department
       const departmentCAPAMap: Record<string, {
         name: string;
         open: { high: number; medium: number; low: number };
         closed: { high: number; medium: number; low: number };
       }> = {};
 
-      capaByDepartment.forEach(capa => {
-        const deptName = capa.finding?.engagement?.department?.name || 'Unknown';
-        const severity = capa.finding?.severity || 'Medium';
-        const status = capa.status;
+      findingsByDepartment.forEach(finding => {
+        const deptName = finding.engagement?.department?.name || 'Unknown';
+        const severity = finding.severity || 'Medium';
+        const status = finding.status || 'Open';
 
         if (!departmentCAPAMap[deptName]) {
           departmentCAPAMap[deptName] = {
@@ -199,7 +212,7 @@ export const GET = withAuth(
           };
         }
 
-        const statusKey = status === 'Closed' ? 'closed' : 'open';
+        const statusKey = (status === 'Closed' || status === 'Completed') ? 'closed' : 'open';
         const severityKey = severity.toLowerCase() as 'high' | 'medium' | 'low';
         if (severityKey in departmentCAPAMap[deptName][statusKey]) {
           departmentCAPAMap[deptName][statusKey][severityKey]++;

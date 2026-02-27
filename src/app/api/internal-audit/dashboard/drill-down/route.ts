@@ -166,45 +166,45 @@ export const GET = withAuth(
         }
 
         case 'capa': {
-          // Build CAPA filter based on department and status
-          let capaFilter: Record<string, unknown> = { ...tenantFilter, ...riskFilter };
+          // Build finding filter based on department and status
+          // Use InternalAuditFinding (same as CAPA tracking page) so findings show up
+          const auditHeadId = 'auditHeadId' in riskFilter ? (riskFilter as { auditHeadId: string }).auditHeadId : null;
+          let findingFilter: Record<string, unknown> = auditHeadId
+            ? { ...tenantFilter, engagement: { OR: [{ auditHeadId }, { auditHeadId: null }] } }
+            : { ...tenantFilter };
 
           if (department && department !== 'all') {
-            capaFilter = {
-              ...capaFilter,
-              finding: {
-                engagement: {
-                  department: {
-                    name: department
-                  }
-                }
-              }
+            // Merge department filter into engagement relation
+            const existingEngFilter = (findingFilter.engagement as Record<string, unknown>) || {};
+            findingFilter.engagement = {
+              ...existingEngFilter,
+              department: { name: department }
             };
           }
 
           if (status && status !== 'all') {
             if (status.toLowerCase() === 'open') {
-              capaFilter.status = { in: ['Open', 'In Progress'] };
+              findingFilter.status = { notIn: ['Closed', 'Completed'] };
             } else if (status.toLowerCase() === 'closed') {
-              capaFilter.status = 'Closed';
+              findingFilter.status = { in: ['Closed', 'Completed'] };
             }
           }
 
-          const capas = await prisma.internalAuditCAPA.findMany({
-            where: capaFilter,
-            include: {
-              finding: {
+          const findings = await prisma.internalAuditFinding.findMany({
+            where: findingFilter,
+            select: {
+              id: true,
+              findingId: true,
+              finding: true,
+              severity: true,
+              status: true,
+              targetDate: true,
+              responsiblePerson: true,
+              engagement: {
                 select: {
-                  findingId: true,
-                  finding: true,
-                  severity: true,
-                  engagement: {
-                    select: {
-                      auditId: true,
-                      engagementTitle: true,
-                      department: { select: { name: true } }
-                    }
-                  }
+                  auditId: true,
+                  engagementTitle: true,
+                  department: { select: { name: true } }
                 }
               }
             },
@@ -215,21 +215,21 @@ export const GET = withAuth(
           return NextResponse.json({
             type: 'capa',
             filter: { department, status },
-            data: capas.map(capa => ({
-              id: capa.id,
-              capaId: capa.capaId,
-              title: capa.title,
-              status: capa.status,
-              targetDate: capa.targetDate,
-              severity: capa.finding?.severity || 'N/A',
-              findingId: capa.finding?.findingId || 'N/A',
-              finding: capa.finding?.finding || 'N/A',
-              auditId: capa.finding?.engagement?.auditId || 'N/A',
-              engagementTitle: capa.finding?.engagement?.engagementTitle || 'N/A',
-              department: capa.finding?.engagement?.department?.name || 'N/A',
-              responsiblePerson: capa.responsiblePerson || 'Unassigned'
+            data: findings.map(f => ({
+              id: f.id,
+              capaId: f.findingId,
+              title: f.finding || 'N/A',
+              status: f.status || 'Open',
+              targetDate: f.targetDate,
+              severity: f.severity || 'N/A',
+              findingId: f.findingId || 'N/A',
+              finding: f.finding || 'N/A',
+              auditId: f.engagement?.auditId || 'N/A',
+              engagementTitle: f.engagement?.engagementTitle || 'N/A',
+              department: f.engagement?.department?.name || 'N/A',
+              responsiblePerson: f.responsiblePerson || 'Unassigned'
             })),
-            total: capas.length
+            total: findings.length
           });
         }
 
