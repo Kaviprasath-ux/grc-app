@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if username already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { userName },
     });
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if email already exists
-    const existingEmail = await prisma.user.findUnique({
+    const existingEmail = await prisma.user.findFirst({
       where: { email },
     });
 

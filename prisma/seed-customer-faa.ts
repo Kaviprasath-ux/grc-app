@@ -52,7 +52,7 @@ async function main() {
 
   // Create faa user
   const faaUser = await prisma.user.upsert({
-    where: { userName: "faa" },
+    where: { userId: "FAA-001" },
     update: {
       password: hashedPassword1,
       email: "admin@faa.gov",
@@ -232,7 +232,7 @@ async function main() {
   for (const user of users) {
     const password = testUsers.includes(user.userName) ? hashedPassword1 : hashedPassword123;
     const created = await prisma.user.upsert({
-      where: { userName: user.userName },
+      where: { userId: user.userId },
       update: { password },
       create: {
         userId: user.userId,

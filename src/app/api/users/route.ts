@@ -139,6 +139,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check for duplicate userId (globally unique) and userName/email (per customer account)
+    const existingByUserId = await prisma.user.findFirst({
+      where: { userId },
+      select: { id: true },
+    });
+    if (existingByUserId) {
+      return NextResponse.json(
+        { error: `User ID "${userId}" is already taken. Please choose a different user ID.` },
+        { status: 409 }
+      );
+    }
+
+    const existingByUserName = await prisma.user.findFirst({
+      where: { userName, customerAccountId: customerAccountId || undefined },
+      select: { id: true },
+    });
+    if (existingByUserName) {
+      return NextResponse.json(
+        { error: `Username "${userName}" is already taken. Please choose a different username.` },
+        { status: 409 }
+      );
+    }
+
+    const existingByEmail = await prisma.user.findFirst({
+      where: { email, customerAccountId: customerAccountId || undefined },
+      select: { id: true },
+    });
+    if (existingByEmail) {
+      return NextResponse.json(
+        { error: `Email "${email}" is already taken. Please choose a different email.` },
+        { status: 409 }
+      );
+    }
+
     // Check subscription plan limits before creating user
     if (customerAccountId) {
       const now = new Date();

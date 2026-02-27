@@ -9,7 +9,7 @@ async function main() {
 
     try {
         // Check for the superadmin user (defined in bootstrap-grc-admin.ts)
-        const superAdmin = await prisma.user.findUnique({
+        const superAdmin = await prisma.user.findFirst({
             where: { userName: "superadmin" },
         });
 

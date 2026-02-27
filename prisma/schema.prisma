@@ -291,8 +291,8 @@ model Department {
 model User {
   id                  String           @id @default(cuid())
   userId              String           @unique
-  userName            String           @unique
-  email               String           @unique
+  userName            String
+  email               String
   password            String?
   firstName           String
   lastName            String
@@ -388,6 +388,11 @@ model User {
   notificationPreferences    NotificationPreference[]
   // OAuth/SSO relations
   oauthAccounts              OAuthAccount[]
+
+  // Multi-tenant: userName and email are unique per customer account, not globally
+  @@unique([customerAccountId, userName])
+  @@unique([customerAccountId, email])
+  @@index([customerAccountId])
 }
 
 // OAuth/SSO Accounts (audit trail for SSO logins)

@@ -93,8 +93,8 @@ export async function PUT(
 
     // Check if email is being changed and already exists
     if (email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email },
+      const emailExists = await prisma.user.findFirst({
+        where: { email, customerAccountId: existingUser.customerAccountId || undefined },
       });
       if (emailExists) {
         return NextResponse.json({ error: "Email already exists" }, { status: 400 });
@@ -103,8 +103,8 @@ export async function PUT(
 
     // Check if username is being changed and already exists
     if (userName !== existingUser.userName) {
-      const usernameExists = await prisma.user.findUnique({
-        where: { userName },
+      const usernameExists = await prisma.user.findFirst({
+        where: { userName, customerAccountId: existingUser.customerAccountId || undefined },
       });
       if (usernameExists) {
         return NextResponse.json({ error: "Username already exists" }, { status: 400 });

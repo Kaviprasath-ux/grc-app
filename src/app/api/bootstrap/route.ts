@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 export async function POST() {
   try {
     // Check if superadmin user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { userName: "superadmin" },
     });
 
@@ -155,7 +155,7 @@ export async function POST() {
 // GET - Check if superadmin exists (for debugging)
 export async function GET() {
   try {
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { userName: "superadmin" },
       select: {
         id: true,
