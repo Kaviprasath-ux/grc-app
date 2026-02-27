@@ -2436,14 +2436,36 @@ CREATE TABLE "TPRMAssessmentLog" (
 CREATE TABLE "TPRMConfiguration" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
-    "configType" TEXT NOT NULL,
-    "category" TEXT NOT NULL,
-    "vrr" INTEGER DEFAULT 0,
-    "cadenceMonths" INTEGER DEFAULT 0,
-    "remediationDays" INTEGER DEFAULT 0,
-    "reminderDays" INTEGER DEFAULT 0,
-    "dueDateDays" INTEGER DEFAULT 0,
-    "securityScore" INTEGER DEFAULT 0,
+    "vrrCritical" INTEGER NOT NULL DEFAULT 50,
+    "vrrHigh" INTEGER NOT NULL DEFAULT 40,
+    "vrrModerate" INTEGER NOT NULL DEFAULT 30,
+    "vrrLow" INTEGER NOT NULL DEFAULT 20,
+    "vrrNominal" INTEGER NOT NULL DEFAULT 0,
+    "cadenceCritical" INTEGER NOT NULL DEFAULT 1,
+    "cadenceHigh" INTEGER NOT NULL DEFAULT 3,
+    "cadenceModerate" INTEGER NOT NULL DEFAULT 6,
+    "cadenceLow" INTEGER NOT NULL DEFAULT 24,
+    "cadenceNominal" INTEGER NOT NULL DEFAULT 36,
+    "remediationCritical" INTEGER NOT NULL DEFAULT 7,
+    "remediationHigh" INTEGER NOT NULL DEFAULT 14,
+    "remediationModerate" INTEGER NOT NULL DEFAULT 30,
+    "remediationLow" INTEGER NOT NULL DEFAULT 60,
+    "remediationNominal" INTEGER NOT NULL DEFAULT 90,
+    "reminderCritical" INTEGER NOT NULL DEFAULT 5,
+    "reminderHigh" INTEGER NOT NULL DEFAULT 5,
+    "reminderModerate" INTEGER NOT NULL DEFAULT 5,
+    "reminderLow" INTEGER NOT NULL DEFAULT 5,
+    "reminderNominal" INTEGER NOT NULL DEFAULT 5,
+    "dueDateCritical" INTEGER NOT NULL DEFAULT 30,
+    "dueDateHigh" INTEGER NOT NULL DEFAULT 30,
+    "dueDateModerate" INTEGER NOT NULL DEFAULT 30,
+    "dueDateLow" INTEGER NOT NULL DEFAULT 30,
+    "dueDateNominal" INTEGER NOT NULL DEFAULT 30,
+    "scorecardExcellent" INTEGER NOT NULL DEFAULT 5,
+    "scorecardGood" INTEGER NOT NULL DEFAULT 4,
+    "scorecardModerate" INTEGER NOT NULL DEFAULT 3,
+    "scorecardLow" INTEGER NOT NULL DEFAULT 2,
+    "scorecardNominal" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -3192,13 +3214,10 @@ CREATE INDEX "TPRMAssessmentLog_customerAccountId_idx" ON "TPRMAssessmentLog"("c
 CREATE INDEX "TPRMAssessmentLog_assessmentId_idx" ON "TPRMAssessmentLog"("assessmentId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "TPRMConfiguration_customerAccountId_key" ON "TPRMConfiguration"("customerAccountId");
+
+-- CreateIndex
 CREATE INDEX "TPRMConfiguration_customerAccountId_idx" ON "TPRMConfiguration"("customerAccountId");
-
--- CreateIndex
-CREATE INDEX "TPRMConfiguration_customerAccountId_configType_idx" ON "TPRMConfiguration"("customerAccountId", "configType");
-
--- CreateIndex
-CREATE UNIQUE INDEX "TPRMConfiguration_customerAccountId_configType_category_key" ON "TPRMConfiguration"("customerAccountId", "configType", "category");
 
 -- CreateIndex
 CREATE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId");

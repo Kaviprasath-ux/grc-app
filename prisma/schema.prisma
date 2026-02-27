@@ -121,7 +121,7 @@ model CustomerAccount {
   tprmVendors                TPRMVendor[]
   tprmAssessments            TPRMAssessment[]
   tprmAssessmentLogs         TPRMAssessmentLog[]
-  tprmConfigurations         TPRMConfiguration[]
+  tprmConfiguration          TPRMConfiguration?
 }
 
 // Subscription Plan for Customer Accounts
@@ -3355,25 +3355,58 @@ model TPRMAssessmentLog {
   @@index([assessmentId])
 }
 
-// TPRMConfiguration — Due Diligence & Scorecard configuration per customer
+// TPRMConfiguration — Single flat record per customer with all DD + Scorecard values
 model TPRMConfiguration {
   id                String          @id @default(cuid())
-  customerAccountId String
+  customerAccountId String          @unique
   customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
-  configType        String          // "DueDiligence" or "Scorecard"
-  category          String          // Critical, High, Moderate, Low, Nominal (or Excellent, Good for Scorecard)
-  vrr               Int?            @default(0)          // VRR threshold
-  cadenceMonths     Int?            @default(0)          // Assessment cadence in months
-  remediationDays   Int?            @default(0)          // Days allowed for remediation
-  reminderDays      Int?            @default(0)          // Days before due date for reminder
-  dueDateDays       Int?            @default(0)          // Due date in days
-  securityScore     Int?            @default(0)          // Scorecard score
+
+  // DueDiligence — VRR thresholds per risk category
+  vrrCritical       Int             @default(50)
+  vrrHigh           Int             @default(40)
+  vrrModerate       Int             @default(30)
+  vrrLow            Int             @default(20)
+  vrrNominal        Int             @default(0)
+
+  // DueDiligence — Assessment cadence (months)
+  cadenceCritical   Int             @default(1)
+  cadenceHigh       Int             @default(3)
+  cadenceModerate   Int             @default(6)
+  cadenceLow        Int             @default(24)
+  cadenceNominal    Int             @default(36)
+
+  // DueDiligence — Remediation period (days)
+  remediationCritical Int           @default(7)
+  remediationHigh     Int           @default(14)
+  remediationModerate Int           @default(30)
+  remediationLow      Int           @default(60)
+  remediationNominal  Int           @default(90)
+
+  // DueDiligence — Reminder before due date (days)
+  reminderCritical  Int             @default(5)
+  reminderHigh      Int             @default(5)
+  reminderModerate  Int             @default(5)
+  reminderLow       Int             @default(5)
+  reminderNominal   Int             @default(5)
+
+  // DueDiligence — Due date period (days)
+  dueDateCritical   Int             @default(30)
+  dueDateHigh       Int             @default(30)
+  dueDateModerate   Int             @default(30)
+  dueDateLow        Int             @default(30)
+  dueDateNominal    Int             @default(30)
+
+  // Scorecard — Security score per rating
+  scorecardExcellent Int            @default(5)
+  scorecardGood      Int            @default(4)
+  scorecardModerate  Int            @default(3)
+  scorecardLow       Int            @default(2)
+  scorecardNominal   Int            @default(0)
+
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  @@unique([customerAccountId, configType, category])
   @@index([customerAccountId])
-  @@index([customerAccountId, configType])
 }
 
 // ==================== DYNAMIC DATA TRANSLATIONS ====================

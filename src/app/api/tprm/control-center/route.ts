@@ -1,74 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 
-// Default DueDiligence configuration values
-const DEFAULT_DUE_DILIGENCE = [
-  { category: 'Critical', vrr: 50, cadenceMonths: 1, remediationDays: 7, reminderDays: 5, dueDateDays: 30 },
-  { category: 'High', vrr: 40, cadenceMonths: 3, remediationDays: 14, reminderDays: 5, dueDateDays: 30 },
-  { category: 'Moderate', vrr: 30, cadenceMonths: 6, remediationDays: 30, reminderDays: 5, dueDateDays: 30 },
-  { category: 'Low', vrr: 20, cadenceMonths: 24, remediationDays: 60, reminderDays: 5, dueDateDays: 30 },
-  { category: 'Nominal', vrr: 0, cadenceMonths: 36, remediationDays: 90, reminderDays: 5, dueDateDays: 30 },
-];
+// Field mapping: maps (ddField, category) → flat column name on TPRMConfiguration
+const DD_CATEGORIES = ['Critical', 'High', 'Moderate', 'Low', 'Nominal'] as const;
+const SC_CATEGORIES = ['Excellent', 'Good', 'Moderate', 'Low', 'Nominal'] as const;
 
-// Default Scorecard configuration values
-const DEFAULT_SCORECARD = [
-  { category: 'Excellent', securityScore: 5 },
-  { category: 'Good', securityScore: 4 },
-  { category: 'Moderate', securityScore: 3 },
-  { category: 'Low', securityScore: 2 },
-  { category: 'Nominal', securityScore: 0 },
-];
+type DDCategory = typeof DD_CATEGORIES[number];
+type SCCategory = typeof SC_CATEGORIES[number];
 
-// GET /api/tprm/control-center — Fetch DueDiligence and Scorecard configuration
+// Maps a DD field + category to the flat column name
+const ddColumn = (field: string, cat: DDCategory): string =>
+  `${field}${cat}`;
+
+// Maps a SC category to the flat column name
+const scColumn = (cat: SCCategory): string =>
+  `scorecard${cat}`;
+
+// Default values (used when no record exists yet)
+const DEFAULTS = {
+  vrrCritical: 50, vrrHigh: 40, vrrModerate: 30, vrrLow: 20, vrrNominal: 0,
+  cadenceCritical: 1, cadenceHigh: 3, cadenceModerate: 6, cadenceLow: 24, cadenceNominal: 36,
+  remediationCritical: 7, remediationHigh: 14, remediationModerate: 30, remediationLow: 60, remediationNominal: 90,
+  reminderCritical: 5, reminderHigh: 5, reminderModerate: 5, reminderLow: 5, reminderNominal: 5,
+  dueDateCritical: 30, dueDateHigh: 30, dueDateModerate: 30, dueDateLow: 30, dueDateNominal: 30,
+  scorecardExcellent: 5, scorecardGood: 4, scorecardModerate: 3, scorecardLow: 2, scorecardNominal: 0,
+};
+
+type ConfigRecord = typeof DEFAULTS & { id: string; customerAccountId: string };
+
+// Helper to convert flat record into the UI-friendly { dueDiligence, scorecard } shape
+function toUIShape(rec: ConfigRecord) {
+  const dueDiligence = DD_CATEGORIES.map((cat) => ({
+    category: cat,
+    vrr: rec[ddColumn('vrr', cat) as keyof typeof rec] as number,
+    cadenceMonths: rec[ddColumn('cadence', cat) as keyof typeof rec] as number,
+    remediationDays: rec[ddColumn('remediation', cat) as keyof typeof rec] as number,
+    reminderDays: rec[ddColumn('reminder', cat) as keyof typeof rec] as number,
+    dueDateDays: rec[ddColumn('dueDate', cat) as keyof typeof rec] as number,
+  }));
+
+  const scorecard = SC_CATEGORIES.map((cat) => ({
+    category: cat,
+    securityScore: rec[scColumn(cat) as keyof typeof rec] as number,
+  }));
+
+  return { dueDiligence, scorecard };
+}
+
+// GET /api/tprm/control-center — Fetch the single configuration record
 export const GET = withAuth(
   async (req, context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const customerAccountId = getCustomerAccountId(session);
 
-      const configs = await prisma.tPRMConfiguration.findMany({
-        where: { ...tenantFilter },
-        orderBy: { category: 'asc' },
+      const config = await prisma.tPRMConfiguration.findUnique({
+        where: { customerAccountId },
       });
 
-      // Separate configs by type
-      const dueDiligence = configs.filter(c => c.configType === 'DueDiligence');
-      const scorecard = configs.filter(c => c.configType === 'Scorecard');
+      if (config) {
+        return NextResponse.json(toUIShape(config as unknown as ConfigRecord));
+      }
 
-      // If no configs exist yet, return defaults
-      const dueDiligenceData = dueDiligence.length > 0
-        ? dueDiligence
-        : DEFAULT_DUE_DILIGENCE.map(d => ({
-            id: '',
-            configType: 'DueDiligence',
-            ...d,
-            securityScore: null,
-            customerAccountId: session.customerAccountId || '',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }));
-
-      const scorecardData = scorecard.length > 0
-        ? scorecard
-        : DEFAULT_SCORECARD.map(d => ({
-            id: '',
-            configType: 'Scorecard',
-            category: d.category,
-            vrr: null,
-            cadenceMonths: null,
-            remediationDays: null,
-            reminderDays: null,
-            dueDateDays: null,
-            securityScore: d.securityScore,
-            customerAccountId: session.customerAccountId || '',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }));
-
-      return NextResponse.json({
-        dueDiligence: dueDiligenceData,
-        scorecard: scorecardData,
-      });
+      // No record yet — return defaults
+      return NextResponse.json(toUIShape({ ...DEFAULTS, id: '', customerAccountId } as ConfigRecord));
     } catch (error) {
       console.error('Control Center GET error:', error);
       return NextResponse.json(
@@ -80,7 +75,7 @@ export const GET = withAuth(
   { resource: 'tprm.control-center', action: 'view' }
 );
 
-// PATCH /api/tprm/control-center — Update DueDiligence and Scorecard configuration
+// PATCH /api/tprm/control-center — Upsert the single configuration record
 export const PATCH = withAuth(
   async (req: NextRequest, context, session) => {
     try {
@@ -88,67 +83,39 @@ export const PATCH = withAuth(
       const body = await req.json();
       const { dueDiligence, scorecard } = body;
 
-      const results = [];
+      // Build flat data object from the UI arrays
+      const data: Record<string, number> = {};
 
-      // Upsert DueDiligence configs
       if (dueDiligence && Array.isArray(dueDiligence)) {
-        for (const config of dueDiligence) {
-          const result = await prisma.tPRMConfiguration.upsert({
-            where: {
-              customerAccountId_configType_category: {
-                customerAccountId,
-                configType: 'DueDiligence',
-                category: config.category,
-              },
-            },
-            update: {
-              vrr: config.vrr ?? 0,
-              cadenceMonths: config.cadenceMonths ?? 0,
-              remediationDays: config.remediationDays ?? 0,
-              reminderDays: config.reminderDays ?? 0,
-              dueDateDays: config.dueDateDays ?? 0,
-            },
-            create: {
-              customerAccountId,
-              configType: 'DueDiligence',
-              category: config.category,
-              vrr: config.vrr ?? 0,
-              cadenceMonths: config.cadenceMonths ?? 0,
-              remediationDays: config.remediationDays ?? 0,
-              reminderDays: config.reminderDays ?? 0,
-              dueDateDays: config.dueDateDays ?? 0,
-            },
-          });
-          results.push(result);
+        for (const item of dueDiligence) {
+          const cat = item.category as DDCategory;
+          if (!DD_CATEGORIES.includes(cat)) continue;
+          data[ddColumn('vrr', cat)] = item.vrr ?? 0;
+          data[ddColumn('cadence', cat)] = item.cadenceMonths ?? 0;
+          data[ddColumn('remediation', cat)] = item.remediationDays ?? 0;
+          data[ddColumn('reminder', cat)] = item.reminderDays ?? 0;
+          data[ddColumn('dueDate', cat)] = item.dueDateDays ?? 0;
         }
       }
 
-      // Upsert Scorecard configs
       if (scorecard && Array.isArray(scorecard)) {
-        for (const config of scorecard) {
-          const result = await prisma.tPRMConfiguration.upsert({
-            where: {
-              customerAccountId_configType_category: {
-                customerAccountId,
-                configType: 'Scorecard',
-                category: config.category,
-              },
-            },
-            update: {
-              securityScore: config.securityScore ?? 0,
-            },
-            create: {
-              customerAccountId,
-              configType: 'Scorecard',
-              category: config.category,
-              securityScore: config.securityScore ?? 0,
-            },
-          });
-          results.push(result);
+        for (const item of scorecard) {
+          const cat = item.category as SCCategory;
+          if (!SC_CATEGORIES.includes(cat)) continue;
+          data[scColumn(cat)] = item.securityScore ?? 0;
         }
       }
 
-      return NextResponse.json({ success: true, count: results.length });
+      const config = await prisma.tPRMConfiguration.upsert({
+        where: { customerAccountId },
+        update: data,
+        create: {
+          customerAccountId,
+          ...data,
+        },
+      });
+
+      return NextResponse.json({ success: true, id: config.id });
     } catch (error) {
       console.error('Control Center PATCH error:', error);
       return NextResponse.json(
