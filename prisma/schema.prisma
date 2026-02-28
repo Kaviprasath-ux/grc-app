@@ -130,6 +130,9 @@ model CustomerAccount {
   tprmQuestionnaireTemplates TPRMQuestionnaireTemplate[]
   tprmOffboardingQuestions   TPRMOffboardingQuestion[]
   tprmScorecardFactors       TPRMScorecardFactor[]
+  tprmDomains                TPRMDomain[]
+  tprmMasterQuestions        TPRMMasterQuestion[]
+  tprmQuestionnaireQuestions TPRMQuestionnaireQuestion[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -3511,9 +3514,11 @@ model TPRMQuestionnaireTemplate {
   frameworkName     String?
   templateCategory  String          @default("Default") // "Default", "ISMS", "Compliance"
   imageUrl          String?
+  vendorProfileQuestionIds String?  @db.Text  // JSON array of onboarding question IDs
   isActive          Boolean         @default(true)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+  masterQuestionLinks TPRMQuestionnaireQuestion[]
 
   @@unique([customerAccountId, templateName])
   @@index([customerAccountId])
@@ -3553,6 +3558,72 @@ model TPRMScorecardFactor {
   @@unique([customerAccountId, factorId])
   @@index([customerAccountId])
   @@index([customerAccountId, scoreType])
+}
+
+// TPRMDomain — Assessment domain categories (e.g., Information Security, Privacy)
+model TPRMDomain {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?
+  isActive          Boolean         @default(true)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  questions         TPRMMasterQuestion[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
+}
+
+// TPRMMasterQuestion — Master question bank entries linked to domains
+model TPRMMasterQuestion {
+  id                  String          @id @default(cuid())
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  domainId            String?
+  domain              TPRMDomain?     @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  questionText        String          @db.Text
+  verifaiPrompt       String?         @db.Text
+  sortOrder           Int             @default(0)
+  isActive            Boolean         @default(true)
+  // Parent-child hierarchy
+  isParentQuestion    Boolean         @default(true)
+  parentId            String?
+  parent              TPRMMasterQuestion?  @relation("QuestionParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children            TPRMMasterQuestion[] @relation("QuestionParent")
+  // Assessment metadata
+  mandatoryAttachment Boolean         @default(false)
+  validateThroughAI   Boolean         @default(false)
+  mandatoryQuestion   Boolean         @default(false)
+  evidence            String?
+  issue               String?
+  risk                String?
+  recommendation      String?
+  severity            String?         // High, Medium, Low
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  questionnaireLinks  TPRMQuestionnaireQuestion[]
+
+  @@index([customerAccountId])
+  @@index([customerAccountId, domainId])
+}
+
+// TPRMQuestionnaireQuestion — Junction linking master questions to questionnaire templates
+model TPRMQuestionnaireQuestion {
+  id                String                    @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount           @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  templateId        String
+  template          TPRMQuestionnaireTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  questionId        String
+  question          TPRMMasterQuestion        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  sortOrder         Int                       @default(0)
+  createdAt         DateTime                  @default(now())
+
+  @@unique([templateId, questionId])
+  @@index([customerAccountId])
 }
 
 // ==================== DYNAMIC DATA TRANSLATIONS ====================

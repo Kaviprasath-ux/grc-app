@@ -263,7 +263,7 @@ export const POST = withAuth(
         }
 
         case 'questionnaire-templates': {
-          const { templateName, frameworkName, templateCategory } = body;
+          const { templateName, frameworkName, templateCategory, imageUrl, vendorProfileQuestionIds } = body;
           if (!templateName?.trim()) {
             return NextResponse.json({ error: 'Template name is required' }, { status: 400 });
           }
@@ -273,6 +273,8 @@ export const POST = withAuth(
               templateName: templateName.trim(),
               frameworkName: frameworkName?.trim() || null,
               templateCategory: templateCategory || 'Default',
+              imageUrl: imageUrl || null,
+              vendorProfileQuestionIds: vendorProfileQuestionIds || null,
             },
           });
           return NextResponse.json(template, { status: 201 });
@@ -445,7 +447,7 @@ export const PATCH = withAuth(
         }
 
         case 'questionnaire-templates': {
-          const { templateName, frameworkName, templateCategory } = body;
+          const { templateName, frameworkName, templateCategory, imageUrl, vendorProfileQuestionIds } = body;
           const existing = await prisma.tPRMQuestionnaireTemplate.findFirst({ where: { id, customerAccountId } });
           if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           const template = await prisma.tPRMQuestionnaireTemplate.update({
@@ -454,6 +456,8 @@ export const PATCH = withAuth(
               ...(templateName !== undefined && { templateName: templateName.trim() }),
               ...(frameworkName !== undefined && { frameworkName: frameworkName?.trim() || null }),
               ...(templateCategory !== undefined && { templateCategory }),
+              ...(imageUrl !== undefined && { imageUrl: imageUrl || null }),
+              ...(vendorProfileQuestionIds !== undefined && { vendorProfileQuestionIds }),
             },
           });
           return NextResponse.json(template);
@@ -572,6 +576,8 @@ export const DELETE = withAuth(
         }
 
         case 'onboarding-questions': {
+          const question = await prisma.tPRMOnboardingQuestion.findFirst({ where: { id, customerAccountId } });
+          if (!question) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           // Delete children first
           await prisma.tPRMOnboardingQuestion.deleteMany({
             where: { parentId: id, customerAccountId },
@@ -580,25 +586,40 @@ export const DELETE = withAuth(
           return NextResponse.json({ success: true });
         }
 
-        case 'service-categories':
+        case 'service-categories': {
+          const cat = await prisma.tPRMServiceCategory.findFirst({ where: { id, customerAccountId } });
+          if (!cat) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMServiceCategory.delete({ where: { id } });
           return NextResponse.json({ success: true });
+        }
 
-        case 'disciplines':
+        case 'disciplines': {
+          const disc = await prisma.tPRMDiscipline.findFirst({ where: { id, customerAccountId } });
+          if (!disc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMDiscipline.delete({ where: { id } });
           return NextResponse.json({ success: true });
+        }
 
-        case 'departments':
+        case 'departments': {
+          const dept = await prisma.tPRMDepartment.findFirst({ where: { id, customerAccountId } });
+          if (!dept) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMDepartment.delete({ where: { id } });
           return NextResponse.json({ success: true });
+        }
 
-        case 'questionnaire-templates':
+        case 'questionnaire-templates': {
+          const tmpl = await prisma.tPRMQuestionnaireTemplate.findFirst({ where: { id, customerAccountId } });
+          if (!tmpl) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMQuestionnaireTemplate.delete({ where: { id } });
           return NextResponse.json({ success: true });
+        }
 
-        case 'offboarding-questions':
+        case 'offboarding-questions': {
+          const obq = await prisma.tPRMOffboardingQuestion.findFirst({ where: { id, customerAccountId } });
+          if (!obq) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMOffboardingQuestion.delete({ where: { id } });
           return NextResponse.json({ success: true });
+        }
 
         case 'scorecard-factors': {
           const factor = await prisma.tPRMScorecardFactor.findFirst({

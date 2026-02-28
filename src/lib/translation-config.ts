@@ -78,6 +78,10 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'TPRMVendor', fields: [{ name: 'name' }, { name: 'serviceCategory' }], priority: 5 },
   { modelName: 'TPRMAssessment', fields: [{ name: 'questionnaireTemplate' }, { name: 'approverComment' }], priority: 5 },
 
+  // Priority 6 — TPRM Master Data
+  { modelName: 'TPRMDomain', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
+  { modelName: 'TPRMMasterQuestion', fields: [{ name: 'questionText' }], priority: 6 },
+
   // Priority 5 — Organization & assets
   { modelName: 'User', fields: [{ name: 'fullName' }, { name: 'firstName' }, { name: 'lastName' }, { name: 'designation' }], priority: 5 },
   { modelName: 'Organization', fields: [{ name: 'name' }, { name: 'description' }, { name: 'vision' }, { name: 'mission' }, { name: 'value' }, { name: 'ceoMessage' }, { name: 'headOfficeLocation' }, { name: 'headOfficeAddress' }], priority: 5 },

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Plus, Pencil, Trash2, ChevronRight, Home,
+  Plus, Pencil, Trash2, ChevronRight, Home, Eye, Link2,
   ClipboardList, FolderTree, Building2, BookOpen, FileQuestion,
   Award, UserCheck, ArrowLeft, Download, Upload, X, Search,
+  ImageIcon, FileSpreadsheet, CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,8 @@ interface QuestionnaireTemplate {
   templateName: string;
   frameworkName: string | null;
   templateCategory: string;
+  imageUrl: string | null;
+  vendorProfileQuestionIds: string | null;
 }
 
 interface OffboardingQuestion {
@@ -86,6 +89,43 @@ interface ScorecardConfig {
   scoringFormula: string;
   securityPostureWeight: number;
   threatExposureWeight: number;
+}
+
+interface MasterQuestionFull {
+  id: string;
+  questionText: string;
+  verifaiPrompt: string | null;
+  domainId: string | null;
+  domain: { id: string; name: string } | null;
+  isActive: boolean;
+  isParentQuestion: boolean;
+  parentId: string | null;
+  mandatoryAttachment: boolean;
+  validateThroughAI: boolean;
+  mandatoryQuestion: boolean;
+  evidence: string | null;
+  issue: string | null;
+  risk: string | null;
+  recommendation: string | null;
+  severity: string | null;
+}
+
+interface TemplateQuestion {
+  id: string;
+  questionId: string;
+  sortOrder: number;
+  question: MasterQuestionFull;
+}
+
+interface TemplateWithQuestions extends QuestionnaireTemplate {
+  masterQuestionLinks: TemplateQuestion[];
+}
+
+interface DomainItem {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
 }
 
 // ==================== CONSTANTS ====================
@@ -931,17 +971,58 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
 // ==================== QUESTIONNAIRE MANAGEMENT ====================
 
 function QuestionnaireManagementSection() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+
+  // ---- Navigation ----
+  const [subView, setSubView] = useState<"list" | "questions">("list");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  // ---- Template list ----
   const [templates, setTemplates] = useState<QuestionnaireTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // ---- Wizard ----
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [wizardForm, setWizardForm] = useState({ templateName: "", frameworkName: "", templateCategory: "Default" });
+  const [wizardImage, setWizardImage] = useState<File | null>(null);
+  const [wizardImagePreview, setWizardImagePreview] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<{ totalRows: number; validRows: number; errors: { row: number; column: string; message: string }[] } | null>(null);
+  const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
+  const [selectedProfileQuestionIds, setSelectedProfileQuestionIds] = useState<Set<string>>(new Set());
+  const [wizardSaving, setWizardSaving] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  // ---- Edit template dialog ----
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<QuestionnaireTemplate | null>(null);
-  const [form, setForm] = useState({
-    templateName: "",
-    frameworkName: "",
-    templateCategory: "Default",
+  const [editForm, setEditForm] = useState({ templateName: "", frameworkName: "", templateCategory: "Default" });
+
+  // ---- Template questions (sub-view) ----
+  const [templateData, setTemplateData] = useState<TemplateWithQuestions | null>(null);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
+  const [domains, setDomains] = useState<DomainItem[]>([]);
+  const [allMasterQuestions, setAllMasterQuestions] = useState<MasterQuestionFull[]>([]);
+
+  // ---- Question dialog ----
+  const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
+  const [editQuestionLink, setEditQuestionLink] = useState<TemplateQuestion | null>(null);
+  const [qForm, setQForm] = useState({
+    isParentQuestion: true, parentId: "", questionText: "", verifaiPrompt: "",
+    domainId: "", mandatoryAttachment: false, validateThroughAI: false,
+    mandatoryQuestion: false, evidence: "", issue: "", risk: "",
+    recommendation: "", severity: "",
   });
+
+  // ---- Link existing questions dialog ----
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [selectedLinkIds, setSelectedLinkIds] = useState<Set<string>>(new Set());
+  const [linkSearch, setLinkSearch] = useState("");
+
+  // ========== Data Loading ==========
 
   const loadTemplates = useCallback(async () => {
     setLoading(true);
@@ -955,36 +1036,215 @@ function QuestionnaireManagementSection() {
     }
   }, [toast, t]);
 
-  useEffect(() => {
-    loadTemplates();
-  }, [loadTemplates]);
-
-  const handleSave = async () => {
-    if (!form.templateName.trim()) return;
+  const loadTemplateData = useCallback(async (tmplId: string) => {
+    setQuestionsLoading(true);
     try {
-      const method = editItem ? "PATCH" : "POST";
-      const body = editItem ? { id: editItem.id, ...form } : form;
-      const res = await fetch("/api/tprm/configurations/questionnaire-templates", {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
-        return;
+      const res = await fetch("/api/tprm/master-data/questionnaires");
+      if (res.ok) {
+        const all: TemplateWithQuestions[] = await res.json();
+        setTemplateData(all.find((x) => x.id === tmplId) || null);
       }
-      toast({ title: t("Success"), description: editItem ? t("Template updated") : t("Template created") });
-      setDialogOpen(false);
-      setEditItem(null);
-      setForm({ templateName: "", frameworkName: "", templateCategory: "Default" });
-      loadTemplates();
     } catch {
-      toast({ title: t("Error"), description: t("Failed to save"), variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to load template questions"), variant: "destructive" });
+    } finally {
+      setQuestionsLoading(false);
+    }
+  }, [toast, t]);
+
+  const loadReferenceData = useCallback(async () => {
+    try {
+      const [domRes, qRes] = await Promise.all([
+        fetch("/api/tprm/master-data/domains"),
+        fetch("/api/tprm/master-data/questions"),
+      ]);
+      if (domRes.ok) setDomains(await domRes.json());
+      if (qRes.ok) setAllMasterQuestions(await qRes.json());
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => { loadTemplates(); }, [loadTemplates]);
+
+  useEffect(() => {
+    if (subView === "questions" && selectedTemplateId) {
+      loadTemplateData(selectedTemplateId);
+      loadReferenceData();
+    }
+  }, [subView, selectedTemplateId, loadTemplateData, loadReferenceData]);
+
+  // ========== Template CRUD ==========
+
+  // Load onboarding questions for Step 3
+  const loadOnboardingQuestions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/tprm/configurations/onboarding-questions");
+      if (res.ok) setOnboardingQuestions(await res.json());
+    } catch { /* silent */ }
+  }, []);
+
+  // Handle image file selection
+  const handleImageSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: t("Error"), description: t("Please select an image file"), variant: "destructive" });
+      return;
+    }
+    setWizardImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setWizardImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  // Handle import file selection with client-side preview (flexible column matching)
+  const handleImportFileSelect = async (file: File) => {
+    setImportFile(file);
+    try {
+      const XLSX = await import("xlsx");
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      if (!ws) { setImportPreview({ totalRows: 0, validRows: 0, errors: [{ row: 0, column: "", message: "Empty file" }] }); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as unknown[][];
+      if (rows.length < 2) { setImportPreview({ totalRows: 0, validRows: 0, errors: [{ row: 0, column: "", message: "No data rows found" }] }); return; }
+      const headers = (rows[0] as string[]).map((h) => String(h).trim().toLowerCase());
+      // Check for a "question title" column (required)
+      const questionAliases = ["question title", "question title *", "question", "question text", "title"];
+      const hasQuestion = questionAliases.some((a) => headers.includes(a));
+      const errs: { row: number; column: string; message: string }[] = [];
+      if (!hasQuestion) errs.push({ row: 1, column: "", message: "Missing required column: Question Title (or similar)" });
+      // Count non-empty data rows
+      let dataRows = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const isEmptyRow = (rows[i] as unknown[]).every((c) => c === undefined || c === null || String(c).trim() === "");
+        if (!isEmptyRow) dataRows++;
+      }
+      setImportPreview({ totalRows: rows.length - 1, validRows: dataRows, errors: errs });
+    } catch {
+      setImportPreview({ totalRows: 0, validRows: 0, errors: [{ row: 0, column: "", message: "Failed to parse file" }] });
     }
   };
 
-  const handleDelete = async (id: string) => {
+  // Download template
+  const handleDownloadTemplate = async () => {
+    const { generateExcelTemplate } = await import("@/lib/excel-import");
+    const columns = [
+      "SQNO.", "Domain Name", "IsParent", "Question Title",
+      "Evidence", "Mandatory Attachment", "Mandatory Question",
+      "Control Question Description",
+      "Issue", "Risk", "Recommendation", "Severity",
+    ];
+    const buffer = generateExcelTemplate(columns, "Questions Template");
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "questionnaire-template.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Reset wizard state
+  const resetWizard = () => {
+    setWizardStep(1);
+    setWizardForm({ templateName: "", frameworkName: "", templateCategory: "Default" });
+    setWizardImage(null);
+    setWizardImagePreview(null);
+    setImportFile(null);
+    setImportPreview(null);
+    setSelectedProfileQuestionIds(new Set());
+    setWizardSaving(false);
+  };
+
+  const handleWizardSave = async () => {
+    if (!wizardForm.templateName.trim()) {
+      toast({ title: t("Error"), description: t("Template name is required"), variant: "destructive" });
+      return;
+    }
+    setWizardSaving(true);
+    try {
+      // Step 1: Upload image if selected
+      let imageUrl: string | null = null;
+      if (wizardImage) {
+        const fd = new FormData();
+        fd.append("file", wizardImage);
+        const upRes = await fetch("/api/upload", { method: "POST", body: fd });
+        if (upRes.ok) {
+          const upData = await upRes.json();
+          imageUrl = upData.file?.filePath || null;
+        }
+      }
+
+      // Step 2: Create template
+      const profileIds = selectedProfileQuestionIds.size > 0
+        ? JSON.stringify(Array.from(selectedProfileQuestionIds))
+        : null;
+      const res = await fetch("/api/tprm/configurations/questionnaire-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...wizardForm,
+          imageUrl,
+          vendorProfileQuestionIds: profileIds,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast({ title: t("Error"), description: err.error || t("Failed to create"), variant: "destructive" });
+        setWizardSaving(false);
+        return;
+      }
+      const created = await res.json();
+
+      // Step 3: Import questions if file selected
+      if (importFile) {
+        const fd = new FormData();
+        fd.append("file", importFile);
+        fd.append("templateId", created.id);
+        const impRes = await fetch("/api/tprm/master-data/questions-import", { method: "POST", body: fd });
+        if (impRes.ok) {
+          const impData = await impRes.json();
+          toast({ title: t("Success"), description: `${t("Template created")}. ${impData.created} ${t("questions imported")}.` });
+        } else {
+          toast({ title: t("Success"), description: t("Template created but question import had errors") });
+        }
+      } else {
+        toast({ title: t("Success"), description: t("Template created successfully") });
+      }
+
+      setWizardOpen(false);
+      resetWizard();
+      loadTemplates();
+      setSelectedTemplateId(created.id);
+      setSubView("questions");
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to create template"), variant: "destructive" });
+    } finally {
+      setWizardSaving(false);
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editItem || !editForm.templateName.trim()) return;
+    try {
+      const res = await fetch("/api/tprm/configurations/questionnaire-templates", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editItem.id, ...editForm }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast({ title: t("Error"), description: err.error || t("Failed to update"), variant: "destructive" });
+        return;
+      }
+      toast({ title: t("Success"), description: t("Template updated") });
+      setEditDialogOpen(false);
+      setEditItem(null);
+      loadTemplates();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to update"), variant: "destructive" });
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    if (!confirm(t("Delete this template and all linked questions?"))) return;
     try {
       const res = await fetch(`/api/tprm/configurations/questionnaire-templates?id=${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -999,7 +1259,448 @@ function QuestionnaireManagementSection() {
     }
   };
 
-  const columns: ColumnDef<QuestionnaireTemplate>[] = [
+  // ========== Question CRUD ==========
+
+  const resetQForm = () => setQForm({
+    isParentQuestion: true, parentId: "", questionText: "", verifaiPrompt: "",
+    domainId: "", mandatoryAttachment: false, validateThroughAI: false,
+    mandatoryQuestion: false, evidence: "", issue: "", risk: "",
+    recommendation: "", severity: "",
+  });
+
+  const openAddQuestion = () => { setEditQuestionLink(null); resetQForm(); setQuestionDialogOpen(true); };
+
+  const openEditQuestion = (link: TemplateQuestion) => {
+    setEditQuestionLink(link);
+    const q = link.question;
+    setQForm({
+      isParentQuestion: q.isParentQuestion, parentId: q.parentId || "",
+      questionText: q.questionText, verifaiPrompt: q.verifaiPrompt || "",
+      domainId: q.domainId || "", mandatoryAttachment: q.mandatoryAttachment,
+      validateThroughAI: q.validateThroughAI, mandatoryQuestion: q.mandatoryQuestion,
+      evidence: q.evidence || "", issue: q.issue || "", risk: q.risk || "",
+      recommendation: q.recommendation || "", severity: q.severity || "",
+    });
+    setQuestionDialogOpen(true);
+  };
+
+  const handleSaveQuestion = async () => {
+    if (!qForm.questionText.trim()) {
+      toast({ title: t("Error"), description: t("Question text is required"), variant: "destructive" });
+      return;
+    }
+    const payload = {
+      questionText: qForm.questionText.trim(),
+      verifaiPrompt: qForm.verifaiPrompt.trim() || null,
+      domainId: qForm.domainId || null,
+      isParentQuestion: qForm.isParentQuestion,
+      parentId: qForm.isParentQuestion ? null : (qForm.parentId || null),
+      mandatoryAttachment: qForm.mandatoryAttachment,
+      validateThroughAI: qForm.validateThroughAI,
+      mandatoryQuestion: qForm.mandatoryQuestion,
+      evidence: qForm.evidence.trim() || null,
+      issue: qForm.issue.trim() || null,
+      risk: qForm.risk.trim() || null,
+      recommendation: qForm.recommendation.trim() || null,
+      severity: qForm.severity || null,
+    };
+    try {
+      if (editQuestionLink) {
+        const res = await fetch("/api/tprm/master-data/questions", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editQuestionLink.question.id, ...payload }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          toast({ title: t("Error"), description: err.error || t("Failed to update"), variant: "destructive" });
+          return;
+        }
+        toast({ title: t("Success"), description: t("Question updated") });
+      } else {
+        const createRes = await fetch("/api/tprm/master-data/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!createRes.ok) {
+          const err = await createRes.json();
+          toast({ title: t("Error"), description: err.error || t("Failed to create"), variant: "destructive" });
+          return;
+        }
+        const newQ = await createRes.json();
+        if (selectedTemplateId) {
+          await fetch("/api/tprm/master-data/questionnaires", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ templateId: selectedTemplateId, questionIds: [newQ.id] }),
+          });
+        }
+        toast({ title: t("Success"), description: t("Question added to template") });
+      }
+      setQuestionDialogOpen(false);
+      if (selectedTemplateId) loadTemplateData(selectedTemplateId);
+      loadReferenceData();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to save question"), variant: "destructive" });
+    }
+  };
+
+  const handleUnlinkQuestion = async (linkId: string) => {
+    if (!confirm(t("Remove this question from the template?"))) return;
+    try {
+      const res = await fetch(`/api/tprm/master-data/questionnaires?id=${linkId}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast({ title: t("Error"), description: t("Failed to remove"), variant: "destructive" });
+        return;
+      }
+      toast({ title: t("Success"), description: t("Question removed from template") });
+      if (selectedTemplateId) loadTemplateData(selectedTemplateId);
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to remove"), variant: "destructive" });
+    }
+  };
+
+  const handleLinkQuestions = async () => {
+    if (!selectedTemplateId || selectedLinkIds.size === 0) return;
+    try {
+      const res = await fetch("/api/tprm/master-data/questionnaires", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: selectedTemplateId, questionIds: Array.from(selectedLinkIds) }),
+      });
+      if (!res.ok) {
+        toast({ title: t("Error"), description: t("Failed to link questions"), variant: "destructive" });
+        return;
+      }
+      toast({ title: t("Success"), description: t("Questions linked successfully") });
+      setLinkDialogOpen(false);
+      loadTemplateData(selectedTemplateId);
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to link questions"), variant: "destructive" });
+    }
+  };
+
+  // ========== Helpers ==========
+
+  const parentQuestions = (templateData?.masterQuestionLinks || [])
+    .filter((l) => l.question.isParentQuestion && l.question.id !== editQuestionLink?.question.id)
+    .map((l) => l.question);
+
+  const getAvailableForLink = () => {
+    if (!templateData) return [];
+    const linked = new Set(templateData.masterQuestionLinks.map((l) => l.questionId));
+    return allMasterQuestions
+      .filter((q) => q.isActive && !linked.has(q.id))
+      .filter((q) => !linkSearch || q.questionText.toLowerCase().includes(linkSearch.toLowerCase()));
+  };
+
+  const activeDomains = domains.filter((d) => d.isActive);
+
+  // ========== Question Dialog (shared between views) ==========
+
+  const renderQuestionDialog = () => (
+    <Dialog open={questionDialogOpen} onOpenChange={setQuestionDialogOpen}>
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editQuestionLink ? t("Edit Question") : t("Add Question")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          {/* Is Parent Question */}
+          <div>
+            <Label>{t("Is Parent Question")}</Label>
+            <div className="flex items-center gap-4 mt-1">
+              {[true, false].map((val) => (
+                <label key={String(val)} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="isParent" checked={qForm.isParentQuestion === val}
+                    onChange={() => setQForm({ ...qForm, isParentQuestion: val, parentId: val ? "" : qForm.parentId })}
+                    className="accent-primary" />
+                  <span className="text-sm">{val ? t("Yes") : t("No")}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          {/* Parent Question (when not parent) */}
+          {!qForm.isParentQuestion && (
+            <div>
+              <Label>{t("Parent Question")}</Label>
+              <Select value={qForm.parentId || "none"} onValueChange={(v) => setQForm({ ...qForm, parentId: v === "none" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder={t("Select parent question")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("None")}</SelectItem>
+                  {parentQuestions.map((pq) => (
+                    <SelectItem key={pq.id} value={pq.id}>{pq.questionText.substring(0, 80)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {/* Question Title */}
+          <div>
+            <Label>{t("Question Title")} *</Label>
+            <Textarea value={qForm.questionText} onChange={(e) => setQForm({ ...qForm, questionText: e.target.value })}
+              placeholder={t("Enter question text")} rows={3} />
+          </div>
+          {/* VerifAI Prompt */}
+          <div>
+            <Label>{t("VerifAI Prompt Question")}</Label>
+            <Textarea value={qForm.verifaiPrompt} onChange={(e) => setQForm({ ...qForm, verifaiPrompt: e.target.value })}
+              placeholder={t("Enter VerifAI prompt")} rows={2} />
+          </div>
+          {/* Domain */}
+          <div>
+            <Label>{t("Domain")}</Label>
+            <Select value={qForm.domainId || "none"} onValueChange={(v) => setQForm({ ...qForm, domainId: v === "none" ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder={t("Select domain")} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{t("No Domain")}</SelectItem>
+                {activeDomains.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Template (disabled) */}
+          <div>
+            <Label>{t("Template")}</Label>
+            <Input value={templates.find((x) => x.id === selectedTemplateId)?.templateName || ""} disabled className="bg-muted" />
+          </div>
+          {/* Boolean fields row */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label className="text-xs">{t("Mandatory Attachment")}</Label>
+              <div className="flex items-center gap-3 mt-1">
+                {[true, false].map((val) => (
+                  <label key={String(val)} className="flex items-center gap-1 cursor-pointer">
+                    <input type="radio" name="mandAtt" checked={qForm.mandatoryAttachment === val}
+                      onChange={() => setQForm({ ...qForm, mandatoryAttachment: val })} className="accent-primary" />
+                    <span className="text-xs">{val ? t("Yes") : t("No")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">{t("Validate Through AI")}</Label>
+              <div className="flex items-center gap-3 mt-1">
+                {[true, false].map((val) => (
+                  <label key={String(val)} className="flex items-center gap-1 cursor-pointer">
+                    <input type="radio" name="valAI" checked={qForm.validateThroughAI === val}
+                      onChange={() => setQForm({ ...qForm, validateThroughAI: val })} className="accent-primary" />
+                    <span className="text-xs">{val ? t("Yes") : t("No")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">{t("Mandatory Question")}</Label>
+              <div className="flex items-center gap-3 mt-1">
+                {[true, false].map((val) => (
+                  <label key={String(val)} className="flex items-center gap-1 cursor-pointer">
+                    <input type="radio" name="mandQ" checked={qForm.mandatoryQuestion === val}
+                      onChange={() => setQForm({ ...qForm, mandatoryQuestion: val })} className="accent-primary" />
+                    <span className="text-xs">{val ? t("Yes") : t("No")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* Evidence, Issue, Risk, Recommendation */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>{t("Evidence")}</Label>
+              <Input value={qForm.evidence} onChange={(e) => setQForm({ ...qForm, evidence: e.target.value })} placeholder={t("Enter evidence")} />
+            </div>
+            <div>
+              <Label>{t("Issue")}</Label>
+              <Input value={qForm.issue} onChange={(e) => setQForm({ ...qForm, issue: e.target.value })} placeholder={t("Enter issue")} />
+            </div>
+            <div>
+              <Label>{t("Risk")}</Label>
+              <Input value={qForm.risk} onChange={(e) => setQForm({ ...qForm, risk: e.target.value })} placeholder={t("Enter risk")} />
+            </div>
+            <div>
+              <Label>{t("Recommendation")}</Label>
+              <Input value={qForm.recommendation} onChange={(e) => setQForm({ ...qForm, recommendation: e.target.value })} placeholder={t("Enter recommendation")} />
+            </div>
+          </div>
+          {/* Severity */}
+          <div>
+            <Label>{t("Severity")}</Label>
+            <Select value={qForm.severity || "none"} onValueChange={(v) => setQForm({ ...qForm, severity: v === "none" ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder={t("Select severity")} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{t("None")}</SelectItem>
+                <SelectItem value="High">{t("High")}</SelectItem>
+                <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                <SelectItem value="Low">{t("Low")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setQuestionDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleSaveQuestion}>{t("Save")}</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // ========== Link Existing Questions Dialog ==========
+
+  const renderLinkDialog = () => {
+    const available = getAvailableForLink();
+    return (
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{t("Link Existing Questions")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder={t("Search questions...")} value={linkSearch}
+                onChange={(e) => setLinkSearch(e.target.value)} className="pl-9" />
+            </div>
+            <div className="max-h-[40vh] overflow-y-auto space-y-2 border rounded-md p-2">
+              {available.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">{t("No available questions")}</p>
+              ) : available.map((q) => (
+                <label key={q.id} className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                  <Checkbox checked={selectedLinkIds.has(q.id)}
+                    onCheckedChange={() => {
+                      setSelectedLinkIds((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(q.id)) next.delete(q.id); else next.add(q.id);
+                        return next;
+                      });
+                    }} className="mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">{q.questionText}</p>
+                    {q.domain && <span className="text-xs text-muted-foreground">{q.domain.name}</span>}
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{selectedLinkIds.size} {t("selected")}</p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>{t("Cancel")}</Button>
+                <Button onClick={handleLinkQuestions} disabled={selectedLinkIds.size === 0}>
+                  <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Link Selected")}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  // ========== QUESTIONS SUB-VIEW ==========
+
+  if (subView === "questions" && selectedTemplateId) {
+    const tmpl = templates.find((x) => x.id === selectedTemplateId);
+    const links = templateData?.masterQuestionLinks || [];
+
+    const qColumns: ColumnDef<TemplateQuestion>[] = [
+      {
+        id: "domain",
+        header: t("Domain"),
+        cell: ({ row }) => (
+          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+            row.original.question.domain ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"
+          }`}>
+            {row.original.question.domain?.name || t("Unassigned")}
+          </span>
+        ),
+      },
+      {
+        id: "questionText",
+        header: t("Questions"),
+        cell: ({ row }) => (
+          <span className="text-sm line-clamp-2 max-w-[300px]" title={row.original.question.questionText}>
+            {row.original.question.questionText}
+          </span>
+        ),
+      },
+      {
+        id: "verifaiPrompt",
+        header: t("VerifAI Prompt Question"),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-sm line-clamp-2 max-w-[200px]">
+            {row.original.question.verifaiPrompt || "-"}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: t("Action"),
+        cell: ({ row }) => (
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditQuestion(row.original)}>
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleUnlinkQuestion(row.original.id)}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ),
+      },
+    ];
+
+    return (
+      <>
+        {/* Sub-breadcrumb */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+          <button onClick={() => { setSubView("list"); setSelectedTemplateId(null); }} className="hover:text-primary transition-colors">
+            {t("Questionnaire Management")}
+          </button>
+          <ChevronRight className={`h-3 w-3 ${isRTL ? "rotate-180" : ""}`} />
+          <span className="text-foreground font-medium">{tmpl?.templateName || ""}</span>
+        </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={() => { setSubView("list"); setSelectedTemplateId(null); }}>
+            <ArrowLeft className={`h-4 w-4 ltr:mr-1 rtl:ml-1 ${isRTL ? "rotate-180" : ""}`} /> {t("Back")}
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => {
+              setSelectedLinkIds(new Set()); setLinkSearch(""); setLinkDialogOpen(true);
+            }}>
+              <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Link Existing")}
+            </Button>
+            <Button size="sm" onClick={openAddQuestion}>
+              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
+            </Button>
+            <Button size="sm" variant="outline">
+              <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
+            </Button>
+          </div>
+        </div>
+
+        {questionsLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : links.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-40" />
+            <p>{t("No questions linked to this template")}</p>
+            <p className="text-sm mt-1">{t("Click Add to create a new question or Link Existing to add from the master question bank")}</p>
+          </div>
+        ) : (
+          <DataGrid columns={qColumns} data={links} />
+        )}
+
+        {renderQuestionDialog()}
+        {renderLinkDialog()}
+      </>
+    );
+  }
+
+  // ========== TEMPLATE LIST VIEW ==========
+
+  const templateColumns: ColumnDef<QuestionnaireTemplate>[] = [
     {
       accessorKey: "templateName",
       header: t("Assessment Template"),
@@ -1015,10 +1716,8 @@ function QuestionnaireManagementSection() {
       header: t("Category"),
       cell: ({ row }) => (
         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-          row.original.templateCategory === "Default"
-            ? "bg-blue-100 text-blue-800"
-            : row.original.templateCategory === "ISMS"
-            ? "bg-green-100 text-green-800"
+          row.original.templateCategory === "Default" ? "bg-blue-100 text-blue-800"
+            : row.original.templateCategory === "ISMS" ? "bg-green-100 text-green-800"
             : "bg-purple-100 text-purple-800"
         }`}>
           {row.original.templateCategory}
@@ -1030,28 +1729,24 @@ function QuestionnaireManagementSection() {
       header: t("Action"),
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+          <Button variant="ghost" size="icon" className="h-7 w-7" title={t("View Questions")}
+            onClick={() => { setSelectedTemplateId(row.original.id); setSubView("questions"); }}>
+            <Eye className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7"
             onClick={() => {
               setEditItem(row.original);
-              setForm({
+              setEditForm({
                 templateName: row.original.templateName,
                 frameworkName: row.original.frameworkName || "",
                 templateCategory: row.original.templateCategory,
               });
-              setDialogOpen(true);
-            }}
-          >
+              setEditDialogOpen(true);
+            }}>
             <Pencil className="h-3.5 w-3.5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-destructive"
-            onClick={() => handleDelete(row.original.id)}
-          >
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+            onClick={() => handleDeleteTemplate(row.original.id)}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -1059,19 +1754,19 @@ function QuestionnaireManagementSection() {
     },
   ];
 
+  // Step labels for wizard
+  const stepLabels = [t("Template Details"), t("Import Questions"), t("Vendor Profile Questions")];
+
   return (
     <>
       <div className="flex items-center justify-between mb-4">
         <div />
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => {
-            setEditItem(null);
-            setForm({ templateName: "", frameworkName: "", templateCategory: "Default" });
-            setDialogOpen(true);
-          }}>
-            <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
-          </Button>
-        </div>
+        <Button size="sm" onClick={() => {
+          resetWizard();
+          setWizardOpen(true);
+        }}>
+          <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
+        </Button>
       </div>
 
       {loading ? (
@@ -1079,53 +1774,274 @@ function QuestionnaireManagementSection() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <DataGrid columns={columns} data={templates} />
+        <DataGrid columns={templateColumns} data={templates} />
       )}
 
-      {/* Add/Edit Template Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* 3-Step Wizard Dialog */}
+      <Dialog open={wizardOpen} onOpenChange={(v) => { if (!v) { setWizardOpen(false); resetWizard(); } }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Add Questionnaire")} — {t("Step")} {wizardStep}: {stepLabels[wizardStep - 1]}</DialogTitle>
+          </DialogHeader>
+          {/* Step progress bar with labels */}
+          <div className="flex items-center gap-2 mb-4">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className="flex-1">
+                <div className={`h-1.5 rounded-full transition-colors ${s <= wizardStep ? "bg-primary" : "bg-muted"}`} />
+                <p className={`text-[10px] mt-1 text-center ${s <= wizardStep ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                  {stepLabels[s - 1]}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* ===== STEP 1: Template Details + Image Upload ===== */}
+          {wizardStep === 1 && (
+            <div className="space-y-4">
+              <div>
+                <Label>{t("Template Name")} *</Label>
+                <Input value={wizardForm.templateName}
+                  onChange={(e) => setWizardForm({ ...wizardForm, templateName: e.target.value })}
+                  placeholder={t("Enter template name")} />
+              </div>
+              <div>
+                <Label>{t("Framework")}</Label>
+                <Input value={wizardForm.frameworkName}
+                  onChange={(e) => setWizardForm({ ...wizardForm, frameworkName: e.target.value })}
+                  placeholder={t("Enter framework name")} />
+              </div>
+              <div>
+                <Label>{t("Template Category")}</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  {["Default", "ISMS", "Compliance"].map((cat) => (
+                    <label key={cat} className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="wizardCategory" value={cat}
+                        checked={wizardForm.templateCategory === cat}
+                        onChange={() => setWizardForm({ ...wizardForm, templateCategory: cat })}
+                        className="accent-primary" />
+                      <span className="text-sm">{t(cat)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {/* Image Upload */}
+              <div>
+                <Label>{t("Cover Image")}</Label>
+                <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { if (e.target.files?.[0]) handleImageSelect(e.target.files[0]); }} />
+                {wizardImagePreview ? (
+                  <div className="mt-2 relative inline-block">
+                    <img src={wizardImagePreview} alt="Preview" className="h-32 w-auto rounded-lg border object-cover" />
+                    <button onClick={() => { setWizardImage(null); setWizardImagePreview(null); if (imageInputRef.current) imageInputRef.current.value = ""; }}
+                      className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-0.5 hover:bg-destructive/80">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => imageInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files?.[0]) handleImageSelect(e.dataTransfer.files[0]); }}>
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">{t("Click or drag to upload cover image")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WebP</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => {
+                  if (!wizardForm.templateName.trim()) {
+                    toast({ title: t("Error"), description: t("Template name is required"), variant: "destructive" });
+                    return;
+                  }
+                  setWizardStep(2);
+                }}>
+                  {t("Next")}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ===== STEP 2: Import Questions ===== */}
+          {wizardStep === 2 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t("Download the Excel template, fill in your questions, then import the file. You can skip this step and add questions manually later.")}
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left: Download Template */}
+                <div className="border rounded-lg p-4 text-center space-y-3">
+                  <FileSpreadsheet className="h-8 w-8 mx-auto text-green-600" />
+                  <p className="text-sm font-medium">{t("Download Template")}</p>
+                  <p className="text-xs text-muted-foreground">{t("Excel template with 13 required columns")}</p>
+                  <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                    <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Download")}
+                  </Button>
+                </div>
+                {/* Right: Import File */}
+                <div className="border rounded-lg p-4 text-center space-y-3">
+                  <Upload className="h-8 w-8 mx-auto text-blue-600" />
+                  <p className="text-sm font-medium">{t("Import Questions")}</p>
+                  <input ref={importInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
+                    onChange={(e) => { if (e.target.files?.[0]) handleImportFileSelect(e.target.files[0]); }} />
+                  {importFile ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-2 text-sm">
+                        <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                        <span className="truncate max-w-[120px]">{importFile.name}</span>
+                        <button onClick={() => { setImportFile(null); setImportPreview(null); if (importInputRef.current) importInputRef.current.value = ""; }}
+                          className="text-destructive hover:text-destructive/80">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {importPreview && (
+                        <div className="text-xs space-y-1">
+                          <p className="text-muted-foreground">{t("Total rows")}: {importPreview.totalRows} | {t("Valid")}: {importPreview.validRows}</p>
+                          {importPreview.errors.length > 0 && (
+                            <div className="bg-destructive/10 rounded p-2 max-h-24 overflow-y-auto text-left">
+                              {importPreview.errors.slice(0, 5).map((err, i) => (
+                                <p key={i} className="text-destructive text-[10px]">
+                                  {err.row > 0 ? `${t("Row")} ${err.row}: ` : ""}{err.message}
+                                </p>
+                              ))}
+                              {importPreview.errors.length > 5 && (
+                                <p className="text-destructive text-[10px]">+{importPreview.errors.length - 5} {t("more errors")}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => importInputRef.current?.click()}>
+                      <Upload className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Select File")}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setWizardStep(1)}>{t("Previous")}</Button>
+                <Button onClick={() => { loadOnboardingQuestions(); setWizardStep(3); }}>{t("Next")}</Button>
+              </div>
+            </div>
+          )}
+
+          {/* ===== STEP 3: Vendor Profile Questions ===== */}
+          {wizardStep === 3 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t("Select onboarding questions to include in the vendor profile for this template. This step is optional.")}
+              </p>
+              {onboardingQuestions.length === 0 ? (
+                <div className="border rounded-lg p-6 text-center text-muted-foreground">
+                  <CheckSquare className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">{t("No onboarding questions configured")}</p>
+                  <p className="text-xs mt-1">{t("Add questions in Vendor Onboarding configuration first")}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{selectedProfileQuestionIds.size} {t("selected")}</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        const allIds = new Set<string>();
+                        onboardingQuestions.forEach((q) => {
+                          allIds.add(q.id);
+                          q.children?.forEach((c) => allIds.add(c.id));
+                        });
+                        setSelectedProfileQuestionIds(allIds);
+                      }}>{t("Select All")}</Button>
+                      <Button variant="outline" size="sm" onClick={() => setSelectedProfileQuestionIds(new Set())}>
+                        {t("Deselect All")}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="border rounded-lg max-h-[40vh] overflow-y-auto divide-y">
+                    {onboardingQuestions.filter((q) => !q.parentId).map((parent) => (
+                      <div key={parent.id}>
+                        <label className="flex items-start gap-3 p-3 hover:bg-muted/50 cursor-pointer">
+                          <Checkbox checked={selectedProfileQuestionIds.has(parent.id)}
+                            onCheckedChange={() => {
+                              setSelectedProfileQuestionIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(parent.id)) next.delete(parent.id); else next.add(parent.id);
+                                return next;
+                              });
+                            }} className="mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{parent.title}</p>
+                            {parent.question && <p className="text-xs text-muted-foreground mt-0.5">{parent.question}</p>}
+                          </div>
+                        </label>
+                        {/* Children */}
+                        {parent.children?.map((child) => (
+                          <label key={child.id} className="flex items-start gap-3 p-3 ltr:pl-10 rtl:pr-10 hover:bg-muted/50 cursor-pointer border-t border-dashed">
+                            <Checkbox checked={selectedProfileQuestionIds.has(child.id)}
+                              onCheckedChange={() => {
+                                setSelectedProfileQuestionIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(child.id)) next.delete(child.id); else next.add(child.id);
+                                  return next;
+                                });
+                              }} className="mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm">{child.title}</p>
+                              {child.question && <p className="text-xs text-muted-foreground mt-0.5">{child.question}</p>}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setWizardStep(2)}>{t("Previous")}</Button>
+                <Button onClick={handleWizardSave} disabled={wizardSaving}>
+                  {wizardSaving ? (
+                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" /> {t("Creating...")}</>
+                  ) : t("Create")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Template Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{editItem ? t("Edit Template") : t("Add Template")}</DialogTitle>
+            <DialogTitle>{t("Edit Template")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
               <Label>{t("Template Name")}</Label>
-              <Input
-                value={form.templateName}
-                onChange={(e) => setForm({ ...form, templateName: e.target.value })}
-                placeholder={t("Enter template name")}
-              />
+              <Input value={editForm.templateName}
+                onChange={(e) => setEditForm({ ...editForm, templateName: e.target.value })} />
             </div>
             <div>
               <Label>{t("Framework")}</Label>
-              <Input
-                value={form.frameworkName}
-                onChange={(e) => setForm({ ...form, frameworkName: e.target.value })}
-                placeholder={t("Enter framework name")}
-              />
+              <Input value={editForm.frameworkName}
+                onChange={(e) => setEditForm({ ...editForm, frameworkName: e.target.value })} />
             </div>
             <div>
               <Label>{t("Template Category")}</Label>
               <div className="flex items-center gap-4 mt-2">
                 {["Default", "ISMS", "Compliance"].map((cat) => (
                   <label key={cat} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="templateCategory"
-                      value={cat}
-                      checked={form.templateCategory === cat}
-                      onChange={() => setForm({ ...form, templateCategory: cat })}
-                      className="accent-primary"
-                    />
+                    <input type="radio" name="editCategory" value={cat}
+                      checked={editForm.templateCategory === cat}
+                      onChange={() => setEditForm({ ...editForm, templateCategory: cat })}
+                      className="accent-primary" />
                     <span className="text-sm">{t(cat)}</span>
                   </label>
                 ))}
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleSave}>{t("Save")}</Button>
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t("Cancel")}</Button>
+              <Button onClick={handleEditSave}>{t("Save")}</Button>
             </div>
           </div>
         </DialogContent>

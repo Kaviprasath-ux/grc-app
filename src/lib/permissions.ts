@@ -242,10 +242,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.configurations', actions: ['*'], scope: 'all' },
     { resource: 'tprm.master-data', actions: ['*'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
     { resource: 'tprm.settings', actions: ['*'], scope: 'all' },
     { resource: 'tprm.support', actions: ['view'], scope: 'all' },
-    { resource: 'tprm.account-overview', actions: ['view'], scope: 'all' },
   ],
 
   // Audit Head - Full access to Internal Audit module ONLY
@@ -464,7 +462,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
     // TPRM modules (only active when isTprmAdded=true via module flag filtering)
-    { resource: 'tprm.account-overview', actions: ['view'], scope: 'all' },
     { resource: 'tprm.program-monitor', actions: ['view'], scope: 'all' },
     { resource: 'tprm.control-center', actions: ['*'], scope: 'all' },
     { resource: 'tprm.user-management', actions: ['*'], scope: 'all' },
@@ -474,16 +471,13 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.configurations', actions: ['*'], scope: 'all' },
     { resource: 'tprm.master-data', actions: ['*'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
     { resource: 'tprm.settings', actions: ['*'], scope: 'all' },
     { resource: 'tprm.support', actions: ['view'], scope: 'all' },
   ],
 
   // Factory Admin - TPRM access for assessment factory management
   FactoryAdmin: [
-    { resource: 'tprm.account-overview', actions: ['view'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.task-queue', actions: ['view'], scope: 'all' },
   ],
 
   // TPRM Admin - Super admin level, only admin-level pages (not customer admin pages)

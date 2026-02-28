@@ -42,7 +42,6 @@ import {
   Sliders,
   Radar,
   Database,
-  HelpCircle,
   type LucideIcon,
 } from "lucide-react";
 import { UserPermission, hasPermission, Action } from "@/lib/permissions";
@@ -206,8 +205,6 @@ export const navigation: NavItem[] = [
       { name: "Configurations", href: "/tprm/configurations", icon: Settings, permission: "tprm.configurations:view" },
       { name: "Master Data", href: "/tprm/master-data", icon: Database, permission: "tprm.master-data:view" },
       { name: "Assessment Workspace", href: "/tprm/assessments", icon: ListChecks, permission: "tprm.assessments:view" },
-      { name: "Settings", href: "/tprm/settings", icon: Settings2, permission: "tprm.settings:view" },
-      { name: "Support", href: "/tprm/support", icon: HelpCircle, permission: "tprm.support:view" },
       { name: "Account Overview", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
       { name: "Task Queue", href: "/tprm/task-queue", icon: Inbox, permission: "tprm.task-queue:view" },
     ],
