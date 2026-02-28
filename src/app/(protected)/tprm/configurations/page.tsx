@@ -1781,16 +1781,35 @@ function QuestionnaireManagementSection() {
       <Dialog open={wizardOpen} onOpenChange={(v) => { if (!v) { setWizardOpen(false); resetWizard(); } }}>
         <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("Add Questionnaire")} — {t("Step")} {wizardStep}: {stepLabels[wizardStep - 1]}</DialogTitle>
+            <DialogTitle>{t("Add Questionnaire")}</DialogTitle>
           </DialogHeader>
-          {/* Step progress bar with labels */}
-          <div className="flex items-center gap-2 mb-4">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex-1">
-                <div className={`h-1.5 rounded-full transition-colors ${s <= wizardStep ? "bg-primary" : "bg-muted"}`} />
-                <p className={`text-[10px] mt-1 text-center ${s <= wizardStep ? "text-primary font-medium" : "text-muted-foreground"}`}>
-                  {stepLabels[s - 1]}
-                </p>
+          {/* Wizard step circles with connecting lines */}
+          <div className="flex items-center justify-center mb-6 px-4">
+            {[1, 2, 3].map((s, idx) => (
+              <div key={s} className="flex items-center">
+                {/* Step circle + label */}
+                <div className="flex flex-col items-center">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all ${
+                    s < wizardStep
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : s === wizardStep
+                        ? "border-primary text-primary bg-primary/10"
+                        : "border-muted-foreground/30 text-muted-foreground bg-muted/30"
+                  }`}>
+                    {s < wizardStep ? "✓" : s}
+                  </div>
+                  <p className={`text-[11px] mt-1.5 whitespace-nowrap ${
+                    s <= wizardStep ? "text-primary font-medium" : "text-muted-foreground"
+                  }`}>
+                    {stepLabels[s - 1]}
+                  </p>
+                </div>
+                {/* Connecting line (not after last step) */}
+                {idx < 2 && (
+                  <div className={`w-20 h-0.5 mx-2 mb-5 transition-colors ${
+                    s < wizardStep ? "bg-primary" : "bg-muted-foreground/20"
+                  }`} />
+                )}
               </div>
             ))}
           </div>
