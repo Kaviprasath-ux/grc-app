@@ -24,6 +24,11 @@ export default async function Home() {
     redirect("/internal-audit/fieldwork");
   }
 
+  // Redirect BusinessOwner users to BO Dashboard
+  if (session?.user?.roles?.includes("BusinessOwner")) {
+    redirect("/tprm/bo-dashboard");
+  }
+
   // Redirect TPRM-only users (isTprmAdded=true, isGrcAdded=false) to Program Monitor
   if (session?.user?.isTprmAdded && !session?.user?.isGrcAdded) {
     redirect("/tprm/program-monitor");

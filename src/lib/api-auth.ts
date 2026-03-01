@@ -36,8 +36,9 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 
 export interface AuthOptions {
-  /** Resource identifier (e.g., "organization.process", "risk.register") */
-  resource: string;
+  /** Resource identifier (e.g., "organization.process", "risk.register").
+   *  Pass an array to allow access if the user has permission for ANY of the listed resources. */
+  resource: string | string[];
   /** Action being performed */
   action: Action;
 }
@@ -86,15 +87,14 @@ export function withAuth<T extends { params?: Promise<unknown> }>(
 
       const user = session.user;
 
-      // Check if user has required permission
-      const hasAccess = hasPermission(
-        user.permissions || [],
-        options.resource,
-        options.action
+      // Check if user has required permission (supports multiple resources — any match grants access)
+      const resources = Array.isArray(options.resource) ? options.resource : [options.resource];
+      const hasAccess = resources.some(r =>
+        hasPermission(user.permissions || [], r, options.action)
       );
 
       if (!hasAccess) {
-        return forbidden(`You don't have permission to ${options.action} ${options.resource}`);
+        return forbidden(`You don't have permission to ${options.action} ${resources.join(' or ')}`);
       }
 
       // Build authenticated user object

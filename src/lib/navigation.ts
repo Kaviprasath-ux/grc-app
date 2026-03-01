@@ -42,6 +42,9 @@ import {
   Sliders,
   Radar,
   Database,
+  HelpCircle,
+  UserCog,
+  FileBarChart,
   type LucideIcon,
 } from "lucide-react";
 import { UserPermission, hasPermission, Action } from "@/lib/permissions";
@@ -207,6 +210,16 @@ export const navigation: NavItem[] = [
       { name: "Assessment Workspace", href: "/tprm/assessments", icon: ListChecks, permission: "tprm.assessments:view" },
       { name: "Account Overview", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
       { name: "Task Queue", href: "/tprm/task-queue", icon: Inbox, permission: "tprm.task-queue:view" },
+      // ---- Business Owner menu items ----
+      { name: "Dashboard", href: "/tprm/bo-dashboard", icon: LayoutDashboard, permission: "tprm.bo-dashboard:view" },
+      { name: "Assessments", href: "/tprm/bo-assessments", icon: ClipboardCheck, permission: "tprm.bo-assessments:view" },
+      { name: "User Management", href: "/tprm/bo-user-management", icon: UserCog, permission: "tprm.bo-user-management:view" },
+      { name: "Vendor Inventory", href: "/tprm/bo-inventory", icon: Package, permission: "tprm.bo-inventory:view" },
+      { name: "Reports", href: "/tprm/bo-reports", icon: FileBarChart, permission: "tprm.bo-reports:view" },
+      { name: "Issue Management", href: "/tprm/bo-issues", icon: AlertTriangle, permission: "tprm.bo-issues:view" },
+      { name: "Contracts", href: "/tprm/bo-contracts", icon: FileText, permission: "tprm.bo-contracts:view" },
+      { name: "Monitoring", href: "/tprm/bo-monitoring", icon: Activity, permission: "tprm.bo-monitoring:view" },
+      { name: "Support", href: "/tprm/bo-support", icon: HelpCircle, permission: "tprm.bo-support:view" },
     ],
   },
   // ==================== End TPRM Section ====================
@@ -326,6 +339,7 @@ const ROLE_PATH_MAP: Record<string, string> = {
   "TPRMCustomerAdmin": "tprm-customer-admin",
   "FactoryAdmin": "factory-admin",
   "TPRMAdmin": "tprm-admin",
+  "BusinessOwner": "business-owner",
 };
 
 /**
@@ -412,6 +426,7 @@ function getPrimaryRole(roles: string[]): string {
     "TPRMCustomerAdmin",
     "FactoryAdmin",
     "TPRMAdmin",
+    "BusinessOwner",
   ];
 
   for (const role of rolePriority) {

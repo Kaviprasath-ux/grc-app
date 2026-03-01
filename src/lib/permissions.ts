@@ -102,6 +102,17 @@ export const RESOURCES = {
   'tprm.master-data': '/tprm/master-data',
   'tprm.settings': '/tprm/settings',
   'tprm.support': '/tprm/support',
+
+  // TPRM Business Owner specific resources
+  'tprm.bo-dashboard': '/tprm/bo-dashboard',
+  'tprm.bo-assessments': '/tprm/bo-assessments',
+  'tprm.bo-user-management': '/tprm/bo-user-management',
+  'tprm.bo-inventory': '/tprm/bo-inventory',
+  'tprm.bo-reports': '/tprm/bo-reports',
+  'tprm.bo-issues': '/tprm/bo-issues',
+  'tprm.bo-contracts': '/tprm/bo-contracts',
+  'tprm.bo-monitoring': '/tprm/bo-monitoring',
+  'tprm.bo-support': '/tprm/bo-support',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -170,6 +181,14 @@ export const ROLES = {
   TPRMAdmin: {
     name: 'TPRMAdmin',
     description: 'TPRM super administrator, full TPRM module access across all accounts',
+  },
+  BusinessOwner: {
+    name: 'BusinessOwner',
+    description: 'Business Owner role in TPRM, manages relationship managers and vendor assessments',
+  },
+  RelationshipManager: {
+    name: 'RelationshipManager',
+    description: 'Relationship Manager role in TPRM, manages vendor relationships',
   },
 } as const;
 
@@ -486,6 +505,23 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
   ],
+
+  // Business Owner - Business Owner role with 9 dedicated BO pages
+  // Also needs tprm.user-management for the BO User Management page (reuses same API)
+  BusinessOwner: [
+    { resource: 'tprm.bo-dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.bo-assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.bo-user-management', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.bo-inventory', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.bo-reports', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.bo-issues', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.bo-contracts', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.bo-monitoring', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.bo-support', actions: ['*'], scope: 'all' },
+  ],
+
+  // Relationship Manager - Placeholder permissions (pages to be added later)
+  RelationshipManager: [],
 };
 
 // ==================== ROUTE TO RESOURCE MAPPING ====================
@@ -593,7 +629,7 @@ export function expandRolePermissions(
 
   // System-level roles are not filtered by module flags
   const isSystemRole = roleNames.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'BusinessOwner'
   );
 
   for (const roleName of roleNames) {

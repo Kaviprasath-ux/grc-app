@@ -88,7 +88,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: 'tprm.user-management', action: 'view' }
+  { resource: ['tprm.user-management', 'tprm.bo-user-management'], action: 'view' }
 );
 
 // POST /api/tprm/user-management — Create a new TPRM user
@@ -161,6 +161,21 @@ export const POST = withAuth(
         },
       });
 
+      // Auto-assign UserRole based on tprmRole
+      const tprmRoleToSystemRole: Record<string, string> = {
+        'Business Owner': 'BusinessOwner',
+        'Relationship Manager': 'RelationshipManager',
+      };
+      const systemRoleName = tprmRoleToSystemRole[tprmRole];
+      if (systemRoleName) {
+        const systemRole = await prisma.role.findFirst({ where: { name: systemRoleName } });
+        if (systemRole) {
+          await prisma.userRole.create({
+            data: { userId: user.id, roleId: systemRole.id },
+          });
+        }
+      }
+
       return NextResponse.json(user, { status: 201 });
     } catch (error) {
       console.error('User Management POST error:', error);
@@ -170,7 +185,7 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: 'tprm.user-management', action: 'create' }
+  { resource: ['tprm.user-management', 'tprm.bo-user-management'], action: 'create' }
 );
 
 // PATCH /api/tprm/user-management — Update a TPRM user
@@ -247,7 +262,7 @@ export const PATCH = withAuth(
       );
     }
   },
-  { resource: 'tprm.user-management', action: 'edit' }
+  { resource: ['tprm.user-management', 'tprm.bo-user-management'], action: 'edit' }
 );
 
 // DELETE /api/tprm/user-management — Delete a TPRM user
@@ -292,5 +307,5 @@ export const DELETE = withAuth(
       );
     }
   },
-  { resource: 'tprm.user-management', action: 'delete' }
+  { resource: ['tprm.user-management', 'tprm.bo-user-management'], action: 'delete' }
 );
