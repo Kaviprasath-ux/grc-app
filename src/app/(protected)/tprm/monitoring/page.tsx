@@ -17,6 +17,7 @@ import {
   Search,
   Trash2,
   FileBarChart,
+  ArrowRightCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,20 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -72,6 +87,7 @@ interface TPRMMonitoringAssessment {
 }
 interface TPRMMonitoringVendor {
   id: string; vendorName: string; vendorURL: string; vendorOnboarded: boolean;
+  tprmVendorId: string | null;
   assessments: TPRMMonitoringAssessment[];
 }
 
@@ -149,8 +165,11 @@ function ScoreCard({ label, score, calculated, icon: Icon }: {
 
 // ==================== DETAIL SHEET ====================
 
-function AssessmentDetailSheet({ vendor, open, onClose }: {
-  vendor: TPRMMonitoringVendor | null; open: boolean; onClose: () => void;
+function AssessmentDetailSheet({ vendor, open, onClose, onOnboard }: {
+  vendor: TPRMMonitoringVendor | null;
+  open: boolean;
+  onClose: () => void;
+  onOnboard: (vendor: TPRMMonitoringVendor) => void;
 }) {
   const { t } = useLanguage();
   const assessment = vendor?.assessments[0] ?? null;
@@ -173,10 +192,25 @@ function AssessmentDetailSheet({ vendor, open, onClose }: {
                 <span className="truncate">{vendor.vendorURL}</span>
               </a>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
               {statusBadge(assessment.status)}
               {assessment.isLatest && <Badge className="bg-blue-100 text-blue-800 text-xs">Latest</Badge>}
-              {vendor.vendorOnboarded && <Badge className="bg-green-100 text-green-800 text-xs">Onboarded</Badge>}
+              {vendor.vendorOnboarded ? (
+                <Badge className="bg-green-100 text-green-800 text-xs">
+                  <CheckCircle2 className="h-3 w-3 ltr:mr-1 rtl:ml-1" />
+                  {t("Onboarded")}
+                </Badge>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                  onClick={() => onOnboard(vendor)}
+                >
+                  <ArrowRightCircle className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                  {t("Onboard to TPRM")}
+                </Button>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mt-1">
@@ -410,6 +444,122 @@ function KpiCell({ score }: { score: number | null }) {
   );
 }
 
+// ==================== ONBOARD DIALOG ====================
+
+function OnboardDialog({
+  open,
+  onClose,
+  vendor,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  vendor: TPRMMonitoringVendor | null;
+  onSuccess: (monitoringVendorId: string, newTprmVendorId: string) => void;
+}) {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    contactEmail: "",
+    serviceCategory: "",
+    vrr: "",
+  });
+
+  useEffect(() => {
+    if (vendor) {
+      setForm({ name: vendor.vendorName, contactEmail: "", serviceCategory: "", vrr: "" });
+    }
+  }, [vendor]);
+
+  const handleSubmit = async () => {
+    if (!vendor || !form.name.trim()) return;
+    setSaving(true);
+    try {
+      // Step 1: Create TPRM vendor
+      const createRes = await fetch("/api/tprm/vendors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          contactEmail: form.contactEmail.trim() || null,
+          serviceCategory: form.serviceCategory || null,
+          vrr: form.vrr || null,
+          status: "Onboarding",
+        }),
+      });
+      if (!createRes.ok) {
+        const err = await createRes.json();
+        toast({ title: t("Error"), description: err.error || t("Failed to create vendor"), variant: "destructive" });
+        return;
+      }
+      const { data: newVendor } = await createRes.json();
+
+      // Step 2: Link monitoring vendor → TPRM vendor
+      const linkRes = await fetch("/api/tprm/monitoring", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: vendor.id, tprmVendorId: newVendor.id }),
+      });
+      if (!linkRes.ok) {
+        toast({ title: t("Warning"), description: t("Vendor created but linking failed"), variant: "destructive" });
+        return;
+      }
+
+      toast({ title: t("Success"), description: `${form.name} ${t("has been onboarded to TPRM Vendor Management")}` });
+      onSuccess(vendor.id, newVendor.id);
+      onClose();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to onboard vendor"), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("Onboard to TPRM")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div>
+            <Label>{t("Vendor Name")} *</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div>
+            <Label>{t("Contact Email")}</Label>
+            <Input type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} placeholder="vendor@example.com" />
+          </div>
+          <div>
+            <Label>{t("Service Category")}</Label>
+            <Input value={form.serviceCategory} onChange={(e) => setForm({ ...form, serviceCategory: e.target.value })} placeholder={t("e.g. Cloud Infrastructure")} />
+          </div>
+          <div>
+            <Label>{t("Vendor Risk Rating")}</Label>
+            <Select value={form.vrr || "none"} onValueChange={(v) => setForm({ ...form, vrr: v === "none" ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder={t("Select rating")} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{t("None")}</SelectItem>
+                {["Critical", "High", "Moderate", "Low", "Nominal"].map((r) => (
+                  <SelectItem key={r} value={r}>{t(r)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>{t("Cancel")}</Button>
+          <Button onClick={handleSubmit} disabled={saving || !form.name.trim()}>
+            {saving ? t("Onboarding...") : t("Onboard Vendor")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ==================== MAIN PAGE ====================
 
 export default function MonitoringPage() {
@@ -422,6 +572,8 @@ export default function MonitoringPage() {
   const [vendorDomain, setVendorDomain] = useState("");
   const [selected, setSelected] = useState<TPRMMonitoringVendor | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [onboardTarget, setOnboardTarget] = useState<TPRMMonitoringVendor | null>(null);
+  const [onboardDialogOpen, setOnboardDialogOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -451,6 +603,27 @@ export default function MonitoringPage() {
   };
 
   const openDetail = (v: TPRMMonitoringVendor) => { setSelected(v); setSheetOpen(true); };
+
+  const handleOnboard = (v: TPRMMonitoringVendor) => {
+    setOnboardTarget(v);
+    setOnboardDialogOpen(true);
+  };
+
+  const handleOnboardSuccess = (monitoringVendorId: string, newTprmVendorId: string) => {
+    setVendors((prev) =>
+      prev.map((v) =>
+        v.id === monitoringVendorId
+          ? { ...v, vendorOnboarded: true, tprmVendorId: newTprmVendorId }
+          : v
+      )
+    );
+    // Also update selected if it's the same vendor
+    setSelected((prev) =>
+      prev?.id === monitoringVendorId
+        ? { ...prev, vendorOnboarded: true, tprmVendorId: newTprmVendorId }
+        : prev
+    );
+  };
 
   // Latest-assessment vendors (shown in main table)
   const latestVendors = vendors.filter((v) => v.assessments.length > 0);
@@ -541,7 +714,15 @@ export default function MonitoringPage() {
                       onClick={() => openDetail(v)}
                     >
                       <td className="px-4 py-3 border-r min-w-[160px]">
-                        <div className="font-medium text-sm">{v.vendorName}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium text-sm">{v.vendorName}</div>
+                          {v.vendorOnboarded && (
+                            <Badge className="bg-green-100 text-green-700 text-xs h-5">
+                              <CheckCircle2 className="h-3 w-3 ltr:mr-0.5 rtl:ml-0.5" />
+                              {t("Onboarded")}
+                            </Badge>
+                          )}
+                        </div>
                         <a
                           href={v.vendorURL}
                           target="_blank"
@@ -607,7 +788,20 @@ export default function MonitoringPage() {
       </div>
 
       {/* Detail Sheet */}
-      <AssessmentDetailSheet vendor={selected} open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <AssessmentDetailSheet
+        vendor={selected}
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onOnboard={handleOnboard}
+      />
+
+      {/* Onboard Dialog */}
+      <OnboardDialog
+        open={onboardDialogOpen}
+        onClose={() => setOnboardDialogOpen(false)}
+        vendor={onboardTarget}
+        onSuccess={handleOnboardSuccess}
+      />
     </div>
   );
 }

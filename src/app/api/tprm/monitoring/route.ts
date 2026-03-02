@@ -300,3 +300,35 @@ export const POST = withAuth(
   },
   { resource: "tprm.monitoring", action: "create" }
 );
+
+// PATCH — link a monitoring vendor to a TPRM vendor
+export const PATCH = withAuth(
+  async (req, _context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const { id, tprmVendorId } = await req.json() as { id: string; tprmVendorId: string | null };
+
+      const monVendor = await prisma.tPRMMonitoringVendor.findFirst({
+        where: { id, customerAccountId },
+      });
+      if (!monVendor) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+      if (tprmVendorId) {
+        const tprmVendor = await prisma.tPRMVendor.findFirst({
+          where: { id: tprmVendorId, customerAccountId },
+        });
+        if (!tprmVendor) return NextResponse.json({ error: "TPRM vendor not found" }, { status: 404 });
+      }
+
+      const updated = await prisma.tPRMMonitoringVendor.update({
+        where: { id },
+        data: { tprmVendorId: tprmVendorId || null, vendorOnboarded: !!tprmVendorId },
+      });
+      return NextResponse.json({ data: updated });
+    } catch (err) {
+      console.error("[TPRM Monitoring PATCH]", err);
+      return NextResponse.json({ error: "Failed to update monitoring vendor" }, { status: 500 });
+    }
+  },
+  { resource: "tprm.monitoring", action: "edit" }
+);

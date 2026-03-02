@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Minus, Pencil, Trash2, Search, X,
-  Download, Upload, Building2, Info,
+  Download, Upload, Building2, Info, Shield, Activity, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,20 @@ interface Department {
   name: string;
 }
 
+interface MonitoringAssessmentSummary {
+  overallScore: number | null;
+  securityPostureScore: number | null;
+  threatExposureScore: number | null;
+  calculatedOverallScore: number | null;
+}
+
+interface MonitoringVendorSummary {
+  id: string;
+  vendorName: string;
+  vendorURL: string;
+  assessments: MonitoringAssessmentSummary[];
+}
+
 interface Vendor {
   id: string;
   vendorCode: string;
@@ -65,6 +79,7 @@ interface Vendor {
   pii: boolean;
   businessJustification: string | null;
   vendorCertification: string | null;
+  monitoringVendor: MonitoringVendorSummary | null;
   _count?: { assessments: number };
 }
 
@@ -77,6 +92,13 @@ const VRR_COLORS: Record<string, string> = {
   Low: "bg-green-100 text-green-800 border-green-200",
   Nominal: "bg-blue-100 text-blue-800 border-blue-200",
 };
+
+function securityScoreBadgeClass(score: number | null): string {
+  if (score === null) return "bg-slate-100 text-slate-500";
+  if (score >= 70) return "bg-green-100 text-green-700";
+  if (score >= 50) return "bg-yellow-100 text-yellow-700";
+  return "bg-red-100 text-red-700";
+}
 
 // ==================== MAIN COMPONENT ====================
 
@@ -258,6 +280,14 @@ export default function VendorManagementPage() {
     { accessorKey: "serviceCategory", header: t("Service Category"), cell: ({ row }) => <span className="text-sm">{row.original.serviceCategory || "-"}</span> },
     { accessorKey: "vrr", header: t("VRR"), cell: ({ row }) => row.original.vrr ? <Badge variant="outline" className={VRR_COLORS[row.original.vrr] || ""}>{t(row.original.vrr)}</Badge> : <span className="text-muted-foreground">-</span> },
     {
+      id: "securityScore", header: t("Security Score"),
+      cell: ({ row }) => {
+        const score = row.original.monitoringVendor?.assessments[0]?.overallScore ?? null;
+        if (score === null) return <span className="text-muted-foreground text-sm">-</span>;
+        return <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(score)}`}>{score}</span>;
+      },
+    },
+    {
       id: "actions", header: t("Action"),
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
@@ -407,6 +437,46 @@ export default function VendorManagementPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Security Monitoring Section */}
+                    {vendor.monitoringVendor && (
+                      <div className="border-t px-6 py-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Shield className="h-4 w-4 text-primary" />
+                          <h4 className="font-semibold text-primary text-sm">{t("Security Monitoring")}</h4>
+                        </div>
+                        {vendor.monitoringVendor.assessments[0] ? (() => {
+                          const a = vendor.monitoringVendor!.assessments[0];
+                          return (
+                            <div className="flex flex-wrap gap-3">
+                              <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
+                                <Activity className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">{t("Overall Score")}</span>
+                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(a.overallScore)}`}>
+                                  {a.overallScore ?? "—"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
+                                <Shield className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">{t("Security Posture")}</span>
+                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(a.securityPostureScore)}`}>
+                                  {a.securityPostureScore ?? "—"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
+                                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">{t("Threat Exposure")}</span>
+                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(a.threatExposureScore)}`}>
+                                  {a.threatExposureScore ?? "—"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })() : (
+                          <p className="text-sm text-muted-foreground">{t("No assessment data available")}</p>
+                        )}
+                      </div>
+                    )}
 
                     {/* Report & Document Library */}
                     <div className="border-t px-6 py-3">

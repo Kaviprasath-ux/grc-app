@@ -2649,6 +2649,7 @@ CREATE TABLE "TPRMMonitoringVendor" (
     "vendorName" TEXT NOT NULL,
     "vendorURL" TEXT NOT NULL,
     "vendorOnboarded" BOOLEAN NOT NULL DEFAULT false,
+    "tprmVendorId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -3614,6 +3615,9 @@ CREATE INDEX "TPRMQuestionnaireQuestion_customerAccountId_idx" ON "TPRMQuestionn
 CREATE UNIQUE INDEX "TPRMQuestionnaireQuestion_templateId_questionId_key" ON "TPRMQuestionnaireQuestion"("templateId", "questionId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "TPRMMonitoringVendor_tprmVendorId_key" ON "TPRMMonitoringVendor"("tprmVendorId");
+
+-- CreateIndex
 CREATE INDEX "TPRMMonitoringVendor_customerAccountId_idx" ON "TPRMMonitoringVendor"("customerAccountId");
 
 -- CreateIndex
@@ -4538,6 +4542,9 @@ ALTER TABLE "TPRMQuestionnaireQuestion" ADD CONSTRAINT "TPRMQuestionnaireQuestio
 ALTER TABLE "TPRMMonitoringVendor" ADD CONSTRAINT "TPRMMonitoringVendor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TPRMMonitoringVendor" ADD CONSTRAINT "TPRMMonitoringVendor_tprmVendorId_fkey" FOREIGN KEY ("tprmVendorId") REFERENCES "TPRMVendor"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "TPRMMonitoringAssessment" ADD CONSTRAINT "TPRMMonitoringAssessment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -4582,13 +4589,3 @@ ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fk
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-[90m[90m┌─[39m[90m[90m────────────────────────────────────────────────────────┐[39m[90m
-[90m│[39m[90m  [0m[34mUpdate available[39m[90m 5.22.0 -> 7.4.2[0m                       [90m│[39m[90m
-[90m│[39m[90m  [0m[0m                                                       [90m│[39m[90m
-[90m│[39m[90m  [0mThis is a major update - please follow the guide at[0m    [90m│[39m[90m
-[90m│[39m[90m  [0mhttps://pris.ly/d/major-version-upgrade[0m                [90m│[39m[90m
-[90m│[39m[90m  [0m[0m                                                       [90m│[39m[90m
-[90m│[39m[90m  [0mRun the following to update[0m                            [90m│[39m[90m
-[90m│[39m[90m  [0m  [1mnpm i --save-dev prisma@latest[22m[0m                       [90m│[39m[90m
-[90m│[39m[90m  [0m  [1mnpm i @prisma/client@latest[22m[0m                          [90m│[39m[90m
-└─────────────────────────────────────────────────────────┘[39m

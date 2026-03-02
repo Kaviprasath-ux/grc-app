@@ -32,6 +32,23 @@ export const GET = withAuth(
           include: {
             department: { select: { id: true, name: true } },
             _count: { select: { assessments: true } },
+            monitoringVendor: {
+              select: {
+                id: true,
+                vendorName: true,
+                vendorURL: true,
+                assessments: {
+                  where: { isLatest: true },
+                  select: {
+                    overallScore: true,
+                    securityPostureScore: true,
+                    threatExposureScore: true,
+                    calculatedOverallScore: true,
+                  },
+                  take: 1,
+                },
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
           take: limit,

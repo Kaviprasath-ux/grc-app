@@ -3308,6 +3308,7 @@ model TPRMVendor {
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
   assessments         TPRMAssessment[]
+  monitoringVendor    TPRMMonitoringVendor? @relation("MonitoringToVendor")
 
   @@unique([customerAccountId, vendorCode])
   @@index([customerAccountId])
@@ -3636,11 +3637,13 @@ model TPRMMonitoringVendor {
   vendorName        String
   vendorURL         String
   vendorOnboarded   Boolean   @default(false)
+  tprmVendorId      String?   @unique
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   customerAccount   CustomerAccount            @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
   assessments       TPRMMonitoringAssessment[]
+  tprmVendor        TPRMVendor?                @relation("MonitoringToVendor", fields: [tprmVendorId], references: [id], onDelete: SetNull)
 
   @@index([customerAccountId])
 }
