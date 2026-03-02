@@ -2643,6 +2643,164 @@ CREATE TABLE "TPRMQuestionnaireQuestion" (
 );
 
 -- CreateTable
+CREATE TABLE "TPRMMonitoringVendor" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "vendorName" TEXT NOT NULL,
+    "vendorURL" TEXT NOT NULL,
+    "vendorOnboarded" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMMonitoringVendor_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMMonitoringAssessment" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "monitoringVendorId" TEXT NOT NULL,
+    "vendorName" TEXT NOT NULL,
+    "vendorURL" TEXT NOT NULL,
+    "jobID" TEXT,
+    "status" TEXT,
+    "overallSummary" TEXT,
+    "overallScore" INTEGER,
+    "securityPostureScore" INTEGER,
+    "threatExposureScore" INTEGER,
+    "securityPostureSummary" TEXT,
+    "threatExposureSummary" TEXT,
+    "lastScan" TIMESTAMP(3),
+    "nextScan" TEXT,
+    "isLatest" BOOLEAN NOT NULL DEFAULT true,
+    "downloadType" TEXT,
+    "calculatedSecurityPosture" DOUBLE PRECISION,
+    "calculatedThreatExposure" DOUBLE PRECISION,
+    "calculatedOverallScore" DOUBLE PRECISION,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMMonitoringAssessment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMComplianceAndLegal" (
+    "id" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "privacyPolicyUrl" TEXT,
+    "dpaUrl" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMComplianceAndLegal_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMLaw" (
+    "id" TEXT NOT NULL,
+    "complianceId" TEXT NOT NULL,
+    "lawName" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMLaw_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMCertification" (
+    "id" TEXT NOT NULL,
+    "complianceId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMCertification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMMonitoringRecommendation" (
+    "id" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "statement" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMMonitoringRecommendation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMKPIDetail" (
+    "id" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "kpiName" TEXT NOT NULL,
+    "kpiType" TEXT,
+    "securityScore" INTEGER,
+    "summary" TEXT,
+    "riskScore" INTEGER,
+    "recommendation" TEXT,
+    "cveId" TEXT,
+    "severity" TEXT,
+    "description" TEXT,
+    "affectedComponent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMKPIDetail_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMKeyFinding" (
+    "id" TEXT NOT NULL,
+    "kpiDetailId" TEXT NOT NULL,
+    "statement" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMKeyFinding_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMSource" (
+    "id" TEXT NOT NULL,
+    "kpiDetailId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMSource_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMVulnerabilityFinding" (
+    "id" TEXT NOT NULL,
+    "kpiDetailId" TEXT NOT NULL,
+    "cveId" TEXT,
+    "severity" TEXT,
+    "affectedComponent" TEXT,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMVulnerabilityFinding_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMHTTPHeader" (
+    "id" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "present" BOOLEAN NOT NULL DEFAULT false,
+    "value" TEXT,
+    "recommendation" TEXT,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMHTTPHeader_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMPlatform" (
+    "id" TEXT NOT NULL,
+    "httpHeaderId" TEXT NOT NULL,
+    "server" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMPlatform_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "DynamicTranslation" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -3454,6 +3612,30 @@ CREATE INDEX "TPRMQuestionnaireQuestion_customerAccountId_idx" ON "TPRMQuestionn
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TPRMQuestionnaireQuestion_templateId_questionId_key" ON "TPRMQuestionnaireQuestion"("templateId", "questionId");
+
+-- CreateIndex
+CREATE INDEX "TPRMMonitoringVendor_customerAccountId_idx" ON "TPRMMonitoringVendor"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMMonitoringAssessment_customerAccountId_idx" ON "TPRMMonitoringAssessment"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMMonitoringAssessment_monitoringVendorId_idx" ON "TPRMMonitoringAssessment"("monitoringVendorId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMComplianceAndLegal_assessmentId_key" ON "TPRMComplianceAndLegal"("assessmentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMMonitoringRecommendation_assessmentId_key" ON "TPRMMonitoringRecommendation"("assessmentId");
+
+-- CreateIndex
+CREATE INDEX "TPRMKPIDetail_assessmentId_idx" ON "TPRMKPIDetail"("assessmentId");
+
+-- CreateIndex
+CREATE INDEX "TPRMVulnerabilityFinding_kpiDetailId_idx" ON "TPRMVulnerabilityFinding"("kpiDetailId");
+
+-- CreateIndex
+CREATE INDEX "TPRMHTTPHeader_assessmentId_idx" ON "TPRMHTTPHeader"("assessmentId");
 
 -- CreateIndex
 CREATE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId");
@@ -4353,6 +4535,45 @@ ALTER TABLE "TPRMQuestionnaireQuestion" ADD CONSTRAINT "TPRMQuestionnaireQuestio
 ALTER TABLE "TPRMQuestionnaireQuestion" ADD CONSTRAINT "TPRMQuestionnaireQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "TPRMMasterQuestion"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TPRMMonitoringVendor" ADD CONSTRAINT "TPRMMonitoringVendor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMMonitoringAssessment" ADD CONSTRAINT "TPRMMonitoringAssessment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMMonitoringAssessment" ADD CONSTRAINT "TPRMMonitoringAssessment_monitoringVendorId_fkey" FOREIGN KEY ("monitoringVendorId") REFERENCES "TPRMMonitoringVendor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMComplianceAndLegal" ADD CONSTRAINT "TPRMComplianceAndLegal_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMMonitoringAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMLaw" ADD CONSTRAINT "TPRMLaw_complianceId_fkey" FOREIGN KEY ("complianceId") REFERENCES "TPRMComplianceAndLegal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMCertification" ADD CONSTRAINT "TPRMCertification_complianceId_fkey" FOREIGN KEY ("complianceId") REFERENCES "TPRMComplianceAndLegal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMMonitoringRecommendation" ADD CONSTRAINT "TPRMMonitoringRecommendation_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMMonitoringAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMKPIDetail" ADD CONSTRAINT "TPRMKPIDetail_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMMonitoringAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMKeyFinding" ADD CONSTRAINT "TPRMKeyFinding_kpiDetailId_fkey" FOREIGN KEY ("kpiDetailId") REFERENCES "TPRMKPIDetail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMSource" ADD CONSTRAINT "TPRMSource_kpiDetailId_fkey" FOREIGN KEY ("kpiDetailId") REFERENCES "TPRMKPIDetail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVulnerabilityFinding" ADD CONSTRAINT "TPRMVulnerabilityFinding_kpiDetailId_fkey" FOREIGN KEY ("kpiDetailId") REFERENCES "TPRMKPIDetail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMHTTPHeader" ADD CONSTRAINT "TPRMHTTPHeader_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMMonitoringAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMPlatform" ADD CONSTRAINT "TPRMPlatform_httpHeaderId_fkey" FOREIGN KEY ("httpHeaderId") REFERENCES "TPRMHTTPHeader"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "DynamicTranslation" ADD CONSTRAINT "DynamicTranslation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -4361,3 +4582,13 @@ ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fk
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+[90m[90m┌─[39m[90m[90m────────────────────────────────────────────────────────┐[39m[90m
+[90m│[39m[90m  [0m[34mUpdate available[39m[90m 5.22.0 -> 7.4.2[0m                       [90m│[39m[90m
+[90m│[39m[90m  [0m[0m                                                       [90m│[39m[90m
+[90m│[39m[90m  [0mThis is a major update - please follow the guide at[0m    [90m│[39m[90m
+[90m│[39m[90m  [0mhttps://pris.ly/d/major-version-upgrade[0m                [90m│[39m[90m
+[90m│[39m[90m  [0m[0m                                                       [90m│[39m[90m
+[90m│[39m[90m  [0mRun the following to update[0m                            [90m│[39m[90m
+[90m│[39m[90m  [0m  [1mnpm i --save-dev prisma@latest[22m[0m                       [90m│[39m[90m
+[90m│[39m[90m  [0m  [1mnpm i @prisma/client@latest[22m[0m                          [90m│[39m[90m
+└─────────────────────────────────────────────────────────┘[39m

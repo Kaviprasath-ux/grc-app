@@ -2313,6 +2313,8 @@ function ScorecardSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: editFactor.id,
+          factorId: editFactor.factorId,
+          scoreType: editFactor.scoreType,
           name: editForm.name,
           weightage: editForm.weightage,
           isMandatory: editForm.isMandatory,
@@ -2323,6 +2325,9 @@ function ScorecardSection() {
         setEditDialogOpen(false);
         setEditFactor(null);
         loadData();
+      } else {
+        const err = await res.json();
+        toast({ title: t("Error"), description: err.error || t("Failed to update factor"), variant: "destructive" });
       }
     } catch {
       toast({ title: t("Error"), description: t("Failed to update factor"), variant: "destructive" });
@@ -2448,13 +2453,13 @@ function ScorecardSection() {
       {/* Security Posture Score Matrix */}
       <div className="border rounded-lg p-4 bg-white">
         <h3 className="text-sm font-semibold mb-4">{t("Security Posture Score Matrix")}</h3>
-        <DataGrid columns={factorColumns} data={securityPostureFactors} />
+        <DataGrid columns={factorColumns} data={securityPostureFactors} hideSearch />
       </div>
 
       {/* Threat Exposure Score Matrix */}
       <div className="border rounded-lg p-4 bg-white">
         <h3 className="text-sm font-semibold mb-4">{t("Threat Exposure Score Matrix")}</h3>
-        <DataGrid columns={factorColumns} data={threatExposureFactors} />
+        <DataGrid columns={factorColumns} data={threatExposureFactors} hideSearch />
       </div>
 
       {/* Edit Factor Dialog */}

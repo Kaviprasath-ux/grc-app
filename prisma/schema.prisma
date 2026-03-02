@@ -133,6 +133,8 @@ model CustomerAccount {
   tprmDomains                TPRMDomain[]
   tprmMasterQuestions        TPRMMasterQuestion[]
   tprmQuestionnaireQuestions TPRMQuestionnaireQuestion[]
+  tprmMonitoringVendors      TPRMMonitoringVendor[]
+  tprmMonitoringAssessments  TPRMMonitoringAssessment[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -3624,6 +3626,177 @@ model TPRMQuestionnaireQuestion {
 
   @@unique([templateId, questionId])
   @@index([customerAccountId])
+}
+
+// ==================== TPRM MONITORING ====================
+
+model TPRMMonitoringVendor {
+  id                String    @id @default(cuid())
+  customerAccountId String
+  vendorName        String
+  vendorURL         String
+  vendorOnboarded   Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  customerAccount   CustomerAccount            @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessments       TPRMMonitoringAssessment[]
+
+  @@index([customerAccountId])
+}
+
+model TPRMMonitoringAssessment {
+  id                        String    @id @default(cuid())
+  customerAccountId         String
+  monitoringVendorId        String
+  vendorName                String
+  vendorURL                 String
+  jobID                     String?
+  status                    String?
+  overallSummary            String?   @db.Text
+  overallScore              Int?
+  securityPostureScore      Int?
+  threatExposureScore       Int?
+  securityPostureSummary    String?   @db.Text
+  threatExposureSummary     String?   @db.Text
+  lastScan                  DateTime?
+  nextScan                  String?
+  isLatest                  Boolean   @default(true)
+  downloadType              String?
+  calculatedSecurityPosture Float?
+  calculatedThreatExposure  Float?
+  calculatedOverallScore    Float?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  customerAccount   CustomerAccount             @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  monitoringVendor  TPRMMonitoringVendor        @relation(fields: [monitoringVendorId], references: [id], onDelete: Cascade)
+  complianceAndLegal TPRMComplianceAndLegal?
+  recommendation    TPRMMonitoringRecommendation?
+  kpiDetails        TPRMKPIDetail[]
+  httpHeaders       TPRMHTTPHeader[]
+
+  @@index([customerAccountId])
+  @@index([monitoringVendorId])
+}
+
+model TPRMComplianceAndLegal {
+  id               String    @id @default(cuid())
+  assessmentId     String    @unique
+  privacyPolicyUrl String?
+  dpaUrl           String?
+  createdAt        DateTime  @default(now())
+
+  assessment       TPRMMonitoringAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  laws             TPRMLaw[]
+  certifications   TPRMCertification[]
+}
+
+model TPRMLaw {
+  id           String                 @id @default(cuid())
+  complianceId String
+  lawName      String
+  createdAt    DateTime               @default(now())
+
+  compliance   TPRMComplianceAndLegal @relation(fields: [complianceId], references: [id], onDelete: Cascade)
+}
+
+model TPRMCertification {
+  id           String                 @id @default(cuid())
+  complianceId String
+  name         String
+  createdAt    DateTime               @default(now())
+
+  compliance   TPRMComplianceAndLegal @relation(fields: [complianceId], references: [id], onDelete: Cascade)
+}
+
+model TPRMMonitoringRecommendation {
+  id           String    @id @default(cuid())
+  assessmentId String    @unique
+  statement    String    @db.Text
+  createdAt    DateTime  @default(now())
+
+  assessment   TPRMMonitoringAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}
+
+model TPRMKPIDetail {
+  id                String    @id @default(cuid())
+  assessmentId      String
+  kpiName           String
+  kpiType           String?
+  securityScore     Int?
+  summary           String?   @db.Text
+  riskScore         Int?
+  recommendation    String?   @db.Text
+  cveId             String?
+  severity          String?
+  description       String?   @db.Text
+  affectedComponent String?
+  createdAt         DateTime  @default(now())
+
+  assessment        TPRMMonitoringAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  keyFindings       TPRMKeyFinding[]
+  sources           TPRMSource[]
+  vulnerabilities   TPRMVulnerabilityFinding[]
+
+  @@index([assessmentId])
+}
+
+model TPRMKeyFinding {
+  id          String        @id @default(cuid())
+  kpiDetailId String
+  statement   String        @db.Text
+  createdAt   DateTime      @default(now())
+
+  kpiDetail   TPRMKPIDetail @relation(fields: [kpiDetailId], references: [id], onDelete: Cascade)
+}
+
+model TPRMSource {
+  id          String        @id @default(cuid())
+  kpiDetailId String
+  name        String
+  createdAt   DateTime      @default(now())
+
+  kpiDetail   TPRMKPIDetail @relation(fields: [kpiDetailId], references: [id], onDelete: Cascade)
+}
+
+model TPRMVulnerabilityFinding {
+  id                String        @id @default(cuid())
+  kpiDetailId       String
+  cveId             String?
+  severity          String?
+  affectedComponent String?
+  description       String?       @db.Text
+  createdAt         DateTime      @default(now())
+
+  kpiDetail         TPRMKPIDetail @relation(fields: [kpiDetailId], references: [id], onDelete: Cascade)
+
+  @@index([kpiDetailId])
+}
+
+model TPRMHTTPHeader {
+  id             String    @id @default(cuid())
+  assessmentId   String
+  name           String
+  present        Boolean   @default(false)
+  value          String?
+  recommendation String?   @db.Text
+  description    String?   @db.Text
+  createdAt      DateTime  @default(now())
+
+  assessment     TPRMMonitoringAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  platforms      TPRMPlatform[]
+
+  @@index([assessmentId])
+}
+
+model TPRMPlatform {
+  id           String          @id @default(cuid())
+  httpHeaderId String
+  server       String
+  createdAt    DateTime        @default(now())
+
+  httpHeader   TPRMHTTPHeader  @relation(fields: [httpHeaderId], references: [id], onDelete: Cascade)
 }
 
 // ==================== DYNAMIC DATA TRANSLATIONS ====================

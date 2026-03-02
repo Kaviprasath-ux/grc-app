@@ -120,24 +120,12 @@ export const GET = withAuth(
         }
 
         case 'scorecard-factors': {
+          // Ensure default factors exist in DB (auto-creates on first access)
+          await ensureScorecardFactors(customerAccountId);
           const factors = await prisma.tPRMScorecardFactor.findMany({
             where: { customerAccountId },
             orderBy: { sortOrder: 'asc' },
           });
-          // If no factors exist, return defaults
-          if (factors.length === 0) {
-            const allDefaults = [
-              ...DEFAULT_SECURITY_POSTURE_FACTORS.map((f) => ({
-                ...f, id: `default_sp_${f.factorId}`, customerAccountId,
-                weightage: 0, isMandatory: false, scoreType: 'SecurityPosture', isSystem: true,
-              })),
-              ...DEFAULT_THREAT_EXPOSURE_FACTORS.map((f) => ({
-                ...f, id: `default_te_${f.factorId}`, customerAccountId,
-                weightage: 0, isMandatory: false, scoreType: 'ThreatExposure', isSystem: true,
-              })),
-            ];
-            return NextResponse.json(allDefaults);
-          }
           return NextResponse.json(factors);
         }
 
@@ -479,7 +467,31 @@ export const PATCH = withAuth(
         }
 
         case 'scorecard-factors': {
-          const { name, weightage, isMandatory } = body;
+          const { name, weightage, isMandatory, factorId, scoreType } = body;
+
+          // If ID starts with "default_", the factors haven't been persisted yet
+          if (id.startsWith('default_')) {
+            // Persist all defaults to DB first
+            await ensureScorecardFactors(customerAccountId);
+            // Now find the real record by factorId + scoreType
+            if (!factorId || !scoreType) {
+              return NextResponse.json({ error: 'factorId and scoreType required for default factors' }, { status: 400 });
+            }
+            const real = await prisma.tPRMScorecardFactor.findFirst({
+              where: { customerAccountId, factorId, scoreType },
+            });
+            if (!real) return NextResponse.json({ error: 'Factor not found after initialization' }, { status: 404 });
+            const factor = await prisma.tPRMScorecardFactor.update({
+              where: { id: real.id },
+              data: {
+                ...(name !== undefined && { name: name.trim() }),
+                ...(weightage !== undefined && { weightage }),
+                ...(isMandatory !== undefined && { isMandatory }),
+              },
+            });
+            return NextResponse.json(factor);
+          }
+
           const existing = await prisma.tPRMScorecardFactor.findFirst({ where: { id, customerAccountId } });
           if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           const factor = await prisma.tPRMScorecardFactor.update({

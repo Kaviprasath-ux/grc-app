@@ -24,6 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Textarea } from "@/components/ui/textarea";
@@ -270,13 +276,27 @@ export default function VendorManagementPage() {
       <div className="bg-primary text-primary-foreground rounded-t-lg px-4 py-2 flex items-center justify-between">
         <span className="font-medium">{t("Vendors")}</span>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={handleExportCsv}>
-            <Download className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
-            {t("Export/Import")}
-          </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7 text-primary-foreground hover:text-primary-foreground/80" onClick={openCreate}>
-            <Info className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="secondary">
+                {t("Export/Import")}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCsv}>
+                {t("Download Vendor Profile Template")}
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                {t("Import Vendor Profile")}
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                {t("Export Vendor Risk Rating Questions")}
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                {t("Import Responses for Questions")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -294,7 +314,6 @@ export default function VendorManagementPage() {
         <div className="text-center py-12 text-muted-foreground">
           <Building2 className="h-10 w-10 mx-auto mb-3 opacity-40" />
           <p>{t("No vendors found")}</p>
-          <Button size="sm" className="mt-3" onClick={openCreate}><Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add Vendor")}</Button>
         </div>
       ) : (
         <div className="space-y-3">
