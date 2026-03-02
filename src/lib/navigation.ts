@@ -220,10 +220,15 @@ export const navigation: NavItem[] = [
       { name: "Contracts", href: "/tprm/bo-contracts", icon: FileText, permission: "tprm.bo-contracts:view" },
       { name: "Monitoring", href: "/tprm/bo-monitoring", icon: Activity, permission: "tprm.bo-monitoring:view" },
       { name: "Support", href: "/tprm/bo-support", icon: HelpCircle, permission: "tprm.bo-support:view" },
-      // ---- Relationship Manager menu items ----
+      // ---- Relationship Manager menu items (same as BO except User Management) ----
+      { name: "Dashboard", href: "/tprm/rm-dashboard", icon: LayoutDashboard, permission: "tprm.rm-dashboard:view" },
+      { name: "Assessments", href: "/tprm/rm-assessments", icon: ClipboardCheck, permission: "tprm.rm-assessments:view" },
+      { name: "Vendor Inventory", href: "/tprm/rm-inventory", icon: Package, permission: "tprm.rm-inventory:view" },
       { name: "Reports", href: "/tprm/rm-reports", icon: FileBarChart, permission: "tprm.rm-reports:view" },
-      { name: "Monitoring", href: "/tprm/rm-monitoring", icon: Activity, permission: "tprm.rm-monitoring:view" },
       { name: "Issue Management", href: "/tprm/rm-issues", icon: AlertTriangle, permission: "tprm.rm-issues:view" },
+      { name: "Contracts", href: "/tprm/rm-contracts", icon: FileText, permission: "tprm.rm-contracts:view" },
+      { name: "Monitoring", href: "/tprm/rm-monitoring", icon: Activity, permission: "tprm.rm-monitoring:view" },
+      { name: "Support", href: "/tprm/rm-support", icon: HelpCircle, permission: "tprm.rm-support:view" },
     ],
   },
   // ==================== End TPRM Section ====================

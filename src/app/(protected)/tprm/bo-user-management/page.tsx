@@ -37,6 +37,8 @@ import {
   Search,
   Pencil,
   Trash2,
+  Home,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -531,6 +533,14 @@ export default function BOUserManagementPage() {
   // ==================== RENDER ====================
   return (
     <div className="p-6 space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("User Management")}</span>
+      </nav>
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t("Relationship Managers")}</h1>

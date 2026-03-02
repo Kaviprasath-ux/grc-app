@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Construction, Home, ChevronRight } from "lucide-react";
 
-export default function BOAssessmentsPage() {
+export default function RMContractsPage() {
   const { t } = useLanguage();
 
   return (
@@ -15,9 +15,9 @@ export default function BOAssessmentsPage() {
           <span>{t("TPRM")}</span>
         </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">{t("Assessments")}</span>
+        <span className="text-primary-700 font-medium">{t("Contracts")}</span>
       </nav>
-      <h1 className="text-2xl font-bold">{t("Assessments")}</h1>
+      <h1 className="text-2xl font-bold">{t("Contracts")}</h1>
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-16">
           <Construction className="h-12 w-12 text-muted-foreground mb-4" />

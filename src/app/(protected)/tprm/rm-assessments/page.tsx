@@ -4,7 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Construction, Home, ChevronRight } from "lucide-react";
 
-export default function BOAssessmentsPage() {
+export default function RMAssessmentsPage() {
   const { t } = useLanguage();
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Download, Search, X, FileBarChart } from "lucide-react";
+import { Download, Search, X, FileBarChart, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataGrid } from "@/components/shared";
@@ -150,11 +150,16 @@ export default function BOReportsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t("Vendor Reports")}</h1>
-          <p className="text-muted-foreground mt-1">{t("View and generate TPRM reports")}</p>
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
         </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Reports")}</span>
+      </nav>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{t("Vendor Reports")}</h1>
         <Button size="sm" onClick={handleExport}>
           <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
         </Button>

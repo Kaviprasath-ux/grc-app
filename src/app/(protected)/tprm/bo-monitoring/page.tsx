@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, RefreshCw, FileBarChart, ExternalLink } from "lucide-react";
+import { Search, RefreshCw, FileBarChart, ExternalLink, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,11 +125,16 @@ export default function BOMonitoringPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t("Continuous Monitoring")}</h1>
-          <p className="text-muted-foreground mt-1">{t("Monitor third-party risk activities and alerts")}</p>
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
         </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Monitoring")}</span>
+      </nav>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{t("Continuous Monitoring")}</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={loadVendors}>
             <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Refresh")}

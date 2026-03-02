@@ -40,7 +40,7 @@ export const GET = withAuth<RouteContext>(
       );
     }
   },
-  { resource: "tprm.assessments", action: "view" }
+  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
 );
 
 // PATCH update vendor
@@ -66,9 +66,21 @@ export const PATCH = withAuth<RouteContext>(
           contactEmail: body.contactEmail,
           contactPhone: body.contactPhone,
           accountManagerName: body.accountManagerName,
+          accountManagerEmail: body.accountManagerEmail,
           serviceCategory: body.serviceCategory,
+          serviceDescription: body.serviceDescription,
           departmentId: body.departmentId,
           status: body.status,
+          vrr: body.vrr,
+          engagementId: body.engagementId,
+          vendorCertification: body.vendorCertification,
+          businessJustification: body.businessJustification,
+          accessToNetwork: body.accessToNetwork,
+          cloud: body.cloud,
+          accessToData: body.accessToData,
+          pii: body.pii,
+          contractStartDate: body.contractStartDate ? new Date(body.contractStartDate) : undefined,
+          contractEndDate: body.contractEndDate ? new Date(body.contractEndDate) : undefined,
           onboardedDate: body.onboardedDate ? new Date(body.onboardedDate) : undefined,
           offboardedDate: body.offboardedDate ? new Date(body.offboardedDate) : undefined,
         },
@@ -86,7 +98,7 @@ export const PATCH = withAuth<RouteContext>(
       );
     }
   },
-  { resource: "tprm.assessments", action: "edit" }
+  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
 );
 
 // DELETE vendor
@@ -115,5 +127,5 @@ export const DELETE = withAuth<RouteContext>(
       );
     }
   },
-  { resource: "tprm.assessments", action: "delete" }
+  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "delete" }
 );

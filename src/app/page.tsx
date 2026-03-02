@@ -29,6 +29,11 @@ export default async function Home() {
     redirect("/tprm/bo-dashboard");
   }
 
+  // Redirect RelationshipManager users to RM Dashboard
+  if (session?.user?.roles?.includes("RelationshipManager")) {
+    redirect("/tprm/rm-dashboard");
+  }
+
   // Redirect TPRM-only users (isTprmAdded=true, isGrcAdded=false) to Program Monitor
   if (session?.user?.isTprmAdded && !session?.user?.isGrcAdded) {
     redirect("/tprm/program-monitor");

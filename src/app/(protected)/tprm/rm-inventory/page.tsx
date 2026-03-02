@@ -67,9 +67,9 @@ interface OnboardingQuestion {
   title: string;
   question: string | null;
   score: number;
-  questionType: string; // "Parent" | "Child"
+  questionType: string;
   parentId: string | null;
-  responseType: string; // "Yes/No" | "FreeText"
+  responseType: string;
   isActive: boolean;
   children: OnboardingQuestion[];
 }
@@ -84,12 +84,11 @@ const DEFAULT_SERVICE_CATEGORIES = [
 const STATUS_OPTIONS = ["Onboarding", "Onboarded", "Offboarding", "Offboarded"];
 const ITEMS_PER_PAGE = 10;
 const emptyManager: AccountManager = { name: "", email: "", contactNo: "" };
-const SYSTEM_FIELD_NAMES = ["Vendor Name", "Account Manager Name", "Account Manager Email", "Contact Number", "Service Description", "Service Category"];
 
-export default function BOInventoryPage() {
+export default function RMInventoryPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { canCreate, canEdit, canDelete, isLoading: permLoading } = usePermissions("tprm.bo-inventory");
+  const { canCreate, canEdit, canDelete, isLoading: permLoading } = usePermissions("tprm.rm-inventory");
 
   // ── List state ─────────────────────────────────────
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -158,12 +157,10 @@ export default function BOInventoryPage() {
       }
       if (fieldRes.ok) {
         const fields: ProfileField[] = await fieldRes.json();
-        // Only keep custom (non-system) active fields
         setCustomProfileFields(fields.filter((f) => !f.isSystem && f.isActive));
       }
       if (qRes.ok) {
         const questions: OnboardingQuestion[] = await qRes.json();
-        // Only keep active parent-level questions (children are nested)
         setOnboardingQuestions(questions.filter((q) => q.isActive && q.questionType === "Parent"));
       }
     } catch {
@@ -201,9 +198,7 @@ export default function BOInventoryPage() {
     setManagers((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value } : m)));
   };
 
-  const addManager = () => {
-    setManagers((prev) => [...prev, { ...emptyManager }]);
-  };
+  const addManager = () => { setManagers((prev) => [...prev, { ...emptyManager }]); };
 
   const removeManager = (index: number) => {
     if (managers.length <= 1) return;
@@ -338,7 +333,6 @@ export default function BOInventoryPage() {
     URL.revokeObjectURL(url);
   };
 
-  // ── Badge helpers ──────────────────────────────────
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       Onboarding: "bg-blue-100 text-blue-800",
@@ -352,11 +346,7 @@ export default function BOInventoryPage() {
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   if (permLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
   // ── Form fields (shared between Create & Edit dialogs) ──
@@ -383,9 +373,7 @@ export default function BOInventoryPage() {
               <Input value={manager.name} onChange={(e) => updateManager(index, "name", e.target.value)} placeholder={t("Enter account manager name")} />
             </div>
             {index === 0 && (
-              <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={addManager}>
-                <Plus className="h-4 w-4" />
-              </Button>
+              <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={addManager}><Plus className="h-4 w-4" /></Button>
             )}
           </div>
           <div className="space-y-1.5">
@@ -406,9 +394,7 @@ export default function BOInventoryPage() {
         <Select value={serviceCategory} onValueChange={setServiceCategory}>
           <SelectTrigger><SelectValue placeholder={t("Select category")} /></SelectTrigger>
           <SelectContent>
-            {serviceCategories.map((cat) => (
-              <SelectItem key={cat} value={cat}>{t(cat)}</SelectItem>
-            ))}
+            {serviceCategories.map((cat) => <SelectItem key={cat} value={cat}>{t(cat)}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -446,34 +432,17 @@ export default function BOInventoryPage() {
                 <Label>{q.title}</Label>
                 {q.responseType === "Yes/No" ? (
                   <div className="flex items-center gap-3">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={questionAnswers[q.id] === "Yes" ? "default" : "outline"}
+                    <Button type="button" size="sm" variant={questionAnswers[q.id] === "Yes" ? "default" : "outline"}
                       className={questionAnswers[q.id] === "Yes" ? "bg-green-600 hover:bg-green-700" : ""}
-                      onClick={() => setQuestionAnswers((prev) => ({ ...prev, [q.id]: "Yes" }))}
-                    >
-                      {t("Yes")}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={questionAnswers[q.id] === "No" ? "default" : "outline"}
+                      onClick={() => setQuestionAnswers((prev) => ({ ...prev, [q.id]: "Yes" }))}>{t("Yes")}</Button>
+                    <Button type="button" size="sm" variant={questionAnswers[q.id] === "No" ? "default" : "outline"}
                       className={questionAnswers[q.id] === "No" ? "bg-red-600 hover:bg-red-700" : ""}
-                      onClick={() => setQuestionAnswers((prev) => ({ ...prev, [q.id]: "No" }))}
-                    >
-                      {t("No")}
-                    </Button>
+                      onClick={() => setQuestionAnswers((prev) => ({ ...prev, [q.id]: "No" }))}>{t("No")}</Button>
                   </div>
                 ) : (
-                  <Input
-                    value={questionAnswers[q.id] || ""}
-                    onChange={(e) => setQuestionAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                    placeholder={t("Enter your answer")}
-                  />
+                  <Input value={questionAnswers[q.id] || ""} onChange={(e) => setQuestionAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))} placeholder={t("Enter your answer")} />
                 )}
               </div>
-              {/* Child questions – shown when parent answer is "Yes" */}
               {q.children && q.children.length > 0 && questionAnswers[q.id] === "Yes" && (
                 <div className="ltr:ml-6 rtl:mr-6 space-y-2 border-l-2 ltr:pl-4 rtl:border-l-0 rtl:border-r-2 rtl:pr-4">
                   {q.children.filter((c) => c.isActive).map((child) => (
@@ -481,31 +450,15 @@ export default function BOInventoryPage() {
                       <Label className="text-sm">{child.title}</Label>
                       {child.responseType === "Yes/No" ? (
                         <div className="flex items-center gap-3">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={questionAnswers[child.id] === "Yes" ? "default" : "outline"}
+                          <Button type="button" size="sm" variant={questionAnswers[child.id] === "Yes" ? "default" : "outline"}
                             className={questionAnswers[child.id] === "Yes" ? "bg-green-600 hover:bg-green-700" : ""}
-                            onClick={() => setQuestionAnswers((prev) => ({ ...prev, [child.id]: "Yes" }))}
-                          >
-                            {t("Yes")}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={questionAnswers[child.id] === "No" ? "default" : "outline"}
+                            onClick={() => setQuestionAnswers((prev) => ({ ...prev, [child.id]: "Yes" }))}>{t("Yes")}</Button>
+                          <Button type="button" size="sm" variant={questionAnswers[child.id] === "No" ? "default" : "outline"}
                             className={questionAnswers[child.id] === "No" ? "bg-red-600 hover:bg-red-700" : ""}
-                            onClick={() => setQuestionAnswers((prev) => ({ ...prev, [child.id]: "No" }))}
-                          >
-                            {t("No")}
-                          </Button>
+                            onClick={() => setQuestionAnswers((prev) => ({ ...prev, [child.id]: "No" }))}>{t("No")}</Button>
                         </div>
                       ) : (
-                        <Input
-                          value={questionAnswers[child.id] || ""}
-                          onChange={(e) => setQuestionAnswers((prev) => ({ ...prev, [child.id]: e.target.value }))}
-                          placeholder={t("Enter your answer")}
-                        />
+                        <Input value={questionAnswers[child.id] || ""} onChange={(e) => setQuestionAnswers((prev) => ({ ...prev, [child.id]: e.target.value }))} placeholder={t("Enter your answer")} />
                       )}
                     </div>
                   ))}
@@ -521,32 +474,22 @@ export default function BOInventoryPage() {
   // ── Render ─────────────────────────────────────────
   return (
     <div className="p-6 space-y-6">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <Home className="h-4 w-4" />
-          <span>{t("TPRM")}</span>
-        </div>
+        <div className="flex items-center gap-1.5 text-slate-500"><Home className="h-4 w-4" /><span>{t("TPRM")}</span></div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Vendor Inventory")}</span>
       </nav>
 
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("Vendor Inventory")}</h1>
         <div className="flex items-center gap-2">
           {canCreate && (
-            <Button variant="outline" onClick={openCreate}>
-              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Onboard New Vendor")}
-            </Button>
+            <Button variant="outline" onClick={openCreate}><Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Onboard New Vendor")}</Button>
           )}
-          <Button onClick={handleExport}>
-            <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Bulk Export")}
-          </Button>
+          <Button onClick={handleExport}><Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Bulk Export")}</Button>
         </div>
       </div>
 
-      {/* Vendors Card */}
       <Card>
         <div className="bg-sky-50 border-b px-4 py-3 flex items-center justify-between rounded-t-lg">
           <span className="font-semibold text-sm">{t("Vendors")}</span>
@@ -600,23 +543,13 @@ export default function BOInventoryPage() {
                         <TableCell>{getStatusBadge(vendor.status)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                            </DropdownMenuTrigger>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => { setSelectedVendor(vendor); setShowViewDialog(true); }}>
                                 <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("View")}
                               </DropdownMenuItem>
-                              {canEdit && (
-                                <DropdownMenuItem onClick={() => openEdit(vendor)}>
-                                  <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Edit")}
-                                </DropdownMenuItem>
-                              )}
-                              {canDelete && (
-                                <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedVendor(vendor); setShowDeleteDialog(true); }}>
-                                  <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete")}
-                                </DropdownMenuItem>
-                              )}
+                              {canEdit && <DropdownMenuItem onClick={() => openEdit(vendor)}><Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Edit")}</DropdownMenuItem>}
+                              {canDelete && <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedVendor(vendor); setShowDeleteDialog(true); }}><Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete")}</DropdownMenuItem>}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -627,9 +560,7 @@ export default function BOInventoryPage() {
               </div>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-2">
-                  <p className="text-sm text-muted-foreground">
-                    {t("Showing")} {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, total)} {t("of")} {total}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t("Showing")} {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, total)} {t("of")} {total}</p>
                   <div className="flex items-center gap-1">
                     <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -649,35 +580,28 @@ export default function BOInventoryPage() {
         </CardContent>
       </Card>
 
-      {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t("Onboard New Vendor")}</DialogTitle></DialogHeader>
           {formFields}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>{t("Cancel")}</Button>
-            <Button onClick={handleCreate} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />} {t("Create")}
-            </Button>
+            <Button onClick={handleCreate} disabled={saving}>{saving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />} {t("Create")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t("Edit Vendor")}</DialogTitle></DialogHeader>
           {formFields}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>{t("Cancel")}</Button>
-            <Button onClick={handleEdit} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />} {t("Save Changes")}
-            </Button>
+            <Button onClick={handleEdit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />} {t("Save Changes")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{selectedVendor?.name}</DialogTitle></DialogHeader>
@@ -708,14 +632,11 @@ export default function BOInventoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Delete Vendor")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("Are you sure you want to delete")} <strong>{selectedVendor?.name}</strong>? {t("This action cannot be undone.")}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t("Are you sure you want to delete")} <strong>{selectedVendor?.name}</strong>? {t("This action cannot be undone.")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>

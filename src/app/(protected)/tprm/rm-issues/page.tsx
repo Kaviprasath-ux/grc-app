@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Download, Search, X, Eye, MessageSquare, AlertTriangle } from "lucide-react";
+import { Download, Search, X, Eye, MessageSquare, AlertTriangle, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataGrid } from "@/components/shared";
@@ -417,10 +417,15 @@ export default function RMIssuesPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{t("Issue Management")}</h1>
-        <p className="text-muted-foreground mt-1">{t("Track and manage vendor-related issues")}</p>
-      </div>
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Issue Management")}</span>
+      </nav>
+      <h1 className="text-2xl font-bold">{t("Issue Management")}</h1>
 
       <Tabs defaultValue="register">
         <TabsList>

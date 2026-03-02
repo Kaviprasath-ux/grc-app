@@ -115,9 +115,14 @@ export const RESOURCES = {
   'tprm.bo-support': '/tprm/bo-support',
 
   // TPRM Relationship Manager specific resources
+  'tprm.rm-dashboard': '/tprm/rm-dashboard',
+  'tprm.rm-assessments': '/tprm/rm-assessments',
+  'tprm.rm-inventory': '/tprm/rm-inventory',
   'tprm.rm-reports': '/tprm/rm-reports',
-  'tprm.rm-monitoring': '/tprm/rm-monitoring',
   'tprm.rm-issues': '/tprm/rm-issues',
+  'tprm.rm-contracts': '/tprm/rm-contracts',
+  'tprm.rm-monitoring': '/tprm/rm-monitoring',
+  'tprm.rm-support': '/tprm/rm-support',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -525,11 +530,16 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.bo-support', actions: ['*'], scope: 'all' },
   ],
 
-  // Relationship Manager - Reports, Monitoring, and Issue Management access
+  // Relationship Manager - Same menu as BusinessOwner except User Management
   RelationshipManager: [
+    { resource: 'tprm.rm-dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.rm-assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.rm-inventory', actions: ['*'], scope: 'all' },
     { resource: 'tprm.rm-reports', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.rm-monitoring', actions: ['*'], scope: 'all' },
     { resource: 'tprm.rm-issues', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.rm-contracts', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.rm-monitoring', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.rm-support', actions: ['*'], scope: 'all' },
   ],
 };
 

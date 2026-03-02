@@ -57,7 +57,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "tprm.assessments", action: "view" }
+  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
 );
 
 // POST create a new vendor
@@ -81,9 +81,21 @@ export const POST = withAuth(
           contactEmail: body.contactEmail,
           contactPhone: body.contactPhone,
           accountManagerName: body.accountManagerName,
+          accountManagerEmail: body.accountManagerEmail,
           serviceCategory: body.serviceCategory,
+          serviceDescription: body.serviceDescription,
           departmentId: body.departmentId,
           status: body.status || "Onboarding",
+          vrr: body.vrr,
+          engagementId: body.engagementId,
+          vendorCertification: body.vendorCertification,
+          businessJustification: body.businessJustification,
+          accessToNetwork: body.accessToNetwork ?? false,
+          cloud: body.cloud ?? false,
+          accessToData: body.accessToData ?? false,
+          pii: body.pii ?? false,
+          contractStartDate: body.contractStartDate ? new Date(body.contractStartDate) : null,
+          contractEndDate: body.contractEndDate ? new Date(body.contractEndDate) : null,
           onboardedDate: body.onboardedDate ? new Date(body.onboardedDate) : null,
         },
         include: {
@@ -100,5 +112,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "tprm.assessments", action: "create" }
+  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "create" }
 );
