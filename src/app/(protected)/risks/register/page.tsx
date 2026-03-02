@@ -360,8 +360,14 @@ function RiskRegisterContent() {
   };
 
   // Filter risks for department-scoped roles
-  const displayRisks = isDepartmentRole && userDepartmentId
-    ? risks.filter(r => r.department?.id === userDepartmentId)
+  // DepartmentReviewer: show only risks where owner matches logged-in user
+  // DepartmentContributor: show only risks in user's department
+  const displayRisks = isDepartmentRole
+    ? userRoles.includes("DepartmentReviewer")
+      ? risks.filter(r => r.owner?.id === session?.user?.id)
+      : userDepartmentId
+        ? risks.filter(r => r.department?.id === userDepartmentId)
+        : risks
     : risks;
 
   // Translate dynamic data (name, description) for non-English locales

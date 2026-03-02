@@ -201,6 +201,8 @@ export const GET = withAuth(
                 include: {
                   control: {
                     include: {
+                      domain: true,
+                      assignee: true,
                       policyControls: {
                         include: {
                           policy: {

@@ -1033,7 +1033,7 @@ export default function EvidencePage() {
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Evidence Name")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Issue Identified By")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Issue Identified by AI")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5">{t("Actions")}</TableHead>

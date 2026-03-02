@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Search, Check } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ChooseControlDialogProps {
@@ -25,6 +26,7 @@ interface ChooseControlDialogProps {
   onOpenChange: (open: boolean) => void;
   onControlSelected?: (control: ExistingControl) => void;
   riskId: string;
+  excludeControlIds?: string[];
 }
 
 interface ExistingControl {
@@ -36,124 +38,86 @@ interface ExistingControl {
   functionalGrouping?: string;
 }
 
-const DOMAINS = [
-  "Compliance",
-  "Cybersecurity & Data Protection Governance",
-  "Risk Management",
-  "Technology Development & Acquisition",
-  "Human Resources Security",
-  "Asset Management",
-  "Incident Response",
-  "Vulnerability & Patch Management",
-  "Threat Management",
-  "Security Awareness & Training",
-  "Business Continuity & Disaster Recovery",
-  "Continuous Monitoring",
-  "Identification & Authentication",
-  "Information Assurance",
-  "Third-Party Management",
-  "Data Classification & Handling",
-  "Cloud Security",
-  "Network Security",
-  "Configuration Management",
-  "Data Privacy",
-];
-
-const FUNCTIONAL_GROUPINGS = [
-  "Govern",
-  "Identify",
-  "Protect",
-  "Detect",
-  "Respond",
-  "Recover",
-];
-
-// Mock controls for demonstration - in production, these would come from an API
-const MOCK_CONTROLS: ExistingControl[] = [
-  {
-    id: "1",
-    controlId: "RSK-01.1",
-    name: "Risk Framing",
-    description: "Mechanisms exist to identify risk assessments, risk response and risk monitoring.",
-    domain: "Risk Management",
-    functionalGrouping: "Govern",
-  },
-  {
-    id: "2",
-    controlId: "DCH-01",
-    name: "Data Protection",
-    description: "Data protection mechanisms to ensure confidentiality, integrity, and availability.",
-    domain: "Data Classification & Handling",
-    functionalGrouping: "Protect",
-  },
-  {
-    id: "3",
-    controlId: "IAC-05",
-    name: "Identification & Authentication for Third Party Systems",
-    description: "Mechanisms exist to identify and authenticate third-party systems and services.",
-    domain: "Identification & Authentication",
-    functionalGrouping: "Protect",
-  },
-  {
-    id: "4",
-    controlId: "NET-03.3",
-    name: "Prevent Discovery of Internal Information",
-    description: "Controls to prevent unauthorized discovery of internal network information.",
-    domain: "Network Security",
-    functionalGrouping: "Protect",
-  },
-  {
-    id: "5",
-    controlId: "IRO-10.1",
-    name: "Automated Reporting",
-    description: "Automated mechanisms for security incident reporting and escalation.",
-    domain: "Incident Response",
-    functionalGrouping: "Respond",
-  },
-  {
-    id: "6",
-    controlId: "IAO-06",
-    name: "Technical Verification",
-    description: "Technical verification of security controls and configurations.",
-    domain: "Information Assurance",
-    functionalGrouping: "Detect",
-  },
-  {
-    id: "7",
-    controlId: "BCD-01",
-    name: "Business Continuity Planning",
-    description: "Business continuity and disaster recovery planning mechanisms.",
-    domain: "Business Continuity & Disaster Recovery",
-    functionalGrouping: "Recover",
-  },
-  {
-    id: "8",
-    controlId: "VPM-02",
-    name: "Vulnerability Scanning",
-    description: "Regular vulnerability scanning and assessment processes.",
-    domain: "Vulnerability & Patch Management",
-    functionalGrouping: "Detect",
-  },
-];
+interface ApiControl {
+  id: string;
+  controlCode: string;
+  name: string;
+  description: string | null;
+  status: string;
+  functionalGrouping: string | null;
+  domain: { id: string; name: string } | null;
+}
 
 export function ChooseControlDialog({
   open,
   onOpenChange,
   onControlSelected,
   riskId,
+  excludeControlIds = [],
 }: ChooseControlDialogProps) {
   const { t } = useLanguage();
   const [domain, setDomain] = useState("");
   const [functionalGrouping, setFunctionalGrouping] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedControl, setSelectedControl] = useState<ExistingControl | null>(null);
-  const [controls, setControls] = useState<ExistingControl[]>(MOCK_CONTROLS);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [controls, setControls] = useState<ExistingControl[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+
+  // Fetch real controls from the API when dialog opens
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchControls = async () => {
+      setFetching(true);
+      try {
+        const response = await fetch("/api/controls?limit=500");
+        if (response.ok) {
+          const data = await response.json();
+          const apiControls: ApiControl[] = data.data || [];
+
+          // Filter to only Compliant and Non Compliant, and exclude already-linked controls
+          const filtered = apiControls
+            .filter((c) => c.status === "Compliant" || c.status === "Non Compliant")
+            .filter((c) => !excludeControlIds.includes(c.id))
+            .map((c) => ({
+              id: c.id,
+              controlId: c.controlCode,
+              name: c.name,
+              description: c.description,
+              domain: c.domain?.name || undefined,
+              functionalGrouping: c.functionalGrouping || undefined,
+            }));
+
+          setControls(filtered);
+        }
+      } catch (error) {
+        console.error("Failed to fetch controls:", error);
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchControls();
+  }, [open, excludeControlIds]);
+
+  // Derive unique domains and groupings from fetched controls
+  const uniqueDomains = useMemo(() => {
+    const set = new Set<string>();
+    controls.forEach((c) => { if (c.domain) set.add(c.domain); });
+    return Array.from(set).sort();
+  }, [controls]);
+
+  const uniqueGroupings = useMemo(() => {
+    const set = new Set<string>();
+    controls.forEach((c) => { if (c.functionalGrouping) set.add(c.functionalGrouping); });
+    return Array.from(set).sort();
+  }, [controls]);
 
   // Filter controls based on selections
   const filteredControls = controls.filter((control) => {
-    const matchesDomain = !domain || control.domain === domain;
-    const matchesFunctionalGrouping = !functionalGrouping || control.functionalGrouping === functionalGrouping;
+    const matchesDomain = !domain || domain === "all" || control.domain === domain;
+    const matchesFunctionalGrouping = !functionalGrouping || functionalGrouping === "all" || control.functionalGrouping === functionalGrouping;
     const matchesSearch = !searchQuery ||
       control.controlId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       control.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -161,38 +125,54 @@ export function ChooseControlDialog({
     return matchesDomain && matchesFunctionalGrouping && matchesSearch;
   });
 
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   const handleClose = () => {
     setDomain("");
     setFunctionalGrouping("");
     setSearchQuery("");
-    setSelectedControl(null);
+    setSelectedIds(new Set());
     onOpenChange(false);
   };
 
-  const handleLinkControl = async () => {
-    if (!selectedControl) return;
+  const handleLinkControls = async () => {
+    if (selectedIds.size === 0) return;
+
+    const selectedControls = controls.filter((c) => selectedIds.has(c.id));
 
     setLoading(true);
     try {
-      // Call API to link the control to the risk
-      const response = await fetch(`/api/risks/${riskId}/planned-controls`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          controlId: selectedControl.controlId,
-          name: selectedControl.name,
-          description: selectedControl.description,
-          domain: selectedControl.domain,
-          functionalGrouping: selectedControl.functionalGrouping,
-        }),
-      });
+      // Link each selected control as a planned control
+      for (const control of selectedControls) {
+        const response = await fetch(`/api/risks/${riskId}/planned-controls`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            controlId: control.controlId,
+            name: control.name,
+            description: control.description,
+            domain: control.domain,
+            functionalGrouping: control.functionalGrouping,
+          }),
+        });
 
-      if (response.ok) {
-        onControlSelected?.(selectedControl);
-        handleClose();
+        if (response.ok) {
+          onControlSelected?.(control);
+        }
       }
+      handleClose();
     } catch (error) {
-      console.error("Failed to link control:", error);
+      console.error("Failed to link controls:", error);
     } finally {
       setLoading(false);
     }
@@ -202,7 +182,14 @@ export function ChooseControlDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
         <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
-          <DialogTitle className="text-lg font-semibold text-slate-800">{t("Select Governance")}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Select Control")}</DialogTitle>
+            {selectedIds.size > 0 && (
+              <span className="text-sm text-primary-600 font-medium">
+                {selectedIds.size} {t("selected")}
+              </span>
+            )}
+          </div>
         </DialogHeader>
 
         {/* Filters */}
@@ -213,7 +200,7 @@ export function ChooseControlDialog({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("All Domains")}</SelectItem>
-              {DOMAINS.map((d) => (
+              {uniqueDomains.map((d) => (
                 <SelectItem key={d} value={d}>
                   {d}
                 </SelectItem>
@@ -227,7 +214,7 @@ export function ChooseControlDialog({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("All Groupings")}</SelectItem>
-              {FUNCTIONAL_GROUPINGS.map((fg) => (
+              {uniqueGroupings.map((fg) => (
                 <SelectItem key={fg} value={fg}>
                   {fg}
                 </SelectItem>
@@ -252,50 +239,60 @@ export function ChooseControlDialog({
           {/* Control List */}
           <div className="flex-1 border border-slate-200 rounded-lg overflow-hidden">
             <div className="h-full overflow-y-auto">
-              {filteredControls.length === 0 ? (
+              {fetching ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                </div>
+              ) : filteredControls.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
                   {t("No controls found matching your criteria")}
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {filteredControls.map((control) => (
-                    <div
-                      key={control.id}
-                      className={cn(
-                        "p-3 cursor-pointer hover:bg-slate-50 transition-colors",
-                        selectedControl?.id === control.id && "bg-primary/5 border-l-2 border-l-primary"
-                      )}
-                      onClick={() => setSelectedControl(control)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-primary">{control.controlId}</span>
-                            <span className="text-slate-400">-</span>
-                            <span className="font-medium text-slate-800">{control.name}</span>
-                          </div>
-                          <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                            {control.description}
-                          </p>
-                          <div className="flex gap-2 mt-2">
-                            {control.domain && (
-                              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                                {control.domain}
-                              </span>
-                            )}
-                            {control.functionalGrouping && (
-                              <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                                {control.functionalGrouping}
-                              </span>
-                            )}
+                  {filteredControls.map((control) => {
+                    const isSelected = selectedIds.has(control.id);
+                    return (
+                      <div
+                        key={control.id}
+                        className={cn(
+                          "p-3 cursor-pointer hover:bg-slate-50 transition-colors",
+                          isSelected && "bg-primary-50/50"
+                        )}
+                        onClick={() => toggleSelection(control.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelection(control.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-primary">{control.controlId}</span>
+                              <span className="text-slate-400">-</span>
+                              <span className="font-medium text-slate-800">{control.name}</span>
+                            </div>
+                            <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                              {control.description}
+                            </p>
+                            <div className="flex gap-2 mt-2">
+                              {control.domain && (
+                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                  {control.domain}
+                                </span>
+                              )}
+                              {control.functionalGrouping && (
+                                <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                                  {control.functionalGrouping}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        {selectedControl?.id === control.id && (
-                          <Check className="h-5 w-5 text-primary ml-4" />
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -308,10 +305,10 @@ export function ChooseControlDialog({
             {t("Cancel")}
           </Button>
           <Button
-            onClick={handleLinkControl}
-            disabled={!selectedControl || loading}
+            onClick={handleLinkControls}
+            disabled={selectedIds.size === 0 || loading}
           >
-            {loading ? t("Linking...") : t("Link Control")}
+            {loading ? t("Linking...") : selectedIds.size > 1 ? `${t("Link")} ${selectedIds.size} ${t("Controls")}` : t("Link Control")}
           </Button>
         </div>
       </DialogContent>

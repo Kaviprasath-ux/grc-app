@@ -1406,7 +1406,7 @@ export default function GovernanceDetailPage() {
             </Link>
           </>
         ) : (
-          <Link href="/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
+          <Link href={`/compliance/governance?tab=${policy.documentType || "Policy"}`} className="text-slate-500 hover:text-primary-600 transition-colors">
             {t("Governance")}
           </Link>
         )}

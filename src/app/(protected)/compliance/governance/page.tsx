@@ -149,6 +149,7 @@ export default function GovernancePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromDashboard = searchParams.get("from") === "dashboard";
+  const initialTab = searchParams.get("tab");
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
@@ -157,8 +158,8 @@ export default function GovernancePage() {
   const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("Dashboard");
-  const [activeDocType, setActiveDocType] = useState<string>("Policy");
+  const [activeTab, setActiveTab] = useState<string>(initialTab || "Dashboard");
+  const [activeDocType, setActiveDocType] = useState<string>(initialTab && ["Policy", "Standard", "Procedure"].includes(initialTab) ? initialTab : "Policy");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

@@ -56,8 +56,11 @@ export const GET = withAuth(
       // Get tenant filter for multi-tenant isolation
       const tenantFilter = getTenantFilter(session);
 
-      // Get department scope filter for DepartmentContributor/DepartmentReviewer roles
+      // Get data scope filter (own/department) for role-based data access
       const scopeFilter = getDataScopeFilter(session, "risk.register", "view");
+
+      // DEBUG: Log scope filter for DepartmentReviewer troubleshooting
+      console.log("[DEBUG risks GET] user:", session.id, "roles:", session.roles, "scopeFilter:", JSON.stringify(scopeFilter), "tenantFilter:", JSON.stringify(tenantFilter));
 
       const where: Record<string, unknown> = {
         ...tenantFilter,

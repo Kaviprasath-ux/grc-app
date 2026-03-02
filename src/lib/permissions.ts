@@ -415,7 +415,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Settings/Master Data, NO Risk Matrix)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'compliance.framework', actions: ['view'], scope: 'department' },
-    { resource: 'compliance.controls', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'compliance.controls', actions: ['view', 'edit', 'approve'], scope: 'department' },
     { resource: 'compliance.governance', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.exceptions', actions: ['view', 'edit', 'approve'], scope: 'department' },
@@ -427,12 +427,13 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
     // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
     // Per UAT: Approval workflow exists ONLY in Risk Response Strategy, NOT in Risk Assessment
+    // Risk Register/Assessment/Response scoped to 'own' — show only risks where ownerId matches logged-in user
     { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
-    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },
     // DepartmentReviewer can create risk responses since they can create/edit assessments
     // When completing an assessment with non-low risk, a response strategy must be provided
-    { resource: 'risk.response', actions: ['view', 'create', 'approve'], scope: 'department' },
+    { resource: 'risk.response', actions: ['view', 'create', 'approve'], scope: 'own' },
     { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)

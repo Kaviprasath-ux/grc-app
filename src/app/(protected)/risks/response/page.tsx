@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/usePagination";
@@ -28,7 +29,6 @@ import { useSession } from "next-auth/react";
 import { useUserRoles, usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
-import { RiskResponseDialog } from "@/components/risks/risk-response-dialog";
 
 interface Risk {
   id: string;
@@ -49,6 +49,7 @@ interface Risk {
 }
 
 export default function RiskResponsePage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const { canEdit, canApprove } = usePermissions('risk.response');
@@ -74,9 +75,7 @@ export default function RiskResponsePage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Response dialog state
-  const [responseDialogOpen, setResponseDialogOpen] = useState(false);
-  const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
+  // (Response now uses full page navigation instead of dialog)
 
   useEffect(() => {
     fetchRisks();
@@ -101,8 +100,7 @@ export default function RiskResponsePage() {
   };
 
   const openDetail = (risk: Risk) => {
-    setSelectedRiskId(risk.id);
-    setResponseDialogOpen(true);
+    router.push(`/risks/response/${risk.id}`);
   };
 
   // Handle Respond action - changes responseStatus from Open to In-Progress
@@ -116,12 +114,11 @@ export default function RiskResponsePage() {
         body: JSON.stringify({ responseStatus: "In-Progress" }),
       });
       if (response.ok) {
-        // Update local state and open dialog
+        // Update local state and navigate to detail page
         setRisks(prev => prev.map(r =>
           r.id === risk.id ? { ...r, responseStatus: "In-Progress" } : r
         ));
-        setSelectedRiskId(risk.id);
-        setResponseDialogOpen(true);
+        router.push(`/risks/response/${risk.id}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error("PATCH failed:", response.status, errorData);
@@ -654,13 +651,7 @@ export default function RiskResponsePage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Risk Response Dialog */}
-      <RiskResponseDialog
-        open={responseDialogOpen}
-        onOpenChange={setResponseDialogOpen}
-        riskId={selectedRiskId}
-        onStatusChange={() => fetchRisks()}
-      />
+      {/* Risk response now uses full page navigation at /risks/response/[id] */}
     </div>
   );
 }

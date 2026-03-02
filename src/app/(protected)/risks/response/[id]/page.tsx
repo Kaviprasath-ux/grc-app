@@ -62,6 +62,7 @@ interface Risk {
   assessmentStatus?: string;
   responseStatus?: string; // Separate status for Risk Response Strategy workflow
   activityLogs?: ActivityLog[];
+  controlRisks?: { control: { id: string; controlCode: string; name: string; description: string | null; relativeControlWeighting: number | null } }[];
 }
 
 interface Control {
@@ -254,16 +255,15 @@ export default function RiskViewPage() {
       if (response.ok) {
         const data = await response.json();
         setRisk(data);
-        // Fetch controls for this risk (mock for now)
-        setControls([
-          {
-            id: "1",
-            controlId: "RSK-01.1",
-            name: "Risk Framing",
-            description: "Mechanisms exist to identify: \u25aa Assumptions affecting risk assessments, risk response and risk monitoring; \u25aa Constraints affecting risk assessments, risk response and risk monitoring; \u25aa The organizational risk tolerance; and \u25aa Priorities, benefits and trade-offs considered by the organization for managing risk.",
-            effectiveness: 20,
-          },
-        ]);
+        // Map linked controls from the risk's controlRisks relation
+        const linkedControls: Control[] = (data.controlRisks || []).map((cr: { control: { id: string; controlCode: string; name: string; description: string | null; relativeControlWeighting: number | null } }) => ({
+          id: cr.control.id,
+          controlId: cr.control.controlCode,
+          name: cr.control.name,
+          description: cr.control.description,
+          effectiveness: cr.control.relativeControlWeighting ?? 0,
+        }));
+        setControls(linkedControls);
       }
     } catch (error) {
       console.error("Failed to fetch risk:", error);
@@ -752,6 +752,7 @@ export default function RiskViewPage() {
         onOpenChange={setChooseControlOpen}
         onControlSelected={handleControlAdded}
         riskId={params.id as string}
+        excludeControlIds={(risk?.controlRisks || []).map(cr => cr.control.id)}
       />
 
       {/* Success Dialog */}

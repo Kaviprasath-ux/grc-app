@@ -613,9 +613,16 @@ export default function AssetInventoryPage() {
         const cat = await res.json();
         setCategories([...categories, cat]);
         triggerTranslation('AssetCategory', cat.id, { name: cat.name });
-        setNewAsset({ ...newAsset, categoryId: cat.id });
+        if (editingAsset) {
+          setEditingAsset({ ...editingAsset, categoryId: cat.id, subCategoryId: null });
+        } else {
+          setNewAsset({ ...newAsset, categoryId: cat.id, subCategoryId: "" });
+        }
         setNewCategoryName("");
         setIsAddCategoryOpen(false);
+      } else {
+        const error = await res.json();
+        toast({ title: t("Error"), description: error.error || t("Failed to add category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding category:", error);
@@ -623,14 +630,16 @@ export default function AssetInventoryPage() {
   };
 
   const handleAddSubCategory = async () => {
-    if (!newSubCategoryName.trim() || !newAsset.categoryId) return;
+    // Use editingAsset's categoryId when in edit mode, otherwise newAsset's
+    const categoryId = editingAsset?.categoryId || newAsset.categoryId;
+    if (!newSubCategoryName.trim() || !categoryId) return;
     try {
       const res = await fetch("/api/asset-sub-categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newSubCategoryName.trim(),
-          categoryId: newAsset.categoryId,
+          categoryId,
           status: "Active",
         }),
       });
@@ -638,9 +647,17 @@ export default function AssetInventoryPage() {
         const subCat = await res.json();
         setSubCategories([...subCategories, subCat]);
         triggerTranslation('AssetSubCategory', subCat.id, { name: subCat.name });
-        setNewAsset({ ...newAsset, subCategoryId: subCat.id });
+        // Update the correct form state based on mode
+        if (editingAsset) {
+          setEditingAsset({ ...editingAsset, subCategoryId: subCat.id });
+        } else {
+          setNewAsset({ ...newAsset, subCategoryId: subCat.id });
+        }
         setNewSubCategoryName("");
         setIsAddSubCategoryOpen(false);
+      } else {
+        const error = await res.json();
+        toast({ title: t("Error"), description: error.error || t("Failed to add sub category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding sub category:", error);
@@ -659,9 +676,16 @@ export default function AssetInventoryPage() {
         const group = await res.json();
         setGroups([...groups, group]);
         triggerTranslation('AssetGroup', group.id, { name: group.name });
-        setNewAsset({ ...newAsset, groupId: group.id });
+        if (editingAsset) {
+          setEditingAsset({ ...editingAsset, groupId: group.id });
+        } else {
+          setNewAsset({ ...newAsset, groupId: group.id });
+        }
         setNewGroupName("");
         setIsAddGroupOpen(false);
+      } else {
+        const error = await res.json();
+        toast({ title: t("Error"), description: error.error || t("Failed to add group"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding group:", error);
@@ -680,9 +704,16 @@ export default function AssetInventoryPage() {
         const lifecycle = await res.json();
         setLifecycleStatuses([...lifecycleStatuses, lifecycle]);
         triggerTranslation('AssetLifecycleStatus', lifecycle.id, { name: lifecycle.name });
-        setNewAsset({ ...newAsset, lifecycleStatusId: lifecycle.id });
+        if (editingAsset) {
+          setEditingAsset({ ...editingAsset, lifecycleStatusId: lifecycle.id });
+        } else {
+          setNewAsset({ ...newAsset, lifecycleStatusId: lifecycle.id });
+        }
         setNewLifecycleName("");
         setIsAddLifecycleOpen(false);
+      } else {
+        const error = await res.json();
+        toast({ title: t("Error"), description: error.error || t("Failed to add lifecycle status"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding lifecycle status:", error);
