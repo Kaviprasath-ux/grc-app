@@ -105,6 +105,9 @@ export default function RMInventoryPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
+  const [createdVendorName, setCreatedVendorName] = useState("");
 
   // ── Config data ────────────────────────────────────
   const [serviceCategories, setServiceCategories] = useState<string[]>(DEFAULT_SERVICE_CATEGORIES);
@@ -242,9 +245,10 @@ export default function RMInventoryPage() {
         body: JSON.stringify(buildPayload()),
       });
       if (res.ok) {
-        toast({ title: t("Vendor created successfully") });
+        setCreatedVendorName(vendorName.trim());
         setShowCreateDialog(false);
         resetForm();
+        setShowSuccessPopup(true);
         fetchVendors();
       } else {
         const err = await res.json();
@@ -644,6 +648,52 @@ export default function RMInventoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Success Popup - "Your response has been successfully updated" */}
+      <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
+        <DialogContent className="max-w-md text-center">
+          <div className="flex flex-col items-center py-6">
+            <div className="relative w-full h-32 mb-4 bg-amber-50 rounded-lg flex items-center justify-center overflow-hidden">
+              <svg viewBox="0 0 120 80" className="w-32 h-20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M60 10L110 50L95 55L60 25L25 55L10 50L60 10Z" fill="#E5A336" />
+                <path d="M60 25L95 55L85 58L60 35L35 58L25 55L60 25Z" fill="#C88B2A" />
+                <path d="M20 60C25 60 28 57 28 57" stroke="#D1D5DB" strokeWidth="2" fill="none" />
+                <path d="M90 65C95 65 98 62 98 62" stroke="#D1D5DB" strokeWidth="2" fill="none" />
+                <circle cx="15" cy="62" r="6" fill="#E5E7EB" />
+                <circle cx="95" cy="67" r="4" fill="#E5E7EB" />
+              </svg>
+            </div>
+            <p className="text-base font-semibold mb-4">{t("Your response has been successfully updated")}</p>
+            <Button
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+              onClick={() => {
+                setShowSuccessPopup(false);
+                setShowInfoPopup(true);
+              }}
+            >
+              {t("Check Risk Rating")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Info Popup - "Your assessment is successfully queued" */}
+      <Dialog open={showInfoPopup} onOpenChange={setShowInfoPopup}>
+        <DialogContent className="max-w-md">
+          <div className="bg-sky-50 border-b px-4 py-3 -mx-6 -mt-6 rounded-t-lg flex items-center justify-between">
+            <span className="font-semibold text-sm">{t("Information")}</span>
+          </div>
+          <div className="py-4 space-y-2">
+            <p className="text-sm">{t("Your assessment for")} <strong>{createdVendorName}</strong> {t("is successfully queued.")}</p>
+            <p className="text-sm">{t("You will be able to access the assessment once it is completed.")}</p>
+          </div>
+          <DialogFooter>
+            <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setShowInfoPopup(false)}>
+              {t("OK")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
