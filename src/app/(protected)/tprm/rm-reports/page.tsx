@@ -42,7 +42,7 @@ const CRITICALITY_COLORS: Record<string, string> = {
 
 // ==================== MAIN COMPONENT ====================
 
-export default function BOReportsPage() {
+export default function RMReportsPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [vendors, setVendors] = useState<Vendor[]>([]);

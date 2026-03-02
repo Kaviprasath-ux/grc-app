@@ -220,6 +220,10 @@ export const navigation: NavItem[] = [
       { name: "Contracts", href: "/tprm/bo-contracts", icon: FileText, permission: "tprm.bo-contracts:view" },
       { name: "Monitoring", href: "/tprm/bo-monitoring", icon: Activity, permission: "tprm.bo-monitoring:view" },
       { name: "Support", href: "/tprm/bo-support", icon: HelpCircle, permission: "tprm.bo-support:view" },
+      // ---- Relationship Manager menu items ----
+      { name: "Reports", href: "/tprm/rm-reports", icon: FileBarChart, permission: "tprm.rm-reports:view" },
+      { name: "Monitoring", href: "/tprm/rm-monitoring", icon: Activity, permission: "tprm.rm-monitoring:view" },
+      { name: "Issue Management", href: "/tprm/rm-issues", icon: AlertTriangle, permission: "tprm.rm-issues:view" },
     ],
   },
   // ==================== End TPRM Section ====================
@@ -340,6 +344,7 @@ const ROLE_PATH_MAP: Record<string, string> = {
   "FactoryAdmin": "factory-admin",
   "TPRMAdmin": "tprm-admin",
   "BusinessOwner": "business-owner",
+  "RelationshipManager": "relationship-manager",
 };
 
 /**
@@ -427,6 +432,7 @@ function getPrimaryRole(roles: string[]): string {
     "FactoryAdmin",
     "TPRMAdmin",
     "BusinessOwner",
+    "RelationshipManager",
   ];
 
   for (const role of rolePriority) {

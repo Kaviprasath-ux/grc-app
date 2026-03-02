@@ -76,7 +76,7 @@ function generateMonitoringData(vendors: Vendor[]): MonitoringEntry[] {
 
 // ==================== MAIN COMPONENT ====================
 
-export default function BOMonitoringPage() {
+export default function RMMonitoringPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [vendors, setVendors] = useState<Vendor[]>([]);

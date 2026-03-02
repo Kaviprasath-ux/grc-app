@@ -159,7 +159,7 @@ function generateIssueData(vendors: Vendor[]) {
 
 // ==================== MAIN COMPONENT ====================
 
-export default function BOIssuesPage() {
+export default function RMIssuesPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [vendors, setVendors] = useState<Vendor[]>([]);
