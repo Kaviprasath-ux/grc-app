@@ -5,18 +5,18 @@ const prisma = new PrismaClient();
 async function seedTPRM() {
   console.log("🌱 Seeding TPRM data...");
 
-  // Get GRC Admin customer account
-  const grcAdmin = await prisma.customerAccount.findUnique({
-    where: { code: "GRC_ADMIN_001" },
+  // Get tprmcust customer account
+  const tprmCust = await prisma.customerAccount.findUnique({
+    where: { code: "GRC_002" },
   });
-  if (!grcAdmin) {
-    console.error("GRC Admin account not found");
+  if (!tprmCust) {
+    console.error("tprmcust account not found");
     return;
   }
-  const caId = grcAdmin.id;
+  const caId = tprmCust.id;
 
   // Get superadmin user
-  const superadmin = await prisma.user.findUnique({
+  const superadmin = await prisma.user.findFirst({
     where: { userName: "superadmin" },
   });
   if (!superadmin) {
@@ -138,6 +138,124 @@ async function seedTPRM() {
     }
   }
   console.log(`✅ TPRM Assessment Logs: ${logCount}`);
+
+  // ==================== QUESTIONNAIRE DATA (SIG-style) ====================
+
+  // Domains
+  const domainNames = [
+    "B. Nth Party Management",
+    "C. Information Assurance",
+    "D. Asset and Information Management",
+    "E. Human Resources Security",
+    "F. Physical and Environmental Security",
+    "G. IT Operations Management",
+    "H. Access Control",
+    "I. Application Management",
+    "J. Cybersecurity Incident Management",
+    "K. Operational Resilience",
+    "L. Compliance Management",
+    "M. Endpoint Security",
+    "N. Network Security",
+    "O. Environmental, Social, and Governance (ESG)",
+    "P. Privacy Management",
+    "R. Artificial Intelligence",
+    "S. Supply Chain Risk Management (SCRM)",
+    "T. Threat Management",
+    "U. Server Security",
+    "V. Cloud Services",
+  ];
+
+  const domainMap: Record<string, string> = {};
+  for (let i = 0; i < domainNames.length; i++) {
+    const name = domainNames[i];
+    const domain = await prisma.tPRMDomain.upsert({
+      where: { customerAccountId_name: { customerAccountId: caId, name } },
+      update: {},
+      create: { customerAccountId: caId, name, sortOrder: i + 1 },
+    });
+    domainMap[name] = domain.id;
+  }
+  console.log(`✅ TPRM Domains: ${Object.keys(domainMap).length}`);
+
+  // Master Questions (one per domain, matching VerifAI Template2)
+  const questionsData = [
+    { domain: "B. Nth Party Management", text: "Is there a third party risk management program that is reviewed and approved by management which includes 4th and Nth parties as part of the program?" },
+    { domain: "C. Information Assurance", text: "Has the organization implemented and documented an information security program and policy that is communicated, monitored, maintained, continually improved, and approved by management?" },
+    { domain: "D. Asset and Information Management", text: "Is there an asset management program approved by management, communicated to constituents and has an owner to maintain, review, and manage asset controls?" },
+    { domain: "E. Human Resources Security", text: "Are Human Resources policies and procedures approved by management, communicated to constituents and have an owner to maintain and review?" },
+    { domain: "F. Physical and Environmental Security", text: "Has management approved a physical security program that is communicated to all parties involved, with an assigned owner responsible for maintenance and review?" },
+    { domain: "G. IT Operations Management", text: "Does the organization's executive leadership ensure Information Technology Operation's policies and procedures are established and aligned with organizational strategy, and communicated to the entire organization?" },
+    { domain: "H. Access Control", text: "Has management approved an access control policy, communicated it to constituents, appointed an owner to maintain it, and reviewed it?" },
+    { domain: "I. Application Management", text: "Are applications used to transmit, process, or store scoped data?" },
+    { domain: "J. Cybersecurity Incident Management", text: "Has management approved and communicated a Cybersecurity Incident Management Program with a designated owner to maintain and review it?" },
+    { domain: "K. Operational Resilience", text: "Has the organization established a Business Resilience Policy, designated an owner to maintain and review it, and communicated it?" },
+    { domain: "L. Compliance Management", text: "Are there policies and procedures to ensure compliance with applicable legislative, regulatory, and contractual requirements?" },
+    { domain: "M. Endpoint Security", text: "Do desktops, laptops, tablets, or smartphones transmit, process, or store scoped data?" },
+    { domain: "N. Network Security", text: "Does the organization build and maintain a secure network and systems?" },
+    { domain: "O. Environmental, Social, and Governance (ESG)", text: "Does the organization have and adhere to an environmental policy that sets out clear commitments and targets to improve the organization's footprint?" },
+    { domain: "P. Privacy Management", text: "Is there collection, access, processing, disclosure, or retention of any classification of personal information or personal data of individuals on behalf of the client?" },
+    { domain: "R. Artificial Intelligence", text: "Does the organization have a process to inform personnel of legal and regulatory considerations and requirements specific to its industry, sector, and business purpose, and the application context of the deployed AI system(s)?" },
+    { domain: "S. Supply Chain Risk Management (SCRM)", text: "Does your organization have access control policies for suppliers, developers, and service providers that are passed down to sub-tier contractors?" },
+    { domain: "T. Threat Management", text: "Is there a centrally managed Vulnerability Management Program and associated Policy that has been approved by management, communicated to appropriate constituents and an owner assigned to maintain and review the policy?" },
+    { domain: "U. Server Security", text: "Are servers used for transmitting, processing, or storing scoped data?" },
+    { domain: "V. Cloud Services", text: "Are Cloud Hosting services provided?" },
+  ];
+
+  const questionIds: string[] = [];
+  for (let i = 0; i < questionsData.length; i++) {
+    const q = questionsData[i];
+    const existing = await prisma.tPRMMasterQuestion.findFirst({
+      where: { customerAccountId: caId, domainId: domainMap[q.domain], questionText: q.text },
+    });
+    if (existing) {
+      questionIds.push(existing.id);
+    } else {
+      const created = await prisma.tPRMMasterQuestion.create({
+        data: {
+          customerAccountId: caId,
+          domainId: domainMap[q.domain],
+          questionText: q.text,
+          sortOrder: i + 1,
+          isParentQuestion: true,
+        },
+      });
+      questionIds.push(created.id);
+    }
+  }
+  console.log(`✅ TPRM Master Questions: ${questionIds.length}`);
+
+  // Questionnaire Template (Template2 — SIG-style)
+  const template = await prisma.tPRMQuestionnaireTemplate.upsert({
+    where: { customerAccountId_templateName: { customerAccountId: caId, templateName: "SIG Assessment" } },
+    update: {},
+    create: {
+      customerAccountId: caId,
+      templateName: "SIG Assessment",
+      frameworkName: "SIG Assessment",
+      templateCategory: "Default",
+    },
+  });
+  console.log(`✅ TPRM Questionnaire Template: ${template.templateName}`);
+
+  // Link questions to template
+  let linkCount = 0;
+  for (let i = 0; i < questionIds.length; i++) {
+    const existing = await prisma.tPRMQuestionnaireQuestion.findUnique({
+      where: { templateId_questionId: { templateId: template.id, questionId: questionIds[i] } },
+    });
+    if (!existing) {
+      await prisma.tPRMQuestionnaireQuestion.create({
+        data: {
+          customerAccountId: caId,
+          templateId: template.id,
+          questionId: questionIds[i],
+          sortOrder: i + 1,
+        },
+      });
+      linkCount++;
+    }
+  }
+  console.log(`✅ TPRM Questionnaire Links: ${linkCount}`);
 
   console.log("🎉 TPRM seed complete!");
 }
