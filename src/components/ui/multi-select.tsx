@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 export interface MultiSelectOption {
@@ -71,15 +72,14 @@ export function MultiSelect({
           options.map((option) => (
             <div
               key={option.value}
-              className="relative flex w-full cursor-default items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground"
+              className="relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 px-2 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground"
               onClick={() => handleToggle(option.value)}
             >
+              <Checkbox
+                checked={selected.includes(option.value)}
+                className="pointer-events-none"
+              />
               {option.label}
-              {selected.includes(option.value) && (
-                <span className="absolute right-2 flex size-3.5 items-center justify-center">
-                  <Check className="size-4" />
-                </span>
-              )}
             </div>
           ))
         )}

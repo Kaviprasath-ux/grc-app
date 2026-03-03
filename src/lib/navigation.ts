@@ -124,6 +124,7 @@ export const navigation: NavItem[] = [
     name: "Compliance",
     icon: Shield,
     children: [
+      { name: "Regulatory Intelligence Hub", href: "/compliance/regulatory-intelligence", icon: Radar, permission: "compliance.regulatory-intelligence:view" },
       { name: "Frameworks", href: "/compliance/framework", icon: Layers, permission: "compliance.framework:view" },
       { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
       { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },

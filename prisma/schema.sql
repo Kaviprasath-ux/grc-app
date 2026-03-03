@@ -2802,6 +2802,32 @@ CREATE TABLE "TPRMPlatform" (
 );
 
 -- CreateTable
+CREATE TABLE "RegulatoryProfile" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "fullLegalEntityName" TEXT NOT NULL,
+    "registrationNo" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "country" TEXT NOT NULL,
+    "industrySectors" TEXT NOT NULL,
+    "otherIndustry" TEXT,
+    "organisationType" TEXT NOT NULL,
+    "countriesOfOperation" TEXT NOT NULL,
+    "headquarterAddress" TEXT NOT NULL,
+    "adminContactEmail" TEXT NOT NULL,
+    "timeZone" TEXT NOT NULL,
+    "language" TEXT NOT NULL,
+    "businessModel" TEXT NOT NULL,
+    "targetAudience" TEXT NOT NULL,
+    "technologyUsed" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdBy" TEXT,
+
+    CONSTRAINT "RegulatoryProfile_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "DynamicTranslation" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -3640,6 +3666,9 @@ CREATE INDEX "TPRMVulnerabilityFinding_kpiDetailId_idx" ON "TPRMVulnerabilityFin
 
 -- CreateIndex
 CREATE INDEX "TPRMHTTPHeader_assessmentId_idx" ON "TPRMHTTPHeader"("assessmentId");
+
+-- CreateIndex
+CREATE INDEX "RegulatoryProfile_customerAccountId_idx" ON "RegulatoryProfile"("customerAccountId");
 
 -- CreateIndex
 CREATE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId");
@@ -4579,6 +4608,9 @@ ALTER TABLE "TPRMHTTPHeader" ADD CONSTRAINT "TPRMHTTPHeader_assessmentId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "TPRMPlatform" ADD CONSTRAINT "TPRMPlatform_httpHeaderId_fkey" FOREIGN KEY ("httpHeaderId") REFERENCES "TPRMHTTPHeader"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RegulatoryProfile" ADD CONSTRAINT "RegulatoryProfile_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DynamicTranslation" ADD CONSTRAINT "DynamicTranslation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

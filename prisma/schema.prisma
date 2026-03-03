@@ -117,6 +117,7 @@ model CustomerAccount {
   biaScoringRanges           BIAScoringRange[]
   bcpLabels                  BCPLabel[]
   dynamicTranslations        DynamicTranslation[]
+  regulatoryProfiles         RegulatoryProfile[]
   // TPRM relations
   tprmVendors                TPRMVendor[]
   tprmAssessments            TPRMAssessment[]
@@ -3800,6 +3801,45 @@ model TPRMPlatform {
   createdAt    DateTime        @default(now())
 
   httpHeader   TPRMHTTPHeader  @relation(fields: [httpHeaderId], references: [id], onDelete: Cascade)
+}
+
+// ==================== REGULATORY INTELLIGENCE ====================
+
+model RegulatoryProfile {
+  id                    String          @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+
+  // Legal Identity
+  fullLegalEntityName   String
+  registrationNo        String
+  url                   String
+  country               String
+
+  // Scope and Presence
+  industrySectors       String          @db.Text // JSON array
+  otherIndustry         String?
+  organisationType      String
+  countriesOfOperation  String          @db.Text // JSON array
+
+  // Physical Presence
+  headquarterAddress    String
+  adminContactEmail     String
+
+  // Regional Preference
+  timeZone              String
+  language              String
+
+  // Business Context for AI
+  businessModel         String
+  targetAudience        String          @db.Text // JSON array
+  technologyUsed        String          @db.Text // JSON array
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  createdBy             String?
+
+  @@index([customerAccountId])
 }
 
 // ==================== DYNAMIC DATA TRANSLATIONS ====================

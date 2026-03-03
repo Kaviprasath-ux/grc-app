@@ -47,6 +47,7 @@ export const RESOURCES = {
 
   // Compliance Module
   'compliance.dashboard': '/compliance',
+  'compliance.regulatory-intelligence': '/compliance/regulatory-intelligence',
   'compliance.framework': '/compliance/framework',
   'compliance.controls': '/compliance/control',
   'compliance.governance': '/compliance/governance',
