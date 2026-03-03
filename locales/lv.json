@@ -3888,5 +3888,22 @@
   "uploaded": "augšupielādēts",
   "users imported": "lietotāji importēti",
   "xlsx": "xlsx",
-  "year": "gads"
+  "year": "gads",
+  "Help Assistant": "Palīdzības asistents",
+  "Need help?": "Vajadzīga palīdzība?",
+  "Ask anything about the application": "Jautājiet jebko par lietojumprogrammu",
+  "Type your question...": "Ierakstiet savu jautājumu...",
+  "Clear chat": "Notīrīt sarunu",
+  "Browse by Module": "Pārlūkot pēc moduļa",
+  "Suggested for this page": "Ieteikts šai lapai",
+  "topics": "tēmas",
+  "Back to modules": "Atpakaļ uz moduļiem",
+  "Notes": "Piezīmes",
+  "Related": "Saistītais",
+  "Related Questions": "Saistītie jautājumi",
+  "Press": "Nospiediet",
+  "to toggle help": "lai pārslēgtu palīdzību",
+  "General": "Vispārīgi",
+  "TPRM": "TPRM",
+  "GRC Administration": "GRC administrēšana"
 }

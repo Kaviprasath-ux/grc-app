@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { HelpChatbot } from "@/components/help-chatbot/help-chatbot";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,9 @@ export function MainLayout({ children }: MainLayoutProps) {
         />
         <main className="flex-1 p-4 lg:p-6 min-w-0">{children}</main>
       </div>
+
+      {/* Help Chatbot — floating button + side sheet */}
+      <HelpChatbot />
     </div>
   );
 }

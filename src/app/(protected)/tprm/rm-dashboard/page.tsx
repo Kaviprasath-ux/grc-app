@@ -122,7 +122,7 @@ export default function RMDashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} tickFormatter={(v) => t(v)} />
                   <YAxis allowDecimals={false} label={{ value: t("Vendor Count"), angle: -90, position: "insideLeft", style: { fontSize: 12 } }} />
-                  <Tooltip formatter={(value: number) => [value, t("Vendors")]} labelFormatter={(label) => t(label)} />
+                  <Tooltip formatter={(value) => [value as number, t("Vendors")]} labelFormatter={(label) => t(label)} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                     {criticalityData.map((entry, index) => (
                       <Cell key={index} fill={entry.color} />
@@ -150,7 +150,7 @@ export default function RMDashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} tickFormatter={(v) => t(v)} />
                   <YAxis allowDecimals={false} label={{ value: t("Assessment Count"), angle: -90, position: "insideLeft", style: { fontSize: 12 } }} />
-                  <Tooltip formatter={(value: number) => [value, t("Assessments")]} labelFormatter={(label) => t(label)} />
+                  <Tooltip formatter={(value) => [value as number, t("Assessments")]} labelFormatter={(label) => t(label)} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                     {statusData.map((entry, index) => (
                       <Cell key={index} fill={entry.color} />

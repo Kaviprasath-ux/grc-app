@@ -4310,6 +4310,27 @@ const translations: [string, string, string][] = [
   ['users imported', 'تم استيراد المستخدمين', 'lietotāji importēti'],
   ['xlsx', 'xlsx', 'xlsx'],
   ['year', 'سنة', 'gads'],
+
+  // ==========================================
+  // HELP CHATBOT
+  // ==========================================
+  ['Help Assistant', 'مساعد المساعدة', 'Palīdzības asistents'],
+  ['Need help?', 'هل تحتاج مساعدة؟', 'Vajadzīga palīdzība?'],
+  ['Ask anything about the application', 'اسأل أي شيء عن التطبيق', 'Jautājiet jebko par lietojumprogrammu'],
+  ['Type your question...', 'اكتب سؤالك...', 'Ierakstiet savu jautājumu...'],
+  ['Clear chat', 'مسح المحادثة', 'Notīrīt sarunu'],
+  ['Browse by Module', 'تصفح حسب الوحدة', 'Pārlūkot pēc moduļa'],
+  ['Suggested for this page', 'مقترح لهذه الصفحة', 'Ieteikts šai lapai'],
+  ['topics', 'مواضيع', 'tēmas'],
+  ['Back to modules', 'العودة للوحدات', 'Atpakaļ uz moduļiem'],
+  ['Notes', 'ملاحظات', 'Piezīmes'],
+  ['Related', 'ذو صلة', 'Saistītais'],
+  ['Related Questions', 'أسئلة ذات صلة', 'Saistītie jautājumi'],
+  ['Press', 'اضغط', 'Nospiediet'],
+  ['to toggle help', 'لفتح/إغلاق المساعدة', 'lai pārslēgtu palīdzību'],
+  ['General', 'عام', 'Vispārīgi'],
+  ['TPRM', 'إدارة مخاطر الطرف الثالث', 'TPRM'],
+  ['GRC Administration', 'إدارة الحوكمة والمخاطر والامتثال', 'GRC administrēšana'],
 ];
 
 function createExcelFile(): void {

@@ -3888,5 +3888,22 @@
   "uploaded": "تم الرفع",
   "users imported": "تم استيراد المستخدمين",
   "xlsx": "xlsx",
-  "year": "سنة"
+  "year": "سنة",
+  "Help Assistant": "مساعد المساعدة",
+  "Need help?": "هل تحتاج مساعدة؟",
+  "Ask anything about the application": "اسأل أي شيء عن التطبيق",
+  "Type your question...": "اكتب سؤالك...",
+  "Clear chat": "مسح المحادثة",
+  "Browse by Module": "تصفح حسب الوحدة",
+  "Suggested for this page": "مقترح لهذه الصفحة",
+  "topics": "مواضيع",
+  "Back to modules": "العودة للوحدات",
+  "Notes": "ملاحظات",
+  "Related": "ذو صلة",
+  "Related Questions": "أسئلة ذات صلة",
+  "Press": "اضغط",
+  "to toggle help": "لفتح/إغلاق المساعدة",
+  "General": "عام",
+  "TPRM": "إدارة مخاطر الطرف الثالث",
+  "GRC Administration": "إدارة الحوكمة والمخاطر والامتثال"
 }
