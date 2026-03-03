@@ -379,6 +379,59 @@ async function main() {
   });
   console.log("✅ GRC Admin 2 user created (grcadmin2 / Baarez@2025)");
 
+  // Create TPRM Admin user (CustomerAdministrator with TPRM access)
+  const tprmAdminCustomerAccount = await prisma.customerAccount.upsert({
+    where: { code: "TPRM_ADMIN_001" },
+    update: { isTprmAdded: true },
+    create: {
+      id: "tprm-admin-account-1",
+      code: "TPRM_ADMIN_001",
+      name: "TPRM Admin Account",
+      isActive: true,
+      isGrcAdded: false,
+      isTprmAdded: true,
+    },
+  });
+  const tprmAdminCustomerAccountId = tprmAdminCustomerAccount.id;
+
+  const tadmUser = await prisma.user.upsert({
+    where: { userId: "TADM-001" },
+    update: {
+      customerAccountId: tprmAdminCustomerAccountId,
+      password: hashedPasswordBaarez,
+    },
+    create: {
+      userId: "TADM-001",
+      userName: "tadm",
+      email: "tadm@baarez.com",
+      password: hashedPasswordBaarez,
+      firstName: "TPRM",
+      lastName: "Admin",
+      fullName: "TPRM Admin",
+      designation: "TPRM Administrator",
+      role: "CustomerAdministrator",
+      function: "Administration",
+      isActive: true,
+      isBlocked: false,
+      customerAccountId: tprmAdminCustomerAccountId,
+    },
+  });
+
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: tadmUser.id,
+        roleId: createdRoles["CustomerAdministrator"],
+      },
+    },
+    update: {},
+    create: {
+      userId: tadmUser.id,
+      roleId: createdRoles["CustomerAdministrator"],
+    },
+  });
+  console.log("✅ TPRM Admin user created (tadm / Baarez@2025)");
+
   // Create Stakeholders
   const stakeholders = [
     { name: "John Smith", email: "john.smith@example.com", type: "Internal", status: "Active" },
