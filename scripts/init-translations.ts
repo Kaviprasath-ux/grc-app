@@ -3719,6 +3719,13 @@ const translations: [string, string, string][] = [
   ['User updated successfully', 'تم تحديث المستخدم بنجاح', 'Lietotājs veiksmīgi atjaunināts'],
 
   // ==========================================
+  // SUBSCRIPTION
+  // ==========================================
+  ['Subscription', 'الاشتراك', 'Abonements'],
+  ['All Subscriptions', 'جميع الاشتراكات', 'Visi abonamenti'],
+  ['Not Subscribed', 'غير مشترك', 'Nav abonēts'],
+
+  // ==========================================
   // BIA (missing batch)
   // ==========================================
   ['Add BIA Category', 'إضافة فئة تحليل تأثير الأعمال', 'Pievienot BIA kategoriju'],
