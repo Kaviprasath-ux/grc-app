@@ -12,6 +12,7 @@ import {
   FileBarChart,
   CheckCircle2,
   Loader2,
+  Radar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,18 +67,28 @@ function getKpiScore(details: TPRMKPIDetail[], name: string): number | null {
 
 function scoreBadgeClass(score: number | null): string {
   if (score === null) return "bg-slate-100 text-slate-400";
-  if (score >= 70) return "bg-green-100 text-green-700";
-  if (score >= 50) return "bg-yellow-100 text-yellow-700";
-  return "bg-red-100 text-red-700";
+  if (score >= 80) return "bg-green-100 text-green-700";
+  if (score >= 65) return "bg-emerald-50 text-emerald-600";
+  if (score >= 50) return "bg-yellow-50 text-yellow-600";
+  return "bg-red-50 text-red-500";
+}
+
+function kpiCellColor(score: number | null): string {
+  if (score === null) return "";
+  if (score >= 80) return "text-green-700 bg-green-50/60";
+  if (score >= 65) return "text-emerald-600 bg-emerald-50/40";
+  if (score >= 50) return "text-yellow-600 bg-yellow-50/50";
+  return "text-red-500 bg-red-50/40";
 }
 
 // ==================== KPI CELL ====================
 
 function KpiCell({ score }: { score: number | null }) {
   if (score === null) return <td className="px-2 py-2.5 text-center"><span className="text-slate-300 text-sm">{"\u2014"}</span></td>;
+  const colorCls = kpiCellColor(score);
   return (
     <td className="px-2 py-2.5 text-center">
-      <span className="inline-block bg-[#f5f3ee] text-slate-700 text-sm font-medium rounded-md px-3 py-1 min-w-[40px]">
+      <span className={`inline-block text-sm font-semibold rounded-md px-3 py-1 min-w-[40px] ${colorCls}`}>
         {score}
       </span>
     </td>
@@ -242,7 +253,15 @@ export default function MonitoringPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("Continuous Monitoring")}</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Radar className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">{t("Continuous Monitoring")}</h1>
+            <p className="text-sm text-muted-foreground">{t("Track and monitor vendor security posture in real-time")}</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ltr:mr-1 rtl:ml-1 ${loading ? "animate-spin" : ""}`} />
@@ -256,27 +275,45 @@ export default function MonitoringPage() {
       </div>
 
       {/* Analyze Vendor Input */}
-      <div className="bg-white border rounded-lg p-4">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
-          <div>
-            <Label>{t("Vendor Name")}</Label>
-            <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder={t("Enter vendor name")} />
+      <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 bg-gradient-to-r from-primary/5 to-white border-b flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Activity className="h-3.5 w-3.5 text-primary" />
           </div>
-          <div>
-            <Label>{t("Vendor Domain (URL)")}</Label>
-            <Input value={vendorDomain} onChange={(e) => setVendorDomain(e.target.value)} placeholder="https://example.com" />
+          <span className="text-sm font-semibold">{t("New Vendor Scan")}</span>
+        </div>
+        <div className="p-5">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+            <div>
+              <Label className="text-xs text-muted-foreground">{t("Vendor Name")}</Label>
+              <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder={t("Enter vendor name")} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">{t("Vendor Domain (URL)")}</Label>
+              <Input value={vendorDomain} onChange={(e) => setVendorDomain(e.target.value)} placeholder="https://example.com" className="mt-1" />
+            </div>
+            <Button onClick={handleAnalyze} disabled={submitting} className="h-10">
+              {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
+              {submitting ? t("Submitting...") : t("Analyze Vendor")}
+            </Button>
           </div>
-          <Button onClick={handleAnalyze} disabled={submitting}>
-            {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
-            {submitting ? t("Submitting...") : t("Analyze Vendor")}
-          </Button>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input className="ltr:pl-9 rtl:pr-9" placeholder={t("Search vendors...")} value={search} onChange={(e) => setSearch(e.target.value)} />
+      {/* Search & Stats Bar */}
+      <div className="flex items-center gap-4">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input className="ltr:pl-9 rtl:pr-9 bg-white" placeholder={t("Search vendors...")} value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        {!loading && latestVendors.length > 0 && (
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5" />
+              {latestVendors.length} {t("vendors monitored")}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Main Scorecard Table */}
@@ -285,21 +322,29 @@ export default function MonitoringPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border rounded-lg bg-white">
+        <div className="text-center py-12 text-muted-foreground border rounded-xl bg-white shadow-sm">
           <Shield className="h-10 w-10 mx-auto mb-3 opacity-40" />
           <p className="font-medium">{t("No monitoring data available")}</p>
           <p className="text-sm mt-1">{t("Results will appear here once the scanning API sends data")}</p>
         </div>
       ) : (
-        <div className="border rounded-lg bg-white overflow-hidden">
+        <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          {/* Table section header */}
+          <div className="px-5 py-3 bg-gradient-to-r from-slate-50 to-white border-b flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
+              <Shield className="h-3.5 w-3.5 text-slate-600" />
+            </div>
+            <span className="font-semibold text-sm text-slate-800">{t("Vendor Scorecard")}</span>
+            <span className="text-xs text-slate-400">{filtered.length} {t("vendors")}</span>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="border-b bg-white">
-                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap border-r">{t("Company")}</th>
+                <tr className="border-b bg-slate-50/60">
+                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap sticky left-0 bg-slate-50/60 z-10">{t("Company")}</th>
                   <th className="text-center px-3 py-3 font-semibold whitespace-nowrap">{t("Security Score")}</th>
                   {KPI_COLUMNS.map((col) => (
-                    <th key={col} className="text-center px-2 py-3 font-semibold whitespace-nowrap text-xs">{t(col)}</th>
+                    <th key={col} className="text-center px-2 py-3 font-semibold whitespace-nowrap text-xs text-slate-600">{t(col)}</th>
                   ))}
                   <th className="px-3 py-3 w-10" />
                 </tr>
@@ -310,32 +355,34 @@ export default function MonitoringPage() {
                   return (
                     <tr
                       key={v.id}
-                      className="border-b last:border-b-0 hover:bg-slate-50/50 cursor-pointer"
+                      className="border-b last:border-b-0 hover:bg-slate-50/60 cursor-pointer transition-colors"
                       onClick={() => router.push(`/tprm/monitoring/${v.id}`)}
                     >
-                      <td className="px-4 py-3 border-r min-w-[160px]">
+                      <td className="px-4 py-3 min-w-[180px] sticky left-0 bg-white z-10">
                         <div className="flex items-center gap-2">
-                          <div className="font-medium text-sm">{v.vendorName}</div>
+                          <div className="font-semibold text-sm text-slate-800">{v.vendorName}</div>
                           {v.vendorOnboarded && (
-                            <Badge className="bg-green-100 text-green-700 text-xs h-5">
+                            <Badge className="bg-green-50 text-green-600 text-[10px] h-5 border border-green-200">
                               <CheckCircle2 className="h-3 w-3 ltr:mr-0.5 rtl:ml-0.5" />
                               {t("Onboarded")}
                             </Badge>
                           )}
                         </div>
-                        <a
-                          href={v.vendorURL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline truncate max-w-[150px] block"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {v.vendorURL}
-                        </a>
+                        {v.vendorURL && (
+                          <a
+                            href={v.vendorURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-muted-foreground hover:text-primary hover:underline truncate max-w-[160px] block mt-0.5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {v.vendorURL}
+                          </a>
+                        )}
                       </td>
                       {/* Security Score — colored badge */}
                       <td className="px-3 py-2.5 text-center">
-                        <span className={`inline-block font-bold text-sm rounded-md px-4 py-1.5 min-w-[52px] ${scoreBadgeClass(a?.overallScore ?? null)}`}>
+                        <span className={`inline-block font-bold text-sm rounded-lg px-4 py-1.5 min-w-[52px] ${scoreBadgeClass(a?.overallScore ?? null)}`}>
                           {a?.overallScore ?? "\u2014"}
                         </span>
                       </td>
@@ -348,7 +395,7 @@ export default function MonitoringPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 transition-colors"
                           onClick={(e) => { e.stopPropagation(); toast({ title: t("Info"), description: t("Delete functionality coming soon") }); }}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -361,47 +408,48 @@ export default function MonitoringPage() {
             </table>
           </div>
           {/* Pagination info */}
-          <div className="px-4 py-2.5 border-t text-xs text-muted-foreground flex justify-end">
-            {t("1 to")} {filtered.length} {t("of")} {filtered.length}
+          <div className="px-4 py-2.5 border-t bg-slate-50/40 text-xs text-muted-foreground flex items-center justify-between">
+            <span>{filtered.length} {t("vendors")}</span>
+            <span>{t("1 to")} {filtered.length} {t("of")} {filtered.length}</span>
           </div>
         </div>
       )}
 
       {/* Queued Assessments */}
-      <div className="border rounded-lg bg-white p-4">
-        <h4 className="text-base font-semibold mb-3">{t("Queued Assessments")}</h4>
-        {activeScans.length === 0 && queuedVendors.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">{t("No Data Found")}</p>
-        ) : (
+      {(activeScans.length > 0 || queuedVendors.length > 0) && (
+        <div className="border rounded-xl bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+            <h4 className="text-sm font-semibold">{t("Queued Assessments")}</h4>
+            <Badge variant="outline" className="text-xs">{activeScans.length + queuedVendors.length}</Badge>
+          </div>
           <div className="space-y-2">
-            {/* Active scans (locally tracked, not yet persisted) */}
             {activeScans.map((scan) => (
-              <div key={scan.jobId} className="flex items-center justify-between border rounded p-3">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+              <div key={scan.jobId} className="flex items-center justify-between border border-amber-100 bg-amber-50/30 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
                   <div>
-                    <span className="font-medium text-sm">{scan.vendorName}</span>
-                    <span className="text-xs text-muted-foreground ltr:ml-2 rtl:mr-2">{scan.vendorURL}</span>
+                    <span className="font-semibold text-sm text-slate-800">{scan.vendorName}</span>
+                    {scan.vendorURL && <span className="text-xs text-muted-foreground ltr:ml-2 rtl:mr-2">{scan.vendorURL}</span>}
                   </div>
                 </div>
-                <Badge className={scan.status === "processing" ? "bg-blue-100 text-blue-700 text-xs" : "bg-orange-100 text-orange-700 text-xs"}>
+                <Badge className={scan.status === "processing" ? "bg-blue-50 text-blue-600 border border-blue-200 text-xs" : "bg-amber-50 text-amber-600 border border-amber-200 text-xs"}>
                   {scan.status === "processing" ? t("Processing") : t("Queued")}
                 </Badge>
               </div>
             ))}
-            {/* DB-queued vendors */}
             {queuedVendors.map((v) => (
-              <div key={v.id} className="flex items-center justify-between border rounded p-3">
+              <div key={v.id} className="flex items-center justify-between border border-amber-100 bg-amber-50/30 rounded-lg px-4 py-3">
                 <div>
-                  <span className="font-medium text-sm">{v.vendorName}</span>
-                  <span className="text-xs text-muted-foreground ltr:ml-2 rtl:mr-2">{v.vendorURL}</span>
+                  <span className="font-semibold text-sm text-slate-800">{v.vendorName}</span>
+                  {v.vendorURL && <span className="text-xs text-muted-foreground ltr:ml-2 rtl:mr-2">{v.vendorURL}</span>}
                 </div>
-                <Badge className="bg-orange-100 text-orange-700 text-xs">{t("Queued")}</Badge>
+                <Badge className="bg-amber-50 text-amber-600 border border-amber-200 text-xs">{t("Queued")}</Badge>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

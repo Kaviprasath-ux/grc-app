@@ -156,14 +156,15 @@ function mapExternalToInternal(
       items = rawHeadersRaw as Record<string, unknown>[];
     } else if (rawHeadersRaw && typeof rawHeadersRaw === "object") {
       const obj = rawHeadersRaw as Record<string, unknown>;
-      // Check for nested "headers" array
-      if (Array.isArray(obj.headers)) {
-        items = obj.headers as Record<string, unknown>[];
+      // Check for nested arrays — API returns { http_security_headers: [...], error: null }
+      const nestedArr = obj.headers || obj.http_security_headers;
+      if (Array.isArray(nestedArr)) {
+        items = nestedArr as Record<string, unknown>[];
         if (obj.platform) items = [...items, { platform: obj.platform }];
       } else {
         // Object with named keys — each value might be a header entry
         for (const [key, val] of Object.entries(obj)) {
-          if (val && typeof val === "object") {
+          if (val && typeof val === "object" && !Array.isArray(val)) {
             if (key === "platform") {
               items.push({ platform: val });
             } else {
@@ -177,6 +178,7 @@ function mapExternalToInternal(
         }
       }
     }
+    console.log("🔍 [HEADERS] Parsed items count:", items.length);
 
     for (const item of items) {
       if (item.platform) {

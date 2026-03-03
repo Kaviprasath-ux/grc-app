@@ -8,8 +8,6 @@ import {
   Shield,
   Activity,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   UserPlus,
   CheckCircle2,
   Globe,
@@ -26,6 +24,12 @@ import {
   Radio,
   FileWarning,
   Users,
+  Sparkles,
+  Target,
+  Layers,
+  Zap,
+  Scale,
+  FileCheck,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -139,9 +143,19 @@ function fmtShortDate(d: string | null) {
 
 function scoreColor(score: number | null): string {
   if (score === null) return "#94a3b8";
-  if (score >= 70) return "#16a34a";
-  if (score >= 50) return "#ca8a04";
-  return "#dc2626";
+  if (score >= 80) return "#15803d"; // green-700
+  if (score >= 65) return "#059669"; // emerald-600
+  if (score >= 50) return "#ca8a04"; // yellow-600
+  return "#ef4444"; // red-500
+}
+
+// Trust rating based on score — used for KPI card styling
+function scoreRating(score: number | null): { bg: string; iconBg: string; numColor: string; label: string } {
+  if (score === null) return { bg: "", iconBg: "bg-slate-50 text-slate-400", numColor: "text-slate-400", label: "N/A" };
+  if (score >= 80) return { bg: "bg-green-50/70", iconBg: "bg-green-100 text-green-700", numColor: "text-green-700", label: "Excellent" };
+  if (score >= 65) return { bg: "bg-emerald-50/50", iconBg: "bg-emerald-50 text-emerald-600", numColor: "text-emerald-600", label: "Good" };
+  if (score >= 50) return { bg: "bg-yellow-50/60", iconBg: "bg-yellow-50 text-yellow-600", numColor: "text-yellow-600", label: "Average" };
+  return { bg: "bg-red-50/50", iconBg: "bg-red-50 text-red-500", numColor: "text-red-500", label: "Low" };
 }
 
 function severityBadgeClass(sev: string): string {
@@ -199,45 +213,83 @@ const KPI_ICON_MAP: Record<string, LucideIcon> = {
   "Social Engineering": Users,
 };
 
-function KpiCard({ kpi, isThreat, expanded, onToggle, t }: {
+// Check if a KPI has any detail content worth showing
+function kpiHasDetails(kpi: TPRMKPIDetail): boolean {
+  return !!(kpi.summary || kpi.description || kpi.keyFindings.length > 0 || kpi.sources.length > 0);
+}
+
+function KpiCard({ kpi, isThreat, onSelect, t }: {
   kpi: TPRMKPIDetail;
   isThreat: boolean;
-  expanded: boolean;
-  onToggle: () => void;
+  onSelect: () => void;
   t: (s: string) => string;
 }) {
   const Icon = KPI_ICON_MAP[kpi.kpiName] || Shield;
   const score = kpi.securityScore;
-  const sColor = scoreColor(score);
-  const iconBg = isThreat ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600";
+  const rating = scoreRating(score);
+  const hasDetails = kpiHasDetails(kpi);
 
   return (
-    <div className={`border rounded-lg bg-white overflow-hidden transition-shadow hover:shadow-md ${expanded ? "shadow-md ring-1 ring-slate-200" : ""}`}>
-      {/* Header */}
-      <div
-        className="px-4 py-3.5 flex items-center gap-3 cursor-pointer select-none"
-        onClick={onToggle}
-      >
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+    <div
+      className={`border rounded-lg overflow-hidden transition-shadow hover:shadow-md ${rating.bg} ${hasDetails ? "cursor-pointer" : ""}`}
+      onClick={hasDetails ? onSelect : undefined}
+    >
+      <div className="px-4 py-3.5 flex items-center gap-3 select-none">
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${rating.iconBg}`}>
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
           <span className="font-semibold text-sm text-slate-800 block truncate">{kpi.kpiName}</span>
+          {hasDetails ? (
+            <span className="text-[11px] text-slate-400">{t("Click for details")}</span>
+          ) : (
+            <span className={`text-[11px] font-medium ${rating.numColor}`}>{t(rating.label)}</span>
+          )}
         </div>
-        <div className="flex items-center gap-2.5 flex-shrink-0">
-          <span className="text-2xl font-bold tabular-nums" style={{ color: sColor }}>
-            {score ?? "\u2014"}
-          </span>
-          {expanded
-            ? <ChevronUp className="h-4 w-4 text-slate-400" />
-            : <ChevronDown className="h-4 w-4 text-slate-400" />
-          }
-        </div>
+        <span className={`text-2xl font-bold tabular-nums flex-shrink-0 ${rating.numColor}`}>
+          {score ?? "\u2014"}
+        </span>
       </div>
+    </div>
+  );
+}
 
-      {/* Expanded content */}
-      {expanded && (
-        <div className="px-4 pb-4 pt-1 space-y-3 border-t border-slate-100">
+// KPI Detail Dialog
+function KpiDetailDialog({ kpi, isThreat, open, onClose, t }: {
+  kpi: TPRMKPIDetail | null;
+  isThreat: boolean;
+  open: boolean;
+  onClose: () => void;
+  t: (s: string) => string;
+}) {
+  if (!kpi) return null;
+  const Icon = KPI_ICON_MAP[kpi.kpiName] || Shield;
+  const score = kpi.securityScore;
+  const rating = scoreRating(score);
+  const categoryLabel = isThreat ? t("Threat Exposure") : t("Security Posture");
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader className="pr-8">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${rating.iconBg}`}>
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-base">{kpi.kpiName}</DialogTitle>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">{categoryLabel}</span>
+                <span className={`text-xs font-semibold ${rating.numColor}`}>{t(rating.label)}</span>
+              </div>
+            </div>
+            <span className={`text-3xl font-bold tabular-nums flex-shrink-0 ${rating.numColor}`}>
+              {score ?? "\u2014"}
+            </span>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto">
           {kpi.summary && (
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t("Summary")}</p>
@@ -281,8 +333,8 @@ function KpiCard({ kpi, isThreat, expanded, onToggle, t }: {
             </div>
           )}
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -385,7 +437,7 @@ export default function MonitoringDetailPage() {
   const [vendor, setVendor] = useState<TPRMMonitoringVendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [onboardDialogOpen, setOnboardDialogOpen] = useState(false);
-  const [expandedKpis, setExpandedKpis] = useState<Set<string>>(new Set());
+  const [selectedKpi, setSelectedKpi] = useState<{ kpi: TPRMKPIDetail; isThreat: boolean } | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -410,14 +462,6 @@ export default function MonitoringDetailPage() {
     if (vendor?.id === monitoringVendorId) {
       setVendor({ ...vendor, vendorOnboarded: true, tprmVendorId: newTprmVendorId });
     }
-  };
-
-  const toggleKpi = (id: string) => {
-    setExpandedKpis((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
   };
 
   // Derived data from latest assessment
@@ -527,50 +571,62 @@ export default function MonitoringDetailPage() {
       </div>
 
       {/* Header Card */}
-      <div className="border rounded-lg bg-white p-6">
-        <div className="flex items-start gap-4">
-          <ScoreCircle score={assessment.overallScore} size={64} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold">{vendor.vendorName}</h1>
-              {assessment.status && (
-                <Badge className="bg-green-100 text-green-800 text-xs">{assessment.status}</Badge>
+      <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+        <div className="p-6">
+          <div className="flex items-start gap-5">
+            <ScoreCircle score={assessment.overallScore} size={72} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold">{vendor.vendorName}</h1>
+                {assessment.status && (
+                  <Badge className="bg-green-100 text-green-800 text-xs">{assessment.status}</Badge>
+                )}
+              </div>
+              <a href={vendor.vendorURL} target="_blank" rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline flex items-center gap-1 mt-0.5">
+                <ExternalLink className="h-3 w-3" /> {vendor.vendorURL}
+              </a>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("Scanned on")} {fmtDate(assessment.lastScan || assessment.createdAt)}
+              </p>
+            </div>
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {vendor.vendorOnboarded ? (
+                <Badge className="bg-green-100 text-green-800">
+                  <CheckCircle2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Onboarded")}
+                </Badge>
+              ) : (
+                <Button size="sm" onClick={() => setOnboardDialogOpen(true)}>
+                  <UserPlus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Onboard Vendor")}
+                </Button>
               )}
             </div>
-            <a href={vendor.vendorURL} target="_blank" rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline flex items-center gap-1 mt-0.5">
-              <ExternalLink className="h-3 w-3" /> {vendor.vendorURL}
-            </a>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t("Scanned on")} {fmtDate(assessment.lastScan || assessment.createdAt)}
-            </p>
-            {/* Score pills */}
-            <div className="flex items-center gap-3 mt-3">
-              <div className="flex items-center border rounded-full px-3 py-1 gap-2">
-                <span className="text-xs text-muted-foreground">{t("Security Posture Score")}</span>
-                <span className="text-lg font-bold text-slate-800">
-                  {assessment.securityPostureScore != null ? assessment.securityPostureScore.toFixed(2) : "\u2014"}
-                </span>
-              </div>
-              <div className="flex items-center border rounded-full px-3 py-1 gap-2">
-                <span className="text-xs text-muted-foreground">{t("Threat Exposure Score")}</span>
-                <span className="text-lg font-bold text-slate-800">
-                  {assessment.threatExposureScore != null ? assessment.threatExposureScore.toFixed(2) : "\u2014"}
-                </span>
-              </div>
-            </div>
           </div>
-          {/* Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {vendor.vendorOnboarded ? (
-              <Badge className="bg-green-100 text-green-800">
-                <CheckCircle2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Onboarded")}
-              </Badge>
-            ) : (
-              <Button size="sm" onClick={() => setOnboardDialogOpen(true)}>
-                <UserPlus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Onboard Vendor")}
-              </Button>
-            )}
+        </div>
+        {/* Score strip */}
+        <div className="border-t bg-slate-50/50 px-6 py-3 flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-teal-500" />
+            <span className="text-xs text-muted-foreground">{t("Security Posture")}</span>
+            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.securityPostureScore).numColor}`}>
+              {assessment.securityPostureScore != null ? assessment.securityPostureScore.toFixed(2) : "\u2014"}
+            </span>
+          </div>
+          <div className="w-px h-5 bg-slate-200" />
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="text-xs text-muted-foreground">{t("Threat Exposure")}</span>
+            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.threatExposureScore).numColor}`}>
+              {assessment.threatExposureScore != null ? assessment.threatExposureScore.toFixed(2) : "\u2014"}
+            </span>
+          </div>
+          <div className="w-px h-5 bg-slate-200" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t("Overall")}</span>
+            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.overallScore).numColor}`}>
+              {assessment.overallScore != null ? assessment.overallScore.toFixed(2) : "\u2014"}
+            </span>
           </div>
         </div>
       </div>
@@ -596,133 +652,264 @@ export default function MonitoringDetailPage() {
 
         {/* ==================== RISK ANALYSIS TAB ==================== */}
         <TabsContent value="risk" className="space-y-6 mt-0">
-          {/* AI-Generated Summary */}
+
+          {/* ── Section 1: AI-Generated Summary ── */}
           {assessment.overallSummary && (
-            <div className="border rounded-lg p-5 bg-white">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="font-semibold text-sm">{t("AI-Generated Summary")}</span>
-                <Badge variant="outline" className="text-xs text-teal-700 border-teal-300 bg-teal-50">
+            <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 bg-gradient-to-r from-teal-50 to-white border-b flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center">
+                  <Sparkles className="h-3.5 w-3.5 text-teal-600" />
+                </div>
+                <span className="font-semibold text-sm text-slate-800">{t("AI-Generated Summary")}</span>
+                <Badge variant="outline" className="text-[10px] text-teal-700 border-teal-300 bg-teal-50/80 ml-auto">
                   Powered by VerifAI
                 </Badge>
               </div>
-              <p className="text-sm text-slate-600 leading-relaxed">{assessment.overallSummary}</p>
+              <div className="px-5 py-4">
+                <p className="text-sm text-slate-600 leading-relaxed">{assessment.overallSummary}</p>
+              </div>
             </div>
           )}
 
-          {/* Radar Charts */}
+          {/* ── Section 2: Score Analysis (Radar Charts + Summaries) ── */}
           {(spRadarData.length > 0 || teRadarData.length > 0) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Security Posture Radar */}
-              {spRadarData.length > 0 && (
-                <div className="border rounded-lg bg-white p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-sm">{t("Security Posture")}</span>
-                    <span className={`text-2xl font-bold ${scoreColor(assessment.securityPostureScore) === "#16a34a" ? "text-green-600" : scoreColor(assessment.securityPostureScore) === "#ca8a04" ? "text-yellow-600" : "text-red-600"}`}>
-                      {assessment.securityPostureScore ?? "\u2014"}
-                    </span>
-                  </div>
-                  <ResponsiveContainer width="100%" height={320}>
-                    <RadarChart data={spRadarData} cx="50%" cy="50%" outerRadius="70%">
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="kpi" tick={{ fontSize: 10, fill: "#64748b" }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9 }} axisLine={false} />
-                      <Radar dataKey="score" stroke="#0d9488" fill="#0d9488" fillOpacity={0.25} strokeWidth={2} />
-                    </RadarChart>
-                  </ResponsiveContainer>
+            <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 bg-gradient-to-r from-slate-50 to-white border-b flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Target className="h-3.5 w-3.5 text-blue-600" />
                 </div>
-              )}
+                <span className="font-semibold text-sm text-slate-800">{t("Score Analysis")}</span>
+              </div>
+              <div className="p-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Security Posture Radar */}
+                  {spRadarData.length > 0 && (
+                    <div className="border rounded-lg bg-slate-50/30 p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-teal-500" />
+                          <span className="font-semibold text-sm">{t("Security Posture")}</span>
+                        </div>
+                        <span className={`text-2xl font-bold tabular-nums ${scoreRating(assessment.securityPostureScore).numColor}`}>
+                          {assessment.securityPostureScore != null ? assessment.securityPostureScore.toFixed(2) : "\u2014"}
+                        </span>
+                      </div>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RadarChart data={spRadarData} cx="50%" cy="50%" outerRadius="70%">
+                          <PolarGrid stroke="#e2e8f0" />
+                          <PolarAngleAxis dataKey="kpi" tick={{ fontSize: 10, fill: "#64748b" }} />
+                          <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9 }} axisLine={false} />
+                          <Radar dataKey="score" stroke="#0d9488" fill="#0d9488" fillOpacity={0.25} strokeWidth={2} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                      {assessment.securityPostureSummary && (
+                        <p className="text-xs text-slate-500 leading-relaxed mt-2 px-1">{assessment.securityPostureSummary}</p>
+                      )}
+                    </div>
+                  )}
 
-              {/* Threat Exposure Radar */}
-              {teRadarData.length > 0 && (
-                <div className="border rounded-lg bg-white p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-sm">{t("Threat Exposure")}</span>
-                    <span className={`text-2xl font-bold ${scoreColor(assessment.threatExposureScore) === "#16a34a" ? "text-green-600" : scoreColor(assessment.threatExposureScore) === "#ca8a04" ? "text-yellow-600" : "text-red-600"}`}>
-                      {assessment.threatExposureScore ?? "\u2014"}
-                    </span>
-                  </div>
-                  <ResponsiveContainer width="100%" height={320}>
-                    <RadarChart data={teRadarData} cx="50%" cy="50%" outerRadius="70%">
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="kpi" tick={{ fontSize: 10, fill: "#64748b" }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9 }} axisLine={false} />
-                      <Radar dataKey="score" stroke="#d97706" fill="#d97706" fillOpacity={0.2} strokeWidth={2} />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                  {/* Threat Exposure Radar */}
+                  {teRadarData.length > 0 && (
+                    <div className="border rounded-lg bg-slate-50/30 p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span className="font-semibold text-sm">{t("Threat Exposure")}</span>
+                        </div>
+                        <span className={`text-2xl font-bold tabular-nums ${scoreRating(assessment.threatExposureScore).numColor}`}>
+                          {assessment.threatExposureScore != null ? assessment.threatExposureScore.toFixed(2) : "\u2014"}
+                        </span>
+                      </div>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RadarChart data={teRadarData} cx="50%" cy="50%" outerRadius="70%">
+                          <PolarGrid stroke="#e2e8f0" />
+                          <PolarAngleAxis dataKey="kpi" tick={{ fontSize: 10, fill: "#64748b" }} />
+                          <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9 }} axisLine={false} />
+                          <Radar dataKey="score" stroke="#d97706" fill="#d97706" fillOpacity={0.2} strokeWidth={2} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                      {assessment.threatExposureSummary && (
+                        <p className="text-xs text-slate-500 leading-relaxed mt-2 px-1">{assessment.threatExposureSummary}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           )}
 
-          {/* KPI Details */}
-          <div>
-            <h3 className="font-semibold text-base mb-5">{t("KPI Details")}</h3>
-
-            {/* Security Posture KPIs */}
-            {spKpis.length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className="w-2 h-2 rounded-full bg-teal-500" />
-                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Security Posture")}</span>
-                  <div className="flex-1 h-px bg-slate-200" />
+          {/* ── Section 3: Security Posture KPIs ── */}
+          {spKpis.length > 0 && (
+            <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 bg-gradient-to-r from-teal-50/60 to-white border-b flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center">
+                  <Layers className="h-3.5 w-3.5 text-teal-600" />
                 </div>
+                <div className="flex-1">
+                  <span className="font-semibold text-sm text-slate-800">{t("Security Posture KPIs")}</span>
+                  <span className="text-xs text-slate-400 ml-2">{spKpis.length} {t("indicators")}</span>
+                </div>
+                <span className={`text-lg font-bold tabular-nums ${scoreRating(assessment.securityPostureScore).numColor}`}>
+                  {assessment.securityPostureScore != null ? assessment.securityPostureScore.toFixed(2) : "\u2014"}
+                </span>
+              </div>
+              <div className="p-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {spKpis.map((kpi) => (
                     <KpiCard
                       key={kpi.id}
                       kpi={kpi}
                       isThreat={false}
-                      expanded={expandedKpis.has(kpi.id)}
-                      onToggle={() => toggleKpi(kpi.id)}
+                      onSelect={() => setSelectedKpi({ kpi, isThreat: false })}
                       t={t}
                     />
                   ))}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Threat Exposure KPIs */}
-            {teKpis.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Threat Exposure")}</span>
-                  <div className="flex-1 h-px bg-slate-200" />
+          {/* ── Section 4: Threat Exposure KPIs ── */}
+          {teKpis.length > 0 && (
+            <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 bg-gradient-to-r from-amber-50/60 to-white border-b flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Zap className="h-3.5 w-3.5 text-amber-600" />
                 </div>
+                <div className="flex-1">
+                  <span className="font-semibold text-sm text-slate-800">{t("Threat Exposure KPIs")}</span>
+                  <span className="text-xs text-slate-400 ml-2">{teKpis.length} {t("indicators")}</span>
+                </div>
+                <span className={`text-lg font-bold tabular-nums ${scoreRating(assessment.threatExposureScore).numColor}`}>
+                  {assessment.threatExposureScore != null ? assessment.threatExposureScore.toFixed(2) : "\u2014"}
+                </span>
+              </div>
+              <div className="p-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {teKpis.map((kpi) => (
                     <KpiCard
                       key={kpi.id}
                       kpi={kpi}
                       isThreat={true}
-                      expanded={expandedKpis.has(kpi.id)}
-                      onToggle={() => toggleKpi(kpi.id)}
+                      onSelect={() => setSelectedKpi({ kpi, isThreat: true })}
                       t={t}
                     />
                   ))}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {assessment.kpiDetails.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">{t("No KPI data available")}</p>
-            )}
-          </div>
+          {assessment.kpiDetails.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">{t("No KPI data available")}</p>
+          )}
+
+          {/* ── Section 5: Compliance & Legal ── */}
+          {assessment.complianceAndLegal && (
+            <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 bg-gradient-to-r from-indigo-50/60 to-white border-b flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
+                  <Scale className="h-3.5 w-3.5 text-indigo-600" />
+                </div>
+                <span className="font-semibold text-sm text-slate-800">{t("Compliance & Legal")}</span>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Privacy Policy */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">
+                      <Eye className="h-4 w-4 text-slate-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-500 mb-0.5">{t("Privacy Policy")}</p>
+                      {assessment.complianceAndLegal.privacyPolicyUrl ? (
+                        <a href={assessment.complianceAndLegal.privacyPolicyUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline break-all flex items-center gap-1">
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          {assessment.complianceAndLegal.privacyPolicyUrl}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-slate-400">{t("Not available")}</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* DPA */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">
+                      <FileCheck className="h-4 w-4 text-slate-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-500 mb-0.5">{t("Data Processing Agreement")}</p>
+                      {assessment.complianceAndLegal.dpaUrl ? (
+                        <a href={assessment.complianceAndLegal.dpaUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline break-all flex items-center gap-1">
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          {assessment.complianceAndLegal.dpaUrl}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-slate-400">{t("Not available")}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Laws */}
+                {assessment.complianceAndLegal.laws.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t("Applicable Laws")}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {assessment.complianceAndLegal.laws.map((law) => (
+                        <Badge key={law.id} variant="outline" className="text-xs bg-indigo-50/50 text-indigo-700 border-indigo-200">
+                          {law.lawName}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Certifications */}
+                {assessment.complianceAndLegal.certifications.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t("Certifications")}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {assessment.complianceAndLegal.certifications.map((cert) => (
+                        <Badge key={cert.id} variant="outline" className="text-xs bg-green-50/50 text-green-700 border-green-200">
+                          <CheckCircle2 className="h-3 w-3 ltr:mr-1 rtl:ml-1" />
+                          {cert.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* KPI Detail Dialog */}
+          <KpiDetailDialog
+            kpi={selectedKpi?.kpi ?? null}
+            isThreat={selectedKpi?.isThreat ?? false}
+            open={!!selectedKpi}
+            onClose={() => setSelectedKpi(null)}
+            t={t}
+          />
         </TabsContent>
 
         {/* ==================== VULNERABILITIES TAB ==================== */}
         <TabsContent value="vulnerabilities" className="mt-0">
-          <div className="border rounded-lg bg-white">
+          <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
             {allVulnerabilities.length > 0 ? (
               <>
                 {/* Summary bar */}
-                <div className="px-5 py-4 border-b bg-slate-50 rounded-t-lg">
-                  <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <span className="font-semibold">{t("Total CVEs")} = {allVulnerabilities.length}</span>
-                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-500" /> <span className="text-red-700">Critical = {vulnCounts.critical}</span></span>
-                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-orange-400" /> <span className="text-orange-700">High = {vulnCounts.high}</span></span>
-                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-yellow-400" /> <span className="text-yellow-700">Medium = {vulnCounts.medium}</span></span>
-                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-400" /> <span className="text-blue-700">Low = {vulnCounts.low}</span></span>
+                <div className="px-5 py-3.5 border-b bg-gradient-to-r from-red-50/60 to-white flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                  </div>
+                  <span className="font-semibold text-sm text-slate-800">{t("Vulnerabilities")}</span>
+                  <span className="text-xs text-slate-400 ml-1">{allVulnerabilities.length} {t("total")}</span>
+                  <div className="flex items-center gap-3 ml-auto text-xs">
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-500" /> <span className="text-red-700">{vulnCounts.critical} Critical</span></span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-orange-400" /> <span className="text-orange-700">{vulnCounts.high} High</span></span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-yellow-400" /> <span className="text-yellow-700">{vulnCounts.medium} Medium</span></span>
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-400" /> <span className="text-blue-700">{vulnCounts.low} Low</span></span>
                   </div>
                 </div>
                 {/* Table */}
@@ -764,31 +951,61 @@ export default function MonitoringDetailPage() {
 
         {/* ==================== RECOMMENDATIONS TAB ==================== */}
         <TabsContent value="recommendations" className="mt-0">
-          <div className="border rounded-lg bg-white p-6">
+          <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+            <div className="px-5 py-3.5 bg-gradient-to-r from-emerald-50/60 to-white border-b flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              </div>
+              <span className="font-semibold text-sm text-slate-800">{t("Recommendations")}</span>
+              {allRecommendations.length > 0 && (
+                <span className="text-xs text-slate-400 ml-1">{allRecommendations.length} {t("items")}</span>
+              )}
+            </div>
             {allRecommendations.length > 0 ? (
-              <div className="space-y-5">
+              <div className="p-5 space-y-3">
                 {allRecommendations.map((rec, i) => (
-                  <div key={i} className="flex items-start gap-4">
-                    <span className="text-lg font-bold text-teal-700 min-w-[28px] text-right">{i + 1}</span>
-                    <p className="text-sm text-slate-700 leading-relaxed pt-0.5">{rec}</p>
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-slate-50/50 border border-slate-100">
+                    <span className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
+                    <p className="text-sm text-slate-700 leading-relaxed pt-1">{rec}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">{t("No recommendations available")}</p>
+              <p className="text-sm text-muted-foreground text-center py-12">{t("No recommendations available")}</p>
             )}
           </div>
         </TabsContent>
 
         {/* ==================== HTTP HEADERS TAB ==================== */}
         <TabsContent value="headers" className="mt-0">
-          <div className="border rounded-lg bg-white">
+          <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+            <div className="px-5 py-3.5 bg-gradient-to-r from-purple-50/60 to-white border-b flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Globe className="h-3.5 w-3.5 text-purple-600" />
+              </div>
+              <span className="font-semibold text-sm text-slate-800">{t("HTTP Security Headers")}</span>
+              {assessment.httpHeaders.length > 0 && (
+                <span className="text-xs text-slate-400 ml-1">{assessment.httpHeaders.length} {t("headers")}</span>
+              )}
+              {assessment.httpHeaders.length > 0 && (
+                <div className="flex items-center gap-3 ml-auto text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                    <span className="text-green-700">{assessment.httpHeaders.filter(h => h.present).length} {t("Present")}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <AlertTriangle className="h-3 w-3 text-red-500" />
+                    <span className="text-red-600">{assessment.httpHeaders.filter(h => !h.present).length} {t("Missing")}</span>
+                  </span>
+                </div>
+              )}
+            </div>
             {assessment.httpHeaders.length > 0 ? (
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b text-left">
+                      <tr className="border-b text-left bg-slate-50/50">
                         <th className="px-4 py-3 font-semibold text-slate-700 w-16">{t("Sr No")}</th>
                         <th className="px-4 py-3 font-semibold text-slate-700">{t("Name")}</th>
                         <th className="px-4 py-3 font-semibold text-slate-700">{t("Value")}</th>
@@ -803,12 +1020,12 @@ export default function MonitoringDetailPage() {
                           <td className="px-4 py-3 text-center text-muted-foreground">{i + 1}</td>
                           <td className="px-4 py-3 font-semibold text-slate-800">{hdr.name}</td>
                           <td className="px-4 py-3 text-slate-600 text-xs font-mono max-w-[220px] break-all">
-                            {hdr.value || (hdr.present ? "\u2014" : "Not Present")}
+                            {hdr.value || (hdr.present ? "\u2014" : <span className="text-red-400 italic">Not Present</span>)}
                           </td>
                           <td className="px-4 py-3 text-center">
                             {hdr.present
-                              ? <span className="text-green-600 font-medium">{t("Yes")}</span>
-                              : <span className="text-red-500 font-medium">{t("No")}</span>
+                              ? <Badge className="bg-green-50 text-green-700 border-green-200 text-xs">{t("Yes")}</Badge>
+                              : <Badge className="bg-red-50 text-red-600 border-red-200 text-xs">{t("No")}</Badge>
                             }
                           </td>
                           <td className="px-4 py-3 text-slate-600 text-xs max-w-[250px]">{hdr.description || "\u2014"}</td>
@@ -831,13 +1048,22 @@ export default function MonitoringDetailPage() {
         {/* ==================== HISTORY TAB ==================== */}
         <TabsContent value="history" className="space-y-6 mt-0">
           {/* Assessment history table */}
-          <div className="border rounded-lg bg-white">
+          <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+            <div className="px-5 py-3.5 bg-gradient-to-r from-blue-50/60 to-white border-b flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Activity className="h-3.5 w-3.5 text-blue-600" />
+              </div>
+              <span className="font-semibold text-sm text-slate-800">{t("Assessment History")}</span>
+              {vendor.assessments.length > 0 && (
+                <span className="text-xs text-slate-400 ml-1">{vendor.assessments.length} {t("assessments")}</span>
+              )}
+            </div>
             {vendor.assessments.length > 0 ? (
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b text-left">
+                      <tr className="border-b text-left bg-slate-50/50">
                         <th className="px-5 py-3 font-semibold text-slate-700">{t("Date")}</th>
                         <th className="px-5 py-3 font-semibold text-slate-700 text-center">{t("Score")}</th>
                         <th className="px-5 py-3 font-semibold text-slate-700 text-center">{t("Active")}</th>
@@ -846,12 +1072,16 @@ export default function MonitoringDetailPage() {
                     <tbody>
                       {vendor.assessments.map((a) => (
                         <tr key={a.id} className="border-b last:border-b-0 hover:bg-slate-50/50">
-                          <td className="px-5 py-3 text-primary">{fmtDate(a.lastScan || a.createdAt)}</td>
-                          <td className="px-5 py-3 text-center font-bold">{a.overallScore ?? "\u2014"}</td>
+                          <td className="px-5 py-3 text-slate-700">{fmtDate(a.lastScan || a.createdAt)}</td>
+                          <td className="px-5 py-3 text-center">
+                            <span className={`font-bold tabular-nums ${scoreRating(a.overallScore).numColor}`}>
+                              {a.overallScore ?? "\u2014"}
+                            </span>
+                          </td>
                           <td className="px-5 py-3 text-center">
                             {a.isLatest
-                              ? <span className="text-green-600 font-medium">{t("Active")}</span>
-                              : <span className="text-muted-foreground">{t("Inactive")}</span>
+                              ? <Badge className="bg-green-50 text-green-700 border-green-200 text-xs">{t("Active")}</Badge>
+                              : <Badge variant="outline" className="text-xs text-slate-400">{t("Inactive")}</Badge>
                             }
                           </td>
                         </tr>
@@ -870,19 +1100,27 @@ export default function MonitoringDetailPage() {
 
           {/* Trend Chart */}
           {historyData.length > 1 && (
-            <div className="border rounded-lg bg-white p-5">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={historyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} label={{ value: t("Date"), position: "insideBottom", offset: -5, fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 11 }} label={{ value: t("Score"), angle: -90, position: "insideLeft", fontSize: 12 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="overallScore" name={t("Overall Score")} stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="threatExposure" name={t("Threat Exposure Score")} stroke="#d97706" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="securityPosture" name={t("Security Posture Score")} stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 bg-gradient-to-r from-slate-50 to-white border-b flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
+                  <BarChart3 className="h-3.5 w-3.5 text-slate-600" />
+                </div>
+                <span className="font-semibold text-sm text-slate-800">{t("Score Trend")}</span>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={historyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} label={{ value: t("Date"), position: "insideBottom", offset: -5, fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 11 }} label={{ value: t("Score"), angle: -90, position: "insideLeft", fontSize: 12 }} />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="overallScore" name={t("Overall Score")} stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="threatExposure" name={t("Threat Exposure Score")} stroke="#d97706" strokeWidth={2} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="securityPosture" name={t("Security Posture Score")} stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
         </TabsContent>
