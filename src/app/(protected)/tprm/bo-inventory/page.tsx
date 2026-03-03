@@ -27,8 +27,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Home, ChevronRight, Search, Plus, Download, MoreHorizontal,
-  Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X, Check, Info,
+  Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X, Check, Info, Play, AlertTriangle,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // ── Types ──────────────────────────────────────────────
 interface Vendor {
@@ -111,6 +112,7 @@ const VRR_COLORS: Record<string, string> = {
 export default function BOInventoryPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const router = useRouter();
   const { canCreate, canEdit, canDelete, isLoading: permLoading } = usePermissions("tprm.bo-inventory");
 
   // ── List state ─────────────────────────────────────
@@ -480,8 +482,33 @@ export default function BOInventoryPage() {
     );
   };
 
+  const openAssessmentForVendor = async (vendor: Vendor) => {
+    setCreatedVendorId(vendor.id);
+    setCreatedVendorName(vendor.name);
+    setRiskRatingLoading(true);
+    setShowRiskRatingDialog(true);
+    setSelectedTemplateIds([]);
+    try {
+      const [vendorRes, templatesRes] = await Promise.all([
+        fetch(`/api/tprm/vendors/${vendor.id}`),
+        fetch("/api/tprm/master-data/questionnaires"),
+      ]);
+      if (vendorRes.ok) setRiskRatingVendor(await vendorRes.json());
+      if (templatesRes.ok) {
+        const templates: QuestionnaireTemplate[] = await templatesRes.json();
+        setQuestionnaireTemplates(templates.filter((tpl) => tpl.templateName));
+        setSelectedTemplateIds(templates.filter((tpl) => tpl.templateName).map((tpl) => tpl.id));
+      }
+    } catch {
+      toast({ title: t("Failed to fetch vendor data"), variant: "destructive" });
+    } finally {
+      setRiskRatingLoading(false);
+    }
+  };
+
   const handleInitiateAssessment = async () => {
-    if (!createdVendorId || selectedTemplateIds.length === 0) {
+    const targetVendorId = riskRatingVendor?.id || createdVendorId;
+    if (!targetVendorId || selectedTemplateIds.length === 0) {
       toast({ title: t("Please select at least one questionnaire template"), variant: "destructive" });
       return;
     }
@@ -495,7 +522,7 @@ export default function BOInventoryPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          vendorId: createdVendorId,
+          vendorId: targetVendorId,
           assessmentType: "Onboarding Assessment",
           questionnaireTemplate: selectedNames,
           status: "Draft",
@@ -506,7 +533,7 @@ export default function BOInventoryPage() {
         setShowRiskRatingDialog(false);
         setRiskRatingVendor(null);
         setSelectedTemplateIds([]);
-    
+
         fetchVendors();
       } else {
         const err = await res.json();
@@ -761,10 +788,12 @@ export default function BOInventoryPage() {
                   <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Vendor Code")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Vendor Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Service Category")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Account Manager")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Contact Number")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("VRR")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -773,10 +802,16 @@ export default function BOInventoryPage() {
                       <TableRow key={vendor.id}>
                         <TableCell className="font-medium">{vendor.vendorCode}</TableCell>
                         <TableCell>{vendor.name}</TableCell>
+                        <TableCell>{vendor.department?.name || "-"}</TableCell>
                         <TableCell>{vendor.serviceCategory || "-"}</TableCell>
                         <TableCell>{vendor.accountManagerName || "-"}</TableCell>
                         <TableCell>{vendor.contactPhone || "-"}</TableCell>
                         <TableCell>{getStatusBadge(vendor.status)}</TableCell>
+                        <TableCell>
+                          {vendor.vrr ? (
+                            <Badge style={{ backgroundColor: VRR_COLORS[vendor.vrr] || '#94a3b8' }} className="text-white text-xs">{t(vendor.vrr)}</Badge>
+                          ) : "-"}
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -791,6 +826,12 @@ export default function BOInventoryPage() {
                                   <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Edit")}
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuItem onClick={() => openAssessmentForVendor(vendor)}>
+                                <Play className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Initiate Assessment")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => router.push("/tprm/bo-issues")}>
+                                <AlertTriangle className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Report Issue")}
+                              </DropdownMenuItem>
                               {canDelete && (
                                 <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedVendor(vendor); setShowDeleteDialog(true); }}>
                                   <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete")}

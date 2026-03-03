@@ -207,7 +207,7 @@ export const navigation: NavItem[] = [
       { name: "Report", href: "/tprm/reports", icon: BarChart3, permission: "tprm.reports:view" },
       { name: "Monitoring", href: "/tprm/monitoring", icon: Radar, permission: "tprm.monitoring:view" },
       { name: "Configurations", href: "/tprm/configurations", icon: Settings, permission: "tprm.configurations:view" },
-      { name: "Master Data", href: "/tprm/master-data", icon: Database, permission: "tprm.master-data:view" },
+      { name: "Master Data", href: "/tprm/master-data", icon: Database, permission: "tprm.master-data:create" },
       { name: "Assessment Workspace", href: "/tprm/assessments", icon: ListChecks, permission: "tprm.assessments:view" },
       { name: "Account Overview", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
       { name: "Task Queue", href: "/tprm/task-queue", icon: Inbox, permission: "tprm.task-queue:view" },
