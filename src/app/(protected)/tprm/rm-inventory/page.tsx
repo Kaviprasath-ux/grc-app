@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Home, ChevronRight, Search, Plus, Download, MoreHorizontal,
-  Eye, Pencil, Trash2, Building2, Loader2, Info, ChevronLeft, X,
+  Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
@@ -105,9 +104,6 @@ export default function RMInventoryPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [showInfoPopup, setShowInfoPopup] = useState(false);
-  const [createdVendorName, setCreatedVendorName] = useState("");
 
   // ── Config data ────────────────────────────────────
   const [serviceCategories, setServiceCategories] = useState<string[]>(DEFAULT_SERVICE_CATEGORIES);
@@ -245,10 +241,9 @@ export default function RMInventoryPage() {
         body: JSON.stringify(buildPayload()),
       });
       if (res.ok) {
-        setCreatedVendorName(vendorName.trim());
+        toast({ title: t("Vendor created successfully") });
         setShowCreateDialog(false);
         resetForm();
-        setShowSuccessPopup(true);
         fetchVendors();
       } else {
         const err = await res.json();
@@ -494,95 +489,93 @@ export default function RMInventoryPage() {
         </div>
       </div>
 
-      <Card>
-        <div className="bg-sky-50 border-b px-4 py-3 flex items-center justify-between rounded-t-lg">
-          <span className="font-semibold text-sm">{t("Vendors")}</span>
-          <Info className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} className="ltr:pl-9 rtl:pr-9" />
-            </div>
+      {/* Table Card */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Search & Filter Toolbar */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input placeholder={t("Search vendors...")} value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} className="w-full sm:w-56 ltr:pl-9 rtl:pr-9 text-sm bg-slate-50 border-slate-200" />
+          </div>
+          <div className="ltr:ml-0 rtl:mr-0 sm:ltr:ml-auto sm:rtl:mr-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v === "all" ? "" : v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-40"><SelectValue placeholder={t("All Status")} /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200"><SelectValue placeholder={t("All Status")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("All Status")}</SelectItem>
                 {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{t(s)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
+        </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : vendors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Building2 className="h-10 w-10 text-muted-foreground mb-3" />
-              <p className="font-medium text-muted-foreground">{t("No Vendor Details Found")}</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("Vendor Code")}</TableHead>
-                      <TableHead>{t("Vendor Name")}</TableHead>
-                      <TableHead>{t("Service Category")}</TableHead>
-                      <TableHead>{t("Account Manager")}</TableHead>
-                      <TableHead>{t("Contact Number")}</TableHead>
-                      <TableHead>{t("Status")}</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+        {loading ? (
+          <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : vendors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Building2 className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="font-medium text-muted-foreground">{t("No Vendor Details Found")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Vendor Code")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Vendor Name")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Service Category")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Account Manager")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Contact Number")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {vendors.map((vendor) => (
+                    <TableRow key={vendor.id}>
+                      <TableCell className="font-medium ps-5">{vendor.vendorCode}</TableCell>
+                      <TableCell>{vendor.name}</TableCell>
+                      <TableCell>{vendor.serviceCategory || "-"}</TableCell>
+                      <TableCell>{vendor.accountManagerName || "-"}</TableCell>
+                      <TableCell>{vendor.contactPhone || "-"}</TableCell>
+                      <TableCell>{getStatusBadge(vendor.status)}</TableCell>
+                      <TableCell className="pe-5">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => { setSelectedVendor(vendor); setShowViewDialog(true); }}>
+                              <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("View")}
+                            </DropdownMenuItem>
+                            {canEdit && <DropdownMenuItem onClick={() => openEdit(vendor)}><Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Edit")}</DropdownMenuItem>}
+                            {canDelete && <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedVendor(vendor); setShowDeleteDialog(true); }}><Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete")}</DropdownMenuItem>}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {vendors.map((vendor) => (
-                      <TableRow key={vendor.id}>
-                        <TableCell className="font-medium">{vendor.vendorCode}</TableCell>
-                        <TableCell>{vendor.name}</TableCell>
-                        <TableCell>{vendor.serviceCategory || "-"}</TableCell>
-                        <TableCell>{vendor.accountManagerName || "-"}</TableCell>
-                        <TableCell>{vendor.contactPhone || "-"}</TableCell>
-                        <TableCell>{getStatusBadge(vendor.status)}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => { setSelectedVendor(vendor); setShowViewDialog(true); }}>
-                                <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("View")}
-                              </DropdownMenuItem>
-                              {canEdit && <DropdownMenuItem onClick={() => openEdit(vendor)}><Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Edit")}</DropdownMenuItem>}
-                              {canDelete && <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedVendor(vendor); setShowDeleteDialog(true); }}><Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete")}</DropdownMenuItem>}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
+                <p className="text-sm text-muted-foreground">{t("Showing")} {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, total)} {t("of")} {total}</p>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                    .map((page, idx, arr) => (
+                      <span key={page}>
+                        {idx > 0 && arr[idx - 1] !== page - 1 && <span className="px-1 text-muted-foreground">...</span>}
+                        <Button variant={page === currentPage ? "default" : "outline"} size="sm" className="w-8" onClick={() => setCurrentPage(page)}>{page}</Button>
+                      </span>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-2">
-                  <p className="text-sm text-muted-foreground">{t("Showing")} {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, total)} {t("of")} {total}</p>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
-                      .map((page, idx, arr) => (
-                        <span key={page}>
-                          {idx > 0 && arr[idx - 1] !== page - 1 && <span className="px-1 text-muted-foreground">...</span>}
-                          <Button variant={page === currentPage ? "default" : "outline"} size="sm" className="w-8" onClick={() => setCurrentPage(page)}>{page}</Button>
-                        </span>
-                      ))}
-                    <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
-                  </div>
+                  <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-lg">
@@ -649,51 +642,6 @@ export default function RMInventoryPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Success Popup - "Your response has been successfully updated" */}
-      <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
-        <DialogContent className="max-w-md text-center">
-          <div className="flex flex-col items-center py-6">
-            <div className="relative w-full h-32 mb-4 bg-amber-50 rounded-lg flex items-center justify-center overflow-hidden">
-              <svg viewBox="0 0 120 80" className="w-32 h-20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M60 10L110 50L95 55L60 25L25 55L10 50L60 10Z" fill="#E5A336" />
-                <path d="M60 25L95 55L85 58L60 35L35 58L25 55L60 25Z" fill="#C88B2A" />
-                <path d="M20 60C25 60 28 57 28 57" stroke="#D1D5DB" strokeWidth="2" fill="none" />
-                <path d="M90 65C95 65 98 62 98 62" stroke="#D1D5DB" strokeWidth="2" fill="none" />
-                <circle cx="15" cy="62" r="6" fill="#E5E7EB" />
-                <circle cx="95" cy="67" r="4" fill="#E5E7EB" />
-              </svg>
-            </div>
-            <p className="text-base font-semibold mb-4">{t("Your response has been successfully updated")}</p>
-            <Button
-              className="bg-slate-900 hover:bg-slate-800 text-white"
-              onClick={() => {
-                setShowSuccessPopup(false);
-                setShowInfoPopup(true);
-              }}
-            >
-              {t("Check Risk Rating")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Info Popup - "Your assessment is successfully queued" */}
-      <Dialog open={showInfoPopup} onOpenChange={setShowInfoPopup}>
-        <DialogContent className="max-w-md">
-          <div className="bg-sky-50 border-b px-4 py-3 -mx-6 -mt-6 rounded-t-lg flex items-center justify-between">
-            <span className="font-semibold text-sm">{t("Information")}</span>
-          </div>
-          <div className="py-4 space-y-2">
-            <p className="text-sm">{t("Your assessment for")} <strong>{createdVendorName}</strong> {t("is successfully queued.")}</p>
-            <p className="text-sm">{t("You will be able to access the assessment once it is completed.")}</p>
-          </div>
-          <DialogFooter>
-            <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setShowInfoPopup(false)}>
-              {t("OK")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
