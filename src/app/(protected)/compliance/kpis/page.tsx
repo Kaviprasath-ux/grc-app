@@ -214,7 +214,7 @@ export default function KPIsPage() {
           {isCustomerAdmin ? (
             <div className="h-[200px]">
               {statusCounts.total > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <PieChart>
                     <Pie
                       data={[
@@ -308,7 +308,7 @@ export default function KPIsPage() {
           {isCustomerAdmin ? (
             <div className="h-[200px]">
               {statusCounts.total > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <PieChart>
                     <Pie
                       data={Object.entries(departmentCounts).map(([name, value], idx) => ({

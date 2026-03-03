@@ -1986,7 +1986,7 @@ export default function ProcessPage() {
                   return (
                     <div className="flex flex-col items-center">
                       <div className="h-[200px] w-full relative">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                           <PieChart>
                             <Pie
                               data={hasData ? statusData.filter(d => d.value > 0) : [{ name: t("No Data"), value: 1, color: "#e5e7eb" }]}
@@ -2047,7 +2047,7 @@ export default function ProcessPage() {
                   return (
                     <div className="flex flex-col items-center">
                       <div className="h-[200px] w-full relative">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                           <PieChart>
                             <Pie
                               data={hasData ? deptData : [{ name: t("No Data"), value: 1, color: "#e5e7eb" }]}
@@ -3634,7 +3634,7 @@ export default function ProcessPage() {
                           {t("No KPI data available. Configure KPI details below to see the performance chart.")}
                         </div>
                       ) : (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                           <LineChart data={generateKPIChartData()}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="month" />

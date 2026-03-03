@@ -1052,7 +1052,7 @@ export default function ExceptionsPage() {
           <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Status")}</h3>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <PieChart>
                   <Pie
                     data={[
@@ -1115,7 +1115,7 @@ export default function ExceptionsPage() {
           <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Type")}</h3>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <PieChart>
                   <Pie
                     data={Object.entries(categoryCounts).map(([name, value], idx) => ({
@@ -1170,7 +1170,7 @@ export default function ExceptionsPage() {
           <h3 className="text-sm font-medium text-slate-500 mb-2">{t("Department")}</h3>
           <div className="h-[200px]">
             {statusCounts.total > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <PieChart>
                   <Pie
                     data={Object.entries(departmentCounts).map(([name, value], idx) => ({

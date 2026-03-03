@@ -394,7 +394,7 @@ export default function KPIDetailsPage() {
                 {t("No KPI data available. Configure KPI details below to see the performance chart.")}
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <LineChart data={generateChartData()}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />

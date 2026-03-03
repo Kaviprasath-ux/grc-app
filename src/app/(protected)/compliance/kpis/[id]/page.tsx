@@ -725,7 +725,7 @@ export default function KPIDetailPage({
           </div>
           <div className="h-56">
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <LineChart
                   data={chartData}
                   margin={{ top: 5, right: 20, left: 10, bottom: 5 }}

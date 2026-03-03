@@ -805,7 +805,7 @@ function ControlListPageContent() {
               <h3 className="text-sm font-medium text-slate-500 mb-4">{t("Functional Grouping")}</h3>
               <div className="h-[300px]" style={{ direction: 'ltr' }}>
                 {functionalGroupingData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <PieChart>
                       <Pie
                         data={functionalGroupingData}
@@ -864,7 +864,7 @@ function ControlListPageContent() {
               <h3 className="text-sm font-medium text-slate-500 mb-4">{t("Controls by Framework")}</h3>
               <div className={isRTL ? "h-[420px]" : "h-[300px]"} style={{ direction: 'ltr' }}>
                 {translatedFrameworkChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <BarChart
                       data={translatedFrameworkChartData}
                       margin={isRTL ? { top: 10, right: 20, left: 10, bottom: 100 } : { top: 10, right: 20, left: 10, bottom: 5 }}

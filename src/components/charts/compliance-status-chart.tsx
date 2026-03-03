@@ -112,7 +112,7 @@ export function ComplianceStatusChart({ data, className }: ComplianceStatusChart
 
           {/* Chart */}
           <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <BarChart
                 layout="vertical"
                 data={data}

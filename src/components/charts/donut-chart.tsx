@@ -76,7 +76,7 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 overflow-visible">
           {/* Chart container - left side */}
           <div className="relative w-[160px] h-[160px] sm:w-[180px] sm:h-[180px] flex-shrink-0 overflow-visible">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <PieChart>
                 <Pie
                   data={data}
