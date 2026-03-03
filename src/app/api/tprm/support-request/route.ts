@@ -19,7 +19,7 @@ export const POST = withAuth(
       const superadmins = await prisma.user.findMany({
         where: {
           customerAccountId,
-          roles: { some: { role: { name: { in: ["GRCAdministrator", "CustomerAdministrator"] } } } },
+          role: { in: ["GRCAdministrator", "CustomerAdministrator"] },
           isActive: true,
         },
         select: { id: true },
@@ -33,7 +33,7 @@ export const POST = withAuth(
           customerAccountId,
           actorId: session.id,
           recipientId: admin.id,
-          event: NOTIFICATION_EVENTS.GENERIC_NOTIFICATION as never,
+          event: NOTIFICATION_EVENTS.SYSTEM_ANNOUNCEMENT,
           title: "TPRM Support Request",
           message: `Support request from ${name || session.name}${company ? ` (${company})` : ""}${phone ? ` - Phone: ${phone}` : ""}:\n\n${message}`,
           relatedEntityType: "support-request",

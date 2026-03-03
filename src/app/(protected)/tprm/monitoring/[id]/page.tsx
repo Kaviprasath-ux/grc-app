@@ -491,7 +491,7 @@ export default function MonitoringDetailPage() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
         <Button variant="default" size="sm" onClick={() => router.push("/tprm/monitoring")}
-          className="bg-teal-700 hover:bg-teal-800 text-white h-7 px-3">
+          className="h-7 px-3">
           <ArrowLeft className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Back")}
         </Button>
         <span className="text-muted-foreground">{t("Continuous Monitoring")}</span>
@@ -540,8 +540,7 @@ export default function MonitoringDetailPage() {
                 <CheckCircle2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Onboarded")}
               </Badge>
             ) : (
-              <Button size="sm" onClick={() => setOnboardDialogOpen(true)}
-                className="bg-teal-700 hover:bg-teal-800 text-white">
+              <Button size="sm" onClick={() => setOnboardDialogOpen(true)}>
                 <UserPlus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Onboard Vendor")}
               </Button>
             )}
