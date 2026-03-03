@@ -2225,7 +2225,7 @@ model AuditCategory {
   updatedAt           DateTime            @updatedAt
   internalAuditRisks  InternalAuditRisk[]
 
-  @@unique([auditHeadId, name])
+  @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2243,7 +2243,7 @@ model AuditNatureOfControl {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, label])
+  @@unique([customerAccountId, auditHeadId, label])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2261,7 +2261,7 @@ model AuditRiskFactor {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, label])
+  @@unique([customerAccountId, auditHeadId, label])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2280,7 +2280,7 @@ model AuditProbability {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, label])
+  @@unique([customerAccountId, auditHeadId, label])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2299,7 +2299,7 @@ model AuditImpact {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, label])
+  @@unique([customerAccountId, auditHeadId, label])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2320,7 +2320,7 @@ model AuditScoringRange {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, label, calculationType])
+  @@unique([customerAccountId, auditHeadId, label, calculationType])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2357,7 +2357,7 @@ model AuditPeriodicity {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, interval])
+  @@unique([customerAccountId, auditHeadId, interval])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2397,7 +2397,7 @@ model AuditType {
   internalAuditRisks  InternalAuditRisk[]
   engagements         AuditEngagement[]   @relation("EngagementAuditType")
 
-  @@unique([auditHeadId, name])
+  @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2415,7 +2415,7 @@ model AuditLocation {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, name])
+  @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2433,7 +2433,7 @@ model ProcessFrequency {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, name])
+  @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2451,7 +2451,7 @@ model NatureOfImplementation {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, name])
+  @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }
@@ -2507,7 +2507,7 @@ model InternalAuditProcess {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([auditHeadId, name])
+  @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
 }

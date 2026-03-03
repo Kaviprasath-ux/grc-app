@@ -259,9 +259,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
-    // CustomerAdmin can view the settings page but NOT access internal pages (User Management, etc.)
-    // Only AuditHead has full access to audit.settings internal pages
-    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // CustomerAdmin can manage audit settings (types, categories, etc.) but NOT access User Management
+    { resource: 'audit.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     // TPRM module — same access as TPRMCustomerAdmin
     { resource: 'tprm.program-monitor', actions: ['view'], scope: 'all' },
     { resource: 'tprm.control-center', actions: ['*'], scope: 'all' },

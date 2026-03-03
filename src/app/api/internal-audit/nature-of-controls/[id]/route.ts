@@ -36,7 +36,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "audit.settings", action: "edit" }
+  { resource: "audit.settings", action: "view" }
 );
 
 // PUT update a nature of control

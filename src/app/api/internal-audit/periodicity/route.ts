@@ -21,7 +21,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "audit.settings", action: "edit" }
+  { resource: "audit.settings", action: "view" }
 );
 
 // POST create a new periodicity

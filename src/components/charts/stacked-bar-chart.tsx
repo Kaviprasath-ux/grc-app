@@ -12,6 +12,21 @@ import {
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Custom Y-axis tick that truncates long labels with ellipsis
+function YAxisTick({ x, y, payload, width: tickWidth }: { x: number; y: number; payload: { value: string }; width: number }) {
+  const maxChars = Math.floor(tickWidth / 6);
+  const label = payload.value.length > maxChars
+    ? payload.value.slice(0, maxChars - 1) + "…"
+    : payload.value;
+
+  return (
+    <text x={x} y={y} dy={4} textAnchor="end" fill="#475569" fontSize={10} fontWeight={500}>
+      <title>{payload.value}</title>
+      {label}
+    </text>
+  );
+}
+
 interface StackedBarChartProps {
   title: string;
   data: Record<string, unknown>[];
@@ -109,8 +124,8 @@ export function StackedBarChart({
                 <YAxis
                   dataKey={yAxisDataKey}
                   type="category"
-                  width={isRTL ? 120 : 60}
-                  tick={{ fontSize: 10, fill: "#475569", fontWeight: 500 }}
+                  width={140}
+                  tick={(props: Record<string, unknown>) => <YAxisTick {...props as { x: number; y: number; payload: { value: string }; width: number }} width={140} />}
                   axisLine={false}
                   tickLine={false}
                   orientation={isRTL ? "right" : "left"}
