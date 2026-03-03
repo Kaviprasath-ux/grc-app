@@ -531,7 +531,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.bo-support', actions: ['*'], scope: 'all' },
     { resource: 'tprm.master-data', actions: ['view'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['create'], scope: 'all' },
-    { resource: 'tprm.user-management', actions: ['view'], scope: 'all' },
   ],
 
   // Relationship Manager - Same menu as BusinessOwner except User Management
@@ -546,7 +545,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.rm-support', actions: ['*'], scope: 'all' },
     { resource: 'tprm.master-data', actions: ['view'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['create'], scope: 'all' },
-    { resource: 'tprm.user-management', actions: ['view'], scope: 'all' },
   ],
 };
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
 // GET assessments with search, filters, pagination
@@ -76,6 +77,67 @@ export const POST = withAuth(
         where: { customerAccountId },
       });
       const assessmentCode = `ASM${String(count + 1).padStart(3, "0")}`;
+
+      // Auto-create or find Account Manager user from vendor's account manager details
+      let accountManagerUserId: string | null = null;
+      if (body.vendorId) {
+        const vendor = await prisma.tPRMVendor.findUnique({
+          where: { id: body.vendorId },
+          select: { accountManagerName: true, accountManagerEmail: true },
+        });
+
+        if (vendor?.accountManagerName && vendor?.accountManagerEmail) {
+          const amName = vendor.accountManagerName.split("; ")[0];
+          const amEmail = vendor.accountManagerEmail.split("; ")[0];
+
+          if (amName && amEmail) {
+            // Check if Account Manager user already exists with this email
+            let accountManager = await prisma.user.findFirst({
+              where: {
+                customerAccountId,
+                email: { equals: amEmail, mode: "insensitive" },
+                tprmRole: "Account Manager",
+              },
+            });
+
+            if (!accountManager) {
+              // Create Account Manager user
+              const userCount = await prisma.user.count({ where: { customerAccountId } });
+              const userId = `TPRM_${customerAccountId.substring(0, 6)}_${String(userCount + 1).padStart(3, "0")}`;
+              let userName = amEmail.split("@")[0];
+
+              // Ensure unique userName within tenant
+              const existingWithUserName = await prisma.user.findFirst({
+                where: { customerAccountId, userName },
+              });
+              if (existingWithUserName) {
+                userName = `${userName}_am_${Date.now()}`;
+              }
+
+              const hashedPassword = await bcrypt.hash("1", 10);
+              const nameParts = amName.trim().split(/\s+/);
+
+              accountManager = await prisma.user.create({
+                data: {
+                  userId,
+                  customerAccountId,
+                  fullName: amName,
+                  firstName: nameParts[0] || amName,
+                  lastName: nameParts.slice(1).join(" ") || "-",
+                  email: amEmail,
+                  userName,
+                  password: hashedPassword,
+                  tprmRole: "Account Manager",
+                  tprmFunctionCategory: "TPRM Team",
+                  isActive: true,
+                },
+              });
+            }
+
+            accountManagerUserId = accountManager.id;
+          }
+        }
+      }
 
       const assessment = await prisma.tPRMAssessment.create({
         data: {

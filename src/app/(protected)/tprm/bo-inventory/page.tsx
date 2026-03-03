@@ -138,7 +138,6 @@ export default function BOInventoryPage() {
   const [questionnaireTemplates, setQuestionnaireTemplates] = useState<QuestionnaireTemplate[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
   const [initiatingAssessment, setInitiatingAssessment] = useState(false);
-  const [assessors, setAssessors] = useState<{ id: string; fullName: string }[]>([]);
 
   // ── Config data ────────────────────────────────────
   const [serviceCategories, setServiceCategories] = useState<string[]>(DEFAULT_SERVICE_CATEGORIES);
@@ -455,10 +454,9 @@ export default function BOInventoryPage() {
     setSelectedTemplateIds([]);
 
     try {
-      const [vendorRes, templatesRes, assessorRes] = await Promise.all([
+      const [vendorRes, templatesRes] = await Promise.all([
         fetch(`/api/tprm/vendors/${createdVendorId}`),
         fetch("/api/tprm/master-data/questionnaires"),
-        fetch("/api/tprm/user-management?role=Assessor"),
       ]);
       if (vendorRes.ok) {
         const vendor = await vendorRes.json();
@@ -468,10 +466,6 @@ export default function BOInventoryPage() {
         const templates: QuestionnaireTemplate[] = await templatesRes.json();
         setQuestionnaireTemplates(templates.filter((t) => t.templateName));
         setSelectedTemplateIds(templates.filter((t) => t.templateName).map((t) => t.id));
-      }
-      if (assessorRes.ok) {
-        const data = await assessorRes.json();
-        setAssessors(data.data || []);
       }
     } catch {
       toast({ title: t("Failed to fetch vendor data"), variant: "destructive" });
@@ -505,7 +499,6 @@ export default function BOInventoryPage() {
           assessmentType: "Onboarding Assessment",
           questionnaireTemplate: selectedNames,
           status: "Draft",
-          assessorId: assessors.length > 0 ? assessors[0].id : undefined,
         }),
       });
       if (res.ok) {
