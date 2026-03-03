@@ -8,11 +8,25 @@ import {
   Shield,
   Activity,
   AlertTriangle,
-  Plus,
-  Minus,
+  ChevronDown,
+  ChevronUp,
   UserPlus,
   CheckCircle2,
-  Network,
+  Globe,
+  Server,
+  RefreshCw,
+  Monitor,
+  Fingerprint,
+  Code,
+  BarChart3,
+  Mail,
+  Lock,
+  Eye,
+  ShieldAlert,
+  Radio,
+  FileWarning,
+  Users,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,6 +181,24 @@ function ScoreCircle({ score, size = 64 }: { score: number | null; size?: number
 
 // ==================== KPI CARD ====================
 
+// KPI → unique icon mapping
+const KPI_ICON_MAP: Record<string, LucideIcon> = {
+  "Network Security": Globe,
+  "DNS Health": Server,
+  "Patching Cadence": RefreshCw,
+  "Endpoint Security": Monitor,
+  "IP Reputation": Fingerprint,
+  "Application Security": Code,
+  "Cubit Score": BarChart3,
+  "Email Security": Mail,
+  "SSL/TLS Configuration": Lock,
+  "Privacy": Eye,
+  "Known Breach": ShieldAlert,
+  "Hacker Chatter": Radio,
+  "Information Leak": FileWarning,
+  "Social Engineering": Users,
+};
+
 function KpiCard({ kpi, isThreat, expanded, onToggle, t }: {
   kpi: TPRMKPIDetail;
   isThreat: boolean;
@@ -174,53 +206,50 @@ function KpiCard({ kpi, isThreat, expanded, onToggle, t }: {
   onToggle: () => void;
   t: (s: string) => string;
 }) {
-  const borderColor = isThreat ? "border-l-amber-500" : "border-l-teal-500";
-  const bgColor = isThreat ? "bg-amber-50" : "bg-teal-50";
-  const iconBg = isThreat ? "bg-amber-100 text-amber-600" : "bg-teal-100 text-teal-600";
-  const scoreTextColor = isThreat ? "text-amber-700" : "text-teal-700";
+  const Icon = KPI_ICON_MAP[kpi.kpiName] || Shield;
+  const score = kpi.securityScore;
+  const sColor = scoreColor(score);
+  const iconBg = isThreat ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600";
 
   return (
-    <div className={`border rounded-lg border-l-4 ${borderColor} overflow-hidden`}>
+    <div className={`border rounded-lg bg-white overflow-hidden transition-shadow hover:shadow-md ${expanded ? "shadow-md ring-1 ring-slate-200" : ""}`}>
       {/* Header */}
       <div
-        className={`${bgColor} px-4 py-3 flex items-center justify-between cursor-pointer`}
+        className="px-4 py-3.5 flex items-center gap-3 cursor-pointer select-none"
         onClick={onToggle}
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className={`w-8 h-8 rounded flex items-center justify-center ${iconBg}`}>
-            <Network className="h-4 w-4" />
-          </div>
-          <span className="font-semibold text-sm truncate">{kpi.kpiName}</span>
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+          <Icon className="h-4 w-4" />
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className={`text-2xl font-bold ${scoreTextColor}`}>
-            {kpi.securityScore ?? "\u2014"}
+        <div className="min-w-0 flex-1">
+          <span className="font-semibold text-sm text-slate-800 block truncate">{kpi.kpiName}</span>
+        </div>
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <span className="text-2xl font-bold tabular-nums" style={{ color: sColor }}>
+            {score ?? "\u2014"}
           </span>
-          <button className="text-slate-500 hover:text-slate-700 p-0.5">
-            {expanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          </button>
+          {expanded
+            ? <ChevronUp className="h-4 w-4 text-slate-400" />
+            : <ChevronDown className="h-4 w-4 text-slate-400" />
+          }
         </div>
       </div>
 
       {/* Expanded content */}
       {expanded && (
-        <div className="px-4 py-4 space-y-4 bg-white border-t">
+        <div className="px-4 pb-4 pt-1 space-y-3 border-t border-slate-100">
           {kpi.summary && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1.5">
-                <Activity className="h-3.5 w-3.5" /> {t("Summary")}
-              </p>
-              <p className="text-sm leading-relaxed text-slate-700">{kpi.summary}</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t("Summary")}</p>
+              <p className="text-sm leading-relaxed text-slate-600">{kpi.summary}</p>
             </div>
           )}
           {kpi.keyFindings.length > 0 && (
-            <div className="border-t pt-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-                <Activity className="h-3.5 w-3.5" /> {t("Key Findings")}
-              </p>
-              <ul className="space-y-2">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{t("Key Findings")}</p>
+              <ul className="space-y-1.5">
                 {kpi.keyFindings.map((f) => (
-                  <li key={f.id} className="text-sm flex items-start gap-2">
+                  <li key={f.id} className="text-sm flex items-start gap-2 text-slate-600">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5 flex-shrink-0" />
                     {f.statement}
                   </li>
@@ -229,18 +258,16 @@ function KpiCard({ kpi, isThreat, expanded, onToggle, t }: {
             </div>
           )}
           {kpi.sources.length > 0 && (
-            <div className="border-t pt-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-                <Activity className="h-3.5 w-3.5" /> {t("Sources")}
-              </p>
-              <ul className="space-y-1.5">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{t("Sources")}</p>
+              <ul className="space-y-1">
                 {kpi.sources.map((s) => (
                   <li key={s.id} className="text-sm flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                     {s.name.startsWith("http") ? (
                       <a href={s.name} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">{s.name}</a>
                     ) : (
-                      <span className="text-slate-700">{s.name}</span>
+                      <span className="text-slate-600">{s.name}</span>
                     )}
                   </li>
                 ))}
@@ -248,9 +275,9 @@ function KpiCard({ kpi, isThreat, expanded, onToggle, t }: {
             </div>
           )}
           {kpi.description && (
-            <div className="border-t pt-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-1">{t("Description")}</p>
-              <p className="text-sm leading-relaxed text-slate-700">{kpi.description}</p>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t("Description")}</p>
+              <p className="text-sm leading-relaxed text-slate-600">{kpi.description}</p>
             </div>
           )}
         </div>
@@ -629,19 +656,54 @@ export default function MonitoringDetailPage() {
 
           {/* KPI Details */}
           <div>
-            <h3 className="font-semibold text-base mb-4">{t("KPI Details")}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[...spKpis, ...teKpis].map((kpi) => (
-                <KpiCard
-                  key={kpi.id}
-                  kpi={kpi}
-                  isThreat={THREAT_EXPOSURE_KPIS.includes(kpi.kpiName)}
-                  expanded={expandedKpis.has(kpi.id)}
-                  onToggle={() => toggleKpi(kpi.id)}
-                  t={t}
-                />
-              ))}
-            </div>
+            <h3 className="font-semibold text-base mb-5">{t("KPI Details")}</h3>
+
+            {/* Security Posture KPIs */}
+            {spKpis.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-teal-500" />
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Security Posture")}</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {spKpis.map((kpi) => (
+                    <KpiCard
+                      key={kpi.id}
+                      kpi={kpi}
+                      isThreat={false}
+                      expanded={expandedKpis.has(kpi.id)}
+                      onToggle={() => toggleKpi(kpi.id)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Threat Exposure KPIs */}
+            {teKpis.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("Threat Exposure")}</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {teKpis.map((kpi) => (
+                    <KpiCard
+                      key={kpi.id}
+                      kpi={kpi}
+                      isThreat={true}
+                      expanded={expandedKpis.has(kpi.id)}
+                      onToggle={() => toggleKpi(kpi.id)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {assessment.kpiDetails.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-8">{t("No KPI data available")}</p>
             )}

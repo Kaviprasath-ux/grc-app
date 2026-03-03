@@ -12,11 +12,12 @@ export const GET = withAuth(
       const vendorId = searchParams.get("vendorId"); // fetch all assessments for a specific vendor
 
       if (vendorId) {
-        // Return full assessment history for one vendor
+        // Return full assessment history for one vendor (exclude placeholder records)
         const vendor = await prisma.tPRMMonitoringVendor.findFirst({
           where: { id: vendorId, ...tenantFilter },
           include: {
             assessments: {
+              where: { status: { notIn: ["queued", "processing", "error"] } },
               include: {
                 complianceAndLegal: { include: { laws: true, certifications: true } },
                 recommendation: true,

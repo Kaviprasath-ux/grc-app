@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   RefreshCw,
@@ -11,6 +11,7 @@ import {
   Trash2,
   FileBarChart,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +95,9 @@ export default function MonitoringPage() {
   const [search, setSearch] = useState("");
   const [vendorName, setVendorName] = useState("");
   const [vendorDomain, setVendorDomain] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [activeScans, setActiveScans] = useState<{ jobId: string; vendorName: string; vendorURL: string; status: string }[]>([]);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -101,7 +105,29 @@ export default function MonitoringPage() {
       const res = await fetch("/api/tprm/monitoring");
       if (res.ok) {
         const json = await res.json();
-        setVendors(json.data || []);
+        const vendorList: TPRMMonitoringVendor[] = json.data || [];
+        setVendors(vendorList);
+
+        // Resume polling for any DB-tracked pending scans (survives page navigation)
+        const pendingFromDb = vendorList
+          .filter((v) => {
+            const a = v.assessments[0];
+            return a && ["queued", "processing"].includes(a.status?.toLowerCase() || "") && a.jobID;
+          })
+          .map((v) => ({
+            jobId: v.assessments[0].jobID!,
+            vendorName: v.vendorName,
+            vendorURL: v.vendorURL,
+            status: v.assessments[0].status || "queued",
+          }));
+
+        if (pendingFromDb.length > 0) {
+          setActiveScans((prev) => {
+            const existingIds = new Set(prev.map((s) => s.jobId));
+            const newScans = pendingFromDb.filter((s) => !existingIds.has(s.jobId));
+            return newScans.length > 0 ? [...prev, ...newScans] : prev;
+          });
+        }
       } else {
         toast({ title: t("Error"), description: t("Failed to load monitoring data"), variant: "destructive" });
       }
@@ -114,21 +140,97 @@ export default function MonitoringPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const handleAnalyze = () => {
+  // Background poller — runs whenever there are active scans
+  useEffect(() => {
+    if (activeScans.length === 0) {
+      if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
+      return;
+    }
+    // Don't start a second interval if one is already running
+    if (pollIntervalRef.current) return;
+
+    pollIntervalRef.current = setInterval(async () => {
+      setActiveScans((prev) => {
+        // Trigger poll for each active scan (fire-and-forget inside setState to get latest list)
+        for (const scan of prev) {
+          fetch(`/api/tprm/monitoring/scan?jobId=${scan.jobId}`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => {
+              if (!data) return;
+              if (data.status === "done") {
+                setActiveScans((p) => p.filter((s) => s.jobId !== scan.jobId));
+                if (data.error) {
+                  toast({ title: t("Scan Error"), description: `${scan.vendorName}: ${data.error}`, variant: "destructive" });
+                } else {
+                  toast({ title: t("Scan Complete"), description: `${scan.vendorName} ${t("assessment has been saved successfully")}` });
+                }
+                loadData();
+              } else if (data.status === "error") {
+                setActiveScans((p) => p.filter((s) => s.jobId !== scan.jobId));
+                toast({ title: t("Scan Failed"), description: `${scan.vendorName}: ${data.error || t("An error occurred during scanning")}`, variant: "destructive" });
+              } else if (data.status === "processing" && scan.status !== "processing") {
+                setActiveScans((p) => p.map((s) => s.jobId === scan.jobId ? { ...s, status: "processing" } : s));
+              }
+            })
+            .catch(() => { /* network error — keep polling */ });
+        }
+        return prev;
+      });
+    }, 60000);
+
+    return () => {
+      if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
+    };
+  }, [activeScans.length, toast, t, loadData]);
+
+  const handleAnalyze = async () => {
     if (!vendorName.trim() && !vendorDomain.trim()) {
       toast({ title: t("Error"), description: t("Please enter a vendor name or domain"), variant: "destructive" });
       return;
     }
-    toast({ title: t("Info"), description: t("Vendor analysis will be available when the scanning API is connected") });
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/tprm/monitoring/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vendorName: vendorName.trim(), vendorURL: vendorDomain.trim() }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to submit scan");
+      }
+
+      const { jobId } = await res.json();
+      const newScan = { jobId, vendorName: vendorName.trim(), vendorURL: vendorDomain.trim(), status: "queued" };
+      setActiveScans((prev) => [...prev, newScan]);
+      toast({ title: t("Assessment Triggered"), description: `${vendorName.trim()} ${t("has been queued for scanning. This may take a few minutes.")}` });
+      setVendorName("");
+      setVendorDomain("");
+    } catch (err) {
+      toast({
+        title: t("Error"),
+        description: err instanceof Error ? err.message : t("Failed to submit scan"),
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Latest-assessment vendors (shown in main table)
   const latestVendors = vendors.filter((v) => v.assessments.length > 0);
-  // Queued vendors (submitted but no assessment yet, or status = queued)
-  const queuedVendors = vendors.filter((v) =>
-    v.assessments.length === 0 ||
-    v.assessments[0]?.status?.toLowerCase() === "queued"
-  );
+  // Queued vendors (submitted but no assessment yet, or status = queued/processing)
+  // Exclude vendors already tracked in activeScans to avoid duplicates
+  const activeJobIds = new Set(activeScans.map((s) => s.jobId));
+  const queuedVendors = vendors.filter((v) => {
+    const a = v.assessments[0];
+    const isPending = v.assessments.length === 0 ||
+      ["queued", "processing"].includes(a?.status?.toLowerCase() || "");
+    const isTracked = a?.jobID && activeJobIds.has(a.jobID);
+    return isPending && !isTracked;
+  });
 
   const filtered = latestVendors.filter(
     (v) =>
@@ -164,8 +266,9 @@ export default function MonitoringPage() {
             <Label>{t("Vendor Domain (URL)")}</Label>
             <Input value={vendorDomain} onChange={(e) => setVendorDomain(e.target.value)} placeholder="https://example.com" />
           </div>
-          <Button onClick={handleAnalyze}>
-            {t("Analyze Vendor")}
+          <Button onClick={handleAnalyze} disabled={submitting}>
+            {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
+            {submitting ? t("Submitting...") : t("Analyze Vendor")}
           </Button>
         </div>
       </div>
@@ -267,15 +370,31 @@ export default function MonitoringPage() {
       {/* Queued Assessments */}
       <div className="border rounded-lg bg-white p-4">
         <h4 className="text-base font-semibold mb-3">{t("Queued Assessments")}</h4>
-        {queuedVendors.length === 0 ? (
+        {activeScans.length === 0 && queuedVendors.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">{t("No Data Found")}</p>
         ) : (
           <div className="space-y-2">
+            {/* Active scans (locally tracked, not yet persisted) */}
+            {activeScans.map((scan) => (
+              <div key={scan.jobId} className="flex items-center justify-between border rounded p-3">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                  <div>
+                    <span className="font-medium text-sm">{scan.vendorName}</span>
+                    <span className="text-xs text-muted-foreground ltr:ml-2 rtl:mr-2">{scan.vendorURL}</span>
+                  </div>
+                </div>
+                <Badge className={scan.status === "processing" ? "bg-blue-100 text-blue-700 text-xs" : "bg-orange-100 text-orange-700 text-xs"}>
+                  {scan.status === "processing" ? t("Processing") : t("Queued")}
+                </Badge>
+              </div>
+            ))}
+            {/* DB-queued vendors */}
             {queuedVendors.map((v) => (
               <div key={v.id} className="flex items-center justify-between border rounded p-3">
                 <div>
                   <span className="font-medium text-sm">{v.vendorName}</span>
-                  <span className="text-xs text-muted-foreground ml-2">{v.vendorURL}</span>
+                  <span className="text-xs text-muted-foreground ltr:ml-2 rtl:mr-2">{v.vendorURL}</span>
                 </div>
                 <Badge className="bg-orange-100 text-orange-700 text-xs">{t("Queued")}</Badge>
               </div>

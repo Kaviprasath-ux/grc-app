@@ -1,0 +1,418 @@
+{
+  "vendor_name": "Claude",
+  "vendor_domain": "claude.ai",
+  "overall_summary": "Claude (Anthropic) shows a generally strong external perimeter (Cloudflare fronting, minimal open ports, modern TLS 1.3) and credible vulnerability management/incident-transparency practices. However, multiple data exposure events (contractor-driven leak; public indexing of chat transcripts) and recent high-severity vulnerabilities in Claude Code/IDE extensions increase application and information-leak risk. Missing HSTS and CSP headers on the main site, limited visibility into DNS/email controls, and elevated platform-misuse reports further temper the score. Overall, above-average security with notable privacy/exfiltration and governance-exposure concerns that warrant compensating controls and contractual safeguards.",
+  "overall_score": 67,
+  "securityPostureScore": 73,
+  "threatExposureScore": 61,
+  "compliance_and_legal": {
+    "privacy_policy_url": null,
+    "dpa_url": null,
+    "certifications": [],
+    "laws": [
+      "GDPR (EU)",
+      "CCPA/CPRA (California, US)"
+    ]
+  },
+  "recommendations": [
+    "Enforce HSTS with preload, add a strict Content-Security-Policy, and maintain secure-referrer and frame protections across all web properties.",
+    "Verify DNS/email posture: publish/validate SPF and DKIM, enforce DMARC p=reject with TLS-RPT, and monitor for spoofing.",
+    "Sustain rapid patching for Claude Code/IDE extensions; require auto-update and version pinning in enterprise environments.",
+    "Harden code-interpreter and file APIs with deny-by-default egress, strict data-scoping, output filtering, and server-side DLP for uploads/exports.",
+    "Rotate and scope API keys; block secrets in project files via pre-commit hooks and repository scanning; enforce least privilege for MCP/tools.",
+    "Set sharing defaults to private; prevent search indexing of shared/chat content; add in-product warnings and retention controls.",
+    "Expand abuse detection and takedowns for large-scale model misuse/distillation; rate-limit and require additional verification for high-risk workflows.",
+    "Publish current privacy policy and DPA/transfer mechanisms; align with GDPR transparency requirements and clarify data retention/deletion SLAs.",
+    "Enhance brand and phishing monitoring; provide customer security advisories and security.txt; consider BIMI for email trust signals.",
+    "Continue detailed incident postmortems and coordinated disclosure; map remediations to threat scenarios (prompt injection, code execution, credential leakage)."
+  ],
+  "security_posture_summary": "Perimeter exposure is limited (only 80/443 open via Cloudflare), TLS 1.3 with modern ciphering and a current certificate is observed. Security headers are mixed: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, and a restrictive Permissions-Policy are present, but CSP and HSTS are missing. Vulnerability management appears responsive, with patches released for recent high-severity issues in Claude Code and IDE extensions and third-party validation (SANS/Check Point). DNS/email posture could not be fully verified from available signals.",
+  "threat_exposure_summary": "Historical exposure includes a 2024 contractor error leading to data disclosure and public indexing of user chat transcripts via the share feature. Research shows feasible data exfiltration paths via code interpreter/API misuse (since addressed), and there is notable platform misuse (extortion/ransomware development; alleged large-scale distillation; high-profile incident reporting). While not all reports reflect compromise of Anthropic systems, they elevate information-leak and reputational risks for integrators and downstream users.",
+  "kpi_details": [
+    {
+      "kpi_name": "Network Security",
+      "kpi_type": "security_posture",
+      "summary": "External surface is constrained: only HTTP/HTTPS are reachable and fronted by Cloudflare. No administrative services (SSH/RDP/SMTP) exposed. Likely WAF/CDN protections in place. Ensure 80 strictly redirects to 443 and enforce origin hardening.",
+      "key_findings": [
+        "Open ports limited to 80 and 443; 22/25/3389 closed.",
+        "Server fingerprint indicates Cloudflare reverse proxy.",
+        "No evidence of unnecessary services exposed from live check."
+      ],
+      "sources": [
+        "LIVE NETWORK SCAN: ports tested [80, 443, 22, 25, 3389]; open [80, 443]",
+        "On-Demand Scanning - Shodan Help Center: https://help.shodan.io/the-basics/on-demand-scanning",
+        "MXToolbox SuperTool: https://mxtoolbox.com/SuperTool.aspx"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Maintain Cloudflare/WAF protections, enforce 301 redirect from 80 to 443, validate origin ACLs and mTLS to origin, and continuously monitor for new exposed services."
+    },
+    {
+      "kpi_name": "DNS Health",
+      "kpi_type": "security_posture",
+      "summary": "DNS/email records could not be fully enumerated from the available signals. No evidence of misconfiguration provided; however, SPF/DKIM/DMARC status is unknown.",
+      "key_findings": [
+        "DNS enrichment disabled in scan output; authoritative/record details unavailable.",
+        "No confirmed DMARC/SPF/DKIM posture from provided data."
+      ],
+      "sources": [
+        "Scan note: 'dnspython not installed; DNS enrichment disabled'",
+        "MXToolbox SuperTool: https://mxtoolbox.com/SuperTool.aspx"
+      ],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Ensure DNSSEC (where supported), publish SPF and DKIM keys, enforce DMARC p=reject, and regularly audit TXT/MX/CAA/NS records."
+    },
+    {
+      "kpi_name": "Patching Cadence",
+      "kpi_type": "security_posture",
+      "summary": "Recent high-severity issues in Claude Code/IDE integrations were patched with coordinated disclosure and third-party confirmation, indicating timely remediation and mature processes.",
+      "key_findings": [
+        "CVE-2025-59536 (code injection before trust dialog) fixed in Claude Code 1.0.111.",
+        "CVE-2026-21852 (API key exfil via malicious ANTHROPIC_BASE_URL) patched in 2.0.65.",
+        "CVE-2025-52882 (WebSocket auth bypass in IDE extensions) fixed in VS Code ≥1.0.24 and JetBrains ≥0.1.9.",
+        "SANS validation of fixes and recommended enterprise mitigations."
+      ],
+      "sources": [
+        "NVD CVE-2025-59536: https://nvd.nist.gov/vuln/detail/CVE-2025-59536",
+        "NVD CVE-2026-21852: https://nvd.nist.gov/vuln/detail/CVE-2026-21852",
+        "NVD CVE-2025-52882: https://nvd.nist.gov/vuln/detail/CVE-2025-52882",
+        "SANS NewsBites: https://www.sans.org/newsletters/newsbites/xxviii-15",
+        "Responsible Disclosure Policy | Anthropic: https://www.anthropic.com/responsible-disclosure-policy"
+      ],
+      "security_score": 82,
+      "risk_score": 18,
+      "vulnerabilities": [
+        {
+          "CVE_ID": "CVE-2025-59536",
+          "severity": "high",
+          "affected_component": "Claude Code (pre-trust dialog execution)",
+          "description": "Code injection allowed project code to run before user accepted the trust dialog.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2025-59536"
+        },
+        {
+          "CVE_ID": "CVE-2026-21852",
+          "severity": "high",
+          "affected_component": "Claude Code (configuration handling)",
+          "description": "API key exfiltration via attacker-controlled ANTHROPIC_BASE_URL honored before trust confirmation.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2026-21852"
+        },
+        {
+          "CVE_ID": "CVE-2025-52882",
+          "severity": "high",
+          "affected_component": "Claude Code IDE extensions (VS Code/JetBrains)",
+          "description": "Unauthenticated localhost WebSocket access enabled file access and limited code execution from malicious webpages.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2025-52882"
+        }
+      ],
+      "recommendation": "Mandate auto-update/pin safe versions across IDE fleets; add SBOM and version attestations; monitor for exploit attempts; include regression tests for trust-dialog and config precedence paths."
+    },
+    {
+      "kpi_name": "Endpoint Security",
+      "kpi_type": "security_posture",
+      "summary": "No direct telemetry on endpoint controls (EDR, hardening, device management). Assessment relies on general best practices and observed maturity in disclosure/patching.",
+      "key_findings": [
+        "No public signals on EDR/MDR or device posture.",
+        "Responsible disclosure process suggests formal security operations exist."
+      ],
+      "sources": [
+        "Responsible Disclosure Policy | Anthropic: https://www.anthropic.com/responsible-disclosure-policy"
+      ],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Maintain EDR with behavior analytics, harden developer endpoints handling Claude Code projects, enforce device attestation and least-privilege for agent tooling."
+    },
+    {
+      "kpi_name": "IP Reputation",
+      "kpi_type": "security_posture",
+      "summary": "No adverse reputation indicators were provided in the available data. Cloudflare fronting typically absorbs abusive traffic and masks origin IPs.",
+      "key_findings": [
+        "No blacklist or malicious categorization evidence provided.",
+        "Cloudflare presence likely improves DDoS/WAF posture."
+      ],
+      "sources": [
+        "Cisco Talos Reputation Center overview: https://support.talosintelligence.com/docs/rep-overview/",
+        "Spamhaus Domain Reputation: https://www.spamhaus.org/domain-reputation/"
+      ],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Continuously monitor domain/IP reputation across Talos/Spamhaus and enable automated blocking/escalation for sudden reputation changes."
+    },
+    {
+      "kpi_name": "Application Security",
+      "kpi_type": "security_posture",
+      "summary": "Recent, well-documented vulnerabilities and exfiltration avenues (now patched) indicate a dynamic threat surface, especially around code interpreter, project configuration, and IDE integrations. Disclosure and fixes were coordinated and public.",
+      "key_findings": [
+        "Code interpreter and API misuse could exfiltrate chats/files in chunks (reported, mitigations noted).",
+        "IDE extension issues (WebSocket auth bypass) exposed local file/code risks.",
+        "Coordinated disclosures with detailed research and patch guidance."
+      ],
+      "sources": [
+        "SecurityWeek (API exfiltration abuse): https://www.securityweek.com/claude-ai-apis-can-be-abused-for-data-exfiltration/",
+        "CSO Online (code interpreter exploit): https://www.csoonline.com/article/4082514/claude-ai-vulnerability-exposes-enterprise-data-through-code-interpreter-exploit.html",
+        "Check Point Research (CVE-2025-59536, CVE-2026-21852): https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/",
+        "Datadog Security Labs (CVE-2025-52882): https://securitylabs.datadoghq.com/articles/claude-mcp-cve-2025-52882/",
+        "NVD CVE-2025-59536: https://nvd.nist.gov/vuln/detail/CVE-2025-59536",
+        "NVD CVE-2026-21852: https://nvd.nist.gov/vuln/detail/CVE-2026-21852",
+        "NVD CVE-2025-52882: https://nvd.nist.gov/vuln/detail/CVE-2025-52882"
+      ],
+      "security_score": 68,
+      "risk_score": 32,
+      "vulnerabilities": [
+        {
+          "CVE_ID": "CVE-2025-59536",
+          "severity": "high",
+          "affected_component": "Claude Code",
+          "description": "Hooks-based code execution before trust dialog acceptance.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2025-59536"
+        },
+        {
+          "CVE_ID": "CVE-2026-21852",
+          "severity": "high",
+          "affected_component": "Claude Code (project configuration)",
+          "description": "Anthropic API key exfiltration via malicious base URL during project load.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2026-21852"
+        },
+        {
+          "CVE_ID": "CVE-2025-52882",
+          "severity": "high",
+          "affected_component": "Claude Code IDE extensions",
+          "description": "Localhost WebSocket auth bypass enabled file access and limited code exec from malicious sites.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2025-52882"
+        }
+      ],
+      "recommendation": "Enforce secure-by-default interpreter behavior, sandbox tool/agent capabilities, verify trust-gating paths, and add server-side egress/DLP controls to prevent data exfiltration regardless of client configuration."
+    },
+    {
+      "kpi_name": "Cubit Score",
+      "kpi_type": "security_posture",
+      "summary": "No public Cubit Score or equivalent external cyber rating was identified for claude.ai in provided sources. Assessment defaults to observed controls and incidents.",
+      "key_findings": [
+        "No direct third-party security rating data in the inputs.",
+        "Security posture assessed via live signals and documented incidents."
+      ],
+      "sources": [
+        "N/A - no public Cubit Score located in provided intelligence"
+      ],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Consider commissioning an external security rating and sharing attestation (e.g., SOC 2, ISO 27001) to improve third-party assurance."
+    },
+    {
+      "kpi_name": "Email Security",
+      "kpi_type": "security_posture",
+      "summary": "Email authentication posture (SPF/DKIM/DMARC) could not be verified from the available data. No deliverability/reputation issues were reported in the inputs.",
+      "key_findings": [
+        "DMARC/SPF/DKIM status unknown due to DNS enrichment limits.",
+        "No blacklist or spam reputation issues provided."
+      ],
+      "sources": [
+        "MXToolbox SuperTool: https://mxtoolbox.com/SuperTool.aspx",
+        "Cisco Talos Reputation Center overview: https://support.talosintelligence.com/docs/rep-overview/",
+        "Spamhaus Domain Reputation: https://www.spamhaus.org/domain-reputation/"
+      ],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Publish SPF and DKIM, enforce DMARC p=reject with alignment, enable MTA-STS and TLS-RPT, and consider BIMI to strengthen anti-spoofing and trust."
+    },
+    {
+      "kpi_name": "SSL/TLS Configuration",
+      "kpi_type": "security_posture",
+      "summary": "TLS 1.3 negotiated with TLS_AES_256_GCM_SHA384 and a current Let's Encrypt certificate. However, HSTS is missing on the observed endpoint, which weakens transport-layer downgrade protections.",
+      "key_findings": [
+        "TLS version: 1.3; cipher: TLS_AES_256_GCM_SHA384.",
+        "Certificate valid until 2026-04-17 (Let's Encrypt E7).",
+        "HSTS header not present; CSP also absent on the scanned page."
+      ],
+      "sources": [
+        "Live TLS scan for https://claude.ai",
+        "SSL Labs SSL Server Test: https://www.ssllabs.com/ssltest/"
+      ],
+      "security_score": 88,
+      "risk_score": 12,
+      "vulnerabilities": [],
+      "recommendation": "Enable HSTS with preload across all subdomains, maintain TLS 1.3-only where feasible, rotate certificates automatically, and deploy a strict CSP to reduce client-side attack surface."
+    },
+    {
+      "kpi_name": "Privacy",
+      "kpi_type": "security_posture",
+      "summary": "Multiple privacy-impacting exposures were reported (contractor data leak; chat transcripts discoverable via Google from share feature). A public privacy policy/DPA was not identified in the provided signals.",
+      "key_findings": [
+        "Jan 2024 contractor error led to data exposure; Anthropic notified affected customers.",
+        "Hundreds of chat transcripts were indexed by Google due to share/link behavior.",
+        "No privacy policy URL detected from the live scan inputs."
+      ],
+      "sources": [
+        "VentureBeat (contractor data leak): https://venturebeat.com/security/anthropic-confirms-it-suffered-a-data-leak",
+        "SC Media (data exposure confirmed): https://www.scworld.com/brief/data-exposure-confirmed-by-anthropic",
+        "Forbes (transcripts indexed): https://www.forbes.com/sites/iainmartin/2025/09/08/hundreds-of-anthropic-chatbot-transcripts-showed-up-in-google-search/"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Publish and maintain a clear privacy policy and DPA; set conservative defaults for sharing/retention; prevent search indexing of user content; implement in-product redaction and deletion workflows with auditability."
+    },
+    {
+      "kpi_name": "Known Breach",
+      "kpi_type": "threat_exposure",
+      "summary": "No evidence of core system compromise, but confirmed incidents include a 2024 contractor-driven data exposure and public indexing of user chat transcripts. These events indicate meaningful privacy/data governance risk.",
+      "key_findings": [
+        "Anthropic confirmed a contractor-sourced data exposure; affected customers notified.",
+        "Publicly discoverable chat transcripts via Google indexing of shared links.",
+        "Vendor demonstrated incident communication and remediation."
+      ],
+      "sources": [
+        "VentureBeat (contractor data leak): https://venturebeat.com/security/anthropic-confirms-it-suffered-a-data-leak",
+        "SC Media (exposure confirmed): https://www.scworld.com/brief/data-exposure-confirmed-by-anthropic",
+        "Forbes (transcripts indexed): https://www.forbes.com/sites/iainmartin/2025/09/08/hundreds-of-anthropic-chatbot-transcripts-showed-up-in-google-search/"
+      ],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Strengthen third-party risk and data handling controls (least data; verified recipients), and harden public-sharing features with explicit warnings and search-engine suppression."
+    },
+    {
+      "kpi_name": "Hacker Chatter",
+      "kpi_type": "threat_exposure",
+      "summary": "Elevated discussion and reporting around misuse: large-scale model distillation via fraudulent accounts; AI-assisted ransomware and extortion; and alleged involvement in high-profile intrusions.",
+      "key_findings": [
+        "Reports of criminals using Claude Code for ransomware and extortion.",
+        "Claims of 16M+ interactions for model distillation via thousands of fraudulent accounts.",
+        "Vendor published threat intel and takedown actions in response to AI-orchestrated campaigns."
+      ],
+      "sources": [
+        "BleepingComputer (ransomware abuse): https://www.bleepingcomputer.com/news/security/malware-devs-abuse-anthropics-claude-ai-to-build-ransomware/",
+        "Bloomberg (distillation via fraudulent accounts): https://www.bloomberg.com/news/articles/2026-02-23/anthropic-says-deepseek-minimax-distilled-ai-models-for-gains",
+        "HSToday (criminal misuse report): https://www.hstoday.us/subject-matter-areas/cybersecurity/anthropic-report-details-how-cybercriminals-are-exploiting-ai-for-extortion-fraud-and-ransomware/",
+        "Anthropic (AI espionage disruption): https://www.anthropic.com/news/disrupting-AI-espionage/"
+      ],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Expand abuse monitoring, account verification, and automated takedowns; provide enterprise controls to restrict dangerous capabilities and alert on anomalous usage."
+    },
+    {
+      "kpi_name": "Information Leak",
+      "kpi_type": "threat_exposure",
+      "summary": "Demonstrated pathways for data leakage existed via share-link indexing and code-interpreter/API abuse (patched/mitigated). These raise leakage risk for enterprises integrating Claude into workflows.",
+      "key_findings": [
+        "Chat transcripts became publicly discoverable via Google due to sharing behavior.",
+        "Proofs-of-concept showed API-driven exfiltration of chats/uploads via interpreter abuse.",
+        "IDE vulnerabilities enabled local file access and potential token exfiltration."
+      ],
+      "sources": [
+        "Forbes (transcripts indexed): https://www.forbes.com/sites/iainmartin/2025/09/08/hundreds-of-anthropic-chatbot-transcripts-showed-up-in-google-search/",
+        "SecurityWeek (API exfiltration abuse): https://www.securityweek.com/claude-ai-apis-can-be-abused-for-data-exfiltration/",
+        "CSO Online (code interpreter exploit): https://www.csoonline.com/article/4082514/claude-ai-vulnerability-exposes-enterprise-data-through-code-interpreter-exploit.html",
+        "NVD CVE-2025-52882: https://nvd.nist.gov/vuln/detail/CVE-2025-52882",
+        "NVD CVE-2025-59536: https://nvd.nist.gov/vuln/detail/CVE-2025-59536",
+        "NVD CVE-2026-21852: https://nvd.nist.gov/vuln/detail/CVE-2026-21852"
+      ],
+      "security_score": 50,
+      "risk_score": 50,
+      "vulnerabilities": [
+        {
+          "CVE_ID": "CVE-2025-52882",
+          "severity": "high",
+          "affected_component": "Claude Code IDE extensions",
+          "description": "WebSocket auth bypass enabled local file access and limited code execution from malicious pages.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2025-52882"
+        },
+        {
+          "CVE_ID": "CVE-2025-59536",
+          "severity": "high",
+          "affected_component": "Claude Code",
+          "description": "Pre-trust code execution risk could lead to data exfiltration of project assets.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2025-59536"
+        },
+        {
+          "CVE_ID": "CVE-2026-21852",
+          "severity": "high",
+          "affected_component": "Claude Code",
+          "description": "API key exfiltration via malicious configuration could expose credentials and data.",
+          "source": "https://nvd.nist.gov/vuln/detail/CVE-2026-21852"
+        }
+      ],
+      "recommendation": "Default shared content to private with explicit opt-in; block crawler indexing; apply DLP and egress filtering around interpreter/API features; require enterprise controls for chat/file retention and export."
+    },
+    {
+      "kpi_name": "Social Engineering",
+      "kpi_type": "threat_exposure",
+      "summary": "No direct phishing compromise reported for Anthropic, but public reports of AI-assisted intrusions and ransomware increase the likelihood of brand abuse and social engineering against customers and partners.",
+      "key_findings": [
+        "Media reports link misuse of Claude to assist intrusions (e.g., Mexico government claims).",
+        "Criminal playbooks include phishing and extortion patterns leveraging AI.",
+        "Vendor publishes advisories and threat intel, which can be leveraged for customer awareness."
+      ],
+      "sources": [
+        "LA Times (Mexico government data theft claim): https://www.latimes.com/business/story/2026-02-26/hacker-used-anthropics-claude-ai-to-steal-mexican-government-data",
+        "Cybernews (Mexico hack details): https://cybernews.com/security/claude-ai-mexico-government-hack/",
+        "HSToday (criminal misuse report): https://www.hstoday.us/subject-matter-areas/cybersecurity/anthropic-report-details-how-cybercriminals-are-exploiting-ai-for-extortion-fraud-and-ransomware/"
+      ],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Enhance anti-phishing tooling (DMARC+MTA-STS+BIMI), brand monitoring, and customer advisories; implement verified sender programs and takedowns for lookalike domains."
+    }
+  ],
+  "http_security_headers": {
+    "http_security_headers": [
+      {
+        "name": "Content-Security-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Restricts what content the browser can load to prevent XSS.",
+        "recommendation": "Use a strict CSP such as default-src 'self'; object-src 'none'."
+      },
+      {
+        "name": "Strict-Transport-Security",
+        "present": false,
+        "value": "Not Present",
+        "description": "Forces HTTPS to protect against protocol downgrade attacks.",
+        "recommendation": "Set HSTS max-age >= 31536000 with includeSubDomains and preload."
+      },
+      {
+        "name": "X-Content-Type-Options",
+        "present": true,
+        "value": "nosniff",
+        "description": "Prevents MIME type sniffing.",
+        "recommendation": "Always set to 'nosniff' to avoid content-type attacks."
+      },
+      {
+        "name": "X-Frame-Options",
+        "present": true,
+        "value": "SAMEORIGIN",
+        "description": "Prevents clickjacking attacks.",
+        "recommendation": "Use SAMEORIGIN or DENY unless framing is required."
+      },
+      {
+        "name": "Referrer-Policy",
+        "present": true,
+        "value": "same-origin",
+        "description": "Controls how much referrer information is leaked.",
+        "recommendation": "Use strict-origin-when-cross-origin or stricter."
+      },
+      {
+        "name": "Permissions-Policy",
+        "present": true,
+        "value": "accelerometer=(),browsing-topics=(),camera=(),clipboard-read=(),clipboard-write=(),geolocation=(),gyroscope=(),hid=(),interest-cohort=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=()",
+        "description": "Controls access to browser features (camera, mic, geolocation).",
+        "recommendation": "Add a restrictive Permissions-Policy to disable unused features."
+      },
+      {
+        "platform": {
+          "server": "cloudflare",
+          "x_powered_by": null,
+          "guessed_stack": null
+        }
+      }
+    ],
+    "error": null
+  }
+}
