@@ -2817,6 +2817,82 @@ CREATE TABLE "TPRMMonitoringSchedule" (
 );
 
 -- CreateTable
+CREATE TABLE "TPRMAssessmentResponse" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "questionId" TEXT NOT NULL,
+    "domainId" TEXT,
+    "questionNo" TEXT,
+    "response" TEXT,
+    "comment" TEXT,
+    "artifactUrl" TEXT,
+    "artifactName" TEXT,
+    "isFlagged" BOOLEAN NOT NULL DEFAULT false,
+    "isDelegated" BOOLEAN NOT NULL DEFAULT false,
+    "delegatedToId" TEXT,
+    "respondedById" TEXT,
+    "respondedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMAssessmentResponse_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMClarification" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "questionNo" TEXT,
+    "domainName" TEXT,
+    "rejectComment" TEXT,
+    "amResponse" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Pending',
+    "requestedById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMClarification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMIssueRemediation" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "domainName" TEXT,
+    "severity" TEXT,
+    "description" TEXT,
+    "amResponse" TEXT,
+    "requestedDate" TIMESTAMP(3),
+    "dueDate" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'Pending',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMIssueRemediation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMVendorIssue" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "vendorId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "severity" TEXT,
+    "dueDate" TIMESTAMP(3),
+    "resolution" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Open',
+    "reportedById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMVendorIssue_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "RegulatoryProfile" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -3687,6 +3763,33 @@ CREATE INDEX "TPRMHTTPHeader_assessmentId_idx" ON "TPRMHTTPHeader"("assessmentId
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TPRMMonitoringSchedule_customerAccountId_key" ON "TPRMMonitoringSchedule"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMAssessmentResponse_customerAccountId_idx" ON "TPRMAssessmentResponse"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMAssessmentResponse_assessmentId_idx" ON "TPRMAssessmentResponse"("assessmentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMAssessmentResponse_assessmentId_questionId_key" ON "TPRMAssessmentResponse"("assessmentId", "questionId");
+
+-- CreateIndex
+CREATE INDEX "TPRMClarification_customerAccountId_idx" ON "TPRMClarification"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMClarification_assessmentId_idx" ON "TPRMClarification"("assessmentId");
+
+-- CreateIndex
+CREATE INDEX "TPRMIssueRemediation_customerAccountId_idx" ON "TPRMIssueRemediation"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMIssueRemediation_assessmentId_idx" ON "TPRMIssueRemediation"("assessmentId");
+
+-- CreateIndex
+CREATE INDEX "TPRMVendorIssue_customerAccountId_idx" ON "TPRMVendorIssue"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMVendorIssue_vendorId_idx" ON "TPRMVendorIssue"("vendorId");
 
 -- CreateIndex
 CREATE INDEX "RegulatoryProfile_customerAccountId_idx" ON "RegulatoryProfile"("customerAccountId");
@@ -4632,6 +4735,42 @@ ALTER TABLE "TPRMPlatform" ADD CONSTRAINT "TPRMPlatform_httpHeaderId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "TPRMMonitoringSchedule" ADD CONSTRAINT "TPRMMonitoringSchedule_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessmentResponse" ADD CONSTRAINT "TPRMAssessmentResponse_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessmentResponse" ADD CONSTRAINT "TPRMAssessmentResponse_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessmentResponse" ADD CONSTRAINT "TPRMAssessmentResponse_delegatedToId_fkey" FOREIGN KEY ("delegatedToId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessmentResponse" ADD CONSTRAINT "TPRMAssessmentResponse_respondedById_fkey" FOREIGN KEY ("respondedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMClarification" ADD CONSTRAINT "TPRMClarification_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMClarification" ADD CONSTRAINT "TPRMClarification_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMClarification" ADD CONSTRAINT "TPRMClarification_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMIssueRemediation" ADD CONSTRAINT "TPRMIssueRemediation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMIssueRemediation" ADD CONSTRAINT "TPRMIssueRemediation_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendorIssue" ADD CONSTRAINT "TPRMVendorIssue_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendorIssue" ADD CONSTRAINT "TPRMVendorIssue_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "TPRMVendor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendorIssue" ADD CONSTRAINT "TPRMVendorIssue_reportedById_fkey" FOREIGN KEY ("reportedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RegulatoryProfile" ADD CONSTRAINT "RegulatoryProfile_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

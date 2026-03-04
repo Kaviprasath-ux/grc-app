@@ -168,6 +168,7 @@ export const POST = withAuth(
         'Assessor': 'TPRMAssessor',
         'Approver': 'TPRMApprover',
         'Auditor': 'TPRMAuditor',
+        'Account Manager': 'AccountManager',
       };
       const systemRoleName = tprmRoleToSystemRole[tprmRole];
       if (systemRoleName) {

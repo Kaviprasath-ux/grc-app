@@ -1,0 +1,136 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
+import prisma from '@/lib/prisma';
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+// GET /api/tprm/am-assessments/[id] — Get assessment detail
+export const GET = withAuth(
+  async (req: NextRequest, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const customerAccountId = getCustomerAccountId(session);
+
+      const assessment = await prisma.tPRMAssessment.findFirst({
+        where: { id, customerAccountId },
+        include: {
+          vendor: { select: { id: true, name: true, vendorCode: true, accountManagerEmail: true } },
+          initiatedBy: { select: { id: true, fullName: true } },
+          assessor: { select: { id: true, fullName: true } },
+          approver: { select: { id: true, fullName: true } },
+          logs: { orderBy: { logDate: 'desc' }, take: 50 },
+          responses: {
+            orderBy: { questionNo: 'asc' },
+          },
+        },
+      });
+
+      if (!assessment) {
+        return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+      }
+
+      // Verify AM access: check vendor's accountManagerEmail contains session user's email
+      const userEmail = session.email?.toLowerCase();
+      if (!userEmail || !assessment.vendor.accountManagerEmail?.toLowerCase().includes(userEmail)) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+
+      // Load questionnaire questions for this assessment's template
+      let questions: unknown[] = [];
+      if (assessment.questionnaireTemplate) {
+        const template = await prisma.tPRMQuestionnaireTemplate.findFirst({
+          where: { customerAccountId, templateName: assessment.questionnaireTemplate },
+          include: {
+            masterQuestionLinks: {
+              include: {
+                question: {
+                  include: {
+                    domain: { select: { id: true, name: true } },
+                    children: { orderBy: { sortOrder: 'asc' } },
+                  },
+                },
+              },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+        });
+
+        if (template) {
+          questions = template.masterQuestionLinks.map(link => ({
+            id: link.question.id,
+            questionText: link.question.questionText,
+            domainId: link.question.domainId,
+            domainName: link.question.domain?.name || '',
+            isParentQuestion: link.question.isParentQuestion,
+            parentId: link.question.parentId,
+            mandatoryAttachment: link.question.mandatoryAttachment,
+            mandatoryQuestion: link.question.mandatoryQuestion,
+            sortOrder: link.sortOrder,
+            children: link.question.children.map(c => ({
+              id: c.id,
+              questionText: c.questionText,
+              mandatoryAttachment: c.mandatoryAttachment,
+              mandatoryQuestion: c.mandatoryQuestion,
+              sortOrder: c.sortOrder,
+            })),
+          }));
+        }
+      }
+
+      // Load domains for this customer
+      const domains = await prisma.tPRMDomain.findMany({
+        where: { customerAccountId, isActive: true },
+        orderBy: { sortOrder: 'asc' },
+        select: { id: true, name: true },
+      });
+
+      return NextResponse.json({ assessment, questions, domains });
+    } catch (error) {
+      console.error('AM Assessment GET error:', error);
+      return NextResponse.json({ error: 'Failed to fetch assessment' }, { status: 500 });
+    }
+  },
+  { resource: 'tprm.am-assessments', action: 'view' }
+);
+
+// PATCH /api/tprm/am-assessments/[id] — Update assessment status
+export const PATCH = withAuth(
+  async (req: NextRequest, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const customerAccountId = getCustomerAccountId(session);
+      const body = await req.json();
+
+      const assessment = await prisma.tPRMAssessment.findFirst({
+        where: { id, customerAccountId },
+        include: { vendor: { select: { accountManagerEmail: true } } },
+      });
+
+      if (!assessment) {
+        return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+      }
+
+      // Verify AM access
+      const userEmail = session.email?.toLowerCase();
+      if (!userEmail || !assessment.vendor.accountManagerEmail?.toLowerCase().includes(userEmail)) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+
+      const updateData: Record<string, unknown> = {};
+      if (body.status) updateData.status = body.status;
+
+      const updated = await prisma.tPRMAssessment.update({
+        where: { id },
+        data: updateData,
+      });
+
+      return NextResponse.json(updated);
+    } catch (error) {
+      console.error('AM Assessment PATCH error:', error);
+      return NextResponse.json({ error: 'Failed to update assessment' }, { status: 500 });
+    }
+  },
+  { resource: 'tprm.am-assessments', action: 'edit' }
+);

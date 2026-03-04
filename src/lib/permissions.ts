@@ -124,6 +124,12 @@ export const RESOURCES = {
   'tprm.rm-contracts': '/tprm/rm-contracts',
   'tprm.rm-monitoring': '/tprm/rm-monitoring',
   'tprm.rm-support': '/tprm/rm-support',
+
+  // TPRM Account Manager specific resources
+  'tprm.am-assessments': '/tprm/am-assessments',
+  'tprm.am-follow-ups': '/tprm/am-follow-ups',
+  'tprm.am-sme-management': '/tprm/am-sme-management',
+  'tprm.am-support': '/tprm/am-support',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -212,6 +218,10 @@ export const ROLES = {
   TPRMAuditor: {
     name: 'TPRMAuditor',
     description: 'Auditor role in TPRM, audits vendor assessments and compliance',
+  },
+  AccountManager: {
+    name: 'AccountManager',
+    description: 'Vendor-side Account Manager, responds to assessments and manages SMEs',
   },
 } as const;
 
@@ -576,6 +586,14 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
   ],
+
+  // Account Manager - Vendor-side role with 4 dedicated pages
+  AccountManager: [
+    { resource: 'tprm.am-assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.am-follow-ups', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.am-sme-management', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.am-support', actions: ['*'], scope: 'all' },
+  ],
 };
 
 // ==================== ROUTE TO RESOURCE MAPPING ====================
@@ -683,7 +701,7 @@ export function expandRolePermissions(
 
   // System-level roles are not filtered by module flags
   const isSystemRole = roleNames.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor' || r === 'AccountManager'
   );
 
   for (const roleName of roleNames) {

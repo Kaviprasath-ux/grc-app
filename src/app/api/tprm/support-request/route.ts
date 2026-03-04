@@ -48,5 +48,5 @@ export const POST = withAuth(
       return NextResponse.json({ error: "Failed to send support request" }, { status: 500 });
     }
   },
-  { resource: ["tprm.bo-support", "tprm.rm-support"], action: "view" }
+  { resource: ["tprm.bo-support", "tprm.rm-support", "tprm.am-support"], action: "view" }
 );

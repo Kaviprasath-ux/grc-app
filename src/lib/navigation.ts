@@ -228,6 +228,11 @@ export const navigation: NavItem[] = [
       { name: "Contracts", href: "/tprm/rm-contracts", icon: FileText, permission: "tprm.rm-contracts:view" },
       { name: "Monitoring", href: "/tprm/monitoring", icon: Radar, permission: "tprm.rm-monitoring:view" },
       { name: "Support", href: "/tprm/rm-support", icon: HelpCircle, permission: "tprm.rm-support:view" },
+      // ---- Account Manager menu items ----
+      { name: "Assessments", href: "/tprm/am-assessments", icon: ClipboardCheck, permission: "tprm.am-assessments:view" },
+      { name: "Follow-Ups", href: "/tprm/am-follow-ups", icon: ClipboardList, permission: "tprm.am-follow-ups:view" },
+      { name: "SME Management", href: "/tprm/am-sme-management", icon: UserCog, permission: "tprm.am-sme-management:view" },
+      { name: "Support", href: "/tprm/am-support", icon: HelpCircle, permission: "tprm.am-support:view" },
     ],
   },
   // ==================== End TPRM Section ====================
@@ -370,6 +375,7 @@ const ROLE_PATH_MAP: Record<string, string> = {
   "TPRMAdmin": "tprm-admin",
   "BusinessOwner": "business-owner",
   "RelationshipManager": "relationship-manager",
+  "AccountManager": "account-manager",
 };
 
 /**
@@ -458,6 +464,7 @@ function getPrimaryRole(roles: string[]): string {
     "TPRMAdmin",
     "BusinessOwner",
     "RelationshipManager",
+    "AccountManager",
   ];
 
   for (const role of rolePriority) {

@@ -137,6 +137,10 @@ model CustomerAccount {
   tprmMonitoringVendors      TPRMMonitoringVendor[]
   tprmMonitoringAssessments  TPRMMonitoringAssessment[]
   tprmMonitoringSchedule     TPRMMonitoringSchedule?
+  tprmAssessmentResponses    TPRMAssessmentResponse[]
+  tprmClarifications         TPRMClarification[]
+  tprmIssueRemediations      TPRMIssueRemediation[]
+  tprmVendorIssues           TPRMVendorIssue[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -420,6 +424,10 @@ model User {
   tprmInitiated              TPRMAssessment[]  @relation("TPRMInitiator")
   tprmAssessed               TPRMAssessment[]  @relation("TPRMAssessor")
   tprmApproved               TPRMAssessment[]  @relation("TPRMApprover")
+  tprmResponsesDelegated     TPRMAssessmentResponse[] @relation("TPRMResponseDelegatedTo")
+  tprmResponsesResponded     TPRMAssessmentResponse[] @relation("TPRMResponseRespondedBy")
+  tprmClarificationsRequested TPRMClarification[]     @relation("TPRMClarificationRequestedBy")
+  tprmVendorIssuesReported   TPRMVendorIssue[]        @relation("TPRMVendorIssueReportedBy")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -3313,6 +3321,7 @@ model TPRMVendor {
   updatedAt           DateTime        @updatedAt
   assessments         TPRMAssessment[]
   monitoringVendor    TPRMMonitoringVendor? @relation("MonitoringToVendor")
+  vendorIssues        TPRMVendorIssue[]
 
   @@unique([customerAccountId, vendorCode])
   @@index([customerAccountId])
@@ -3345,6 +3354,9 @@ model TPRMAssessment {
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
   logs                  TPRMAssessmentLog[]
+  responses             TPRMAssessmentResponse[]
+  clarifications        TPRMClarification[]
+  issueRemediations     TPRMIssueRemediation[]
 
   @@unique([customerAccountId, assessmentCode])
   @@index([customerAccountId])
@@ -3817,6 +3829,99 @@ model TPRMMonitoringSchedule {
   updatedAt         DateTime @updatedAt
 
   customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+}
+
+// TPRMAssessmentResponse — Per-question answers from Account Manager
+model TPRMAssessmentResponse {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessmentId      String
+  assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId        String
+  domainId          String?
+  questionNo        String?
+  response          String?         // "Yes", "No", "NA"
+  comment           String?         @db.Text
+  artifactUrl       String?
+  artifactName      String?
+  isFlagged         Boolean         @default(false)
+  isDelegated       Boolean         @default(false)
+  delegatedToId     String?
+  delegatedTo       User?           @relation("TPRMResponseDelegatedTo", fields: [delegatedToId], references: [id])
+  respondedById     String?
+  respondedBy       User?           @relation("TPRMResponseRespondedBy", fields: [respondedById], references: [id])
+  respondedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([assessmentId, questionId])
+  @@index([customerAccountId])
+  @@index([assessmentId])
+}
+
+// TPRMClarification — Assessor requests clarification on a question
+model TPRMClarification {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessmentId      String
+  assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionNo        String?
+  domainName        String?
+  rejectComment     String?         @db.Text
+  amResponse        String?         @db.Text
+  status            String          @default("Pending") // Pending, Submitted, Closed
+  requestedById     String?
+  requestedBy       User?           @relation("TPRMClarificationRequestedBy", fields: [requestedById], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
+  @@index([assessmentId])
+}
+
+// TPRMIssueRemediation — Issue remediation requests for Account Manager
+model TPRMIssueRemediation {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessmentId      String
+  assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  domainName        String?
+  severity          String?         // Critical, High, Medium, Low
+  description       String?         @db.Text
+  amResponse        String?         @db.Text
+  requestedDate     DateTime?
+  dueDate           DateTime?
+  status            String          @default("Pending") // Pending, Submitted, Closed
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
+  @@index([assessmentId])
+}
+
+// TPRMVendorIssue — Vendor-reported issues by Account Manager
+model TPRMVendorIssue {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  vendorId          String
+  vendor            TPRMVendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?         @db.Text
+  severity          String?         // Critical, High, Medium, Low
+  dueDate           DateTime?
+  resolution        String?         @db.Text
+  status            String          @default("Open") // Open, Submitted, Closed
+  reportedById      String?
+  reportedBy        User?           @relation("TPRMVendorIssueReportedBy", fields: [reportedById], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
+  @@index([vendorId])
 }
 
 // ==================== REGULATORY INTELLIGENCE ====================
