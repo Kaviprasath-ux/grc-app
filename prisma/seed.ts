@@ -255,6 +255,9 @@ async function main() {
     { name: "TPRMAdmin", description: "TPRM super administrator", isSystem: true },
     { name: "BusinessOwner", description: "Business Owner role in TPRM, manages relationship managers and vendor assessments", isSystem: true },
     { name: "RelationshipManager", description: "Relationship Manager role in TPRM, manages vendor relationships", isSystem: true },
+    { name: "TPRMAssessor", description: "Assessor role in TPRM, performs vendor assessments and reviews task queue", isSystem: true },
+    { name: "TPRMApprover", description: "Approver role in TPRM, reviews and approves vendor assessments", isSystem: true },
+    { name: "TPRMAuditor", description: "Auditor role in TPRM, audits vendor assessments and compliance", isSystem: true },
   ];
 
   const createdRoles: { [key: string]: string } = {};

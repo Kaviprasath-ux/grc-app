@@ -201,6 +201,18 @@ export const ROLES = {
     name: 'RelationshipManager',
     description: 'Relationship Manager role in TPRM, manages vendor relationships',
   },
+  TPRMAssessor: {
+    name: 'TPRMAssessor',
+    description: 'Assessor role in TPRM, performs vendor assessments and reviews task queue',
+  },
+  TPRMApprover: {
+    name: 'TPRMApprover',
+    description: 'Approver role in TPRM, reviews and approves vendor assessments',
+  },
+  TPRMAuditor: {
+    name: 'TPRMAuditor',
+    description: 'Auditor role in TPRM, audits vendor assessments and compliance',
+  },
 } as const;
 
 export type RoleName = keyof typeof ROLES;
@@ -546,6 +558,24 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.master-data', actions: ['view'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['create'], scope: 'all' },
   ],
+
+  // TPRM Assessor - Assessment Workspace + Task Queue
+  TPRMAssessor: [
+    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+  ],
+
+  // TPRM Approver - Assessment Workspace + Task Queue (review/approve)
+  TPRMApprover: [
+    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+  ],
+
+  // TPRM Auditor - Assessment Workspace + Task Queue (audit)
+  TPRMAuditor: [
+    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+  ],
 };
 
 // ==================== ROUTE TO RESOURCE MAPPING ====================
@@ -653,7 +683,7 @@ export function expandRolePermissions(
 
   // System-level roles are not filtered by module flags
   const isSystemRole = roleNames.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'BusinessOwner' || r === 'RelationshipManager'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor'
   );
 
   for (const roleName of roleNames) {

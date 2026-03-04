@@ -165,6 +165,9 @@ export const POST = withAuth(
       const tprmRoleToSystemRole: Record<string, string> = {
         'Business Owner': 'BusinessOwner',
         'Relationship Manager': 'RelationshipManager',
+        'Assessor': 'TPRMAssessor',
+        'Approver': 'TPRMApprover',
+        'Auditor': 'TPRMAuditor',
       };
       const systemRoleName = tprmRoleToSystemRole[tprmRole];
       if (systemRoleName) {
@@ -258,6 +261,9 @@ export const PATCH = withAuth(
         const tprmRoleToSystemRole: Record<string, string> = {
           'Business Owner': 'BusinessOwner',
           'Relationship Manager': 'RelationshipManager',
+          'Assessor': 'TPRMAssessor',
+          'Approver': 'TPRMApprover',
+          'Auditor': 'TPRMAuditor',
         };
 
         // Remove old TPRM-related system roles
