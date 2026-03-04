@@ -136,6 +136,7 @@ model CustomerAccount {
   tprmQuestionnaireQuestions TPRMQuestionnaireQuestion[]
   tprmMonitoringVendors      TPRMMonitoringVendor[]
   tprmMonitoringAssessments  TPRMMonitoringAssessment[]
+  tprmMonitoringSchedule     TPRMMonitoringSchedule?
 }
 
 // Subscription Plan for Customer Accounts
@@ -3801,6 +3802,19 @@ model TPRMPlatform {
   createdAt    DateTime        @default(now())
 
   httpHeader   TPRMHTTPHeader  @relation(fields: [httpHeaderId], references: [id], onDelete: Cascade)
+}
+
+model TPRMMonitoringSchedule {
+  id                String   @id @default(uuid())
+  customerAccountId String   @unique
+  recurrence        String   @default("none") // none, daily, weekly, monthly, custom
+  customDays        Int?                       // only used when recurrence = "custom"
+  lastScheduledRun  DateTime?
+  nextScheduledRun  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
 }
 
 // ==================== REGULATORY INTELLIGENCE ====================

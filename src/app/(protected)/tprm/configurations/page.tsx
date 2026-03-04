@@ -5,7 +5,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, Home, Eye, Link2,
   ClipboardList, FolderTree, Building2, BookOpen, FileQuestion,
   Award, UserCheck, ArrowLeft, Download, Upload, X, Search,
-  ImageIcon, FileSpreadsheet, CheckSquare,
+  ImageIcon, FileSpreadsheet, CheckSquare, Clock, Save, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2265,15 +2265,28 @@ function ScorecardSection() {
   const [editForm, setEditForm] = useState({ name: "", weightage: 0, isMandatory: false });
   const [configSaving, setConfigSaving] = useState(false);
 
+  // Monitoring schedule state
+  const [scheduleRecurrence, setScheduleRecurrence] = useState("none");
+  const [scheduleCustomDays, setScheduleCustomDays] = useState<number>(7);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleNextRun, setScheduleNextRun] = useState<string | null>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [configRes, factorsRes] = await Promise.all([
+      const [configRes, factorsRes, scheduleRes] = await Promise.all([
         fetch("/api/tprm/configurations/scorecard-config"),
         fetch("/api/tprm/configurations/scorecard-factors"),
+        fetch("/api/tprm/monitoring/schedule"),
       ]);
       if (configRes.ok) setConfig(await configRes.json());
       if (factorsRes.ok) setFactors(await factorsRes.json());
+      if (scheduleRes.ok) {
+        const sched = await scheduleRes.json();
+        setScheduleRecurrence(sched.data?.recurrence || "none");
+        if (sched.data?.customDays) setScheduleCustomDays(sched.data.customDays);
+        setScheduleNextRun(sched.data?.nextScheduledRun || null);
+      }
     } catch {
       toast({ title: t("Error"), description: t("Failed to load scorecard data"), variant: "destructive" });
     } finally {
@@ -2284,6 +2297,29 @@ function ScorecardSection() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const saveSchedule = async () => {
+    setScheduleSaving(true);
+    try {
+      const res = await fetch("/api/tprm/monitoring/schedule", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recurrence: scheduleRecurrence, customDays: scheduleRecurrence === "custom" ? scheduleCustomDays : null }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setScheduleNextRun(json.data?.nextScheduledRun || null);
+        toast({ title: t("Saved"), description: t("Monitoring schedule updated") });
+      } else {
+        const err = await res.json();
+        toast({ title: t("Error"), description: err.error || t("Failed to save schedule"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Network error"), variant: "destructive" });
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
 
   const saveConfig = async (updates: Partial<ScorecardConfig>) => {
     setConfigSaving(true);
@@ -2446,6 +2482,60 @@ function ScorecardSection() {
                 saveConfig({ threatExposureWeight: val, securityPostureWeight: 100 - val });
               }}
             />
+          </div>
+        </div>
+
+        {/* Monitoring Recurrence Schedule */}
+        <div className="mt-5 pt-4 border-t">
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="h-4 w-4 text-primary" />
+            <h4 className="text-sm font-semibold">{t("Monitoring Recurrence Schedule")}</h4>
+            {scheduleRecurrence !== "none" && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium capitalize">
+                {scheduleRecurrence === "custom" ? `${t("Every")} ${scheduleCustomDays} ${t("days")}` : t(scheduleRecurrence.charAt(0).toUpperCase() + scheduleRecurrence.slice(1))}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <Label className="text-xs">{t("Frequency")}</Label>
+              <Select value={scheduleRecurrence} onValueChange={setScheduleRecurrence}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("None")}</SelectItem>
+                  <SelectItem value="daily">{t("Daily")}</SelectItem>
+                  <SelectItem value="weekly">{t("Weekly")}</SelectItem>
+                  <SelectItem value="monthly">{t("Monthly")}</SelectItem>
+                  <SelectItem value="custom">{t("Custom")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {scheduleRecurrence === "custom" && (
+              <div>
+                <Label className="text-xs">{t("Every N days")}</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={scheduleCustomDays}
+                  onChange={(e) => setScheduleCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="mt-1"
+                />
+              </div>
+            )}
+            <div>
+              <Button onClick={saveSchedule} disabled={scheduleSaving} size="sm" className="mt-1">
+                {scheduleSaving ? <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" /> : <Save className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
+                {scheduleSaving ? t("Saving...") : t("Save Schedule")}
+              </Button>
+            </div>
+            {scheduleNextRun && scheduleRecurrence !== "none" && (
+              <div className="text-xs text-muted-foreground">
+                {t("Next scan")}: {new Date(scheduleNextRun).toLocaleDateString()}
+              </div>
+            )}
           </div>
         </div>
       </div>

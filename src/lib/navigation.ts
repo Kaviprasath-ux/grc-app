@@ -68,39 +68,37 @@ export interface NavItem {
 }
 
 export const navigation: NavItem[] = [
-  // ==================== GRC Administrator Section ====================
-  // These items are only visible to GRCAdministrator role
+  // ==================== GRC Module Section (GRCAdministrator) ====================
   {
-    name: "Customer Accounts",
-    href: "/grc/customer-accounts",
-    icon: UserPlus,
+    name: "GRC",
+    icon: Shield,
     permission: "grc.customer-accounts:view",
-  },
-  {
-    name: "Customer",
-    href: "/grc/customers",
-    icon: Users,
-    permission: "grc.customers:view",
-  },
-  {
-    name: "Email",
-    icon: Mail,
     children: [
       {
-        name: "Email Settings",
-        href: "/grc/email-settings",
-        icon: Settings,
-        permission: "grc.email-settings:view",
+        name: "Customer Accounts",
+        href: "/grc/customer-accounts",
+        icon: UserPlus,
+        permission: "grc.customer-accounts:view",
       },
       {
-        name: "Email Templates",
-        href: "/grc/email-templates",
-        icon: FileText,
-        permission: "grc.email-templates:view",
+        name: "Customers",
+        href: "/grc/customers",
+        icon: Users,
+        permission: "grc.customers:view",
+      },
+      {
+        name: "Compliance",
+        icon: Shield,
+        children: [
+          { name: "Frameworks", href: "/compliance/framework", icon: Layers, permission: "compliance.framework:view" },
+          { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
+          { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },
+          { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList, permission: "compliance.evidence:view" },
+        ],
       },
     ],
   },
-  // ==================== End GRC Administrator Section ====================
+  // ==================== End GRC Module Section ====================
 
   // ==================== Organization Section (CustomerAdministrator) ====================
   {
@@ -200,6 +198,7 @@ export const navigation: NavItem[] = [
     name: "TPRM",
     icon: ShieldCheck,
     children: [
+      { name: "Customer Accounts", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
       { name: "Program Monitor", href: "/tprm/program-monitor", icon: Activity, permission: "tprm.program-monitor:view" },
       { name: "Control Center", href: "/tprm/control-center", icon: Sliders, permission: "tprm.control-center:view" },
       { name: "User Management", href: "/tprm/user-management", icon: Users, permission: "tprm.user-management:view" },
@@ -209,7 +208,6 @@ export const navigation: NavItem[] = [
       { name: "Configurations", href: "/tprm/configurations", icon: Settings, permission: "tprm.configurations:view" },
       { name: "Master Data", href: "/tprm/master-data", icon: Database, permission: "tprm.master-data:create" },
       { name: "Assessment Workspace", href: "/tprm/assessments", icon: ListChecks, permission: "tprm.assessments:view" },
-      { name: "Account Overview", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
       { name: "Task Queue", href: "/tprm/task-queue", icon: Inbox, permission: "tprm.task-queue:view" },
       // ---- Business Owner menu items ----
       { name: "Dashboard", href: "/tprm/bo-dashboard", icon: LayoutDashboard, permission: "tprm.bo-dashboard:view" },
@@ -233,6 +231,27 @@ export const navigation: NavItem[] = [
     ],
   },
   // ==================== End TPRM Section ====================
+
+  // ==================== Email Section (separate module) ====================
+  {
+    name: "Email",
+    icon: Mail,
+    children: [
+      {
+        name: "Email Settings",
+        href: "/grc/email-settings",
+        icon: Settings,
+        permission: "grc.email-settings:view",
+      },
+      {
+        name: "Email Templates",
+        href: "/grc/email-templates",
+        icon: FileText,
+        permission: "grc.email-templates:view",
+      },
+    ],
+  },
+  // ==================== End Email Section ====================
 
   {
     name: "Log Out",
@@ -509,6 +528,12 @@ export function filterNavigationByPermissionsAndRole(
   // For non-system roles with ONLY TPRM (no GRC), flatten TPRM children to top-level
   if (!isSystemRole && moduleFlags?.isTprmAdded && !moduleFlags?.isGrcAdded) {
     navItems = flattenTprmNavigation(items);
+  }
+
+  // GRCAdministrator sees Compliance nested under GRC, so hide the standalone Compliance group
+  const isGrcAdmin = userRoles.includes('GRCAdministrator');
+  if (isGrcAdmin) {
+    navItems = navItems.filter(item => item.name !== 'Compliance');
   }
 
   // First filter by permissions

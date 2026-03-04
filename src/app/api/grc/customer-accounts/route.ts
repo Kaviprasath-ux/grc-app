@@ -89,8 +89,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Filter to only include accounts with GRC access
+    const grcAccountIds = new Set(
+      Array.from(accountFlagsMap.entries())
+        .filter(([, f]) => f.isGrcAdded)
+        .map(([id]) => id)
+    );
+
     // Transform the data to match the expected format
-    const formattedAccounts = customerAccounts.map((user, index) => {
+    const formattedAccounts = customerAccounts
+      .filter((user) => user.customerAccountId && grcAccountIds.has(user.customerAccountId))
+      .map((user, index) => {
       const flags = user.customerAccountId ? accountFlagsMap.get(user.customerAccountId) : null;
       return {
         id: user.id,

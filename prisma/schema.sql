@@ -2802,6 +2802,20 @@ CREATE TABLE "TPRMPlatform" (
 );
 
 -- CreateTable
+CREATE TABLE "TPRMMonitoringSchedule" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "recurrence" TEXT NOT NULL DEFAULT 'none',
+    "customDays" INTEGER,
+    "lastScheduledRun" TIMESTAMP(3),
+    "nextScheduledRun" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMMonitoringSchedule_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "RegulatoryProfile" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -3284,7 +3298,7 @@ CREATE INDEX "AuditCategory_customerAccountId_idx" ON "AuditCategory"("customerA
 CREATE INDEX "AuditCategory_auditHeadId_idx" ON "AuditCategory"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditCategory_auditHeadId_name_key" ON "AuditCategory"("auditHeadId", "name");
+CREATE UNIQUE INDEX "AuditCategory_customerAccountId_auditHeadId_name_key" ON "AuditCategory"("customerAccountId", "auditHeadId", "name");
 
 -- CreateIndex
 CREATE INDEX "AuditNatureOfControl_customerAccountId_idx" ON "AuditNatureOfControl"("customerAccountId");
@@ -3293,7 +3307,7 @@ CREATE INDEX "AuditNatureOfControl_customerAccountId_idx" ON "AuditNatureOfContr
 CREATE INDEX "AuditNatureOfControl_auditHeadId_idx" ON "AuditNatureOfControl"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditNatureOfControl_auditHeadId_label_key" ON "AuditNatureOfControl"("auditHeadId", "label");
+CREATE UNIQUE INDEX "AuditNatureOfControl_customerAccountId_auditHeadId_label_key" ON "AuditNatureOfControl"("customerAccountId", "auditHeadId", "label");
 
 -- CreateIndex
 CREATE INDEX "AuditRiskFactor_customerAccountId_idx" ON "AuditRiskFactor"("customerAccountId");
@@ -3302,7 +3316,7 @@ CREATE INDEX "AuditRiskFactor_customerAccountId_idx" ON "AuditRiskFactor"("custo
 CREATE INDEX "AuditRiskFactor_auditHeadId_idx" ON "AuditRiskFactor"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditRiskFactor_auditHeadId_label_key" ON "AuditRiskFactor"("auditHeadId", "label");
+CREATE UNIQUE INDEX "AuditRiskFactor_customerAccountId_auditHeadId_label_key" ON "AuditRiskFactor"("customerAccountId", "auditHeadId", "label");
 
 -- CreateIndex
 CREATE INDEX "AuditProbability_customerAccountId_idx" ON "AuditProbability"("customerAccountId");
@@ -3311,7 +3325,7 @@ CREATE INDEX "AuditProbability_customerAccountId_idx" ON "AuditProbability"("cus
 CREATE INDEX "AuditProbability_auditHeadId_idx" ON "AuditProbability"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditProbability_auditHeadId_label_key" ON "AuditProbability"("auditHeadId", "label");
+CREATE UNIQUE INDEX "AuditProbability_customerAccountId_auditHeadId_label_key" ON "AuditProbability"("customerAccountId", "auditHeadId", "label");
 
 -- CreateIndex
 CREATE INDEX "AuditImpact_customerAccountId_idx" ON "AuditImpact"("customerAccountId");
@@ -3320,7 +3334,7 @@ CREATE INDEX "AuditImpact_customerAccountId_idx" ON "AuditImpact"("customerAccou
 CREATE INDEX "AuditImpact_auditHeadId_idx" ON "AuditImpact"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditImpact_auditHeadId_label_key" ON "AuditImpact"("auditHeadId", "label");
+CREATE UNIQUE INDEX "AuditImpact_customerAccountId_auditHeadId_label_key" ON "AuditImpact"("customerAccountId", "auditHeadId", "label");
 
 -- CreateIndex
 CREATE INDEX "AuditScoringRange_customerAccountId_idx" ON "AuditScoringRange"("customerAccountId");
@@ -3329,7 +3343,7 @@ CREATE INDEX "AuditScoringRange_customerAccountId_idx" ON "AuditScoringRange"("c
 CREATE INDEX "AuditScoringRange_auditHeadId_idx" ON "AuditScoringRange"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditScoringRange_auditHeadId_label_calculationType_key" ON "AuditScoringRange"("auditHeadId", "label", "calculationType");
+CREATE UNIQUE INDEX "AuditScoringRange_customerAccountId_auditHeadId_label_calcu_key" ON "AuditScoringRange"("customerAccountId", "auditHeadId", "label", "calculationType");
 
 -- CreateIndex
 CREATE INDEX "AuditScoringConfig_customerAccountId_idx" ON "AuditScoringConfig"("customerAccountId");
@@ -3344,7 +3358,7 @@ CREATE INDEX "AuditPeriodicity_customerAccountId_idx" ON "AuditPeriodicity"("cus
 CREATE INDEX "AuditPeriodicity_auditHeadId_idx" ON "AuditPeriodicity"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditPeriodicity_auditHeadId_interval_key" ON "AuditPeriodicity"("auditHeadId", "interval");
+CREATE UNIQUE INDEX "AuditPeriodicity_customerAccountId_auditHeadId_interval_key" ON "AuditPeriodicity"("customerAccountId", "auditHeadId", "interval");
 
 -- CreateIndex
 CREATE INDEX "AuditEscalationConfig_customerAccountId_idx" ON "AuditEscalationConfig"("customerAccountId");
@@ -3359,7 +3373,7 @@ CREATE INDEX "AuditType_customerAccountId_idx" ON "AuditType"("customerAccountId
 CREATE INDEX "AuditType_auditHeadId_idx" ON "AuditType"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditType_auditHeadId_name_key" ON "AuditType"("auditHeadId", "name");
+CREATE UNIQUE INDEX "AuditType_customerAccountId_auditHeadId_name_key" ON "AuditType"("customerAccountId", "auditHeadId", "name");
 
 -- CreateIndex
 CREATE INDEX "AuditLocation_customerAccountId_idx" ON "AuditLocation"("customerAccountId");
@@ -3368,7 +3382,7 @@ CREATE INDEX "AuditLocation_customerAccountId_idx" ON "AuditLocation"("customerA
 CREATE INDEX "AuditLocation_auditHeadId_idx" ON "AuditLocation"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditLocation_auditHeadId_name_key" ON "AuditLocation"("auditHeadId", "name");
+CREATE UNIQUE INDEX "AuditLocation_customerAccountId_auditHeadId_name_key" ON "AuditLocation"("customerAccountId", "auditHeadId", "name");
 
 -- CreateIndex
 CREATE INDEX "ProcessFrequency_customerAccountId_idx" ON "ProcessFrequency"("customerAccountId");
@@ -3377,7 +3391,7 @@ CREATE INDEX "ProcessFrequency_customerAccountId_idx" ON "ProcessFrequency"("cus
 CREATE INDEX "ProcessFrequency_auditHeadId_idx" ON "ProcessFrequency"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ProcessFrequency_auditHeadId_name_key" ON "ProcessFrequency"("auditHeadId", "name");
+CREATE UNIQUE INDEX "ProcessFrequency_customerAccountId_auditHeadId_name_key" ON "ProcessFrequency"("customerAccountId", "auditHeadId", "name");
 
 -- CreateIndex
 CREATE INDEX "NatureOfImplementation_customerAccountId_idx" ON "NatureOfImplementation"("customerAccountId");
@@ -3386,7 +3400,7 @@ CREATE INDEX "NatureOfImplementation_customerAccountId_idx" ON "NatureOfImplemen
 CREATE INDEX "NatureOfImplementation_auditHeadId_idx" ON "NatureOfImplementation"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "NatureOfImplementation_auditHeadId_name_key" ON "NatureOfImplementation"("auditHeadId", "name");
+CREATE UNIQUE INDEX "NatureOfImplementation_customerAccountId_auditHeadId_name_key" ON "NatureOfImplementation"("customerAccountId", "auditHeadId", "name");
 
 -- CreateIndex
 CREATE INDEX "OrganizationLocation_customerAccountId_idx" ON "OrganizationLocation"("customerAccountId");
@@ -3413,7 +3427,7 @@ CREATE INDEX "InternalAuditProcess_customerAccountId_idx" ON "InternalAuditProce
 CREATE INDEX "InternalAuditProcess_auditHeadId_idx" ON "InternalAuditProcess"("auditHeadId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "InternalAuditProcess_auditHeadId_name_key" ON "InternalAuditProcess"("auditHeadId", "name");
+CREATE UNIQUE INDEX "InternalAuditProcess_customerAccountId_auditHeadId_name_key" ON "InternalAuditProcess"("customerAccountId", "auditHeadId", "name");
 
 -- CreateIndex
 CREATE INDEX "InternalAuditRisk_customerAccountId_idx" ON "InternalAuditRisk"("customerAccountId");
@@ -3666,6 +3680,9 @@ CREATE INDEX "TPRMVulnerabilityFinding_kpiDetailId_idx" ON "TPRMVulnerabilityFin
 
 -- CreateIndex
 CREATE INDEX "TPRMHTTPHeader_assessmentId_idx" ON "TPRMHTTPHeader"("assessmentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMMonitoringSchedule_customerAccountId_key" ON "TPRMMonitoringSchedule"("customerAccountId");
 
 -- CreateIndex
 CREATE INDEX "RegulatoryProfile_customerAccountId_idx" ON "RegulatoryProfile"("customerAccountId");
@@ -4608,6 +4625,9 @@ ALTER TABLE "TPRMHTTPHeader" ADD CONSTRAINT "TPRMHTTPHeader_assessmentId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "TPRMPlatform" ADD CONSTRAINT "TPRMPlatform_httpHeaderId_fkey" FOREIGN KEY ("httpHeaderId") REFERENCES "TPRMHTTPHeader"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMMonitoringSchedule" ADD CONSTRAINT "TPRMMonitoringSchedule_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RegulatoryProfile" ADD CONSTRAINT "RegulatoryProfile_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

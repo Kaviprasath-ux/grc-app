@@ -1327,7 +1327,7 @@ function CustomerAccountsTab() {
     },
     {
       accessorKey: "fullName",
-      header: t("FullName"),
+      header: t("Full Name"),
     },
     {
       accessorKey: "email",
@@ -1358,15 +1358,6 @@ function CustomerAccountsTab() {
         const val = row.getValue("onboardedVendor") as number;
         return <span className={val > 0 ? "text-primary font-semibold" : ""}>{val}</span>;
       },
-    },
-    {
-      id: "isGrcAdded",
-      header: t("Is GRC Added"),
-      cell: ({ row }) => (
-        <Badge variant={row.original.isGrcAdded ? "default" : "secondary"}>
-          {row.original.isGrcAdded ? t("Yes") : t("No")}
-        </Badge>
-      ),
     },
     {
       id: "actions",
@@ -1408,7 +1399,7 @@ function CustomerAccountsTab() {
       </div>
       <div className="border rounded-lg">
         <div className="bg-primary/5 px-4 py-3 border-b">
-          <h4 className="font-semibold">{t("Account Overview")}</h4>
+          <h4 className="font-semibold">{t("Customer Accounts")}</h4>
         </div>
         <div className="p-4">
           <DataGrid columns={columns} data={data} searchPlaceholder={t("Search")} searchColumn="companyName" />
@@ -1418,7 +1409,7 @@ function CustomerAccountsTab() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         tab="customers"
-        title={t("Create New TPRM Customer Account")}
+        title={t("Create New Customer Account")}
         showIsGrcAdded={true}
         onSuccess={fetchData}
       />
@@ -1712,7 +1703,7 @@ function AssessmentFactoryTab() {
     },
     {
       accessorKey: "fullName",
-      header: t("FullName"),
+      header: t("Full Name"),
     },
     {
       accessorKey: "email",
@@ -1776,7 +1767,7 @@ function AssessmentFactoryTab() {
       </div>
       <div className="border rounded-lg">
         <div className="bg-primary/5 px-4 py-3 border-b">
-          <h4 className="font-semibold">{t("Account Overview")}</h4>
+          <h4 className="font-semibold">{t("Assessment Factory")}</h4>
         </div>
         <div className="p-4">
           <DataGrid columns={columns} data={data} searchPlaceholder={t("Search")} searchColumn="companyName" />
@@ -1878,7 +1869,7 @@ function SuperAdminTab() {
   const columns: ColumnDef<SuperAdmin>[] = [
     {
       accessorKey: "fullName",
-      header: t("FullName"),
+      header: t("Full Name"),
       cell: ({ row }) => <span className="font-medium">{row.getValue("fullName")}</span>,
     },
     {

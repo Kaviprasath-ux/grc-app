@@ -1068,7 +1068,7 @@ export default function CustomerAccountsPage() {
           <span className="text-primary-700 font-medium">{t("Customer Accounts")}</span>
         </nav>
         <div className="flex items-center justify-between">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Customer Accounts")}</h1>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-center h-64">
@@ -1093,7 +1093,7 @@ export default function CustomerAccountsPage() {
 
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Customer Accounts")}</h1>
         <Button onClick={() => setShowOnboardDialog(true)} size="sm" className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           {t("Onboard Customer")}
@@ -1113,15 +1113,13 @@ export default function CustomerAccountsPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Last Login")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Blocked")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Active")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("GRC")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("TPRM")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="py-0">
+                <TableCell colSpan={9} className="py-0">
                   <div className="py-16 text-center">
                     <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
                       <Users className="h-6 w-6 text-primary-500" />
@@ -1151,22 +1149,6 @@ export default function CustomerAccountsPage() {
                       : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600"
                     }>
                       {customer.active ? t("Yes") : t("No")}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <span className={customer.isGrcAdded
-                      ? "px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700"
-                      : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-500"
-                    }>
-                      {customer.isGrcAdded ? t("Yes") : t("No")}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <span className={customer.isTprmAdded
-                      ? "px-2 py-1 rounded text-xs font-medium bg-purple-50 text-purple-700"
-                      : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-500"
-                    }>
-                      {customer.isTprmAdded ? t("Yes") : t("No")}
                     </span>
                   </TableCell>
                   <TableCell className="py-3 pr-5">
