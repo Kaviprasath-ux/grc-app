@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
               bodyText: template.bodyText,
               placeholders: template.placeholders,
               isSystem: true,
+              module: template.module || "grc",
             },
           });
           updated++;

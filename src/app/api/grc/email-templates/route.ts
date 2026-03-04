@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
  * GET /api/grc/email-templates
  * List all global email templates (GRCAdministrator only)
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth();
 
@@ -23,7 +23,16 @@ export async function GET() {
       );
     }
 
+    const { searchParams } = new URL(req.url);
+    const module = searchParams.get("module");
+
+    const where: Record<string, unknown> = {};
+    if (module && (module === "grc" || module === "tprm")) {
+      where.module = module;
+    }
+
     const templates = await prisma.emailTemplate.findMany({
+      where,
       orderBy: [{ isSystem: "desc" }, { category: "asc" }, { name: "asc" }],
     });
 
@@ -77,6 +86,7 @@ export async function POST(req: NextRequest) {
       placeholders,
       category,
       isActive,
+      module,
     } = body;
 
     // Validate required fields
@@ -113,6 +123,7 @@ export async function POST(req: NextRequest) {
         category: category || "custom",
         isActive: isActive ?? true,
         isSystem: false, // User-created templates are never system templates
+        module: module || "grc",
       },
     });
 

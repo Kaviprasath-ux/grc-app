@@ -100,6 +100,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       placeholders,
       category,
       isActive,
+      module,
     } = body;
 
     // Build update data
@@ -115,6 +116,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     }
     if (category !== undefined) updateData.category = category;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (module !== undefined) updateData.module = module;
 
     const template = await prisma.emailTemplate.update({
       where: { id },

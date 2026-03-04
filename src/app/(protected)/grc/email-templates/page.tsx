@@ -47,6 +47,7 @@ interface EmailTemplate {
   category: string;
   isActive: boolean;
   isSystem: boolean;
+  module: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,6 +79,7 @@ export default function EmailTemplatesPage() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [importOverwrite, setImportOverwrite] = useState(false);
   const [importData, setImportData] = useState<string>("");
+  const [activeModule, setActiveModule] = useState<"grc" | "tprm">("grc");
 
   const [formData, setFormData] = useState({
     code: "",
@@ -89,17 +91,16 @@ export default function EmailTemplatesPage() {
     placeholders: [] as string[],
     category: "custom",
     isActive: true,
+    module: "grc" as string,
   });
 
   const [newPlaceholder, setNewPlaceholder] = useState("");
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = async (mod?: string) => {
+    const moduleToFetch = mod ?? activeModule;
     try {
-      const templatesRes = await fetch("/api/grc/email-templates");
+      setLoading(true);
+      const templatesRes = await fetch(`/api/grc/email-templates?module=${moduleToFetch}`);
       if (templatesRes.ok) {
         const data = await templatesRes.json();
         setTemplates(data);
@@ -116,6 +117,10 @@ export default function EmailTemplatesPage() {
     }
   };
 
+  useEffect(() => {
+    fetchData(activeModule);
+  }, [activeModule]);
+
   const resetForm = () => {
     setFormData({
       code: "",
@@ -127,6 +132,7 @@ export default function EmailTemplatesPage() {
       placeholders: [],
       category: "custom",
       isActive: true,
+      module: activeModule,
     });
     setNewPlaceholder("");
     setIsEditing(false);
@@ -151,6 +157,7 @@ export default function EmailTemplatesPage() {
       placeholders: template.placeholders || [],
       category: template.category,
       isActive: template.isActive,
+      module: template.module || "grc",
     });
     setShowDialog(true);
   };
@@ -176,6 +183,7 @@ export default function EmailTemplatesPage() {
       placeholders: template.placeholders || [],
       category: "custom",
       isActive: true,
+      module: template.module || activeModule,
     });
     setIsEditing(false);
     setSelectedTemplate(null);
@@ -853,6 +861,30 @@ export default function EmailTemplatesPage() {
         </div>
       </div>
 
+      {/* Module Tabs */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveModule("grc")}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            activeModule === "grc"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          {t("GRC")}
+        </button>
+        <button
+          onClick={() => setActiveModule("tprm")}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            activeModule === "tprm"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          {t("TPRM")}
+        </button>
+      </div>
+
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         {/* Filter Toolbar */}
@@ -889,7 +921,7 @@ export default function EmailTemplatesPage() {
             {filteredTemplates.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={5}>
-                  {templates.length === 0 && filterCategory === "all" ? (
+                  {templates.length === 0 && filterCategory === "all" && activeModule === "grc" ? (
                     <div className="py-20 text-center">
                       <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
                         <Mail className="h-8 w-8 text-primary-500" />
@@ -1103,23 +1135,40 @@ export default function EmailTemplatesPage() {
               </TabsContent>
 
               <TabsContent value="settings" className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(v) => setFormData({ ...formData, category: v })}
-                  >
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      {TEMPLATE_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {t(cat.label)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(v) => setFormData({ ...formData, category: v })}
+                    >
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                        {TEMPLATE_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {t(cat.label)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Module")}</Label>
+                    <Select
+                      value={formData.module}
+                      onValueChange={(v) => setFormData({ ...formData, module: v })}
+                    >
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white">
+                        <SelectItem value="grc">{t("GRC")}</SelectItem>
+                        <SelectItem value="tprm">{t("TPRM")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4">

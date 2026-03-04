@@ -109,6 +109,7 @@ View Audit Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'departmentName', 'startDate', 'endDate', 'description', 'auditeeName', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'FINDINGS_CREATED',
@@ -144,6 +145,7 @@ View Findings: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'findingTitle', 'severity', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'FINDINGS_COMPLETED',
@@ -181,6 +183,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'findingTitle', 'closedDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'AUDIT_PLAN_CREATED',
@@ -216,6 +219,7 @@ View Audit Plan: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditPlanName', 'startDate', 'endDate', 'createdBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'AUDIT_PLAN_SCHEDULED',
@@ -251,6 +255,7 @@ View Schedule: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditPlanName', 'scheduledDate', 'departmentName', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'AUDIT_PLAN_APPROVAL',
@@ -286,6 +291,7 @@ Review & Approve: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditPlanName', 'submittedBy', 'startDate', 'endDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'AUDIT_PLAN_ACKNOWLEDGED',
@@ -321,6 +327,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditPlanName', 'acknowledgedBy', 'acknowledgedDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'AUDIT_PLAN_SUBMIT_FOR_ACKNOWLEDGEMENT',
@@ -356,6 +363,7 @@ Acknowledge Plan: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditPlanName', 'submittedBy', 'startDate', 'endDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'WORKPAPER_SUBMITTED',
@@ -391,6 +399,7 @@ Review Workpaper: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'workpaperName', 'auditName', 'submittedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PROCEDURE_ASSIGNED',
@@ -426,6 +435,7 @@ View Procedure: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'procedureName', 'auditName', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'QUESTION_DELEGATED',
@@ -461,6 +471,7 @@ View Question: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'questionTitle', 'auditName', 'delegatedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'QUESTION_CLARIFICATION',
@@ -496,6 +507,7 @@ Respond: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'questionTitle', 'auditName', 'clarificationComment', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'CONCLUDE_TEST',
@@ -531,6 +543,7 @@ View Results: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'procedureName', 'auditName', 'result', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'RESPONSE_SUBMITTED',
@@ -566,6 +579,7 @@ Review Response: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'questionTitle', 'submittedBy', 'submittedDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'INTERVIEW_SCHEDULED',
@@ -601,6 +615,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'interviewDateTime', 'location', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'INTERVIEW_RESCHEDULED',
@@ -636,6 +651,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'interviewDateTime', 'location', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PERIODICITY_INITIATED',
@@ -671,6 +687,7 @@ View Audit: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'auditPeriod', 'frequency', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'REPORT_PUBLISHED',
@@ -706,6 +723,7 @@ View Report: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'reportName', 'auditName', 'publishedDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'REPORT_INITIATED',
@@ -741,6 +759,7 @@ View Report: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'reportName', 'auditName', 'initiatedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'REPORT_SUBMISSION',
@@ -776,6 +795,7 @@ Review Report: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'reportName', 'auditName', 'submittedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'FIELDWORK_RESPONSE',
@@ -811,6 +831,7 @@ Respond: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'fieldworkItem', 'dueDate', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== EVIDENCE MANAGEMENT =====================
@@ -848,6 +869,7 @@ Submit Evidence: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'controlCode', 'entityName', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EVIDENCE_SUBMITTED',
@@ -883,6 +905,7 @@ Review Evidence: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'submittedDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EVIDENCE_PUBLISHED',
@@ -918,6 +941,7 @@ Review Evidence: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'controlCode', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== GOVERNANCE & POLICY =====================
@@ -954,6 +978,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'entityType', 'approvedBy', 'approvedDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'GOVERNANCE_ASSIGNED',
@@ -989,6 +1014,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'entityType', 'assignedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'GOVERNANCE_PUBLISHED',
@@ -1024,6 +1050,7 @@ Review Policy: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'version', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'GOVERNANCE_SUBMIT_FOR_APPROVAL',
@@ -1059,6 +1086,7 @@ Review & Approve: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'version', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'GOVERNANCE_APPROVER',
@@ -1094,6 +1122,7 @@ Review & Approve: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'entityType', 'submittedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'RESEND_POLICY',
@@ -1129,6 +1158,7 @@ Review Policy: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'changesSummary', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== PROCESS MANAGEMENT =====================
@@ -1166,6 +1196,7 @@ View Process: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'createdBy', 'department', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PROCESS_SUBMIT_FOR_APPROVAL',
@@ -1199,6 +1230,7 @@ Review Process: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PROCESS_APPROVED',
@@ -1231,6 +1263,7 @@ View Process: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'approvedBy', 'approvedDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PROCESS_REJECTION',
@@ -1266,6 +1299,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'rejectedBy', 'reason', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== RISK MANAGEMENT =====================
@@ -1305,6 +1339,7 @@ View Risk: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'riskCode', 'entityName', 'category', 'createdBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'RISK_ASSIGNED',
@@ -1338,6 +1373,7 @@ View Risk: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'riskCode', 'entityName', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'RISK_APPROVED',
@@ -1370,6 +1406,7 @@ View Risk: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'riskCode', 'entityName', 'approvedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'RISK_SUBMIT_FOR_APPROVAL',
@@ -1405,6 +1442,7 @@ Review Risk: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'riskCode', 'entityName', 'submittedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'RISK_REJECTION',
@@ -1442,6 +1480,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'riskCode', 'entityName', 'rejectedBy', 'reason', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== CONTROL MANAGEMENT =====================
@@ -1479,6 +1518,7 @@ View Control: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'controlCode', 'entityName', 'frameworkName', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'CONTROL_COMPLIANT',
@@ -1513,6 +1553,7 @@ View Control: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'controlCode', 'entityName', 'assessedBy', 'assessmentDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ASSESSMENT_COMPLETED',
@@ -1547,6 +1588,7 @@ View Assessment: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'controlCode', 'entityName', 'assessmentResult', 'completedBy', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== EXCEPTION MANAGEMENT =====================
@@ -1584,6 +1626,7 @@ Review Exception: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'controlCode', 'requestedBy', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EXCEPTION_AUTHORIZED',
@@ -1618,6 +1661,7 @@ Authorize Exception: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'controlCode', 'requestedBy', 'justification', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EXCEPTION_AUTHORIZATION_REQUIRED',
@@ -1653,6 +1697,7 @@ Review & Authorize: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'controlCode', 'expiryDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EXCEPTION_APPROVED',
@@ -1685,6 +1730,7 @@ View Exception: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'approvedBy', 'expiryDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EXCEPTION_DENIED',
@@ -1720,6 +1766,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'deniedBy', 'reason', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EXCEPTION_SENT_BACK',
@@ -1755,6 +1802,7 @@ View & Revise: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'sentBackBy', 'comments', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EXCEPTION_CLOSURE',
@@ -1790,6 +1838,7 @@ Review Closure: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'closureReason', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'EXCEPTION_CLOSED',
@@ -1822,6 +1871,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'closedBy', 'closedDate', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== ISSUE/FINDING TRACKING =====================
@@ -1861,6 +1911,7 @@ View Issue: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'severity', 'createdBy', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ISSUE_RESOLVED',
@@ -1893,6 +1944,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'resolvedBy', 'resolvedDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ISSUE_SUBMIT_FOR_CLOSURE',
@@ -1928,6 +1980,7 @@ Review Closure: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'resolutionSummary', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ISSUE_REJECTED',
@@ -1963,6 +2016,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'rejectedBy', 'reason', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ISSUE_RESOLUTION_REMINDER',
@@ -1998,6 +2052,7 @@ Resolve Issue: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'dueDate', 'daysOverdue', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ISSUE_ESCALATED',
@@ -2035,6 +2090,7 @@ View Issue: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'severity', 'escalatedBy', 'dueDate', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== PLANNED ACTIONS =====================
@@ -2072,6 +2128,7 @@ Review Action: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'raisedBy', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PLANNED_ACTION_REJECTION',
@@ -2107,6 +2164,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'rejectedBy', 'reason', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PLANNED_ACTION_SUBMIT_FOR_APPROVAL',
@@ -2142,6 +2200,7 @@ Review & Approve: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'submittedBy', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PLANNED_ACTION_APPROVED',
@@ -2177,6 +2236,7 @@ View Action: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'approvedBy', 'dueDate', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== KPI =====================
@@ -2213,6 +2273,7 @@ View KPI: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'updatedBy', 'previousValue', 'newValue', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'KPI_SCORE_UPDATED',
@@ -2247,6 +2308,7 @@ View KPI: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'newScore', 'target', 'status', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== USER & SYSTEM =====================
@@ -2285,6 +2347,7 @@ If you have any questions, please contact your administrator.
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['userName', 'username', 'roleName', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'CUSTOMER_ONBOARDED',
@@ -2321,6 +2384,7 @@ Go to Dashboard: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['userName', 'customerName', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== REMINDERS & ESCALATIONS =====================
@@ -2358,6 +2422,7 @@ Submit Evidence: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'dueDate', 'controlCode', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'CAPA_DUE_REMINDER',
@@ -2391,6 +2456,7 @@ View CAPA: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'REVIEW_DUE_REMINDER',
@@ -2424,6 +2490,7 @@ Review Policy: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'AUDIT_PLAN_ACKNOWLEDGEMENT_REMINDER',
@@ -2457,6 +2524,7 @@ Acknowledge Plan: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditPlanName', 'scheduledDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'CLARIFICATION_REMINDER',
@@ -2490,6 +2558,7 @@ Respond: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'questionTitle', 'auditName', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'FIELDWORK_RESPONSE_REMINDER',
@@ -2525,6 +2594,7 @@ Respond: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'fieldworkItem', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ESCALATE_FIELDWORK_RESPONSE',
@@ -2562,6 +2632,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditName', 'fieldworkItem', 'dueDate', 'escalatedTo', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ESCALATE_CLARIFICATION',
@@ -2597,6 +2668,7 @@ Respond: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'questionTitle', 'auditName', 'escalatedTo', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ESCALATE_ACKNOWLEDGMENT',
@@ -2632,6 +2704,7 @@ Acknowledge Plan: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'auditPlanName', 'scheduledDate', 'escalatedTo', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== GENERIC TEMPLATES =====================
@@ -2657,6 +2730,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'title', 'message', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== ADDITIONAL TEMPLATES =====================
@@ -2694,6 +2768,7 @@ View CAPA: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'capaCode', 'entityName', 'dueDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ENGAGEMENT_ASSIGNED',
@@ -2729,6 +2804,7 @@ View Engagement: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'engagementCode', 'entityName', 'role', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'POLICY_ASSIGNED',
@@ -2762,6 +2838,7 @@ View Policy: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'reviewDate', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ASSET_ASSIGNED',
@@ -2797,6 +2874,7 @@ View Asset: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'assetCode', 'entityName', 'role', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'PROCESS_ASSIGNED',
@@ -2830,6 +2908,7 @@ View Process: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityName', 'role', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'ISSUE_EVIDENCE',
@@ -2863,6 +2942,7 @@ View Issue: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'evidenceName', 'entityLink']),
+    module: "grc",
   },
 
   // ===================== WORKFLOW EVENTS =====================
@@ -2888,6 +2968,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'title', 'message', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'COMMENT_ADDED',
@@ -2925,6 +3006,7 @@ View Comment: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'commentPreview', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'APPROVAL_REQUESTED',
@@ -2960,6 +3042,7 @@ Review & Approve: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'APPROVAL_GRANTED',
@@ -2995,6 +3078,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'APPROVAL_DENIED',
@@ -3032,6 +3116,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'reason', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'SENT_BACK',
@@ -3069,6 +3154,7 @@ View & Revise: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'reason', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'FEEDBACK_REQUESTED',
@@ -3104,6 +3190,7 @@ Provide Feedback: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'actorName', 'senderUsername', 'recipientUsername', 'entityLink']),
+    module: "grc",
   },
   {
     code: 'STATUS_CHANGED',
@@ -3140,6 +3227,7 @@ View Details: {entityLink}
 Best regards,
 GRC Platform Team`,
     placeholders: JSON.stringify(['recipientName', 'entityType', 'entityName', 'previousStatus', 'newStatus', 'actorName', 'senderUsername', 'recipientUsername', 'entityLink']),
+    module: "grc",
   },
 ];
 

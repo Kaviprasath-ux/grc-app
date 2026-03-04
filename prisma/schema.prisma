@@ -3270,11 +3270,13 @@ model EmailTemplate {
   category          String           @default("notification") // notification, reminder, system, custom
   isActive          Boolean          @default(true)
   isSystem          Boolean          @default(false) // System templates cannot be deleted
+  module            String           @default("grc") // "grc" or "tprm"
   // Metadata
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
   @@index([code])
+  @@index([module])
 }
 
 // ==================== TPRM (Third-Party Risk Management) ====================

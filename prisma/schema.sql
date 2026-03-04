@@ -2352,6 +2352,7 @@ CREATE TABLE "EmailTemplate" (
     "category" TEXT NOT NULL DEFAULT 'notification',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isSystem" BOOLEAN NOT NULL DEFAULT false,
+    "module" TEXT NOT NULL DEFAULT 'grc',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -3554,6 +3555,9 @@ CREATE UNIQUE INDEX "EmailTemplate_code_key" ON "EmailTemplate"("code");
 
 -- CreateIndex
 CREATE INDEX "EmailTemplate_code_idx" ON "EmailTemplate"("code");
+
+-- CreateIndex
+CREATE INDEX "EmailTemplate_module_idx" ON "EmailTemplate"("module");
 
 -- CreateIndex
 CREATE INDEX "TPRMVendor_customerAccountId_idx" ON "TPRMVendor"("customerAccountId");
