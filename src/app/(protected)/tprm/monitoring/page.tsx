@@ -230,12 +230,16 @@ export default function MonitoringPage() {
     }
   };
 
-  // Latest-assessment vendors (shown in main table)
-  const latestVendors = vendors.filter((v) => v.assessments.length > 0);
-  // Queued vendors (submitted but no assessment yet, or status = queued/processing)
-  // Exclude vendors already tracked in activeScans to avoid duplicates
+  // Latest-assessment vendors (shown in main table) — must have at least one completed assessment
+  const latestVendors = vendors.filter((v) =>
+    v.assessments.some((a) => a.overallScore != null || a.status?.toLowerCase() === "done")
+  );
+  // Queued vendors — only those with NO completed assessment at all
   const activeJobIds = new Set(activeScans.map((s) => s.jobId));
+  const latestVendorIds = new Set(latestVendors.map((v) => v.id));
   const queuedVendors = vendors.filter((v) => {
+    // Never show a vendor that already appears in the scorecard table
+    if (latestVendorIds.has(v.id)) return false;
     const a = v.assessments[0];
     const isPending = v.assessments.length === 0 ||
       ["queued", "processing"].includes(a?.status?.toLowerCase() || "");
