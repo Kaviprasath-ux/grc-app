@@ -253,6 +253,36 @@ export const PATCH = withAuth(
         },
       });
 
+      // Update UserRole if tprmRole changed
+      if (tprmRole !== undefined && tprmRole !== existingUser.tprmRole) {
+        const tprmRoleToSystemRole: Record<string, string> = {
+          'Business Owner': 'BusinessOwner',
+          'Relationship Manager': 'RelationshipManager',
+        };
+
+        // Remove old TPRM-related system roles
+        const oldSystemRoleName = existingUser.tprmRole ? tprmRoleToSystemRole[existingUser.tprmRole] : null;
+        if (oldSystemRoleName) {
+          const oldRole = await prisma.role.findFirst({ where: { name: oldSystemRoleName } });
+          if (oldRole) {
+            await prisma.userRole.deleteMany({ where: { userId: id, roleId: oldRole.id } });
+          }
+        }
+
+        // Assign new system role
+        const newSystemRoleName = tprmRoleToSystemRole[tprmRole];
+        if (newSystemRoleName) {
+          const newRole = await prisma.role.findFirst({ where: { name: newSystemRoleName } });
+          if (newRole) {
+            await prisma.userRole.upsert({
+              where: { userId_roleId: { userId: id, roleId: newRole.id } },
+              create: { userId: id, roleId: newRole.id },
+              update: {},
+            });
+          }
+        }
+      }
+
       return NextResponse.json(updatedUser);
     } catch (error) {
       console.error('User Management PATCH error:', error);
