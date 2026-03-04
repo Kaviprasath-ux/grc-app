@@ -2582,7 +2582,7 @@ CREATE TABLE "TPRMScorecardFactor" (
     "factorId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "weightage" INTEGER NOT NULL DEFAULT 0,
-    "isMandatory" BOOLEAN NOT NULL DEFAULT false,
+    "isMandatory" BOOLEAN NOT NULL DEFAULT true,
     "scoreType" TEXT NOT NULL,
     "isSystem" BOOLEAN NOT NULL DEFAULT false,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,

@@ -33,11 +33,11 @@ async function recalcAssessmentScores(
 
     function calcScore(scoreType: string): number | null {
       const typeFactors = factors.filter(
-        (f) => f.scoreType === scoreType && f.weightage > 0
+        (f) => f.scoreType === scoreType && f.weightage > 0 && f.isMandatory
       );
       if (!typeFactors.length) return null;
       let totalWeightedScore = 0;
-      let totalWeight = 0;
+      let hasAnyMatch = false;
       for (const factor of typeFactors) {
         const kpi = kpis.find(
           (k) =>
@@ -46,13 +46,11 @@ async function recalcAssessmentScores(
         );
         if (kpi?.securityScore != null) {
           totalWeightedScore += kpi.securityScore * factor.weightage;
-          totalWeight += factor.weightage;
+          hasAnyMatch = true;
         }
       }
-      if (totalWeight === 0) return null;
-      return formula === "AVG"
-        ? totalWeightedScore / totalWeight
-        : totalWeightedScore / 100;
+      if (!hasAnyMatch) return null;
+      return totalWeightedScore / 100;
     }
 
     const calcSP = calcScore("SecurityPosture");
@@ -172,7 +170,7 @@ export const GET = withAuth(
       return NextResponse.json({ error: "Failed to fetch monitoring data" }, { status: 500 });
     }
   },
-  { resource: "tprm.monitoring", action: "view" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "view" }
 );
 
 // POST — ingest a full monitoring API response and persist it
@@ -405,11 +403,11 @@ export const POST = withAuth(
 
       function calcScore(scoreType: string): number | null {
         const typeFactors = factors.filter(
-          (f) => f.scoreType === scoreType && f.weightage > 0
+          (f) => f.scoreType === scoreType && f.weightage > 0 && f.isMandatory
         );
         if (!typeFactors.length) return null;
         let totalWeightedScore = 0;
-        let totalWeight = 0;
+        let hasAnyMatch = false;
         for (const factor of typeFactors) {
           const kpi = savedKpis.find(
             (k) =>
@@ -418,13 +416,11 @@ export const POST = withAuth(
           );
           if (kpi?.securityScore != null) {
             totalWeightedScore += kpi.securityScore * factor.weightage;
-            totalWeight += factor.weightage;
+            hasAnyMatch = true;
           }
         }
-        if (totalWeight === 0) return null;
-        return formula === "AVG"
-          ? totalWeightedScore / totalWeight
-          : totalWeightedScore / 100;
+        if (!hasAnyMatch) return null;
+        return totalWeightedScore / 100;
       }
 
       const calcSP = calcScore("SecurityPosture");
@@ -453,7 +449,7 @@ export const POST = withAuth(
       return NextResponse.json({ error: "Failed to save monitoring data" }, { status: 500 });
     }
   },
-  { resource: "tprm.monitoring", action: "create" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "create" }
 );
 
 // PATCH — link a monitoring vendor to a TPRM vendor
@@ -485,5 +481,5 @@ export const PATCH = withAuth(
       return NextResponse.json({ error: "Failed to update monitoring vendor" }, { status: 500 });
     }
   },
-  { resource: "tprm.monitoring", action: "edit" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "edit" }
 );

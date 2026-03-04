@@ -2263,6 +2263,7 @@ function ScorecardSection() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editFactor, setEditFactor] = useState<ScorecardFactor | null>(null);
   const [editForm, setEditForm] = useState({ name: "", weightage: 0, isMandatory: false });
+  const [validationResults, setValidationResults] = useState<{ errors: string[]; passed: boolean } | null>(null);
   const [configSaving, setConfigSaving] = useState(false);
 
   // Monitoring schedule state
@@ -2343,6 +2344,23 @@ function ScorecardSection() {
 
   const handleEditFactor = async () => {
     if (!editFactor) return;
+
+    // Validate mandatory weightage total won't exceed 100%
+    if (editForm.isMandatory) {
+      const sameCategoryFactors = factors.filter(
+        (f) => f.scoreType === editFactor.scoreType && f.id !== editFactor.id && f.isMandatory
+      );
+      const totalOthers = sameCategoryFactors.reduce((sum, f) => sum + f.weightage, 0);
+      if (totalOthers + editForm.weightage > 100) {
+        toast({
+          title: t("Error"),
+          description: t("Total mandatory weightage cannot exceed 100%"),
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/tprm/configurations/scorecard-factors", {
         method: "PATCH",
@@ -2436,8 +2454,31 @@ function ScorecardSection() {
     );
   }
 
+  const handleValidate = () => {
+    const errors: string[] = [];
+    if (!config.scoringFormula) errors.push(t("Scoring formula is not set"));
+    if ((config.securityPostureWeight ?? 0) + (config.threatExposureWeight ?? 0) !== 100)
+      errors.push(t("Security Posture and Threat Exposure weights must sum to 100%"));
+    const spMandatory = securityPostureFactors.filter(f => f.isMandatory);
+    const teMandatory = threatExposureFactors.filter(f => f.isMandatory);
+    const spTotal = spMandatory.reduce((s, f) => s + f.weightage, 0);
+    const teTotal = teMandatory.reduce((s, f) => s + f.weightage, 0);
+    if (spMandatory.length === 0) errors.push(t("No mandatory Security Posture factors configured"));
+    else if (spTotal !== 100) errors.push(t("Security Posture mandatory weightage must equal 100%") + ` (${t("current")}: ${spTotal}%)`);
+    if (teMandatory.length === 0) errors.push(t("No mandatory Threat Exposure factors configured"));
+    else if (teTotal !== 100) errors.push(t("Threat Exposure mandatory weightage must equal 100%") + ` (${t("current")}: ${teTotal}%)`);
+    setValidationResults({ errors, passed: errors.length === 0 });
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header with Validate button */}
+      <div className="flex items-center justify-end">
+        <Button onClick={handleValidate} variant="outline">
+          <CheckSquare className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Validate Configuration")}
+        </Button>
+      </div>
+
       {/* Scoring Formula Section */}
       <div className="border rounded-lg p-4 bg-white">
         <h3 className="text-sm font-semibold mb-4">{t("Scoring Formula")}</h3>
@@ -2551,6 +2592,36 @@ function ScorecardSection() {
         <h3 className="text-sm font-semibold mb-4">{t("Threat Exposure Score Matrix")}</h3>
         <DataGrid columns={factorColumns} data={threatExposureFactors} hideSearch />
       </div>
+
+      {/* Validation Results Dialog */}
+      <Dialog open={validationResults !== null} onOpenChange={(open) => { if (!open) setValidationResults(null); }}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>{t("Configuration Validation")}</DialogTitle>
+          </DialogHeader>
+          {validationResults?.passed ? (
+            <div className="flex flex-col items-center py-4 gap-2">
+              <CheckSquare className="h-10 w-10 text-green-500" />
+              <p className="text-sm font-medium text-green-700">{t("All validations passed. Configuration is ready to use.")}</p>
+            </div>
+          ) : (
+            <div className="space-y-3 py-2">
+              <p className="text-sm text-muted-foreground">{t("The following items need to be addressed")}:</p>
+              <ul className="space-y-2">
+                {validationResults?.errors.map((err, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <X className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <span>{err}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setValidationResults(null)}>{t("Close")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Factor Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

@@ -3555,7 +3555,7 @@ model TPRMScorecardFactor {
   factorId          String          // e.g., "network_security", "known_breach"
   name              String          // Display name
   weightage         Int             @default(0) // percentage
-  isMandatory       Boolean         @default(false)
+  isMandatory       Boolean         @default(true)
   scoreType         String          // "SecurityPosture" or "ThreatExposure"
   isSystem          Boolean         @default(false) // System factors cannot be deleted
   sortOrder         Int             @default(0)
