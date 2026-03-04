@@ -171,12 +171,15 @@ export const POST = withAuth(
       };
       const systemRoleName = tprmRoleToSystemRole[tprmRole];
       if (systemRoleName) {
-        const systemRole = await prisma.role.findFirst({ where: { name: systemRoleName } });
-        if (systemRole) {
-          await prisma.userRole.create({
-            data: { userId: user.id, roleId: systemRole.id },
-          });
-        }
+        // Ensure the Role record exists (upsert so it works even without reseeding)
+        const systemRole = await prisma.role.upsert({
+          where: { name: systemRoleName },
+          update: {},
+          create: { name: systemRoleName, description: `TPRM ${tprmRole} role`, isSystem: true },
+        });
+        await prisma.userRole.create({
+          data: { userId: user.id, roleId: systemRole.id },
+        });
       }
 
       return NextResponse.json(user, { status: 201 });
@@ -275,17 +278,19 @@ export const PATCH = withAuth(
           }
         }
 
-        // Assign new system role
+        // Assign new system role (upsert Role to ensure it exists)
         const newSystemRoleName = tprmRoleToSystemRole[tprmRole];
         if (newSystemRoleName) {
-          const newRole = await prisma.role.findFirst({ where: { name: newSystemRoleName } });
-          if (newRole) {
-            await prisma.userRole.upsert({
-              where: { userId_roleId: { userId: id, roleId: newRole.id } },
-              create: { userId: id, roleId: newRole.id },
-              update: {},
-            });
-          }
+          const newRole = await prisma.role.upsert({
+            where: { name: newSystemRoleName },
+            update: {},
+            create: { name: newSystemRoleName, description: `TPRM ${tprmRole} role`, isSystem: true },
+          });
+          await prisma.userRole.upsert({
+            where: { userId_roleId: { userId: id, roleId: newRole.id } },
+            create: { userId: id, roleId: newRole.id },
+            update: {},
+          });
         }
       }
 

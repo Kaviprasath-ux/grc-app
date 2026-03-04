@@ -7,7 +7,18 @@ import { prisma } from "@/lib/prisma";
 import { expandRolePermissions, type UserPermission } from "@/lib/permissions";
 
 // Shared query for loading user with all relations needed for session
-const userInclude = {
+const userSelect = {
+  id: true,
+  fullName: true,
+  email: true,
+  password: true,
+  userName: true,
+  isActive: true,
+  isBlocked: true,
+  departmentId: true,
+  auditHeadId: true,
+  customerAccountId: true,
+  tprmRole: true,
   department: {
     select: {
       id: true,
@@ -36,19 +47,54 @@ const userInclude = {
   },
 };
 
+// Map tprmRole field values to RBAC system role names
+const TPRM_ROLE_TO_SYSTEM_ROLE: Record<string, string> = {
+  'Business Owner': 'BusinessOwner',
+  'Relationship Manager': 'RelationshipManager',
+  'Assessor': 'TPRMAssessor',
+  'Approver': 'TPRMApprover',
+  'Auditor': 'TPRMAuditor',
+};
+
+// Auto-repair: if user has tprmRole but no matching UserRole, create it on login
+async function ensureTprmUserRole(userId: string, tprmRole: string | null, existingRoleNames: string[]) {
+  if (!tprmRole) return;
+  const systemRoleName = TPRM_ROLE_TO_SYSTEM_ROLE[tprmRole];
+  if (!systemRoleName) return;
+  // Already has the correct role
+  if (existingRoleNames.includes(systemRoleName)) return;
+  try {
+    const role = await prisma.role.upsert({
+      where: { name: systemRoleName },
+      update: {},
+      create: { name: systemRoleName, description: `TPRM ${tprmRole} role`, isSystem: true },
+    });
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId, roleId: role.id } },
+      create: { userId, roleId: role.id },
+      update: {},
+    });
+  } catch {
+    // Non-fatal — log and continue
+    console.error(`[AUTH] Failed to auto-assign ${systemRoleName} role for user ${userId}`);
+  }
+}
+
 // Helper to build the user object returned to NextAuth from a DB user
 function buildAuthUser(dbUser: {
   id: string;
   fullName: string;
   email: string;
+  tprmRole?: string | null;
   departmentId: string | null;
   department: { id: string; name: string } | null;
   customerAccountId: string | null;
   customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean } | null;
   auditHeadId: string | null;
   userRoles: { role: { id: string; name: string } }[];
-}) {
+}, extraRoles?: string[]) {
   const roleNames = dbUser.userRoles.map(ur => ur.role.name);
+  if (extraRoles) roleNames.push(...extraRoles.filter(r => !roleNames.includes(r)));
   const effectiveRoles = roleNames.length > 0 ? roleNames : ['Contributor'];
   const primaryRole = effectiveRoles[0] || 'Contributor';
 
@@ -136,7 +182,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             isActive: true,
             isBlocked: false,
           },
-          include: userInclude,
+          select: userSelect,
         });
 
         if (!user) {
@@ -162,7 +208,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         console.log('[AUTH] Login successful for:', user.userName);
 
-        return buildAuthUser(user);
+        // Auto-repair: ensure TPRM users have their system role assigned
+        const existingRoleNames = user.userRoles.map(ur => ur.role.name);
+        const tprmSystemRole = user.tprmRole ? TPRM_ROLE_TO_SYSTEM_ROLE[user.tprmRole] : null;
+        let extraRoles: string[] | undefined;
+        if (tprmSystemRole && !existingRoleNames.includes(tprmSystemRole)) {
+          await ensureTprmUserRole(user.id, user.tprmRole, existingRoleNames);
+          extraRoles = [tprmSystemRole];
+        }
+
+        return buildAuthUser(user, extraRoles);
         } catch (error) {
           console.error('[AUTH] Error during authentication:', error);
           return null;
@@ -270,11 +325,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 isActive: true,
                 isBlocked: false,
               },
-              include: userInclude,
+              select: userSelect,
             });
 
             if (dbUser) {
-              const authUser = buildAuthUser(dbUser);
+              // Auto-repair TPRM role for OAuth users too
+              const oauthRoleNames = dbUser.userRoles.map(ur => ur.role.name);
+              const oauthTprmSystemRole = dbUser.tprmRole ? TPRM_ROLE_TO_SYSTEM_ROLE[dbUser.tprmRole] : null;
+              let oauthExtraRoles: string[] | undefined;
+              if (oauthTprmSystemRole && !oauthRoleNames.includes(oauthTprmSystemRole)) {
+                await ensureTprmUserRole(dbUser.id, dbUser.tprmRole, oauthRoleNames);
+                oauthExtraRoles = [oauthTprmSystemRole];
+              }
+              const authUser = buildAuthUser(dbUser, oauthExtraRoles);
               token.id = authUser.id; // Critical: override OAuth provider ID with DB user ID
               token.role = authUser.role;
               token.department = authUser.department;
