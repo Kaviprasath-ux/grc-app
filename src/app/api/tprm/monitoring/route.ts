@@ -2,6 +2,89 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
+// Recalculate scores for assessments using current scorecard config
+interface KpiLike { kpiName: string; securityScore: number | null }
+interface AssessmentLike {
+  id: string;
+  kpiDetails: KpiLike[];
+  calculatedSecurityPosture: number | null;
+  calculatedThreatExposure: number | null;
+  calculatedOverallScore: number | null;
+}
+
+async function recalcAssessmentScores(
+  customerAccountId: string,
+  assessments: AssessmentLike[]
+) {
+  const factors = await prisma.tPRMScorecardFactor.findMany({
+    where: { customerAccountId },
+  });
+  if (!factors.length) return;
+
+  const config = await prisma.tPRMConfiguration.findUnique({
+    where: { customerAccountId },
+  });
+  const formula = config?.scoringFormula || "AVG";
+  const spWeight = config?.securityPostureWeight ?? 50;
+  const teWeight = config?.threatExposureWeight ?? 50;
+
+  for (const assessment of assessments) {
+    const kpis = assessment.kpiDetails;
+
+    function calcScore(scoreType: string): number | null {
+      const typeFactors = factors.filter(
+        (f) => f.scoreType === scoreType && f.weightage > 0
+      );
+      if (!typeFactors.length) return null;
+      let totalWeightedScore = 0;
+      let totalWeight = 0;
+      for (const factor of typeFactors) {
+        const kpi = kpis.find(
+          (k) =>
+            k.kpiName.toLowerCase().trim() ===
+            factor.name.toLowerCase().trim()
+        );
+        if (kpi?.securityScore != null) {
+          totalWeightedScore += kpi.securityScore * factor.weightage;
+          totalWeight += factor.weightage;
+        }
+      }
+      if (totalWeight === 0) return null;
+      return formula === "AVG"
+        ? totalWeightedScore / totalWeight
+        : totalWeightedScore / 100;
+    }
+
+    const calcSP = calcScore("SecurityPosture");
+    const calcTE = calcScore("ThreatExposure");
+    let calcOverall: number | null = null;
+    if (calcSP != null && calcTE != null && spWeight + teWeight > 0) {
+      calcOverall =
+        (calcSP * spWeight + calcTE * teWeight) / (spWeight + teWeight);
+    }
+
+    const rounded = {
+      calculatedSecurityPosture:
+        calcSP != null ? Math.round(calcSP * 100) / 100 : null,
+      calculatedThreatExposure:
+        calcTE != null ? Math.round(calcTE * 100) / 100 : null,
+      calculatedOverallScore:
+        calcOverall != null ? Math.round(calcOverall * 100) / 100 : null,
+    };
+
+    // Update in-memory for the response
+    assessment.calculatedSecurityPosture = rounded.calculatedSecurityPosture;
+    assessment.calculatedThreatExposure = rounded.calculatedThreatExposure;
+    assessment.calculatedOverallScore = rounded.calculatedOverallScore;
+
+    // Persist to DB (fire-and-forget)
+    void prisma.tPRMMonitoringAssessment.update({
+      where: { id: assessment.id },
+      data: rounded,
+    });
+  }
+}
+
 // GET all monitoring vendors with their latest assessment
 export const GET = withAuth(
   async (req, _context, session) => {
@@ -36,6 +119,11 @@ export const GET = withAuth(
         });
 
         if (!vendor) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+        // Recalculate scores from current scorecard config on every load
+        const customerAccountId = getCustomerAccountId(session);
+        await recalcAssessmentScores(customerAccountId, vendor.assessments);
+
         return NextResponse.json({ data: vendor });
       }
 
@@ -70,6 +158,13 @@ export const GET = withAuth(
         },
         orderBy: { createdAt: "desc" },
       });
+
+      // Recalculate scores for all latest assessments
+      const customerAccountId = getCustomerAccountId(session);
+      const allAssessments = vendors.flatMap((v) => v.assessments);
+      if (allAssessments.length > 0) {
+        await recalcAssessmentScores(customerAccountId, allAssessments);
+      }
 
       return NextResponse.json({ data: vendors });
     } catch (err) {
@@ -292,6 +387,65 @@ export const POST = withAuth(
           }
         }
       }
+
+      // ── Calculate scores from scorecard configuration ──
+      const factors = await prisma.tPRMScorecardFactor.findMany({
+        where: { customerAccountId },
+      });
+      const config = await prisma.tPRMConfiguration.findUnique({
+        where: { customerAccountId },
+      });
+      const formula = config?.scoringFormula || "AVG";
+      const spWeight = config?.securityPostureWeight ?? 50;
+      const teWeight = config?.threatExposureWeight ?? 50;
+
+      const savedKpis = await prisma.tPRMKPIDetail.findMany({
+        where: { assessmentId: newAssessment.id },
+      });
+
+      function calcScore(scoreType: string): number | null {
+        const typeFactors = factors.filter(
+          (f) => f.scoreType === scoreType && f.weightage > 0
+        );
+        if (!typeFactors.length) return null;
+        let totalWeightedScore = 0;
+        let totalWeight = 0;
+        for (const factor of typeFactors) {
+          const kpi = savedKpis.find(
+            (k) =>
+              k.kpiName.toLowerCase().trim() ===
+              factor.name.toLowerCase().trim()
+          );
+          if (kpi?.securityScore != null) {
+            totalWeightedScore += kpi.securityScore * factor.weightage;
+            totalWeight += factor.weightage;
+          }
+        }
+        if (totalWeight === 0) return null;
+        return formula === "AVG"
+          ? totalWeightedScore / totalWeight
+          : totalWeightedScore / 100;
+      }
+
+      const calcSP = calcScore("SecurityPosture");
+      const calcTE = calcScore("ThreatExposure");
+      let calcOverall: number | null = null;
+      if (calcSP != null && calcTE != null && spWeight + teWeight > 0) {
+        calcOverall =
+          (calcSP * spWeight + calcTE * teWeight) / (spWeight + teWeight);
+      }
+
+      await prisma.tPRMMonitoringAssessment.update({
+        where: { id: newAssessment.id },
+        data: {
+          calculatedSecurityPosture:
+            calcSP != null ? Math.round(calcSP * 100) / 100 : null,
+          calculatedThreatExposure:
+            calcTE != null ? Math.round(calcTE * 100) / 100 : null,
+          calculatedOverallScore:
+            calcOverall != null ? Math.round(calcOverall * 100) / 100 : null,
+        },
+      });
 
       return NextResponse.json({ data: { vendorId: monVendor.id, assessmentId: newAssessment.id } }, { status: 201 });
     } catch (err) {

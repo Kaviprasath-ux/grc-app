@@ -44,6 +44,8 @@ export const GET = withAuth(
                     securityPostureScore: true,
                     threatExposureScore: true,
                     calculatedOverallScore: true,
+                    calculatedSecurityPosture: true,
+                    calculatedThreatExposure: true,
                   },
                   take: 1,
                 },

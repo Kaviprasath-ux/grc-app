@@ -40,6 +40,7 @@ interface TPRMKPIDetail {
 interface TPRMMonitoringAssessment {
   id: string; vendorName: string; vendorURL: string; jobID: string | null;
   status: string | null; overallScore: number | null;
+  calculatedOverallScore: number | null;
   isLatest: boolean;
   createdAt: string;
   kpiDetails: TPRMKPIDetail[];
@@ -232,7 +233,7 @@ export default function MonitoringPage() {
 
   // Latest-assessment vendors (shown in main table) — must have at least one completed assessment
   const latestVendors = vendors.filter((v) =>
-    v.assessments.some((a) => a.overallScore != null || a.status?.toLowerCase() === "done")
+    v.assessments.some((a) => a.calculatedOverallScore != null || a.overallScore != null || a.status?.toLowerCase() === "done")
   );
   // Queued vendors — only those with NO completed assessment at all
   const activeJobIds = new Set(activeScans.map((s) => s.jobId));
@@ -386,8 +387,8 @@ export default function MonitoringPage() {
                       </td>
                       {/* Security Score — colored badge */}
                       <td className="px-3 py-2.5 text-center">
-                        <span className={`inline-block font-bold text-sm rounded-lg px-4 py-1.5 min-w-[52px] ${scoreBadgeClass(a?.overallScore ?? null)}`}>
-                          {a?.overallScore ?? "\u2014"}
+                        <span className={`inline-block font-bold text-sm rounded-lg px-4 py-1.5 min-w-[52px] ${scoreBadgeClass(a?.calculatedOverallScore ?? a?.overallScore ?? null)}`}>
+                          {(a?.calculatedOverallScore ?? a?.overallScore) != null ? Math.round(a?.calculatedOverallScore ?? a?.overallScore ?? 0) : "\u2014"}
                         </span>
                       </td>
                       {/* KPI columns */}

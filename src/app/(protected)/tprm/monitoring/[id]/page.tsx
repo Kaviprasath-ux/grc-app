@@ -187,7 +187,7 @@ function ScoreCircle({ score, size = 64 }: { score: number | null; size?: number
       )}
       <text x={size / 2} y={size / 2} textAnchor="middle" dominantBaseline="central"
         className="text-sm font-bold" fill={color}>
-        {score != null ? score.toFixed(score % 1 === 0 ? 0 : 2) : "\u2014"}
+        {score != null ? Math.round(score) : "\u2014"}
       </text>
     </svg>
   );
@@ -527,9 +527,9 @@ export default function MonitoringDetailPage() {
     if (!vendor) return [];
     return [...vendor.assessments].reverse().map((a) => ({
       date: fmtShortDate(a.lastScan || a.createdAt),
-      overallScore: a.overallScore,
-      securityPosture: a.securityPostureScore,
-      threatExposure: a.threatExposureScore,
+      overallScore: a.calculatedOverallScore ?? a.overallScore,
+      securityPosture: a.calculatedSecurityPosture ?? a.securityPostureScore,
+      threatExposure: a.calculatedThreatExposure ?? a.threatExposureScore,
     }));
   }, [vendor]);
 
@@ -574,7 +574,7 @@ export default function MonitoringDetailPage() {
       <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
         <div className="p-6">
           <div className="flex items-start gap-5">
-            <ScoreCircle score={assessment.overallScore} size={72} />
+            <ScoreCircle score={assessment.calculatedOverallScore ?? assessment.overallScore} size={72} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold">{vendor.vendorName}</h1>
@@ -609,23 +609,23 @@ export default function MonitoringDetailPage() {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-teal-500" />
             <span className="text-xs text-muted-foreground">{t("Security Posture")}</span>
-            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.securityPostureScore).numColor}`}>
-              {assessment.securityPostureScore != null ? assessment.securityPostureScore.toFixed(2) : "\u2014"}
+            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.calculatedSecurityPosture ?? assessment.securityPostureScore).numColor}`}>
+              {(assessment.calculatedSecurityPosture ?? assessment.securityPostureScore) != null ? Math.round((assessment.calculatedSecurityPosture ?? assessment.securityPostureScore)!) : "\u2014"}
             </span>
           </div>
           <div className="w-px h-5 bg-slate-200" />
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
             <span className="text-xs text-muted-foreground">{t("Threat Exposure")}</span>
-            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.threatExposureScore).numColor}`}>
-              {assessment.threatExposureScore != null ? assessment.threatExposureScore.toFixed(2) : "\u2014"}
+            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.calculatedThreatExposure ?? assessment.threatExposureScore).numColor}`}>
+              {(assessment.calculatedThreatExposure ?? assessment.threatExposureScore) != null ? Math.round((assessment.calculatedThreatExposure ?? assessment.threatExposureScore)!) : "\u2014"}
             </span>
           </div>
           <div className="w-px h-5 bg-slate-200" />
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{t("Overall")}</span>
-            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.overallScore).numColor}`}>
-              {assessment.overallScore != null ? assessment.overallScore.toFixed(2) : "\u2014"}
+            <span className={`text-base font-bold tabular-nums ${scoreRating(assessment.calculatedOverallScore ?? assessment.overallScore).numColor}`}>
+              {(assessment.calculatedOverallScore ?? assessment.overallScore) != null ? Math.round((assessment.calculatedOverallScore ?? assessment.overallScore)!) : "\u2014"}
             </span>
           </div>
         </div>
@@ -690,8 +690,8 @@ export default function MonitoringDetailPage() {
                           <div className="w-2 h-2 rounded-full bg-teal-500" />
                           <span className="font-semibold text-sm">{t("Security Posture")}</span>
                         </div>
-                        <span className={`text-2xl font-bold tabular-nums ${scoreRating(assessment.securityPostureScore).numColor}`}>
-                          {assessment.securityPostureScore != null ? assessment.securityPostureScore.toFixed(2) : "\u2014"}
+                        <span className={`text-2xl font-bold tabular-nums ${scoreRating(assessment.calculatedSecurityPosture ?? assessment.securityPostureScore).numColor}`}>
+                          {(assessment.calculatedSecurityPosture ?? assessment.securityPostureScore) != null ? Math.round((assessment.calculatedSecurityPosture ?? assessment.securityPostureScore)!) : "\u2014"}
                         </span>
                       </div>
                       <ResponsiveContainer width="100%" height={300}>
@@ -716,8 +716,8 @@ export default function MonitoringDetailPage() {
                           <div className="w-2 h-2 rounded-full bg-amber-500" />
                           <span className="font-semibold text-sm">{t("Threat Exposure")}</span>
                         </div>
-                        <span className={`text-2xl font-bold tabular-nums ${scoreRating(assessment.threatExposureScore).numColor}`}>
-                          {assessment.threatExposureScore != null ? assessment.threatExposureScore.toFixed(2) : "\u2014"}
+                        <span className={`text-2xl font-bold tabular-nums ${scoreRating(assessment.calculatedThreatExposure ?? assessment.threatExposureScore).numColor}`}>
+                          {(assessment.calculatedThreatExposure ?? assessment.threatExposureScore) != null ? Math.round((assessment.calculatedThreatExposure ?? assessment.threatExposureScore)!) : "\u2014"}
                         </span>
                       </div>
                       <ResponsiveContainer width="100%" height={300}>
@@ -749,8 +749,8 @@ export default function MonitoringDetailPage() {
                   <span className="font-semibold text-sm text-slate-800">{t("Security Posture KPIs")}</span>
                   <span className="text-xs text-slate-400 ml-2">{spKpis.length} {t("indicators")}</span>
                 </div>
-                <span className={`text-lg font-bold tabular-nums ${scoreRating(assessment.securityPostureScore).numColor}`}>
-                  {assessment.securityPostureScore != null ? assessment.securityPostureScore.toFixed(2) : "\u2014"}
+                <span className={`text-lg font-bold tabular-nums ${scoreRating(assessment.calculatedSecurityPosture ?? assessment.securityPostureScore).numColor}`}>
+                  {(assessment.calculatedSecurityPosture ?? assessment.securityPostureScore) != null ? Math.round((assessment.calculatedSecurityPosture ?? assessment.securityPostureScore)!) : "\u2014"}
                 </span>
               </div>
               <div className="p-5">
@@ -780,8 +780,8 @@ export default function MonitoringDetailPage() {
                   <span className="font-semibold text-sm text-slate-800">{t("Threat Exposure KPIs")}</span>
                   <span className="text-xs text-slate-400 ml-2">{teKpis.length} {t("indicators")}</span>
                 </div>
-                <span className={`text-lg font-bold tabular-nums ${scoreRating(assessment.threatExposureScore).numColor}`}>
-                  {assessment.threatExposureScore != null ? assessment.threatExposureScore.toFixed(2) : "\u2014"}
+                <span className={`text-lg font-bold tabular-nums ${scoreRating(assessment.calculatedThreatExposure ?? assessment.threatExposureScore).numColor}`}>
+                  {(assessment.calculatedThreatExposure ?? assessment.threatExposureScore) != null ? Math.round((assessment.calculatedThreatExposure ?? assessment.threatExposureScore)!) : "\u2014"}
                 </span>
               </div>
               <div className="p-5">
@@ -1074,8 +1074,8 @@ export default function MonitoringDetailPage() {
                         <tr key={a.id} className="border-b last:border-b-0 hover:bg-slate-50/50">
                           <td className="px-5 py-3 text-slate-700">{fmtDate(a.lastScan || a.createdAt)}</td>
                           <td className="px-5 py-3 text-center">
-                            <span className={`font-bold tabular-nums ${scoreRating(a.overallScore).numColor}`}>
-                              {a.overallScore ?? "\u2014"}
+                            <span className={`font-bold tabular-nums ${scoreRating(a.calculatedOverallScore ?? a.overallScore).numColor}`}>
+                              {(a.calculatedOverallScore ?? a.overallScore) != null ? Math.round(a.calculatedOverallScore ?? a.overallScore ?? 0) : "\u2014"}
                             </span>
                           </td>
                           <td className="px-5 py-3 text-center">

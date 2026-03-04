@@ -47,6 +47,8 @@ interface MonitoringAssessmentSummary {
   securityPostureScore: number | null;
   threatExposureScore: number | null;
   calculatedOverallScore: number | null;
+  calculatedSecurityPosture: number | null;
+  calculatedThreatExposure: number | null;
 }
 
 interface MonitoringVendorSummary {
@@ -282,9 +284,10 @@ export default function VendorManagementPage() {
     {
       id: "securityScore", header: t("Security Score"),
       cell: ({ row }) => {
-        const score = row.original.monitoringVendor?.assessments[0]?.overallScore ?? null;
+        const a = row.original.monitoringVendor?.assessments[0];
+        const score = a?.calculatedOverallScore ?? a?.overallScore ?? null;
         if (score === null) return <span className="text-muted-foreground text-sm">-</span>;
-        return <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(score)}`}>{score}</span>;
+        return <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(score)}`}>{Math.round(score)}</span>;
       },
     },
     {
@@ -447,27 +450,30 @@ export default function VendorManagementPage() {
                         </div>
                         {vendor.monitoringVendor.assessments[0] ? (() => {
                           const a = vendor.monitoringVendor!.assessments[0];
+                          const effOverall = a.calculatedOverallScore ?? a.overallScore;
+                          const effSP = a.calculatedSecurityPosture ?? a.securityPostureScore;
+                          const effTE = a.calculatedThreatExposure ?? a.threatExposureScore;
                           return (
                             <div className="flex flex-wrap gap-3">
                               <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
                                 <Activity className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">{t("Overall Score")}</span>
-                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(a.overallScore)}`}>
-                                  {a.overallScore ?? "—"}
+                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(effOverall)}`}>
+                                  {effOverall != null ? Math.round(effOverall) : "—"}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
                                 <Shield className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">{t("Security Posture")}</span>
-                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(a.securityPostureScore)}`}>
-                                  {a.securityPostureScore ?? "—"}
+                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(effSP)}`}>
+                                  {effSP != null ? Math.round(effSP) : "—"}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
                                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">{t("Threat Exposure")}</span>
-                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(a.threatExposureScore)}`}>
-                                  {a.threatExposureScore ?? "—"}
+                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(effTE)}`}>
+                                  {effTE != null ? Math.round(effTE) : "—"}
                                 </span>
                               </div>
                             </div>
