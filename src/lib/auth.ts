@@ -55,6 +55,7 @@ const TPRM_ROLE_TO_SYSTEM_ROLE: Record<string, string> = {
   'Approver': 'TPRMApprover',
   'Auditor': 'TPRMAuditor',
   'Account Manager': 'AccountManager',
+  'SME': 'TPRMSME',
 };
 
 // Auto-repair: if user has tprmRole but no matching UserRole, create it on login

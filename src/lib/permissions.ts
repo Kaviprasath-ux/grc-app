@@ -223,6 +223,10 @@ export const ROLES = {
     name: 'AccountManager',
     description: 'Vendor-side Account Manager, responds to assessments and manages SMEs',
   },
+  TPRMSME: {
+    name: 'TPRMSME',
+    description: 'Vendor-side Subject Matter Expert, responds to delegated assessment questions',
+  },
 } as const;
 
 export type RoleName = keyof typeof ROLES;
@@ -594,6 +598,13 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.am-sme-management', actions: ['*'], scope: 'all' },
     { resource: 'tprm.am-support', actions: ['*'], scope: 'all' },
   ],
+
+  // SME - Same as Account Manager but without SME Management page
+  TPRMSME: [
+    { resource: 'tprm.am-assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.am-follow-ups', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.am-support', actions: ['*'], scope: 'all' },
+  ],
 };
 
 // ==================== ROUTE TO RESOURCE MAPPING ====================
@@ -701,7 +712,7 @@ export function expandRolePermissions(
 
   // System-level roles are not filtered by module flags
   const isSystemRole = roleNames.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor' || r === 'AccountManager'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor' || r === 'AccountManager' || r === 'TPRMSME'
   );
 
   for (const roleName of roleNames) {
