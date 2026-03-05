@@ -425,6 +425,7 @@ model User {
   tprmInitiated              TPRMAssessment[]  @relation("TPRMInitiator")
   tprmAssessed               TPRMAssessment[]  @relation("TPRMAssessor")
   tprmApproved               TPRMAssessment[]  @relation("TPRMApprover")
+  tprmRejected               TPRMAssessment[]  @relation("TPRMRejectedBy")
   tprmResponsesDelegated     TPRMAssessmentResponse[] @relation("TPRMResponseDelegatedTo")
   tprmResponsesResponded     TPRMAssessmentResponse[] @relation("TPRMResponseRespondedBy")
   tprmClarificationsRequested TPRMClarification[]     @relation("TPRMClarificationRequestedBy")
@@ -3338,7 +3339,7 @@ model TPRMAssessment {
   vendorId              String
   vendor                TPRMVendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   assessmentType        String          // "Assessment Factory", "Onboarding Assessment", "Periodic Assessment", "On-Demand Assessment"
-  status                String          @default("Draft") // Draft, In Progress, Submitted, Under Review, Reviewed, Approved, Rejected, Returned, Completed, Cancelled, Expired, Reassessment Initiated
+  status                String          @default("Draft") // Approved, Initiated, In_Progress, Awaiting_Response, Completed, In_Progress_approver_, Offboard_In_Progress, Offboard_Completed, Offboard_Awaiting_Respose, Offboard_Approve_Assessor, Offboard_Approve_RM, Offboard_Approve_BO
   assessmentResult      String?         // Satisfactory, Unsatisfactory, Deficient
   vendorSubmissionDate  DateTime?
   assessorCompletionDate DateTime?
@@ -3352,6 +3353,8 @@ model TPRMAssessment {
   approver              User?           @relation("TPRMApprover", fields: [approverId], references: [id])
   questionnaireTemplate String?         // Template name used for assessment
   approverComment       String?
+  rejectedById          String?
+  rejectedBy            User?           @relation("TPRMRejectedBy", fields: [rejectedById], references: [id])
   // AI Evaluation tracking
   aiEvaluationStatus    String?         // Pending, Ingesting, Evaluating, Completed, Failed
   aiEvaluationStarted   DateTime?

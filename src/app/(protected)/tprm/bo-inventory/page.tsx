@@ -623,7 +623,7 @@ export default function BOInventoryPage() {
           vendorId: targetVendorId,
           assessmentType: "Onboarding Assessment",
           questionnaireTemplate: selectedNames,
-          status: "Draft",
+          status: "Awaiting_Response",
         }),
       });
       if (res.ok) {
@@ -1087,7 +1087,7 @@ export default function BOInventoryPage() {
             const ny = cy - needleLen * Math.sin(needleAngle);
 
             return (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 max-h-[75vh] overflow-y-auto">
+              <div className={`grid ${riskRatingVendor?.vrr === "Nominal" ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"} gap-0 max-h-[75vh] overflow-y-auto`}>
                 {/* Left Column - Risk Rating */}
                 <div className="px-6 py-6 space-y-5 lg:border-r border-slate-100">
                   {/* SVG Gauge */}
@@ -1150,8 +1150,8 @@ export default function BOInventoryPage() {
                   </div>
                 </div>
 
-                {/* Right Column - Suggested Questionnaire */}
-                <div className="px-6 py-6 space-y-5">
+                {/* Right Column - Suggested Questionnaire (hidden for Nominal) */}
+                {riskRatingVendor?.vrr !== "Nominal" && <div className="px-6 py-6 space-y-5">
                   <h3 className="text-base font-semibold text-slate-800">{t("Suggested Questionnaire")}</h3>
 
                   {/* Selected template tags */}
@@ -1170,49 +1170,17 @@ export default function BOInventoryPage() {
                     </div>
                   )}
 
-                  {/* Question preview for selected templates */}
-                  {selectedTemplateIds.length > 0 && (() => {
-                    const selectedTemplates = questionnaireTemplates.filter((tmpl) => selectedTemplateIds.includes(tmpl.id));
-                    const allQuestions = selectedTemplates.flatMap((tmpl) => tmpl.masterQuestionLinks || []);
-                    if (allQuestions.length === 0) return null;
-                    return (
-                      <div className="border border-slate-200 rounded-lg bg-white max-h-40 overflow-y-auto">
-                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 sticky top-0">
-                          <span className="text-xs font-medium text-slate-600">
-                            {allQuestions.length} {allQuestions.length === 1 ? t("question") : t("questions")} {t("from")} {selectedTemplates.length} {selectedTemplates.length === 1 ? t("template") : t("templates")}
-                          </span>
-                        </div>
-                        <ul className="divide-y divide-slate-100">
-                          {allQuestions.slice(0, 20).map((link, idx) => (
-                            <li key={link.id} className="px-3 py-1.5 flex items-start gap-2">
-                              <span className="text-[10px] text-slate-400 mt-0.5 shrink-0">{idx + 1}.</span>
-                              <div className="min-w-0">
-                                <p className="text-[11px] text-slate-700 line-clamp-1">{link.question.questionText}</p>
-                                {link.question.domain && (
-                                  <span className="text-[10px] text-slate-400">{link.question.domain.name}</span>
-                                )}
-                              </div>
-                            </li>
-                          ))}
-                          {allQuestions.length > 20 && (
-                            <li className="px-3 py-1.5 text-[10px] text-slate-400 text-center">
-                              +{allQuestions.length - 20} {t("more")}...
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Initiate Assessment button */}
-                  <Button
-                    className="bg-primary-600 hover:bg-primary-700 text-white"
-                    onClick={handleInitiateAssessment}
-                    disabled={initiatingAssessment || selectedTemplateIds.length === 0}
-                  >
-                    {initiatingAssessment && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
-                    {t("Initiate Assessment")}
-                  </Button>
+                  {/* Initiate Assessment button - only show if NOT Nominal */}
+                  {riskRatingVendor?.vrr !== "Nominal" && (
+                    <Button
+                      className="bg-primary-600 hover:bg-primary-700 text-white"
+                      onClick={handleInitiateAssessment}
+                      disabled={initiatingAssessment || selectedTemplateIds.length === 0}
+                    >
+                      {initiatingAssessment && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+                      {t("Initiate Assessment")}
+                    </Button>
+                  )}
 
                   {/* Template card grid */}
                   {questionnaireTemplates.length === 0 ? (
@@ -1260,7 +1228,7 @@ export default function BOInventoryPage() {
                       })}
                     </div>
                   )}
-                </div>
+                </div>}
               </div>
             );
           })()}

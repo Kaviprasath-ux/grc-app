@@ -2409,6 +2409,7 @@ CREATE TABLE "TPRMAssessment" (
     "approverId" TEXT,
     "questionnaireTemplate" TEXT,
     "approverComment" TEXT,
+    "rejectedById" TEXT,
     "aiEvaluationStatus" TEXT,
     "aiEvaluationStarted" TIMESTAMP(3),
     "aiEvaluationCompleted" TIMESTAMP(3),
@@ -4672,6 +4673,9 @@ ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_assessorId_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_approverId_fkey" FOREIGN KEY ("approverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_rejectedById_fkey" FOREIGN KEY ("rejectedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TPRMAssessmentLog" ADD CONSTRAINT "TPRMAssessmentLog_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

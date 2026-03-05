@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Home, ChevronRight, Loader2, Eye, Search } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 // ── Types ──────────────────────────────────────────────
 interface Assessment {
@@ -28,6 +29,7 @@ interface Assessment {
   completionDate: string | null;
   questionnaireTemplate: string | null;
   approverComment: string | null;
+  rejectedById: string | null;
   createdAt: string;
   vendor: { id: string; name: string; vendorCode: string; serviceCategory: string | null };
   initiatedBy: { id: string; fullName: string } | null;
@@ -38,11 +40,30 @@ interface Assessment {
 // ── Helpers ──────────────────────────────────────────────
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
-    case "Completed": case "Approved": return "default";
-    case "Rejected": case "Returned": case "Cancelled": case "Expired": return "destructive";
-    case "In Progress": case "Under Review": case "Submitted": return "secondary";
+    case "Completed": case "Approved": case "Offboard_Completed": return "default";
+    case "Offboard_Approve_BO": return "destructive";
+    case "In_Progress": case "In_Progress_approver_": case "Offboard_In_Progress": return "secondary";
+    case "Awaiting_Response": case "Offboard_Awaiting_Respose": case "Initiated": return "outline";
     default: return "outline";
   }
+}
+
+function formatStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    Approved: "Approved",
+    Initiated: "Initiated",
+    In_Progress: "In-Progress",
+    Awaiting_Response: "Awaiting Response",
+    Completed: "Completed",
+    "In_Progress_approver_": "In-Progress (Approver)",
+    Offboard_In_Progress: "Offboard In-Progress",
+    Offboard_Completed: "Offboard Completed",
+    Offboard_Awaiting_Respose: "Offboard Awaiting Response",
+    Offboard_Approve_Assessor: "Offboard Approved (Assessor)",
+    Offboard_Approve_RM: "Offboard Approved (RM)",
+    Offboard_Approve_BO: "Terminated",
+  };
+  return labels[status] || status;
 }
 
 function formatDate(dateStr: string | null | undefined): string {
@@ -50,20 +71,23 @@ function formatDate(dateStr: string | null | undefined): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-const ONGOING_STATUSES = ["Draft", "In Progress", "Submitted", "Under Review", "Reviewed", "Returned", "Reassessment Initiated"];
-const COMPLETED_STATUSES = ["Completed", "Approved", "Rejected", "Cancelled", "Expired"];
-const AWAITING_STATUSES = ["Draft", "In Progress", "Returned"];
-const PENDING_ASSESSOR_STATUSES = ["Submitted", "Under Review", "Reviewed", "Reassessment Initiated"];
+const ONGOING_STATUSES = ["Initiated", "Awaiting_Response", "In_Progress", "In_Progress_approver_"];
+const COMPLETED_STATUSES = ["Completed", "Approved"];
+const AWAITING_STATUSES = ["Awaiting_Response"];
+const PENDING_ASSESSOR_STATUSES = ["In_Progress", "In_Progress_approver_"];
+const OFFBOARD_STATUSES = ["Offboard_In_Progress", "Offboard_Completed", "Offboard_Awaiting_Respose", "Offboard_Approve_Assessor", "Offboard_Approve_RM", "Offboard_Approve_BO"];
 
 // ── Main Component ──────────────────────────────────────
 export default function RMAssessmentsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { data: session } = useSession();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [topTab, setTopTab] = useState<"ongoing" | "completed" | "offboard">("ongoing");
   const [subTab, setSubTab] = useState<"awaiting" | "pending">("awaiting");
+  const [offboardSubTab, setOffboardSubTab] = useState<"approval" | "terminated">("approval");
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -88,16 +112,22 @@ export default function RMAssessmentsPage() {
     let data = assessments;
 
     if (topTab === "ongoing") {
-      data = data.filter((a) => ONGOING_STATUSES.includes(a.status) && a.assessmentType !== "Offboard Assessment");
+      data = data.filter((a) => ONGOING_STATUSES.includes(a.status));
       if (subTab === "awaiting") {
         data = data.filter((a) => AWAITING_STATUSES.includes(a.status));
       } else {
         data = data.filter((a) => PENDING_ASSESSOR_STATUSES.includes(a.status));
       }
     } else if (topTab === "completed") {
-      data = data.filter((a) => COMPLETED_STATUSES.includes(a.status) && a.assessmentType !== "Offboard Assessment");
+      data = data.filter((a) => COMPLETED_STATUSES.includes(a.status));
     } else {
-      data = data.filter((a) => a.assessmentType === "Offboard Assessment");
+      data = data.filter((a) => OFFBOARD_STATUSES.includes(a.status));
+      if (offboardSubTab === "approval") {
+        const currentUserId = session?.user?.id;
+        data = data.filter((a) => a.status === "Offboard_Approve_Assessor" || a.rejectedById === currentUserId);
+      } else {
+        data = data.filter((a) => a.status === "Offboard_Approve_BO");
+      }
     }
 
     if (search) {
@@ -111,7 +141,7 @@ export default function RMAssessmentsPage() {
     }
 
     return data;
-  }, [assessments, topTab, subTab, search]);
+  }, [assessments, topTab, subTab, offboardSubTab, search, session]);
 
   const topTabs = [
     { key: "ongoing" as const, label: t("Ongoing Assessments") },
@@ -182,6 +212,32 @@ export default function RMAssessmentsPage() {
         </div>
       )}
 
+      {/* Sub Tabs for Offboard */}
+      {topTab === "offboard" && (
+        <div className="flex gap-0">
+          <button
+            onClick={() => setOffboardSubTab("approval")}
+            className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors ${
+              offboardSubTab === "approval"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            {t("Offboard Approval")}
+          </button>
+          <button
+            onClick={() => setOffboardSubTab("terminated")}
+            className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors ${
+              offboardSubTab === "terminated"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            {t("Terminated Vendors")}
+          </button>
+        </div>
+      )}
+
       {/* Search & Table */}
       <Card>
         <CardContent className="p-4">
@@ -223,7 +279,7 @@ export default function RMAssessmentsPage() {
                       <TableCell>{a.vendor.name}</TableCell>
                       <TableCell>{t(a.assessmentType)}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusVariant(a.status)}>{t(a.status)}</Badge>
+                        <Badge variant={getStatusVariant(a.status)}>{t(formatStatusLabel(a.status))}</Badge>
                       </TableCell>
                       <TableCell>{formatDate(a.createdAt)}</TableCell>
                       <TableCell>{formatDate(a.completionDate || a.vendorSubmissionDate)}</TableCell>
