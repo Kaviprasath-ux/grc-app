@@ -130,6 +130,18 @@ export const RESOURCES = {
   'tprm.am-follow-ups': '/tprm/am-follow-ups',
   'tprm.am-sme-management': '/tprm/am-sme-management',
   'tprm.am-support': '/tprm/am-support',
+
+  // TPRM Assessor specific resources
+  'tprm.asr-dashboard': '/tprm/asr-dashboard',
+  'tprm.asr-assessments': '/tprm/asr-assessments',
+  'tprm.asr-inventory': '/tprm/asr-inventory',
+  'tprm.asr-monitoring': '/tprm/asr-monitoring',
+  'tprm.asr-follow-ups': '/tprm/asr-follow-ups',
+  'tprm.asr-issue-register': '/tprm/asr-issue-register',
+  'tprm.asr-assessment-factory': '/tprm/asr-assessment-factory',
+  'tprm.asr-template': '/tprm/asr-template',
+  'tprm.asr-support': '/tprm/asr-support',
+  'tprm.asr-factory-reports': '/tprm/asr-factory-reports',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -573,10 +585,20 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.assessments', actions: ['create'], scope: 'all' },
   ],
 
-  // TPRM Assessor - Assessment Workspace + Task Queue
+  // TPRM Assessor - Full assessor role with dashboard, assessments, inventory, monitoring, etc.
   TPRMAssessor: [
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-inventory', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-monitoring', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-follow-ups', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-issue-register', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-assessment-factory', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-template', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-support', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-factory-reports', actions: ['*'], scope: 'all' },
   ],
 
   // TPRM Approver - Assessment Workspace + Task Queue (review/approve)

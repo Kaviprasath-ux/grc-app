@@ -1,0 +1,497 @@
+"use client";
+
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { PageHeader } from "@/components/shared/page-header";
+import { DataGrid } from "@/components/shared/data-grid";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Eye, RotateCcw, Home, ChevronRight } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+
+interface AssessmentItem {
+  id: string;
+  assessmentCode: string;
+  assessmentType: string;
+  status: string;
+  vendorSubmissionDate: string | null;
+  completionDate: string | null;
+  assessmentResult: string | null;
+  approverComment: string | null;
+  vendor: { id: string; name: string; vendorCode: string; serviceCategory: string | null };
+  initiatedBy: { id: string; fullName: string } | null;
+  assessor: { id: string; fullName: string } | null;
+}
+
+function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+  switch (status) {
+    case "Completed":
+    case "Approved":
+      return "default";
+    case "Rejected":
+    case "Returned":
+      return "destructive";
+    case "In Progress":
+    case "Under Review":
+    case "Submitted":
+      return "secondary";
+    default:
+      return "outline";
+  }
+}
+
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString();
+}
+
+// Tab mappings for URL params
+const TAB_MAP: Record<string, string> = {
+  "my-queue": "my-queue",
+  "due-diligence": "due-diligence",
+  "reassessments": "reassessments",
+  "offboarding": "offboarding",
+  "completed": "completed",
+};
+
+// Status filters by tab
+const TAB_STATUSES: Record<string, string[]> = {
+  "my-queue": ["Draft", "In Progress", "Submitted"],
+  "due-diligence": ["Draft", "In Progress", "Submitted", "Under Review"],
+  "reassessments": ["Draft", "In Progress", "Submitted"],
+  "offboarding": ["Offboarding", "Terminated"],
+  "completed": ["Completed", "Approved"],
+};
+
+export default function AsrAssessmentsPage() {
+  const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") || "my-queue";
+
+  const [activeTab, setActiveTab] = useState(TAB_MAP[initialTab] || "my-queue");
+  const [subTab, setSubTab] = useState("main");
+  const [items, setItems] = useState<AssessmentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Filter state
+  const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({ limit: "200" });
+      const res = await fetch(`/api/tprm/assessments?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        setItems(json.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching assessments:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSubTab("main");
+    setSearch("");
+    setDateFilter("");
+    setStatusFilter("all");
+  };
+
+  // Filter data based on active tab and sub-tab
+  const filteredItems = useMemo(() => {
+    let data = items;
+
+    // Filter by tab status
+    const statuses = TAB_STATUSES[activeTab];
+    if (statuses) {
+      data = data.filter((i) => statuses.includes(i.status));
+    }
+
+    // My Queue sub-tabs
+    if (activeTab === "my-queue") {
+      if (subTab === "reassessment") {
+        data = data.filter((i) => i.assessmentType === "Reassessment");
+      } else if (subTab === "returned") {
+        data = data.filter((i) => i.status === "Returned" || i.status === "Rejected");
+      }
+    }
+
+    // Due Diligence sub-tabs
+    if (activeTab === "due-diligence") {
+      if (subTab === "awaiting") {
+        data = data.filter((i) => i.status === "Submitted");
+      } else if (subTab === "unassigned") {
+        data = data.filter((i) => !i.assessor);
+      } else if (subTab === "assigned") {
+        data = data.filter((i) => !!i.assessor);
+      } else if (subTab === "completed") {
+        data = data.filter((i) => i.status === "Completed" || i.status === "Approved");
+      }
+    }
+
+    // Offboarding sub-tabs
+    if (activeTab === "offboarding") {
+      if (subTab === "terminated") {
+        data = data.filter((i) => i.status === "Terminated");
+      }
+    }
+
+    // Text search
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter(
+        (i) =>
+          i.assessmentCode?.toLowerCase().includes(q) ||
+          i.vendor?.name?.toLowerCase().includes(q) ||
+          i.vendor?.serviceCategory?.toLowerCase().includes(q)
+      );
+    }
+
+    // Date filter
+    if (dateFilter) {
+      data = data.filter((i) => {
+        const d = i.vendorSubmissionDate || i.completionDate;
+        return d && d.startsWith(dateFilter);
+      });
+    }
+
+    return data;
+  }, [items, activeTab, subTab, search, dateFilter]);
+
+  // My Queue columns
+  const myQueueColumns: ColumnDef<AssessmentItem>[] = [
+    {
+      accessorKey: "assessmentCode",
+      header: t("ID"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "vendor.serviceCategory",
+      header: t("Service Category"),
+      cell: ({ row }) => row.original.vendor?.serviceCategory || "-",
+    },
+    {
+      accessorKey: "assessmentType",
+      header: t("Assessment Type"),
+    },
+    {
+      accessorKey: "vendorSubmissionDate",
+      header: t("Submission Date"),
+      cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.open(`/tprm/assessments?id=${row.original.id}`, "_self")}
+        >
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ),
+    },
+  ];
+
+  // Due Diligence columns
+  const dueDiligenceColumns: ColumnDef<AssessmentItem>[] = [
+    {
+      accessorKey: "assessmentCode",
+      header: t("ID"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor Name"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "vendor.serviceCategory",
+      header: t("Service Category"),
+      cell: ({ row }) => row.original.vendor?.serviceCategory || "-",
+    },
+    {
+      accessorKey: "vendorSubmissionDate",
+      header: t("Date of Submission"),
+      cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
+    },
+  ];
+
+  // Reassessment columns
+  const reassessmentColumns: ColumnDef<AssessmentItem>[] = [
+    {
+      accessorKey: "assessmentCode",
+      header: t("ID"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "vendor.serviceCategory",
+      header: t("Service Category"),
+      cell: ({ row }) => row.original.vendor?.serviceCategory || "-",
+    },
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "vendorSubmissionDate",
+      header: t("Date of Submission"),
+      cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
+    },
+  ];
+
+  // Offboarding columns
+  const offboardingColumns: ColumnDef<AssessmentItem>[] = [
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "assessmentCode",
+      header: t("Assessment Code"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "initiatedBy.fullName",
+      header: t("Initiated By"),
+      cell: ({ row }) => row.original.initiatedBy?.fullName || "-",
+    },
+    {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{row.getValue("status")}</Badge>,
+    },
+    {
+      accessorKey: "vendorSubmissionDate",
+      header: t("Submitted Date"),
+      cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
+    },
+    {
+      id: "actions",
+      header: t("Actions"),
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.open(`/tprm/assessments?id=${row.original.id}`, "_self")}
+        >
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ),
+    },
+  ];
+
+  // Completed columns
+  const completedColumns: ColumnDef<AssessmentItem>[] = [
+    {
+      accessorKey: "assessmentCode",
+      header: t("ID"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor Name"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "assessmentResult",
+      header: t("Assessment Result"),
+      cell: ({ row }) => {
+        const result = row.getValue("assessmentResult") as string;
+        return result ? (
+          <Badge variant={result === "Satisfactory" ? "default" : "destructive"}>{result}</Badge>
+        ) : (
+          "-"
+        );
+      },
+    },
+    {
+      accessorKey: "completionDate",
+      header: t("Date"),
+      cell: ({ row }) => formatDate(row.getValue("completionDate") || row.original.vendorSubmissionDate),
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.open(`/tprm/assessments?id=${row.original.id}`, "_self")}
+        >
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ),
+    },
+  ];
+
+  const getColumns = () => {
+    switch (activeTab) {
+      case "my-queue":
+        return subTab === "reassessment"
+          ? reassessmentColumns
+          : subTab === "returned"
+          ? [...myQueueColumns.slice(0, -1), {
+              accessorKey: "approverComment",
+              header: t("Approver Comment"),
+              cell: ({ row }: { row: { getValue: (key: string) => string } }) => (
+                <span className="text-sm truncate max-w-[200px] inline-block">
+                  {row.getValue("approverComment") || "-"}
+                </span>
+              ),
+            } as ColumnDef<AssessmentItem>, myQueueColumns[myQueueColumns.length - 1]]
+          : myQueueColumns;
+      case "due-diligence":
+        return dueDiligenceColumns;
+      case "reassessments":
+        return reassessmentColumns;
+      case "offboarding":
+        return offboardingColumns;
+      case "completed":
+        return completedColumns;
+      default:
+        return myQueueColumns;
+    }
+  };
+
+  // Sub-tab definitions
+  const getSubTabs = () => {
+    switch (activeTab) {
+      case "my-queue":
+        return [
+          { value: "main", label: t("My Queue") },
+          { value: "reassessment", label: t("Initiate Reassessment") },
+          { value: "returned", label: t("Returned") },
+        ];
+      case "due-diligence":
+        return [
+          { value: "awaiting", label: t("Awaiting Response") },
+          { value: "unassigned", label: t("Unassigned Queue") },
+          { value: "assigned", label: t("Assigned Queue") },
+          { value: "completed", label: t("Completed") },
+        ];
+      case "reassessments":
+        return [
+          { value: "awaiting", label: t("Awaiting Response") },
+          { value: "unassigned", label: t("Unassigned Queue") },
+          { value: "assigned", label: t("Assigned Queue") },
+          { value: "completed", label: t("Completed") },
+        ];
+      case "offboarding":
+        return [
+          { value: "main", label: t("Offboard Approval") },
+          { value: "terminated", label: t("Terminated Vendors") },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const subTabs = getSubTabs();
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Assessments")}</span>
+      </nav>
+
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList>
+          <TabsTrigger value="my-queue">{t("My Queue")}</TabsTrigger>
+          <TabsTrigger value="due-diligence">{t("Due Diligence")}</TabsTrigger>
+          <TabsTrigger value="reassessments">{t("Reassessments")}</TabsTrigger>
+          <TabsTrigger value="offboarding">{t("Offboarding")}</TabsTrigger>
+          <TabsTrigger value="completed">{t("Completed")}</TabsTrigger>
+        </TabsList>
+
+        <div className="mt-4 space-y-4">
+          {/* Sub-tabs if applicable */}
+          {subTabs.length > 0 && (
+            <div className="flex gap-0 rounded-lg overflow-hidden border">
+              {subTabs.map((st) => (
+                <button
+                  key={st.value}
+                  onClick={() => setSubTab(st.value)}
+                  className={`flex-1 py-2.5 px-4 text-sm font-medium transition-colors ${
+                    subTab === st.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Filter bar */}
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <Input
+                placeholder={t("Search by vendor Name, Assessment ID, Service Category")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div>
+              <Input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-[180px]"
+                placeholder={t("Submission Date")}
+              />
+            </div>
+          </div>
+
+          {/* Table content */}
+          {["my-queue", "due-diligence", "reassessments", "offboarding", "completed"].map((tab) => (
+            <TabsContent key={tab} value={tab} className="mt-0">
+              {loading ? (
+                <div className="flex items-center justify-center min-h-[200px]">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <DataGrid columns={getColumns()} data={filteredItems} hideSearch />
+              )}
+            </TabsContent>
+          ))}
+        </div>
+      </Tabs>
+    </div>
+  );
+}
