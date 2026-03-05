@@ -26,7 +26,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Home, ChevronRight, Search, Plus, Download, MoreHorizontal,
+  Home, ChevronRight, Search, Plus, Minus, Download, MoreHorizontal,
   Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X, Check, Info, Play, AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -109,6 +109,88 @@ const VRR_COLORS: Record<string, string> = {
   Nominal: "#22c55e", Low: "#84cc16", Moderate: "#eab308", High: "#f97316", Critical: "#ef4444",
 };
 
+const STATUS_BADGE_COLORS: Record<string, string> = {
+  Onboarding: "bg-blue-100 text-blue-800",
+  Onboarded: "bg-green-100 text-green-800",
+  Offboarding: "bg-yellow-100 text-yellow-800",
+  Offboarded: "bg-slate-100 text-slate-600",
+};
+
+// ── Vendor Accordion Item ───────────────────────────────────────────────────
+function VendorAccordionItem({
+  vendor, isExpanded, onToggle, onExport, onInitiateAssessment, onReportIssue, t,
+}: {
+  vendor: Vendor; isExpanded: boolean; onToggle: () => void;
+  onExport: (v: Vendor) => void; onInitiateAssessment: (v: Vendor) => void;
+  onReportIssue: () => void; t: (s: string) => string;
+}) {
+  return (
+    <div className="border border-slate-200 rounded-md bg-white overflow-hidden">
+      {/* Accordion Header */}
+      <button onClick={onToggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left">
+        <span className="font-medium text-sm text-slate-800">{vendor.name}{vendor.vrr ? ` - ${vendor.vrr}` : ""}</span>
+        <span className="text-slate-500 flex-shrink-0">{isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span>
+      </button>
+
+      {/* Expanded Body */}
+      {isExpanded && (
+        <div className="border-t border-slate-200">
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-wrap">
+            <Button size="sm" variant="default" onClick={() => onExport(vendor)}>
+              <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />{t("Export")}
+            </Button>
+            {vendor.vrr && vendor.vrr !== "Nominal" && (
+              <Button size="sm" variant="outline" onClick={() => onInitiateAssessment(vendor)}>
+                <Play className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />{t("Initiate Assessment")}
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={onReportIssue}>
+              <AlertTriangle className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />{t("Report Issue")}
+            </Button>
+          </div>
+
+          {/* DataGrid table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-left">
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Vendor Name")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Department")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Service Category")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Account Manager")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Contact Number")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Status")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("VRR")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-slate-100 hover:bg-slate-50/50">
+                  <td className="px-4 py-3 font-medium text-primary">{vendor.name}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.department?.name || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.serviceCategory || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.accountManagerName || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.contactPhone || "—"}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE_COLORS[vendor.status] || "bg-slate-100 text-slate-600"}`}>
+                      {t(vendor.status)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {vendor.vrr
+                      ? <span className="text-xs px-2 py-0.5 rounded font-medium text-white" style={{ backgroundColor: VRR_COLORS[vendor.vrr] || "#94a3b8" }}>{t(vendor.vrr)}</span>
+                      : <span className="text-slate-400">—</span>}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BOInventoryPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -122,6 +204,7 @@ export default function BOInventoryPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
 
   // ── Dialog state ───────────────────────────────────
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -290,17 +373,18 @@ export default function BOInventoryPage() {
         const created = await res.json();
         // Calculate VRR from onboarding answers before resetForm clears them
         const vrrScore = calculateVrrScore();
-        // Save VRR to the vendor
+        const vrrLabel = getVrrLevel(vrrScore).name;
+        // Save VRR label to the vendor
         await fetch(`/api/tprm/vendors/${created.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vrr: vrrScore.toString() }),
+          body: JSON.stringify({ vrr: vrrLabel }),
         });
         setCreatedVendorName(vendorName.trim());
         setCreatedVendorId(created.id);
         setShowCreateDialog(false);
         resetForm();
-        setShowInfoPopup(true);
+        setShowSuccessPopup(true);
         fetchVendors();
       } else {
         const err = await res.json();
@@ -355,7 +439,21 @@ export default function BOInventoryPage() {
     }
   };
 
-  const openCreate = () => { resetForm(); setShowCreateDialog(true); };
+  const openCreate = async () => {
+    try {
+      const res = await fetch("/api/tprm/subscription/validate");
+      const data = await res.json();
+      if (!data.isValid) {
+        toast({ title: t(data.message), variant: "destructive" });
+        return;
+      }
+    } catch {
+      toast({ title: t("Failed to validate subscription"), variant: "destructive" });
+      return;
+    }
+    resetForm();
+    setShowCreateDialog(true);
+  };
 
   const openEdit = (vendor: Vendor) => {
     setSelectedVendor(vendor);
@@ -529,12 +627,11 @@ export default function BOInventoryPage() {
         }),
       });
       if (res.ok) {
-        toast({ title: t("Assessment initiated successfully") });
         setShowRiskRatingDialog(false);
         setRiskRatingVendor(null);
         setSelectedTemplateIds([]);
-
         fetchVendors();
+        setShowInfoPopup(true);
       } else {
         const err = await res.json();
         toast({ title: t("Failed to initiate assessment"), description: err.error, variant: "destructive" });
@@ -570,67 +667,71 @@ export default function BOInventoryPage() {
   // ── Form fields (shared between Create & Edit dialogs) ──
   const formFields = (
     <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
-      {/* ── Vendor Name ── */}
-      <div className="space-y-1.5">
-        <Label>{t("Vendor Name")} *</Label>
-        <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder={t("Enter vendor name")} />
-        {formErrors.vendorName && <p className="text-xs text-red-500">{formErrors.vendorName}</p>}
-      </div>
 
-      {/* ── Account Managers ── */}
-      {managers.map((manager, index) => (
-        <div key={index} className="space-y-3 border rounded-md p-3 relative">
-          {index > 0 && (
-            <Button type="button" variant="ghost" size="icon" className="absolute top-1 ltr:right-1 rtl:left-1 h-6 w-6" onClick={() => removeManager(index)}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-1.5">
-              <Label>{t("Account Manager Name")}</Label>
-              <Input value={manager.name} onChange={(e) => updateManager(index, "name", e.target.value)} placeholder={t("Enter account manager name")} />
-            </div>
-            {index === 0 && (
-              <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={addManager}>
-                <Plus className="h-4 w-4" />
+      {/* ══ Section 1: Vendor Profile Fields (System Generated) ══ */}
+      <div className="space-y-4">
+
+        {/* Vendor Name */}
+        <div className="space-y-1.5">
+          <Label>{t("Vendor Name")} *</Label>
+          <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder={t("Enter vendor name")} />
+          {formErrors.vendorName && <p className="text-xs text-red-500">{formErrors.vendorName}</p>}
+        </div>
+
+        {/* Account Managers */}
+        {managers.map((manager, index) => (
+          <div key={index} className="space-y-3 border rounded-md p-3 relative">
+            {index > 0 && (
+              <Button type="button" variant="ghost" size="icon" className="absolute top-1 ltr:right-1 rtl:left-1 h-6 w-6" onClick={() => removeManager(index)}>
+                <X className="h-3.5 w-3.5" />
               </Button>
             )}
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-1.5">
+                <Label>{t("Account Manager Name")}</Label>
+                <Input value={manager.name} onChange={(e) => updateManager(index, "name", e.target.value)} placeholder={t("Enter account manager name")} />
+              </div>
+              {index === 0 && (
+                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={addManager}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("Account Manager Email")}</Label>
+              <Input type="email" value={manager.email} onChange={(e) => updateManager(index, "email", e.target.value)} placeholder={t("Enter account manager email")} />
+              {formErrors[`manager_${index}_email`] && <p className="text-xs text-red-500">{formErrors[`manager_${index}_email`]}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("Contact Number")}</Label>
+              <Input value={manager.contactNo} onChange={(e) => updateManager(index, "contactNo", e.target.value)} placeholder={t("e.g. +0919898989898")} />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>{t("Account Manager Email")}</Label>
-            <Input type="email" value={manager.email} onChange={(e) => updateManager(index, "email", e.target.value)} placeholder={t("Enter account manager email")} />
-            {formErrors[`manager_${index}_email`] && <p className="text-xs text-red-500">{formErrors[`manager_${index}_email`]}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t("Contact Number")}</Label>
-            <Input value={manager.contactNo} onChange={(e) => updateManager(index, "contactNo", e.target.value)} placeholder={t("e.g. +0919898989898")} />
-          </div>
+        ))}
+
+        {/* Service Category */}
+        <div className="space-y-1.5">
+          <Label>{t("Service Category")}</Label>
+          <Select value={serviceCategory} onValueChange={setServiceCategory}>
+            <SelectTrigger><SelectValue placeholder={t("Select category")} /></SelectTrigger>
+            <SelectContent>
+              {serviceCategories.map((cat) => (
+                <SelectItem key={cat} value={cat}>{t(cat)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      ))}
 
-      {/* ── Service Category ── */}
-      <div className="space-y-1.5">
-        <Label>{t("Service Category")}</Label>
-        <Select value={serviceCategory} onValueChange={setServiceCategory}>
-          <SelectTrigger><SelectValue placeholder={t("Select category")} /></SelectTrigger>
-          <SelectContent>
-            {serviceCategories.map((cat) => (
-              <SelectItem key={cat} value={cat}>{t(cat)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Service Description */}
+        <div className="space-y-1.5">
+          <Label>{t("Service Description")}</Label>
+          <Textarea value={serviceDescription} onChange={(e) => setServiceDescription(e.target.value)} placeholder={t("Describe the services provided")} rows={3} />
+        </div>
       </div>
 
-      {/* ── Service Description ── */}
-      <div className="space-y-1.5">
-        <Label>{t("Service Description")}</Label>
-        <Textarea value={serviceDescription} onChange={(e) => setServiceDescription(e.target.value)} placeholder={t("Describe the services provided")} rows={3} />
-      </div>
-
-      {/* ── Custom Vendor Profile Fields ── */}
+      {/* ══ Section 2: Vendor Profile Fields (Added by Admin) ══ */}
       {customProfileFields.length > 0 && (
-        <div className="space-y-3 border-t pt-4">
-          <p className="text-sm font-semibold text-muted-foreground">{t("Vendor Profile Fields")}</p>
+        <div className="space-y-3">
           {customProfileFields.map((field) => (
             <div key={field.id} className="space-y-1.5">
               <Label>{field.fieldName}</Label>
@@ -644,10 +745,9 @@ export default function BOInventoryPage() {
         </div>
       )}
 
-      {/* ── Onboarding Questions ── */}
+      {/* ══ Section 3: Onboarding Questions ══ */}
       {onboardingQuestions.length > 0 && (
-        <div className="space-y-3 border-t pt-4">
-          <p className="text-sm font-semibold text-muted-foreground">{t("Onboarding Questions")}</p>
+        <div className="space-y-3">
           {onboardingQuestions.map((q) => (
             <div key={q.id} className="space-y-2">
               <div className="space-y-1.5">
@@ -754,10 +854,16 @@ export default function BOInventoryPage() {
         </div>
       </div>
 
-      {/* Table Card */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {/* Search & Filter Toolbar */}
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
+      {/* ── Outer Group Box — mirrors Mendix "Vendors" groupbox ── */}
+      <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+        {/* Group Box Header — light blue, matches Mendix */}
+        <div className="bg-primary-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between">
+          <span className="font-semibold text-sm text-slate-700">{t("Vendors")}</span>
+          <Info className="h-4 w-4 text-slate-400" />
+        </div>
+
+        {/* Search & Filter inside group box */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-4 py-3 border-b border-slate-100">
           <div className="relative">
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input placeholder={t("Search vendors...")} value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} className="w-full sm:w-56 ltr:pl-9 rtl:pr-9 text-sm bg-slate-50 border-slate-200" />
@@ -773,6 +879,7 @@ export default function BOInventoryPage() {
           </div>
         </div>
 
+        {/* Vendor accordion list */}
         {loading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
         ) : vendors.length === 0 ? (
@@ -781,90 +888,50 @@ export default function BOInventoryPage() {
             <p className="font-medium text-muted-foreground">{t("No Vendor Details Found")}</p>
           </div>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Vendor Code")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Vendor Name")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Service Category")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Account Manager")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Contact Number")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("VRR")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                  <TableBody>
-                    {vendors.map((vendor) => (
-                      <TableRow key={vendor.id}>
-                        <TableCell className="font-medium">{vendor.vendorCode}</TableCell>
-                        <TableCell>{vendor.name}</TableCell>
-                        <TableCell>{vendor.department?.name || "-"}</TableCell>
-                        <TableCell>{vendor.serviceCategory || "-"}</TableCell>
-                        <TableCell>{vendor.accountManagerName || "-"}</TableCell>
-                        <TableCell>{vendor.contactPhone || "-"}</TableCell>
-                        <TableCell>{getStatusBadge(vendor.status)}</TableCell>
-                        <TableCell>
-                          {vendor.vrr ? (
-                            <Badge style={{ backgroundColor: VRR_COLORS[vendor.vrr] || '#94a3b8' }} className="text-white text-xs">{t(vendor.vrr)}</Badge>
-                          ) : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => { setSelectedVendor(vendor); setShowViewDialog(true); }}>
-                                <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("View")}
-                              </DropdownMenuItem>
-                              {canEdit && (
-                                <DropdownMenuItem onClick={() => openEdit(vendor)}>
-                                  <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Edit")}
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => openAssessmentForVendor(vendor)}>
-                                <Play className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Initiate Assessment")}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push("/tprm/bo-issues")}>
-                                <AlertTriangle className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Report Issue")}
-                              </DropdownMenuItem>
-                              {canDelete && (
-                                <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedVendor(vendor); setShowDeleteDialog(true); }}>
-                                  <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete")}
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+          <div className="px-4 py-3 space-y-2">
+            {vendors.map((vendor) => (
+              <VendorAccordionItem
+                key={vendor.id}
+                vendor={vendor}
+                isExpanded={expandedVendor === vendor.id}
+                onToggle={() => setExpandedVendor(expandedVendor === vendor.id ? null : vendor.id)}
+                onExport={(v) => {
+                  const headers = ["Vendor Code", "Vendor Name", "Status", "Service Category", "Account Manager", "Account Manager Email", "Contact Phone", "Created At"];
+                  const rows = [[v.vendorCode, v.name, v.status, v.serviceCategory || "", v.accountManagerName || "", v.accountManagerEmail || "", v.contactPhone || "", new Date(v.createdAt).toLocaleDateString()]];
+                  const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = `${v.name}-export.csv`; a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                onInitiateAssessment={openAssessmentForVendor}
+                onReportIssue={() => router.push("/tprm/bo-issues")}
+                t={t}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Footer — count + pagination */}
+        {!loading && vendors.length > 0 && (
+          <div className="border-t border-slate-100 px-4 py-2 flex items-center justify-between">
+            <span className="text-xs text-slate-400">{t("Showing")} {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, total)} {t("of")} {total}</span>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
-                <p className="text-sm text-muted-foreground">
-                  {t("Showing")} {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, total)} {t("of")} {total}
-                </p>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
-                    .map((page, idx, arr) => (
-                      <span key={page}>
-                        {idx > 0 && arr[idx - 1] !== page - 1 && <span className="px-1 text-muted-foreground">...</span>}
-                        <Button variant={page === currentPage ? "default" : "outline"} size="sm" className="w-8" onClick={() => setCurrentPage(page)}>{page}</Button>
-                      </span>
-                    ))}
-                  <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
-                </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .map((page, idx, arr) => (
+                    <span key={page}>
+                      {idx > 0 && arr[idx - 1] !== page - 1 && <span className="px-1 text-muted-foreground">...</span>}
+                      <Button variant={page === currentPage ? "default" : "outline"} size="sm" className="w-8" onClick={() => setCurrentPage(page)}>{page}</Button>
+                    </span>
+                  ))}
+                <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
@@ -979,7 +1046,7 @@ export default function BOInventoryPage() {
             <p className="text-sm text-slate-500">{t("You will be able to access the assessment once it is completed.")}</p>
           </div>
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
-            <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => { setShowInfoPopup(false); setShowSuccessPopup(true); }}>
+            <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={() => setShowInfoPopup(false)}>
               {t("OK")}
             </Button>
           </div>
@@ -1198,11 +1265,13 @@ export default function BOInventoryPage() {
             );
           })()}
 
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
-            <Button variant="outline" onClick={() => { setShowRiskRatingDialog(false); setRiskRatingVendor(null); setSelectedTemplateIds([]); }}>
-              {t("Back To Vendor Inventory")}
-            </Button>
-          </div>
+          {riskRatingVendor?.vrr === "Nominal" && (
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+              <Button variant="outline" onClick={() => { setShowRiskRatingDialog(false); setRiskRatingVendor(null); setSelectedTemplateIds([]); }}>
+                {t("Back To Vendor Inventory")}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

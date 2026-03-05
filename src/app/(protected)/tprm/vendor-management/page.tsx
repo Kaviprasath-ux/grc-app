@@ -2,45 +2,28 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Plus, Minus, Pencil, Trash2, Search, X,
-  Download, Upload, Building2, Info, Shield, Activity, AlertTriangle,
+  Plus, Minus, Pencil, Trash2, Search, X, Info,
+  Download, Upload, Building2, Shield, Activity, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DataGrid } from "@/components/shared";
-import { ColumnDef } from "@tanstack/react-table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Home, ChevronRight } from "lucide-react";
 
 // ==================== TYPES ====================
 
-interface Department {
-  id: string;
-  name: string;
-}
+interface Department { id: string; name: string; }
 
 interface MonitoringAssessmentSummary {
   overallScore: number | null;
@@ -89,10 +72,17 @@ interface Vendor {
 
 const VRR_COLORS: Record<string, string> = {
   Critical: "bg-red-100 text-red-800 border-red-200",
-  High: "bg-orange-100 text-orange-800 border-orange-200",
+  High:     "bg-orange-100 text-orange-800 border-orange-200",
   Moderate: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  Low: "bg-green-100 text-green-800 border-green-200",
-  Nominal: "bg-blue-100 text-blue-800 border-blue-200",
+  Low:      "bg-green-100 text-green-800 border-green-200",
+  Nominal:  "bg-blue-100 text-blue-800 border-blue-200",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  Onboarding:  "bg-blue-50 text-blue-700",
+  Onboarded:   "bg-green-50 text-green-700",
+  Offboarding: "bg-orange-50 text-orange-700",
+  Offboarded:  "bg-slate-50 text-slate-600",
 };
 
 function securityScoreBadgeClass(score: number | null): string {
@@ -102,7 +92,194 @@ function securityScoreBadgeClass(score: number | null): string {
   return "bg-red-100 text-red-700";
 }
 
-// ==================== MAIN COMPONENT ====================
+// ==================== VENDOR ROW (accordion item) ====================
+
+function VendorAccordionItem({
+  vendor,
+  isExpanded,
+  onToggle,
+  onEdit,
+  onDelete,
+  onExport,
+  t,
+}: {
+  vendor: Vendor;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onEdit: (v: Vendor) => void;
+  onDelete: (id: string) => void;
+  onExport: (v: Vendor) => void;
+  t: (s: string) => string;
+}) {
+  const a = vendor.monitoringVendor?.assessments[0];
+  const effOverall = a?.calculatedOverallScore ?? a?.overallScore ?? null;
+  const effSP = a?.calculatedSecurityPosture ?? a?.securityPostureScore ?? null;
+  const effTE = a?.calculatedThreatExposure ?? a?.threatExposureScore ?? null;
+
+  return (
+    <div className="border border-slate-200 rounded-md bg-white overflow-hidden">
+      {/* ── Accordion Header ── */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+      >
+        <span className="font-medium text-sm text-slate-800">
+          {vendor.name}{vendor.vrr ? ` - ${vendor.vrr}` : ""}
+        </span>
+        <span className="text-slate-500 flex-shrink-0">
+          {isExpanded
+            ? <Minus className="h-4 w-4" />
+            : <Plus className="h-4 w-4" />}
+        </span>
+      </button>
+
+      {/* ── Expanded Body ── */}
+      {isExpanded && (
+        <div className="border-t border-slate-200">
+
+          {/* Action buttons — mirrors Mendix Export + Report Issue */}
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+            <Button size="sm" variant="default" onClick={() => onExport(vendor)}>
+              <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+              {t("Export")}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onEdit(vendor)}>
+              <Pencil className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+              {t("Edit")}
+            </Button>
+            <Button size="sm" variant="destructive" onClick={() => onDelete(vendor.id)}>
+              <Trash2 className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+              {t("Delete")}
+            </Button>
+          </div>
+
+          {/* ── DataGrid table — mirrors Mendix columns ── */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-left">
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Vendor Name")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Engagement ID")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Department")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Service Category")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Status")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("VRR")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Security Score")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-slate-100 hover:bg-slate-50/50">
+                  <td className="px-4 py-3 font-medium text-primary">{vendor.name}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.vendorCode}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.department?.name || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600">{vendor.serviceCategory || "—"}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[vendor.status] || "bg-slate-50 text-slate-600"}`}>
+                      {t(vendor.status)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {vendor.vrr
+                      ? <Badge variant="outline" className={VRR_COLORS[vendor.vrr] || ""}>{t(vendor.vrr)}</Badge>
+                      : <span className="text-slate-400">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {effOverall != null
+                      ? <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(effOverall)}`}>{Math.round(effOverall)}</span>
+                      : <span className="text-slate-400">—</span>}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* ── Service Description group box ── */}
+          {vendor.serviceDescription && (
+            <div className="mx-4 my-3 border border-slate-200 rounded-md overflow-hidden">
+              <div className="bg-primary-50 border-b border-slate-200 px-3 py-1.5">
+                <span className="text-xs font-semibold text-slate-700">{t("Service Description")}</span>
+              </div>
+              <div className="px-3 py-2 text-sm text-slate-600">{vendor.serviceDescription}</div>
+            </div>
+          )}
+
+          {/* ── Vendor Details group box ── */}
+          <div className="mx-4 mb-3 border border-slate-200 rounded-md overflow-hidden">
+            <div className="bg-primary-50 border-b border-slate-200 px-3 py-1.5">
+              <span className="text-xs font-semibold text-slate-700">{t("Vendor Details")}</span>
+            </div>
+            <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+              {[
+                [t("Code"),                vendor.vendorCode],
+                [t("Status"),              t(vendor.status)],
+                [t("Account Manager"),     vendor.accountManagerName || "—"],
+                [t("Account Manager Email"), vendor.accountManagerEmail || "—"],
+                [t("Contact Number"),      vendor.contactPhone || "—"],
+                [t("Contract Start"),      vendor.contractStartDate ? new Date(vendor.contractStartDate).toLocaleDateString() : "—"],
+                [t("Contract End"),        vendor.contractEndDate ? new Date(vendor.contractEndDate).toLocaleDateString() : "—"],
+                [t("Vendor Certification"), vendor.vendorCertification || "—"],
+              ].map(([label, value]) => (
+                <div key={label} className="flex gap-2">
+                  <span className="text-xs text-slate-400 min-w-[150px]">{label} :</span>
+                  <span className="text-xs text-slate-700 font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Vendor Risk Profile group box ── */}
+          <div className="mx-4 mb-3 border border-slate-200 rounded-md overflow-hidden">
+            <div className="bg-primary-50 border-b border-slate-200 px-3 py-1.5">
+              <span className="text-xs font-semibold text-slate-700">{t("Vendor Risk Profile")}</span>
+            </div>
+            <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                [t("Access to Network"), vendor.accessToNetwork],
+                [t("Cloud"),             vendor.cloud],
+                [t("Access to Data"),    vendor.accessToData],
+                [t("PII"),               vendor.pii],
+              ].map(([label, val]) => (
+                <div key={String(label)} className="flex gap-2">
+                  <span className="text-xs text-slate-400">{label} :</span>
+                  <span className={`text-xs font-medium ${val ? "text-red-600" : "text-slate-600"}`}>
+                    {val ? t("Yes") : t("No")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Security Monitoring group box ── */}
+          {vendor.monitoringVendor && (
+            <div className="mx-4 mb-3 border border-slate-200 rounded-md overflow-hidden">
+              <div className="bg-primary-50 border-b border-slate-200 px-3 py-1.5 flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold text-slate-700">{t("Security Monitoring")}</span>
+              </div>
+              <div className="p-3 flex flex-wrap gap-3">
+                {[
+                  [t("Overall Score"),     effOverall,  <Activity key="a" className="h-3.5 w-3.5" />],
+                  [t("Security Posture"),  effSP,       <Shield key="s" className="h-3.5 w-3.5" />],
+                  [t("Threat Exposure"),   effTE,       <AlertTriangle key="t" className="h-3.5 w-3.5" />],
+                ].map(([label, score]) => (
+                  <div key={String(label)} className="flex items-center gap-2 border rounded px-3 py-1.5 bg-slate-50 text-xs">
+                    <span className="text-slate-500">{label}</span>
+                    <span className={`font-bold rounded px-1.5 py-0.5 ${securityScoreBadgeClass(score as number | null)}`}>
+                      {(score as number | null) != null ? Math.round(score as number) : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==================== MAIN PAGE ====================
 
 export default function VendorManagementPage() {
   const { toast } = useToast();
@@ -116,7 +293,6 @@ export default function VendorManagementPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [serviceCategories, setServiceCategories] = useState<{ id: string; name: string }[]>([]);
 
-  // Form state
   const [form, setForm] = useState({
     name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
     accountManagerEmail: "", serviceCategory: "", departmentId: "",
@@ -130,15 +306,10 @@ export default function VendorManagementPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/tprm/vendors?limit=500");
-      if (res.ok) {
-        const data = await res.json();
-        setVendors(data.data || []);
-      }
+      if (res.ok) { const data = await res.json(); setVendors(data.data || []); }
     } catch {
       toast({ title: t("Error"), description: t("Failed to load vendors"), variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [toast, t]);
 
   const loadLookups = useCallback(async () => {
@@ -161,16 +332,14 @@ export default function VendorManagementPage() {
     (v.serviceCategory || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const resetForm = () => {
-    setForm({
-      name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
-      accountManagerEmail: "", serviceCategory: "", departmentId: "",
-      status: "Onboarding", engagementId: "", vrr: "", serviceDescription: "",
-      contractStartDate: "", contractEndDate: "",
-      accessToNetwork: false, cloud: false, accessToData: false, pii: false,
-      businessJustification: "", vendorCertification: "",
-    });
-  };
+  const resetForm = () => setForm({
+    name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
+    accountManagerEmail: "", serviceCategory: "", departmentId: "",
+    status: "Onboarding", engagementId: "", vrr: "", serviceDescription: "",
+    contractStartDate: "", contractEndDate: "",
+    accessToNetwork: false, cloud: false, accessToData: false, pii: false,
+    businessJustification: "", vendorCertification: "",
+  });
 
   const openCreate = () => { setEditItem(null); resetForm(); setDialogOpen(true); };
 
@@ -259,256 +428,117 @@ export default function VendorManagementPage() {
     }
   };
 
-  const handleExportCsv = () => {
+  const handleExport = (vendor?: Vendor) => {
+    const rows = vendor ? [vendor] : filteredVendors;
     const headers = ["Vendor Name", "Engagement ID", "Status", "Department", "Service Category", "VRR"];
-    const rows = filteredVendors.map((v) => [
-      v.name, v.vendorCode, v.status, v.department?.name || "", v.serviceCategory || "", v.vrr || "",
-    ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const data = rows.map((v) => [v.name, v.vendorCode, v.status, v.department?.name || "", v.serviceCategory || "", v.vrr || ""]);
+    const csv = [headers.join(","), ...data.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "vendor-inventory.csv";
+    a.download = vendor ? `${vendor.name}-export.csv` : "vendor-inventory.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const columns: ColumnDef<Vendor>[] = [
-    { accessorKey: "name", header: t("Vendor Name"), cell: ({ row }) => <span className="font-medium text-primary">{row.original.name}</span> },
-    { accessorKey: "vendorCode", header: t("Engagement ID"), cell: ({ row }) => <span className="text-sm">{row.original.vendorCode}</span> },
-    { accessorKey: "status", header: t("Status"), cell: ({ row }) => <span className="text-sm">{t(row.original.status)}</span> },
-    { accessorKey: "department", header: t("Department"), cell: ({ row }) => <span className="text-sm">{row.original.department?.name || "-"}</span> },
-    { accessorKey: "serviceCategory", header: t("Service Category"), cell: ({ row }) => <span className="text-sm">{row.original.serviceCategory || "-"}</span> },
-    { accessorKey: "vrr", header: t("VRR"), cell: ({ row }) => row.original.vrr ? <Badge variant="outline" className={VRR_COLORS[row.original.vrr] || ""}>{t(row.original.vrr)}</Badge> : <span className="text-muted-foreground">-</span> },
-    {
-      id: "securityScore", header: t("Security Score"),
-      cell: ({ row }) => {
-        const a = row.original.monitoringVendor?.assessments[0];
-        const score = a?.calculatedOverallScore ?? a?.overallScore ?? null;
-        if (score === null) return <span className="text-muted-foreground text-sm">-</span>;
-        return <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(score)}`}>{Math.round(score)}</span>;
-      },
-    },
-    {
-      id: "actions", header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="default" size="icon" className="h-7 w-7" onClick={() => openEdit(row.original)}><Pencil className="h-3.5 w-3.5" /></Button>
-          <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDelete(row.original.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">{t("Vendor Inventory")}</h1>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Vendor Inventory")}</span>
+      </nav>
 
-      {/* Header bar */}
-      <div className="bg-primary text-primary-foreground rounded-t-lg px-4 py-2 flex items-center justify-between">
-        <span className="font-medium">{t("Vendors")}</span>
+      {/* Page header — mirrors Mendix: title left, buttons right */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{t("Vendor Inventory")}</h1>
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="secondary">
-                {t("Export/Import")}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportCsv}>
-                {t("Download Vendor Profile Template")}
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                {t("Import Vendor Profile")}
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                {t("Export Vendor Risk Rating Questions")}
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                {t("Import Responses for Questions")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={() => handleExport()}>
+            <Download className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
+            {t("Bulk Export")}
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
+            {t("Onboard New Vendor")}
+          </Button>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder={t("Search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-        {search && <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>}
+      {/* ── Outer Group Box — mirrors Mendix "Vendors" groupbox ── */}
+      <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+
+        {/* Group Box Header — light blue, matches Mendix */}
+        <div className="bg-primary-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between">
+          <span className="font-semibold text-sm text-slate-700">{t("Vendors")}</span>
+          <Info className="h-4 w-4 text-slate-400" />
+        </div>
+
+        {/* Search — inside group box, matches Mendix */}
+        <div className="px-4 py-3 border-b border-slate-100">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t("Search")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-8 text-sm"
+            />
+            {search && (
+              <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Vendor accordion list */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : filteredVendors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <Building2 className="h-10 w-10 mb-3 opacity-30" />
+            <p className="text-sm">{t("No vendors found")}</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 px-4 py-3 space-y-2">
+            {filteredVendors.map((vendor) => (
+              <VendorAccordionItem
+                key={vendor.id}
+                vendor={vendor}
+                isExpanded={expandedVendor === vendor.id}
+                onToggle={() => setExpandedVendor(expandedVendor === vendor.id ? null : vendor.id)}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+                onExport={handleExport}
+                t={t}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Footer count — mirrors Mendix "1 to 3 of 3" */}
+        {!loading && filteredVendors.length > 0 && (
+          <div className="border-t border-slate-100 px-4 py-2 flex justify-end">
+            <span className="text-xs text-slate-400">
+              {t("1 to")} {filteredVendors.length} {t("of")} {filteredVendors.length}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Vendor Accordion List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
-      ) : filteredVendors.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <Building2 className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p>{t("No vendors found")}</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredVendors.map((vendor) => {
-            const isExpanded = expandedVendor === vendor.id;
-            return (
-              <div key={vendor.id} className="border rounded-lg bg-white">
-                {/* Vendor Row: "VendorName - VRR" with +/- toggle */}
-                <button
-                  className="w-full flex items-center justify-between px-6 py-4 hover:bg-muted/30 transition-colors text-left"
-                  onClick={() => setExpandedVendor(isExpanded ? null : vendor.id)}
-                >
-                  <span className="font-medium">
-                    {vendor.name}{vendor.vrr ? ` - ${vendor.vrr}` : ""}
-                  </span>
-                  <span className="flex-shrink-0 text-muted-foreground">
-                    {isExpanded ? <Minus className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-                  </span>
-                </button>
-
-                {/* Expanded: DataGrid with single vendor row + detail section */}
-                {isExpanded && (
-                  <div className="border-t">
-                    {/* Export button inside expanded section */}
-                    <div className="px-6 pt-3">
-                      <Button size="sm" variant="default" onClick={() => {
-                        const csv = `Vendor Name,Engagement ID,Status,Department,Service Category,VRR\n${vendor.name},${vendor.vendorCode},${vendor.status},${vendor.department?.name || ""},${vendor.serviceCategory || ""},${vendor.vrr || ""}`;
-                        const blob = new Blob([csv], { type: "text/csv" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `${vendor.name}-export.csv`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}>
-                        <Upload className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Export")}
-                      </Button>
-                    </div>
-
-                    {/* Vendor summary table */}
-                    <div className="px-4 pb-2">
-                      <DataGrid columns={columns} data={[vendor]} hideSearch pageSize={5} />
-                    </div>
-
-                    {/* Vendor Detail Section */}
-                    <div className="border-t px-6 py-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Name")}:</span>
-                          <span className="text-sm font-medium">{vendor.name}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Access to Data")}:</span>
-                          <span className="text-sm font-medium">{vendor.accessToData ? t("Yes") : t("No")}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Account Manager Name")}:</span>
-                          <span className="text-sm font-medium">{vendor.accountManagerName || "-"}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("PII")}:</span>
-                          <span className="text-sm font-medium">{vendor.pii ? t("Yes") : t("No")}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Account Manager Email")}:</span>
-                          <span className="text-sm font-medium">{vendor.accountManagerEmail || "-"}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Business Justification")}:</span>
-                          <span className="text-sm font-medium">{vendor.businessJustification || t("No")}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Contact Number")}:</span>
-                          <span className="text-sm font-medium">{vendor.contactPhone || "-"}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Service Category")}:</span>
-                          <span className="text-sm font-medium">{vendor.serviceCategory || "-"}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Contract Start Date")}:</span>
-                          <span className="text-sm font-medium">{vendor.contractStartDate ? new Date(vendor.contractStartDate).toLocaleDateString() : "-"}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Contract End Date")}:</span>
-                          <span className="text-sm font-medium">{vendor.contractEndDate ? new Date(vendor.contractEndDate).toLocaleDateString() : "-"}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-muted-foreground text-sm min-w-[180px]">{t("Vendor Certification")}:</span>
-                          <span className="text-sm font-medium">{vendor.vendorCertification || "-"}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Security Monitoring Section */}
-                    {vendor.monitoringVendor && (
-                      <div className="border-t px-6 py-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Shield className="h-4 w-4 text-primary" />
-                          <h4 className="font-semibold text-primary text-sm">{t("Security Monitoring")}</h4>
-                        </div>
-                        {vendor.monitoringVendor.assessments[0] ? (() => {
-                          const a = vendor.monitoringVendor!.assessments[0];
-                          const effOverall = a.calculatedOverallScore ?? a.overallScore;
-                          const effSP = a.calculatedSecurityPosture ?? a.securityPostureScore;
-                          const effTE = a.calculatedThreatExposure ?? a.threatExposureScore;
-                          return (
-                            <div className="flex flex-wrap gap-3">
-                              <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
-                                <Activity className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{t("Overall Score")}</span>
-                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(effOverall)}`}>
-                                  {effOverall != null ? Math.round(effOverall) : "—"}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
-                                <Shield className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{t("Security Posture")}</span>
-                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(effSP)}`}>
-                                  {effSP != null ? Math.round(effSP) : "—"}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 border rounded-lg px-4 py-2 bg-slate-50">
-                                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{t("Threat Exposure")}</span>
-                                <span className={`text-sm font-bold rounded px-2 py-0.5 ${securityScoreBadgeClass(effTE)}`}>
-                                  {effTE != null ? Math.round(effTE) : "—"}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })() : (
-                          <p className="text-sm text-muted-foreground">{t("No assessment data available")}</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Report & Document Library */}
-                    <div className="border-t px-6 py-3">
-                      <h4 className="font-semibold text-primary text-sm">{t("Report Library")}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">{t("No reports available")}</p>
-                    </div>
-                    <div className="border-t px-6 py-3">
-                      <h4 className="font-semibold text-primary text-sm">{t("Document Library")}</h4>
-                      <div className="mt-2 flex justify-center">
-                        <Button variant="outline" size="sm">
-                          <Upload className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Upload Document")}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Add/Edit Vendor Dialog */}
+      {/* ── Add / Edit Vendor Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editItem ? t("Edit Vendor") : t("Add Vendor")}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editItem ? t("Edit Vendor") : t("Onboard New Vendor")}</DialogTitle>
+          </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><Label>{t("Vendor Name")} *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("Enter vendor name")} /></div>
             <div>

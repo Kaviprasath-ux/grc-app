@@ -8,55 +8,61 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 
-interface Vendor {
-  id: string;
-  name: string;
-  vrr: string | null;
+interface CriticalityItem {
+  label: string;
+  labelCount: number;
 }
 
-interface Assessment {
-  id: string;
+interface StatusItem {
   status: string;
+  count: number;
 }
 
 const VRR_COLORS: Record<string, string> = {
   Nominal: "#93c5fd", Low: "#3b82f6", Moderate: "#f59e0b", High: "#f97316", Critical: "#ef4444",
 };
 
+// Mirrors Barchart { Count, Status } color mapping — 3 statuses only
 const STATUS_COLORS: Record<string, string> = {
-  Draft: "#94a3b8",
-  "In Progress": "#3b82f6",
-  Submitted: "#8b5cf6",
-  "Under Review": "#f59e0b",
-  Reviewed: "#06b6d4",
-  Approved: "#22c55e",
-  Rejected: "#ef4444",
-  Returned: "#f97316",
-  Completed: "#10b981",
-  Cancelled: "#6b7280",
-  Expired: "#dc2626",
+  Initiated:     "#3b82f6",
+  "In Progress": "#f59e0b",
+  Completed:     "#22c55e",
 };
 
 export default function BODashboardPage() {
   const { t } = useLanguage();
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
+
+  // Chart 1 — Vendor Criticality
+  // DS_RET_Vendor_RM: isEnabled flag
+  // DS_VendorNominal/Low/Moderate/High/Critical_RM: per-level counts
+  const [criticalityIsEnabled, setCriticalityIsEnabled] = useState(false);
+  const [criticalityRaw, setCriticalityRaw] = useState<CriticalityItem[]>([]);
+
+  // Chart 2 — Assessment Status
+  // Dataview microflow (image 24): isEnabled flag
+  // DS_AssessmentInitiated/InProgress/Completed_RM (image 25): per-status counts
+  const [statusIsEnabled, setStatusIsEnabled] = useState(false);
+  const [statusRaw, setStatusRaw] = useState<StatusItem[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [vRes, aRes] = await Promise.all([
-        fetch("/api/tprm/vendors?limit=500"),
-        fetch("/api/tprm/assessments?limit=500"),
+      const [cRes, sRes] = await Promise.all([
+        fetch("/api/tprm/vendors/criticality-counts"),
+        fetch("/api/tprm/assessments/status-counts"),
       ]);
-      if (vRes.ok) {
-        const vJson = await vRes.json();
-        setVendors(vJson.data || []);
+
+      if (cRes.ok) {
+        const cJson = await cRes.json();
+        setCriticalityIsEnabled(cJson.isEnabled);  // IsEnable from DS_RET_Vendor_RM
+        setCriticalityRaw(cJson.data || []);        // { label, labelCount } per series
       }
-      if (aRes.ok) {
-        const aJson = await aRes.json();
-        setAssessments(aJson.data || []);
+      if (sRes.ok) {
+        const sJson = await sRes.json();
+        setStatusIsEnabled(sJson.isEnabled);        // IsEnable from dataview microflow (image 24)
+        setStatusRaw(sJson.data || []);             // { status, count } — Barchart { Count, Status }
       }
     } catch {
       // silent
@@ -67,27 +73,23 @@ export default function BODashboardPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const criticalityData = useMemo(() => {
-    const levels = ["Nominal", "Low", "Moderate", "High", "Critical"];
-    const counts: Record<string, number> = {};
-    levels.forEach((l) => (counts[l] = 0));
-    vendors.forEach((v) => {
-      if (v.vrr && counts[v.vrr] !== undefined) counts[v.vrr]++;
-    });
-    return levels.map((l) => ({ name: l, count: counts[l], color: VRR_COLORS[l] || "#94a3b8" }));
-  }, [vendors]);
+  // Map { label, labelCount } → chart shape (ColumnchartHelper.Label / LabelCount)
+  const criticalityData = useMemo(() =>
+    criticalityRaw.map((item) => ({
+      name: item.label,
+      count: item.labelCount,
+      color: VRR_COLORS[item.label] || "#94a3b8",
+    })),
+  [criticalityRaw]);
 
-  const statusData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    assessments.forEach((a) => {
-      counts[a.status] = (counts[a.status] || 0) + 1;
-    });
-    return Object.entries(counts).map(([name, count]) => ({
-      name,
-      count,
-      color: STATUS_COLORS[name] || "#94a3b8",
-    }));
-  }, [assessments]);
+  // Map { status, count } → chart shape (Barchart.Status / Barchart.Count)
+  const statusData = useMemo(() =>
+    statusRaw.map((item) => ({
+      name: item.status,
+      count: item.count,
+      color: STATUS_COLORS[item.status] || "#94a3b8",
+    })),
+  [statusRaw]);
 
   if (loading) {
     return (
@@ -110,13 +112,13 @@ export default function BODashboardPage() {
       <h1 className="text-2xl font-bold">{t("Assessment Dashboard")}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Vendor Criticality Chart */}
+        {/* Chart 1 — Vendor Criticality (IsEnable from DS_RET_Vendor_RM) */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t("Vendor Criticality")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {criticalityData.some((d) => d.count > 0) ? (
+            {criticalityIsEnabled ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={criticalityData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -138,13 +140,13 @@ export default function BODashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Assessment Status Chart */}
+        {/* Chart 2 — Assessment Status (IsEnable from dataview microflow image 24) */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t("Assessment Status")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {statusData.length > 0 ? (
+            {statusIsEnabled ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={statusData}>
                   <CartesianGrid strokeDasharray="3 3" />
