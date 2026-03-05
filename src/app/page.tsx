@@ -24,6 +24,11 @@ export default async function Home() {
     redirect("/internal-audit/fieldwork");
   }
 
+  // Redirect AccountManager users to AM Assessments page
+  if (session?.user?.roles?.includes("AccountManager")) {
+    redirect("/tprm/am-assessments");
+  }
+
   // Redirect BusinessOwner users to BO Dashboard
   if (session?.user?.roles?.includes("BusinessOwner")) {
     redirect("/tprm/bo-dashboard");

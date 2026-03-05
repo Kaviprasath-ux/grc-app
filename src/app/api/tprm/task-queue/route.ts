@@ -21,6 +21,11 @@ export const GET = withAuth(
 
       // Tab-specific filters
       switch (tab) {
+        case "unassigned":
+          // Submitted assessments with no assessor assigned (ready for assessor to claim)
+          where.assessorId = null;
+          where.status = "Submitted";
+          break;
         case "my-queue":
           // Assessments assigned to current user (as assessor) that are in active states
           where.assessorId = session.id;

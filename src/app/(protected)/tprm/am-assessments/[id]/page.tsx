@@ -18,8 +18,15 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Home, ArrowLeft, Send, Flag, Users, Upload, MessageSquare,
-  Loader2, FileText, AlertCircle, CheckCircle2, Filter,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Home, ArrowLeft, Send, Save, Flag, Upload, Download, MessageSquare,
+  Loader2, FileText, AlertCircle, CheckCircle2, Filter, ChevronDown,
+  ChevronRight, Bot, RefreshCw, XCircle, ShieldCheck, ShieldAlert, ShieldOff,
 } from "lucide-react";
 
 interface Question {
@@ -31,8 +38,9 @@ interface Question {
   parentId: string | null;
   mandatoryAttachment: boolean;
   mandatoryQuestion: boolean;
+  validateThroughAI?: boolean;
   sortOrder: number;
-  children: { id: string; questionText: string; mandatoryAttachment: boolean; mandatoryQuestion: boolean; sortOrder: number }[];
+  children: { id: string; questionText: string; mandatoryAttachment: boolean; mandatoryQuestion: boolean; validateThroughAI?: boolean; sortOrder: number }[];
 }
 
 interface AssessmentResponse {
@@ -44,6 +52,15 @@ interface AssessmentResponse {
   artifactName: string | null;
   isFlagged: boolean;
   isDelegated: boolean;
+  // AI evaluation fields
+  poScore?: number | null;
+  poStatus?: string | null;
+  poAnswer?: string | null;
+  poIssue?: string | null;
+  poRisk?: string | null;
+  poRecommendation?: string | null;
+  poSeverity?: string | null;
+  aiEvaluatedAt?: string | null;
 }
 
 interface Domain {
@@ -59,6 +76,34 @@ interface AssessmentDetail {
   vendor: { id: string; name: string; vendorCode: string };
   initiatedBy: { fullName: string } | null;
   responses: AssessmentResponse[];
+  aiEvaluationStatus?: string | null;
+  aiEvaluationStarted?: string | null;
+  aiEvaluationCompleted?: string | null;
+  aiEvaluationError?: string | null;
+}
+
+interface AIStatus {
+  aiEvaluationStatus: string | null;
+  aiEvaluationStarted: string | null;
+  aiEvaluationCompleted: string | null;
+  aiEvaluationError: string | null;
+}
+
+// AI status badge helper
+function AIStatusBadge({ status }: { status: string | null | undefined }) {
+  if (!status) return null;
+  switch (status) {
+    case "Satisfactory":
+      return <Badge className="bg-green-100 text-green-700 text-xs gap-1"><ShieldCheck className="h-3 w-3" />{status}</Badge>;
+    case "Unsatisfactory":
+      return <Badge className="bg-red-100 text-red-700 text-xs gap-1"><ShieldAlert className="h-3 w-3" />{status}</Badge>;
+    case "Not_Applicable":
+      return <Badge className="bg-gray-100 text-gray-600 text-xs gap-1"><ShieldOff className="h-3 w-3" />N/A</Badge>;
+    case "Failed":
+      return <Badge className="bg-orange-100 text-orange-700 text-xs gap-1"><XCircle className="h-3 w-3" />{status}</Badge>;
+    default:
+      return <Badge variant="outline" className="text-xs">{status}</Badge>;
+  }
 }
 
 export default function AMResponseQuestionnairePage() {
@@ -74,11 +119,18 @@ export default function AMResponseQuestionnairePage() {
   const [responses, setResponses] = useState<Record<string, AssessmentResponse>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState("all");
   const [filterMode, setFilterMode] = useState("all");
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
+
+  // AI evaluation state
+  const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
+  const [aiPolling, setAiPolling] = useState(false);
+  const [retriggering, setRetriggering] = useState(false);
+  const aiPollRef = useRef<NodeJS.Timeout | null>(null);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -99,6 +151,22 @@ export default function AMResponseQuestionnairePage() {
         }
       }
       setResponses(respMap);
+
+      // Set initial AI status from assessment
+      if (json.assessment) {
+        setAiStatus({
+          aiEvaluationStatus: json.assessment.aiEvaluationStatus,
+          aiEvaluationStarted: json.assessment.aiEvaluationStarted,
+          aiEvaluationCompleted: json.assessment.aiEvaluationCompleted,
+          aiEvaluationError: json.assessment.aiEvaluationError,
+        });
+
+        // Start polling if AI evaluation is in progress
+        const status = json.assessment.aiEvaluationStatus;
+        if (status === "Pending" || status === "Ingesting" || status === "Evaluating") {
+          startAIPolling();
+        }
+      }
     } catch {
       toast({ title: t("Error"), description: t("Failed to load assessment"), variant: "destructive" });
     } finally {
@@ -108,14 +176,54 @@ export default function AMResponseQuestionnairePage() {
 
   useEffect(() => {
     fetchAssessment();
+    return () => {
+      if (aiPollRef.current) clearInterval(aiPollRef.current);
+    };
   }, [fetchAssessment]);
+
+  // AI status polling
+  const startAIPolling = useCallback(() => {
+    if (aiPollRef.current) clearInterval(aiPollRef.current);
+    setAiPolling(true);
+
+    aiPollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/tprm/am-assessments/${assessmentId}/ai-status`);
+        if (!res.ok) return;
+        const data: AIStatus = await res.json();
+        setAiStatus(data);
+
+        // Stop polling when completed or failed
+        if (data.aiEvaluationStatus === "Completed" || data.aiEvaluationStatus === "Failed") {
+          if (aiPollRef.current) clearInterval(aiPollRef.current);
+          setAiPolling(false);
+
+          // Refresh assessment data to get AI results on responses
+          if (data.aiEvaluationStatus === "Completed") {
+            const assessRes = await fetch(`/api/tprm/am-assessments/${assessmentId}`);
+            if (assessRes.ok) {
+              const json = await assessRes.json();
+              const respMap: Record<string, AssessmentResponse> = {};
+              if (json.assessment?.responses) {
+                for (const r of json.assessment.responses) {
+                  respMap[r.questionId] = r;
+                }
+              }
+              setResponses(respMap);
+            }
+          }
+        }
+      } catch {
+        // Silently continue polling
+      }
+    }, 5000);
+  }, [assessmentId]);
 
   // Auto-save debounced
   const autoSave = useCallback((questionId: string, data: Partial<AssessmentResponse>) => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        const question = questions.find(q => q.id === questionId) || questions.flatMap(q => q.children).find(c => c.id === questionId);
         await fetch(`/api/tprm/am-assessments/${assessmentId}/responses`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -187,6 +295,38 @@ export default function AMResponseQuestionnairePage() {
     }
   };
 
+  const handleSaveAll = async () => {
+    const allQuestions = questions.flatMap(q => [q, ...(q.children || []).map(c => ({ ...c, domainId: q.domainId }))]);
+    const answeredResponses = allQuestions
+      .filter(q => responses[q.id]?.response)
+      .map(q => ({
+        questionId: q.id,
+        domainId: "domainId" in q ? q.domainId : null,
+        response: responses[q.id].response,
+        comment: responses[q.id]?.comment || null,
+      }));
+
+    if (answeredResponses.length === 0) {
+      toast({ title: t("No Data"), description: t("No responses to save"), variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/tprm/am-assessments/${assessmentId}/responses`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ responses: answeredResponses }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      toast({ title: t("Success"), description: `${answeredResponses.length} ${t("responses saved successfully")}` });
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to save responses"), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
@@ -203,12 +343,184 @@ export default function AMResponseQuestionnairePage() {
         });
         return;
       }
-      toast({ title: t("Success"), description: t("Assessment submitted successfully") });
-      router.push("/tprm/am-assessments");
+      toast({ title: t("Success"), description: t("Assessment submitted successfully. AI evaluation started.") });
+      // Update local status and start polling
+      setAssessment(prev => prev ? { ...prev, status: "Submitted" } : prev);
+      setAiStatus({ aiEvaluationStatus: "Pending", aiEvaluationStarted: new Date().toISOString(), aiEvaluationCompleted: null, aiEvaluationError: null });
+      startAIPolling();
     } catch {
       toast({ title: t("Error"), description: t("Failed to submit assessment"), variant: "destructive" });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleRetriggerAI = async () => {
+    setRetriggering(true);
+    try {
+      const res = await fetch(`/api/tprm/am-assessments/${assessmentId}/ai-evaluate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast({ title: t("Error"), description: json.error || t("Failed to re-trigger AI evaluation"), variant: "destructive" });
+        return;
+      }
+      toast({ title: t("Success"), description: t("AI evaluation re-triggered") });
+      setAiStatus({ aiEvaluationStatus: "Pending", aiEvaluationStarted: new Date().toISOString(), aiEvaluationCompleted: null, aiEvaluationError: null });
+      startAIPolling();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to re-trigger AI evaluation"), variant: "destructive" });
+    } finally {
+      setRetriggering(false);
+    }
+  };
+
+  // Export questions to Excel
+  const handleExport = async (domainOnly: boolean) => {
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.utils.book_new();
+
+      const targetQuestions = domainOnly && selectedDomain !== "all"
+        ? questions.filter(q => q.domainId === selectedDomain)
+        : questions;
+
+      const rows: (string | null)[][] = [
+        ["QuestionID", "Q#", "Domain", "Question", "Mandatory", "Response (Yes/No)", "Comment"],
+      ];
+
+      let qNum = 0;
+      for (const q of targetQuestions) {
+        qNum++;
+        const resp = responses[q.id];
+        rows.push([
+          q.id,
+          `Q${qNum}`,
+          q.domainName || "",
+          q.questionText,
+          q.mandatoryQuestion ? "Yes" : "No",
+          resp?.response || null,
+          resp?.comment || null,
+        ]);
+        if (q.children?.length) {
+          q.children.forEach((child, cIdx) => {
+            const childResp = responses[child.id];
+            rows.push([
+              child.id,
+              `Q${qNum}.${cIdx + 1}`,
+              q.domainName || "",
+              child.questionText,
+              child.mandatoryQuestion ? "Yes" : "No",
+              childResp?.response || null,
+              childResp?.comment || null,
+            ]);
+          });
+        }
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 0.1, hidden: true },
+        { wch: 8 },
+        { wch: 25 },
+        { wch: 60 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 40 },
+      ];
+
+      const domainLabel = domainOnly && selectedDomain !== "all"
+        ? domains.find(d => d.id === selectedDomain)?.name || "Domain"
+        : "All";
+      const sheetName = (domainLabel === "All" ? "All Questions" : domainLabel).substring(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+      const code = assessment?.assessmentCode || "Assessment";
+      const safeDomain = domainLabel.replace(/[^a-zA-Z0-9]/g, "_");
+      XLSX.writeFile(wb, `${code}_${safeDomain}_Questions.xlsx`);
+
+      toast({ title: t("Success"), description: t("Questions exported successfully") });
+    } catch (err) {
+      console.error("Export error:", err);
+      toast({ title: t("Error"), description: t("Failed to export questions"), variant: "destructive" });
+    }
+  };
+
+  // Import responses from Excel
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    try {
+      const XLSX = await import("xlsx");
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws);
+
+      const bulkResponses: { questionId: string; response: string; comment?: string; domainId?: string | null }[] = [];
+      const allQuestionsFlat = questions.flatMap(q => [q, ...(q.children || []).map(c => ({ ...c, domainId: q.domainId }))]);
+
+      for (const row of rows) {
+        const questionId = row["QuestionID"];
+        const rawResponse = (row["Response (Yes/No)"] || row["Response"] || "").trim();
+        const comment = (row["Comment"] || "").trim();
+
+        if (!questionId || !rawResponse) continue;
+
+        const normalized = rawResponse.charAt(0).toUpperCase() + rawResponse.slice(1).toLowerCase();
+        const validResponse = ["Yes", "No", "Na"].includes(normalized)
+          ? (normalized === "Na" ? "NA" : normalized)
+          : null;
+        if (!validResponse) continue;
+
+        const question = allQuestionsFlat.find(q => q.id === questionId);
+        bulkResponses.push({
+          questionId,
+          response: validResponse,
+          ...(comment ? { comment } : {}),
+          domainId: question && "domainId" in question ? question.domainId : undefined,
+        });
+      }
+
+      if (bulkResponses.length === 0) {
+        toast({ title: t("No Data"), description: t("No valid responses found in the file"), variant: "destructive" });
+        return;
+      }
+
+      const res = await fetch(`/api/tprm/am-assessments/${assessmentId}/responses`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ responses: bulkResponses }),
+      });
+
+      if (!res.ok) throw new Error("Bulk save failed");
+
+      setResponses(prev => {
+        const updated = { ...prev };
+        for (const r of bulkResponses) {
+          updated[r.questionId] = {
+            ...updated[r.questionId],
+            questionId: r.questionId,
+            response: r.response,
+            ...(r.comment ? { comment: r.comment } : {}),
+          } as AssessmentResponse;
+        }
+        return updated;
+      });
+
+      toast({
+        title: t("Success"),
+        description: `${t("Updated")} ${bulkResponses.length} ${t("of")} ${rows.length} ${t("responses")}`,
+      });
+    } catch (err) {
+      console.error("Import error:", err);
+      toast({ title: t("Error"), description: t("Failed to import responses"), variant: "destructive" });
     }
   };
 
@@ -225,6 +537,72 @@ export default function AMResponseQuestionnairePage() {
   const totalQuestions = questions.length;
   const answeredQuestions = questions.filter(q => responses[q.id]?.response).length;
   const isReadOnly = assessment?.status && !["Draft", "In Progress", "Returned"].includes(assessment.status);
+
+  // AI evaluation status helpers
+  const isAIInProgress = aiStatus?.aiEvaluationStatus === "Pending" || aiStatus?.aiEvaluationStatus === "Ingesting" || aiStatus?.aiEvaluationStatus === "Evaluating";
+  const isAICompleted = aiStatus?.aiEvaluationStatus === "Completed";
+  const isAIFailed = aiStatus?.aiEvaluationStatus === "Failed";
+  const showAIBanner = !!aiStatus?.aiEvaluationStatus;
+
+  // Render AI result section for a question
+  const renderAIResult = (resp: AssessmentResponse | undefined) => {
+    if (!resp?.poStatus) return null;
+
+    return (
+      <Collapsible>
+        <div className="flex items-center gap-2 mt-2">
+          <Bot className="h-4 w-4 text-purple-500" />
+          <span className="text-xs font-medium text-purple-700">{t("AI Evaluation")}</span>
+          <AIStatusBadge status={resp.poStatus} />
+          {resp.poScore != null && (
+            <Badge variant="outline" className="text-xs">{Math.round(resp.poScore)}%</Badge>
+          )}
+          {(resp.poAnswer || resp.poIssue || resp.poRisk || resp.poRecommendation) && (
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-5 px-1">
+                <ChevronRight className="h-3 w-3" />
+                <span className="text-xs">{t("Details")}</span>
+              </Button>
+            </CollapsibleTrigger>
+          )}
+        </div>
+        <CollapsibleContent>
+          <div className="mt-2 p-3 bg-purple-50/50 rounded-md border border-purple-100 space-y-2 text-sm">
+            {resp.poAnswer && (
+              <div>
+                <span className="font-medium text-purple-800">{t("AI Answer")}:</span>
+                <p className="text-muted-foreground mt-0.5">{resp.poAnswer}</p>
+              </div>
+            )}
+            {resp.poIssue && (
+              <div>
+                <span className="font-medium text-red-700">{t("Issue")}:</span>
+                <p className="text-muted-foreground mt-0.5">{resp.poIssue}</p>
+              </div>
+            )}
+            {resp.poRisk && (
+              <div>
+                <span className="font-medium text-orange-700">{t("Risk")}:</span>
+                <p className="text-muted-foreground mt-0.5">{resp.poRisk}</p>
+              </div>
+            )}
+            {resp.poRecommendation && (
+              <div>
+                <span className="font-medium text-blue-700">{t("Recommendation")}:</span>
+                <p className="text-muted-foreground mt-0.5">{resp.poRecommendation}</p>
+              </div>
+            )}
+            {resp.poSeverity && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{t("Severity")}:</span>
+                <Badge variant="outline" className="text-xs">{resp.poSeverity}</Badge>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
 
   if (loading) {
     return (
@@ -275,6 +653,51 @@ export default function AMResponseQuestionnairePage() {
           <span className="text-sm text-muted-foreground">
             {answeredQuestions}/{totalQuestions} {t("answered")}
           </span>
+
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Export")}
+                <ChevronDown className="h-3 w-3 ltr:ml-1 rtl:mr-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport(false)}>
+                {t("Export All Questions")}
+              </DropdownMenuItem>
+              {selectedDomain !== "all" && (
+                <DropdownMenuItem onClick={() => handleExport(true)}>
+                  {t("Export")} {domains.find(d => d.id === selectedDomain)?.name}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Import Button */}
+          {!isReadOnly && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={handleImport}
+              />
+            </>
+          )}
+
+          {!isReadOnly && (
+            <Button variant="outline" onClick={handleSaveAll} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Save className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
+              {t("Save")}
+            </Button>
+          )}
           {!isReadOnly && (
             <Button onClick={handleSubmit} disabled={submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
@@ -283,6 +706,49 @@ export default function AMResponseQuestionnairePage() {
           )}
         </div>
       </div>
+
+      {/* AI Evaluation Status Banner */}
+      {showAIBanner && (
+        <Card className={`border-2 ${isAIInProgress ? "border-purple-300 bg-purple-50/50" : isAICompleted ? "border-green-300 bg-green-50/50" : isAIFailed ? "border-red-300 bg-red-50/50" : "border-gray-200"}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {isAIInProgress && <Loader2 className="h-5 w-5 animate-spin text-purple-500" />}
+                {isAICompleted && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                {isAIFailed && <XCircle className="h-5 w-5 text-red-500" />}
+                <div>
+                  <p className="font-medium text-sm">
+                    {isAIInProgress && (
+                      <>
+                        {t("AI Evaluation")}:{" "}
+                        {aiStatus?.aiEvaluationStatus === "Pending" && t("Preparing...")}
+                        {aiStatus?.aiEvaluationStatus === "Ingesting" && t("Ingesting documents...")}
+                        {aiStatus?.aiEvaluationStatus === "Evaluating" && t("Evaluating responses...")}
+                      </>
+                    )}
+                    {isAICompleted && t("AI Evaluation Complete")}
+                    {isAIFailed && t("AI Evaluation Failed")}
+                  </p>
+                  {isAIFailed && aiStatus?.aiEvaluationError && (
+                    <p className="text-xs text-red-600 mt-1">{aiStatus.aiEvaluationError}</p>
+                  )}
+                </div>
+              </div>
+              {(isAIFailed || isAICompleted) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetriggerAI}
+                  disabled={retriggering}
+                >
+                  {retriggering ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <RefreshCw className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
+                  {t("Re-run AI Evaluation")}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-4 flex-wrap">
@@ -343,6 +809,11 @@ export default function AMResponseQuestionnairePage() {
                         )}
                         {q.mandatoryAttachment && (
                           <Badge className="bg-amber-100 text-amber-700 text-xs">{t("Attachment Required")}</Badge>
+                        )}
+                        {q.validateThroughAI && (
+                          <Badge className="bg-purple-100 text-purple-700 text-xs gap-1">
+                            <Bot className="h-3 w-3" />{t("AI Validated")}
+                          </Badge>
                         )}
                       </div>
                       <p className="text-sm">{q.questionText}</p>
@@ -435,6 +906,9 @@ export default function AMResponseQuestionnairePage() {
                     </div>
                   )}
 
+                  {/* AI Evaluation Result */}
+                  {renderAIResult(resp)}
+
                   {/* Child questions */}
                   {q.children && q.children.length > 0 && (
                     <div className="ltr:ml-6 rtl:mr-6 space-y-3 border-l-2 border-slate-200 ltr:pl-4 rtl:pr-4">
@@ -446,6 +920,11 @@ export default function AMResponseQuestionnairePage() {
                               <span className="text-xs text-muted-foreground">Q{idx + 1}.{cIdx + 1}</span>
                               {child.mandatoryQuestion && (
                                 <Badge variant="destructive" className="text-xs">{t("Mandatory")}</Badge>
+                              )}
+                              {child.validateThroughAI && (
+                                <Badge className="bg-purple-100 text-purple-700 text-xs gap-1">
+                                  <Bot className="h-3 w-3" />{t("AI")}
+                                </Badge>
                               )}
                             </div>
                             <p className="text-sm">{child.questionText}</p>
@@ -464,6 +943,8 @@ export default function AMResponseQuestionnairePage() {
                                 </div>
                               ))}
                             </RadioGroup>
+                            {/* AI result for child */}
+                            {renderAIResult(childResp)}
                           </div>
                         );
                       })}

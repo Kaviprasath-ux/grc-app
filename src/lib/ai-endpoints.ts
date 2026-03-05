@@ -78,6 +78,13 @@ export const AI_ENDPOINTS = {
   GENERATE_AUDIT_PLAN: '/api/generate_audit_plan',
 
   // ─────────────────────────────────────────────────────────────────────────
+  // TPRM (Third-Party Risk Management)
+  // ─────────────────────────────────────────────────────────────────────────
+  TPRM_INGEST: '/api/ingest',
+  TPRM_IMAGE: '/api/image',
+  TPRM_QUERY: '/api/query',
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Translation
   // ─────────────────────────────────────────────────────────────────────────
   TRANSLATE: '/api/translate',
@@ -127,6 +134,9 @@ export const ENDPOINT_NAMES: Record<string, string> = {
   [AI_ENDPOINTS.SIMPLE_INGEST]: 'Document Library Ingest',
   [AI_ENDPOINTS.SIMPLE_INGEST_STATUS]: 'Document Library Ingest Status',
   [AI_ENDPOINTS.SIMPLE_INGEST_RESULT]: 'Document Library Ingest Result',
+  [AI_ENDPOINTS.TPRM_INGEST]: 'TPRM Document Ingest',
+  [AI_ENDPOINTS.TPRM_IMAGE]: 'TPRM Image Analysis',
+  [AI_ENDPOINTS.TPRM_QUERY]: 'TPRM AI Query',
   [AI_ENDPOINTS.TRANSLATE]: 'Text Translation',
 };
 

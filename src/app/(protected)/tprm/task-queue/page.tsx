@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Eye, RotateCcw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Eye, RotateCcw, UserPlus } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface TaskQueueItem {
@@ -55,7 +56,8 @@ function formatDate(dateStr: string | null | undefined): string {
 
 export default function TaskQueuePage() {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState("my-queue");
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("unassigned");
   const [items, setItems] = useState<TaskQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -100,6 +102,64 @@ export default function TaskQueuePage() {
     setDateTo("");
     setStatusFilter("all");
   };
+
+  // Claim handler
+  const handleClaim = async (assessmentId: string) => {
+    try {
+      const res = await fetch("/api/tprm/task-queue/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessmentId }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        toast({ title: t("Error"), description: json.error || t("Failed to claim assessment"), variant: "destructive" });
+        return;
+      }
+      toast({ title: t("Success"), description: t("Assessment claimed successfully") });
+      fetchData(); // Refresh list
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to claim assessment"), variant: "destructive" });
+    }
+  };
+
+  // Unassigned queue columns
+  const unassignedColumns: ColumnDef<TaskQueueItem>[] = [
+    {
+      accessorKey: "assessmentCode",
+      header: t("ID"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "vendor.serviceCategory",
+      header: t("Service Category"),
+      cell: ({ row }) => row.original.vendor?.serviceCategory || "-",
+    },
+    {
+      accessorKey: "assessmentType",
+      header: t("Assessment Type"),
+    },
+    {
+      accessorKey: "vendorSubmissionDate",
+      header: t("Submission Date"),
+      cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <Button variant="default" size="sm" onClick={() => handleClaim(row.original.id)}>
+          <UserPlus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          {t("Claim")}
+        </Button>
+      ),
+    },
+  ];
 
   // My Queue columns
   const myQueueColumns: ColumnDef<TaskQueueItem>[] = [
@@ -223,6 +283,8 @@ export default function TaskQueuePage() {
 
   const getColumns = () => {
     switch (activeTab) {
+      case "unassigned":
+        return unassignedColumns;
       case "my-queue":
         return myQueueColumns;
       case "reassessment":
@@ -230,7 +292,7 @@ export default function TaskQueuePage() {
       case "returned":
         return returnedColumns;
       default:
-        return myQueueColumns;
+        return unassignedColumns;
     }
   };
 
@@ -240,6 +302,7 @@ export default function TaskQueuePage() {
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
+          <TabsTrigger value="unassigned">{t("Unassigned")}</TabsTrigger>
           <TabsTrigger value="my-queue">{t("My Queue")}</TabsTrigger>
           <TabsTrigger value="reassessment">{t("Initiate Reassessment")}</TabsTrigger>
           <TabsTrigger value="returned">{t("Returned")}</TabsTrigger>
@@ -293,6 +356,16 @@ export default function TaskQueuePage() {
           </div>
 
           {/* Content */}
+          <TabsContent value="unassigned" className="mt-0">
+            {loading ? (
+              <div className="flex items-center justify-center min-h-[200px]">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <DataGrid columns={getColumns()} data={items} hideSearch />
+            )}
+          </TabsContent>
+
           <TabsContent value="my-queue" className="mt-0">
             {loading ? (
               <div className="flex items-center justify-center min-h-[200px]">

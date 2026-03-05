@@ -3352,6 +3352,11 @@ model TPRMAssessment {
   approver              User?           @relation("TPRMApprover", fields: [approverId], references: [id])
   questionnaireTemplate String?         // Template name used for assessment
   approverComment       String?
+  // AI Evaluation tracking
+  aiEvaluationStatus    String?         // Pending, Ingesting, Evaluating, Completed, Failed
+  aiEvaluationStarted   DateTime?
+  aiEvaluationCompleted DateTime?
+  aiEvaluationError     String?         @db.Text
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
   logs                  TPRMAssessmentLog[]
@@ -3853,6 +3858,16 @@ model TPRMAssessmentResponse {
   respondedById     String?
   respondedBy       User?           @relation("TPRMResponseRespondedBy", fields: [respondedById], references: [id])
   respondedAt       DateTime?
+  // AI Evaluation results
+  poScore           Float?
+  poStatus          String?         // Satisfactory, Unsatisfactory, Not_Applicable, Failed
+  poAnswer          String?         @db.Text
+  poIssue           String?         @db.Text
+  poRisk            String?         @db.Text
+  poRecommendation  String?         @db.Text
+  poSeverity        String?
+  aiUuid            String?         // uuid from api/query response
+  aiEvaluatedAt     DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 

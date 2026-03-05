@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { runAIEvaluation } from '@/lib/tprm-ai-evaluation';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -109,6 +110,29 @@ export const POST = withAuth(
           logDate: new Date(),
         },
       });
+
+      // Fire AI evaluation asynchronously (fire-and-forget)
+      const customerAccount = await prisma.customerAccount.findUnique({
+        where: { id: customerAccountId },
+        select: { code: true },
+      });
+
+      const vendor = await prisma.tPRMVendor.findUnique({
+        where: { id: assessment.vendorId },
+        select: { vendorCode: true, engagementId: true },
+      });
+
+      if (customerAccount && vendor) {
+        runAIEvaluation({
+          assessmentId,
+          customerAccountId,
+          customerCode: customerAccount.code,
+          vendorCode: vendor.vendorCode,
+          engagementId: vendor.engagementId || assessmentId,
+        }).catch(err => {
+          console.error('[TPRM-AI] Fire-and-forget evaluation error:', err);
+        });
+      }
 
       return NextResponse.json(updated);
     } catch (error) {

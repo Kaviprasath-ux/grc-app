@@ -16,7 +16,8 @@ export const GET = withAuth(
       const assessment = await prisma.tPRMAssessment.findFirst({
         where: { id, customerAccountId },
         include: {
-          vendor: { select: { id: true, name: true, vendorCode: true, accountManagerEmail: true } },
+          customerAccount: { select: { code: true } },
+          vendor: { select: { id: true, name: true, vendorCode: true, accountManagerEmail: true, engagementId: true } },
           initiatedBy: { select: { id: true, fullName: true } },
           assessor: { select: { id: true, fullName: true } },
           approver: { select: { id: true, fullName: true } },
@@ -67,12 +68,19 @@ export const GET = withAuth(
             parentId: link.question.parentId,
             mandatoryAttachment: link.question.mandatoryAttachment,
             mandatoryQuestion: link.question.mandatoryQuestion,
+            validateThroughAI: link.question.validateThroughAI,
+            verifaiPrompt: link.question.verifaiPrompt,
+            issue: link.question.issue,
+            risk: link.question.risk,
+            recommendation: link.question.recommendation,
+            severity: link.question.severity,
             sortOrder: link.sortOrder,
             children: link.question.children.map(c => ({
               id: c.id,
               questionText: c.questionText,
               mandatoryAttachment: c.mandatoryAttachment,
               mandatoryQuestion: c.mandatoryQuestion,
+              validateThroughAI: c.validateThroughAI,
               sortOrder: c.sortOrder,
             })),
           }));
