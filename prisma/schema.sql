@@ -2919,6 +2919,23 @@ CREATE TABLE "RegulatoryProfile" (
 );
 
 -- CreateTable
+CREATE TABLE "SuggestedRegulation" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "regulatoryProfileId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "applicability" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "masterFrameworkId" TEXT,
+    "isSubscribed" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SuggestedRegulation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "DynamicTranslation" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -3793,6 +3810,15 @@ CREATE INDEX "TPRMVendorIssue_vendorId_idx" ON "TPRMVendorIssue"("vendorId");
 
 -- CreateIndex
 CREATE INDEX "RegulatoryProfile_customerAccountId_idx" ON "RegulatoryProfile"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "SuggestedRegulation_customerAccountId_idx" ON "SuggestedRegulation"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "SuggestedRegulation_regulatoryProfileId_idx" ON "SuggestedRegulation"("regulatoryProfileId");
+
+-- CreateIndex
+CREATE INDEX "SuggestedRegulation_customerAccountId_regulatoryProfileId_idx" ON "SuggestedRegulation"("customerAccountId", "regulatoryProfileId");
 
 -- CreateIndex
 CREATE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_idx" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId");
@@ -4774,6 +4800,12 @@ ALTER TABLE "TPRMVendorIssue" ADD CONSTRAINT "TPRMVendorIssue_reportedById_fkey"
 
 -- AddForeignKey
 ALTER TABLE "RegulatoryProfile" ADD CONSTRAINT "RegulatoryProfile_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SuggestedRegulation" ADD CONSTRAINT "SuggestedRegulation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SuggestedRegulation" ADD CONSTRAINT "SuggestedRegulation_regulatoryProfileId_fkey" FOREIGN KEY ("regulatoryProfileId") REFERENCES "RegulatoryProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DynamicTranslation" ADD CONSTRAINT "DynamicTranslation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

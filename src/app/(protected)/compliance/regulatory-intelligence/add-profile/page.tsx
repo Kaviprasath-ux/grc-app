@@ -112,6 +112,7 @@ export default function AddProfilePage() {
 
     setSaving(true);
     try {
+      // Step 1: Create the profile
       const res = await fetch("/api/compliance/regulatory-intelligence/profiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,10 +140,37 @@ export default function AddProfilePage() {
         throw new Error(data.error || "Failed to save profile");
       }
 
+      const profile = await res.json();
+
       toast({
         title: t("Success"),
         description: t("Organisation profile created successfully"),
       });
+
+      // Step 2: Call AI service to suggest regulations (fire and forget with notification)
+      toast({
+        title: t("Analyzing"),
+        description: t("AI is analyzing your organisation profile for applicable regulations..."),
+      });
+
+      fetch("/api/compliance/regulatory-intelligence/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId: profile.id }),
+      })
+        .then(async (suggestRes) => {
+          if (suggestRes.ok) {
+            const result = await suggestRes.json();
+            toast({
+              title: t("Regulations Suggested"),
+              description: `${result.count} ${t("applicable regulations have been identified for your organisation.")}`,
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("Error suggesting regulations:", err);
+        });
+
       router.push("/compliance/regulatory-intelligence");
     } catch (error) {
       toast({

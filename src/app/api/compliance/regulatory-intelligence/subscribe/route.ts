@@ -15,7 +15,7 @@ export const POST = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { frameworkId } = body;
+      const { frameworkId, suggestedRegulationId } = body;
 
       if (!frameworkId) {
         return NextResponse.json(
@@ -168,6 +168,14 @@ export const POST = withAuth(
 
         return newFramework;
       });
+
+      // Update the SuggestedRegulation if provided
+      if (suggestedRegulationId) {
+        await prisma.suggestedRegulation.update({
+          where: { id: suggestedRegulationId },
+          data: { isSubscribed: true },
+        });
+      }
 
       return NextResponse.json(result, { status: 201 });
     } catch (error) {

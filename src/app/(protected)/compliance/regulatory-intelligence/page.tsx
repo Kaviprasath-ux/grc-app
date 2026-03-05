@@ -20,6 +20,20 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Building2,
   ScrollText,
@@ -44,6 +58,14 @@ import {
   Trash2,
   Sparkles,
   Check,
+  Loader2,
+  Search,
+  ArrowUpDown,
+  Shield,
+  AlertTriangle,
+  Info,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -57,15 +79,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface RegulationEntry {
+interface SuggestedRegulation {
   id: string;
-  regulationName: string;
-  frameworkType: string;
+  name: string;
+  type: string;
   applicability: "Mandatory" | "Recommended" | "Optional";
-  justification: string;
-  onboardFramework: string;
+  reason: string;
   masterFrameworkId: string | null;
   isSubscribed: boolean;
+  regulatoryProfileId: string;
+  regulatoryProfile?: {
+    id: string;
+    fullLegalEntityName: string;
+  };
 }
 
 interface RegulatoryProfile {
@@ -159,10 +185,17 @@ export default function RegulatoryIntelligenceHubPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<RegulatoryProfile[]>([]);
-  const [regulations, setRegulations] = useState<RegulationEntry[]>([]);
+  const [regulations, setRegulations] = useState<SuggestedRegulation[]>([]);
   const [subscribingId, setSubscribingId] = useState<string | null>(null);
+  const [suggestingId, setSuggestingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Regulation list filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [applicabilityFilter, setApplicabilityFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<"name" | "applicability" | "type">("applicability");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const fetchProfiles = useCallback(async () => {
     try {
@@ -173,14 +206,26 @@ export default function RegulatoryIntelligenceHubPage() {
       }
     } catch (error) {
       console.error("Error fetching profiles:", error);
-    } finally {
-      setLoading(false);
+    }
+  }, []);
+
+  const fetchRegulations = useCallback(async () => {
+    try {
+      const res = await fetch("/api/compliance/regulatory-intelligence/regulations");
+      if (res.ok) {
+        const json = await res.json();
+        setRegulations(json.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching regulations:", error);
     }
   }, []);
 
   useEffect(() => {
-    fetchProfiles();
-  }, [fetchProfiles]);
+    Promise.all([fetchProfiles(), fetchRegulations()]).finally(() => {
+      setLoading(false);
+    });
+  }, [fetchProfiles, fetchRegulations]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -191,6 +236,7 @@ export default function RegulatoryIntelligenceHubPage() {
       if (res.ok) {
         toast({ title: t("Success"), description: t("Profile deleted successfully") });
         fetchProfiles();
+        fetchRegulations(); // Also refresh regulations
       } else {
         throw new Error("Delete failed");
       }
@@ -201,14 +247,93 @@ export default function RegulatoryIntelligenceHubPage() {
     }
   };
 
-  const handleSubscribe = async (regulation: RegulationEntry) => {
+  const handleSuggestFrameworks = async (profileId: string) => {
+    setSuggestingId(profileId);
+    toast({
+      title: t("Analyzing"),
+      description: t("AI is analyzing your organisation profile for applicable regulations..."),
+    });
+
+    try {
+      const res = await fetch("/api/compliance/regulatory-intelligence/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast({
+          title: t("Regulations Suggested"),
+          description: `${result.count} ${t("applicable regulations have been identified.")}`,
+        });
+        fetchRegulations();
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to suggest regulations");
+      }
+    } catch (error) {
+      toast({
+        title: t("Error"),
+        description: error instanceof Error ? error.message : t("Failed to suggest regulations"),
+        variant: "destructive",
+      });
+    } finally {
+      setSuggestingId(null);
+    }
+  };
+
+  // Filtering and sorting logic for regulations
+  const filteredRegulations = regulations.filter((reg) => {
+    const matchesSearch = reg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reg.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reg.reason.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesApplicability = applicabilityFilter === "all" || reg.applicability === applicabilityFilter;
+    return matchesSearch && matchesApplicability;
+  });
+
+  const sortedRegulations = [...filteredRegulations].sort((a, b) => {
+    const applicabilityOrder = { Mandatory: 1, Recommended: 2, Optional: 3 };
+
+    if (sortField === "applicability") {
+      const orderA = applicabilityOrder[a.applicability] || 4;
+      const orderB = applicabilityOrder[b.applicability] || 4;
+      return sortDirection === "asc" ? orderA - orderB : orderB - orderA;
+    }
+
+    const valueA = a[sortField]?.toLowerCase() || "";
+    const valueB = b[sortField]?.toLowerCase() || "";
+    return sortDirection === "asc"
+      ? valueA.localeCompare(valueB)
+      : valueB.localeCompare(valueA);
+  });
+
+  const handleSort = (field: "name" | "applicability" | "type") => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Stats for regulation cards
+  const mandatoryCount = regulations.filter(r => r.applicability === "Mandatory").length;
+  const recommendedCount = regulations.filter(r => r.applicability === "Recommended").length;
+  const optionalCount = regulations.filter(r => r.applicability === "Optional").length;
+  const subscribedCount = regulations.filter(r => r.isSubscribed).length;
+
+  const handleSubscribe = async (regulation: SuggestedRegulation) => {
     if (!regulation.masterFrameworkId || regulation.isSubscribed) return;
     setSubscribingId(regulation.id);
     try {
       const res = await fetch("/api/compliance/regulatory-intelligence/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ frameworkId: regulation.masterFrameworkId }),
+        body: JSON.stringify({
+          frameworkId: regulation.masterFrameworkId,
+          suggestedRegulationId: regulation.id,
+        }),
       });
       if (res.ok) {
         setRegulations((prev) =>
@@ -293,12 +418,15 @@ export default function RegulatoryIntelligenceHubPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              toast({ title: t("Coming Soon"), description: t("AI-powered framework suggestions will be available soon.") });
-                            }}
+                            disabled={suggestingId === profile.id}
+                            onClick={() => handleSuggestFrameworks(profile.id)}
                           >
-                            <Sparkles className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
-                            {t("Suggest Frameworks")}
+                            {suggestingId === profile.id ? (
+                              <Loader2 className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
+                            )}
+                            {suggestingId === profile.id ? t("Analyzing...") : t("Suggest Frameworks")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -394,73 +522,254 @@ export default function RegulatoryIntelligenceHubPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="regulation-list" className="mt-4">
-          <Card>
-            <CardContent className="p-0">
+        <TabsContent value="regulation-list" className="mt-4 space-y-4">
+          {/* Stats Cards */}
+          {regulations.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button
+                onClick={() => setApplicabilityFilter(applicabilityFilter === "Mandatory" ? "all" : "Mandatory")}
+                className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                  applicabilityFilter === "Mandatory"
+                    ? "bg-red-50 border-red-200 ring-2 ring-red-200"
+                    : "bg-white border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${applicabilityFilter === "Mandatory" ? "bg-red-100" : "bg-red-50"}`}>
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-2xl font-bold text-slate-800">{mandatoryCount}</p>
+                  <p className="text-xs text-slate-500">{t("Mandatory")}</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setApplicabilityFilter(applicabilityFilter === "Recommended" ? "all" : "Recommended")}
+                className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                  applicabilityFilter === "Recommended"
+                    ? "bg-blue-50 border-blue-200 ring-2 ring-blue-200"
+                    : "bg-white border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${applicabilityFilter === "Recommended" ? "bg-blue-100" : "bg-blue-50"}`}>
+                  <Shield className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-2xl font-bold text-slate-800">{recommendedCount}</p>
+                  <p className="text-xs text-slate-500">{t("Recommended")}</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setApplicabilityFilter(applicabilityFilter === "Optional" ? "all" : "Optional")}
+                className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                  applicabilityFilter === "Optional"
+                    ? "bg-slate-100 border-slate-300 ring-2 ring-slate-300"
+                    : "bg-white border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${applicabilityFilter === "Optional" ? "bg-slate-200" : "bg-slate-50"}`}>
+                  <Info className="h-5 w-5 text-slate-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-2xl font-bold text-slate-800">{optionalCount}</p>
+                  <p className="text-xs text-slate-500">{t("Optional")}</p>
+                </div>
+              </button>
+
+              <div className="flex items-center gap-3 p-4 rounded-xl border bg-white border-slate-200">
+                <div className="p-2 rounded-lg bg-green-50">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-2xl font-bold text-slate-800">{subscribedCount}</p>
+                  <p className="text-xs text-slate-500">{t("Subscribed")}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Data Table Card */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {/* Search & Filter Toolbar */}
+            <div className="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3 border-b border-slate-100">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder={t("Search regulations...")}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                />
+              </div>
+              <Select value={applicabilityFilter} onValueChange={setApplicabilityFilter}>
+                <SelectTrigger className="w-[160px] bg-slate-50 border-slate-200">
+                  <SelectValue placeholder={t("Applicability")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("All Applicability")}</SelectItem>
+                  <SelectItem value="Mandatory">{t("Mandatory")}</SelectItem>
+                  <SelectItem value="Recommended">{t("Recommended")}</SelectItem>
+                  <SelectItem value="Optional">{t("Optional")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Regulation Name")}</TableHead>
-                    <TableHead>{t("Framework/Regulation/Law/Standard")}</TableHead>
-                    <TableHead>{t("Mandatory/Recommended/Optional")}</TableHead>
-                    <TableHead>{t("Justification")}</TableHead>
-                    <TableHead>{t("Onboard Framework")}</TableHead>
+                  <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">
+                      <button
+                        onClick={() => handleSort("name")}
+                        className="flex items-center gap-2 hover:text-slate-700"
+                      >
+                        {t("Regulation Name")}
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
+                      <button
+                        onClick={() => handleSort("type")}
+                        className="flex items-center gap-2 hover:text-slate-700"
+                      >
+                        {t("Type")}
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
+                      <button
+                        onClick={() => handleSort("applicability")}
+                        className="flex items-center gap-2 hover:text-slate-700"
+                      >
+                        {t("Applicability")}
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[35%]">
+                      {t("Justification")}
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 text-center">
+                      {t("Status")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {regulations.length === 0 ? (
+                  {sortedRegulations.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {t("No regulations yet. Use 'Suggest Frameworks' on an organisation profile to generate recommendations.")}
+                      <TableCell colSpan={5} className="h-40 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <div className="p-3 rounded-full bg-slate-100">
+                            <ScrollText className="h-8 w-8 text-slate-400" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-slate-600">
+                              {regulations.length === 0
+                                ? t("No regulations yet")
+                                : t("No matching regulations")}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+                              {regulations.length === 0
+                                ? t("Use 'Suggest Frameworks' on an organisation profile to generate AI-powered recommendations")
+                                : t("Try adjusting your search or filter criteria")}
+                            </p>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    regulations.map((reg) => (
-                      <TableRow key={reg.id}>
-                        <TableCell className="font-medium">{reg.regulationName}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{reg.frameworkType}</Badge>
+                    sortedRegulations.map((reg) => (
+                      <TableRow
+                        key={reg.id}
+                        className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
+                      >
+                        <TableCell className="py-3.5 ps-5">
+                          <span className="text-sm font-medium text-slate-800">{reg.name}</span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-3.5">
+                          <Badge variant="outline" className="bg-slate-50 border-slate-200 text-slate-600 text-xs font-normal">
+                            {reg.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-3.5">
                           <Badge
-                            variant={
+                            className={`text-xs font-medium ${
                               reg.applicability === "Mandatory"
-                                ? "destructive"
+                                ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
                                 : reg.applicability === "Recommended"
-                                ? "default"
-                                : "secondary"
-                            }
+                                ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            }`}
+                            variant="outline"
                           >
                             {t(reg.applicability)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="max-w-xs text-sm text-muted-foreground">
-                          {reg.justification}
+                        <TableCell className="py-3.5">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-sm text-slate-500 line-clamp-2 cursor-help">
+                                  {reg.reason}
+                                </p>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-md p-3">
+                                <p className="text-sm">{reg.reason}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
-                        <TableCell>
-                          {reg.isSubscribed ? (
-                            <div className="flex items-center gap-1.5 text-green-600">
-                              <Check className="h-4 w-4" />
-                              <span className="text-sm font-medium">{t("Subscribed")}</span>
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={subscribingId === reg.id || !reg.masterFrameworkId}
-                              onClick={() => handleSubscribe(reg)}
-                            >
-                              {subscribingId === reg.id ? t("Subscribing...") : t("Subscribe")}
-                            </Button>
-                          )}
+                        <TableCell className="py-3.5 pe-5">
+                          <div className="flex justify-center">
+                            {reg.isSubscribed ? (
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                <span className="text-xs font-medium">{t("Subscribed")}</span>
+                              </div>
+                            ) : reg.masterFrameworkId ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={subscribingId === reg.id}
+                                onClick={() => handleSubscribe(reg)}
+                                className="h-8 px-3 text-xs bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+                              >
+                                {subscribingId === reg.id ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 me-1.5 animate-spin" />
+                                    {t("Subscribing...")}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="h-3 w-3 me-1.5" />
+                                    {t("Subscribe")}
+                                  </>
+                                )}
+                              </Button>
+                            ) : (
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
+                                <XCircle className="h-3.5 w-3.5" />
+                                <span className="text-xs">{t("Not Available")}</span>
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
                   )}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+            </div>
+
+            {/* Results Summary Footer */}
+            {sortedRegulations.length > 0 && (
+              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                <p className="text-xs text-slate-500">
+                  {t("Showing")} <span className="font-medium text-slate-700">{sortedRegulations.length}</span> {t("of")} <span className="font-medium text-slate-700">{regulations.length}</span> {t("regulations")}
+                </p>
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 

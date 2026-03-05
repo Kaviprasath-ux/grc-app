@@ -118,6 +118,7 @@ model CustomerAccount {
   bcpLabels                  BCPLabel[]
   dynamicTranslations        DynamicTranslation[]
   regulatoryProfiles         RegulatoryProfile[]
+  suggestedRegulations       SuggestedRegulation[]
   // TPRM relations
   tprmVendors                TPRMVendor[]
   tprmAssessments            TPRMAssessment[]
@@ -3960,7 +3961,36 @@ model RegulatoryProfile {
   updatedAt             DateTime        @updatedAt
   createdBy             String?
 
+  // Relation to suggested regulations
+  suggestedRegulations  SuggestedRegulation[]
+
   @@index([customerAccountId])
+}
+
+// Suggested Regulations from AI (Regulatory Intelligence Hub)
+model SuggestedRegulation {
+  id                    String            @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount   @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  regulatoryProfileId   String
+  regulatoryProfile     RegulatoryProfile @relation(fields: [regulatoryProfileId], references: [id], onDelete: Cascade)
+
+  // Regulation details from AI
+  name                  String            // Regulation/Framework name
+  type                  String            // "Regulatory Requirement", "Industry Standard", "Maturity Enhancing Framework"
+  applicability         String            // "Mandatory", "Recommended", "Optional"
+  reason                String            @db.Text // Justification from AI
+
+  // Framework linking (for subscription)
+  masterFrameworkId     String?           // Link to master framework if available
+  isSubscribed          Boolean           @default(false)
+
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([customerAccountId])
+  @@index([regulatoryProfileId])
+  @@index([customerAccountId, regulatoryProfileId])
 }
 
 // ==================== DYNAMIC DATA TRANSLATIONS ====================
