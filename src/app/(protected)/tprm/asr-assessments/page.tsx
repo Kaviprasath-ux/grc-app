@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Eye, RotateCcw, Home, ChevronRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Loader2, Eye, RotateCcw, Home, ChevronRight, UserPlus } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface AssessmentItem {
@@ -31,6 +39,12 @@ interface AssessmentItem {
   vendor: { id: string; name: string; vendorCode: string; serviceCategory: string | null };
   initiatedBy: { id: string; fullName: string } | null;
   assessor: { id: string; fullName: string } | null;
+}
+
+interface Assessor {
+  id: string;
+  fullName: string;
+  email: string;
 }
 
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
@@ -64,17 +78,9 @@ const TAB_MAP: Record<string, string> = {
   "completed": "completed",
 };
 
-// Status filters by tab
-const TAB_STATUSES: Record<string, string[]> = {
-  "my-queue": ["Draft", "In Progress", "Submitted"],
-  "due-diligence": ["Draft", "In Progress", "Submitted", "Under Review"],
-  "reassessments": ["Draft", "In Progress", "Submitted"],
-  "offboarding": ["Offboarding", "Terminated"],
-  "completed": ["Completed", "Approved"],
-};
-
 export default function AsrAssessmentsPage() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "my-queue";
 
@@ -82,17 +88,30 @@ export default function AsrAssessmentsPage() {
   const [subTab, setSubTab] = useState("main");
   const [items, setItems] = useState<AssessmentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   // Filter state
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Assign dialog state
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assigningAssessment, setAssigningAssessment] = useState<AssessmentItem | null>(null);
+  const [assessors, setAssessors] = useState<Assessor[]>([]);
+  const [selectedAssessorId, setSelectedAssessorId] = useState<string>("");
+  const [assigning, setAssigning] = useState(false);
+
+  // Get current user ID from session
+  useEffect(() => {
+    fetch("/api/auth/session").then(r => r.json()).then(s => {
+      if (s?.user?.id) setCurrentUserId(s.user.id);
+    }).catch(() => {});
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({ limit: "200" });
-      const res = await fetch(`/api/tprm/assessments?${params.toString()}`);
+      const res = await fetch(`/api/tprm/asr-assessments?limit=200`);
       if (res.ok) {
         const json = await res.json();
         setItems(json.data || []);
@@ -108,51 +127,117 @@ export default function AsrAssessmentsPage() {
     fetchData();
   }, [fetchData]);
 
+  // Fetch assessors list when assign dialog opens
+  const openAssignDialog = useCallback(async (assessment: AssessmentItem) => {
+    setAssigningAssessment(assessment);
+    setSelectedAssessorId("");
+    setAssignOpen(true);
+    try {
+      const res = await fetch("/api/tprm/asr-assessments/assessors");
+      if (res.ok) setAssessors(await res.json());
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to load assessors"), variant: "destructive" });
+    }
+  }, [toast, t]);
+
+  const handleAssign = async () => {
+    if (!assigningAssessment || !selectedAssessorId) return;
+    setAssigning(true);
+    try {
+      const res = await fetch(`/api/tprm/asr-assessments/${assigningAssessment.id}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessorId: selectedAssessorId }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const assignedName = assessors.find(a => a.id === selectedAssessorId)?.fullName || "";
+      toast({ title: t("Success"), description: `${t("Assessment assigned to")} ${assignedName}` });
+      setAssignOpen(false);
+      fetchData(); // Refresh to move item from unassigned to assigned
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to assign assessment"), variant: "destructive" });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const getDefaultSubTab = (tab: string) => {
+    switch (tab) {
+      case "due-diligence":
+      case "reassessments":
+        return "awaiting";
+      case "offboarding":
+      case "my-queue":
+        return "main";
+      default:
+        return "main";
+    }
+  };
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setSubTab("main");
+    setSubTab(getDefaultSubTab(tab));
     setSearch("");
     setDateFilter("");
-    setStatusFilter("all");
   };
 
   // Filter data based on active tab and sub-tab
   const filteredItems = useMemo(() => {
     let data = items;
 
-    // Filter by tab status
-    const statuses = TAB_STATUSES[activeTab];
-    if (statuses) {
-      data = data.filter((i) => statuses.includes(i.status));
-    }
-
-    // My Queue sub-tabs
+    // My Queue: assessments assigned to the current user with active statuses
     if (activeTab === "my-queue") {
       if (subTab === "reassessment") {
-        data = data.filter((i) => i.assessmentType === "Reassessment");
+        data = data.filter((i) => i.assessor?.id === currentUserId && i.assessmentType === "Reassessment");
       } else if (subTab === "returned") {
-        data = data.filter((i) => i.status === "Returned" || i.status === "Rejected");
+        data = data.filter((i) => i.assessor?.id === currentUserId && (i.status === "Returned" || i.status === "Rejected"));
+      } else {
+        // Main my queue: assigned to me, active statuses
+        data = data.filter((i) => i.assessor?.id === currentUserId && ["Submitted", "Under Review"].includes(i.status));
       }
     }
 
-    // Due Diligence sub-tabs
+    // Due Diligence
     if (activeTab === "due-diligence") {
-      if (subTab === "awaiting") {
-        data = data.filter((i) => i.status === "Submitted");
-      } else if (subTab === "unassigned") {
-        data = data.filter((i) => !i.assessor);
+      if (subTab === "unassigned") {
+        // Submitted assessments with no assessor assigned
+        data = data.filter((i) => i.status === "Submitted" && !i.assessor);
       } else if (subTab === "assigned") {
-        data = data.filter((i) => !!i.assessor);
+        data = data.filter((i) => !!i.assessor && ["Submitted", "Under Review"].includes(i.status));
       } else if (subTab === "completed") {
-        data = data.filter((i) => i.status === "Completed" || i.status === "Approved");
+        data = data.filter((i) => ["Completed", "Approved", "Reviewed"].includes(i.status));
+      } else {
+        // Awaiting response: draft/in-progress (vendor hasn't submitted yet)
+        data = data.filter((i) => ["Draft", "In Progress"].includes(i.status));
       }
     }
 
-    // Offboarding sub-tabs
+    // Reassessments
+    if (activeTab === "reassessments") {
+      data = data.filter((i) => i.assessmentType === "Reassessment" || i.assessmentType === "Periodic Assessment");
+      if (subTab === "unassigned") {
+        data = data.filter((i) => i.status === "Submitted" && !i.assessor);
+      } else if (subTab === "assigned") {
+        data = data.filter((i) => !!i.assessor && ["Submitted", "Under Review"].includes(i.status));
+      } else if (subTab === "completed") {
+        data = data.filter((i) => ["Completed", "Approved", "Reviewed"].includes(i.status));
+      } else {
+        data = data.filter((i) => ["Draft", "In Progress"].includes(i.status));
+      }
+    }
+
+    // Offboarding
     if (activeTab === "offboarding") {
       if (subTab === "terminated") {
         data = data.filter((i) => i.status === "Terminated");
+      } else {
+        data = data.filter((i) => i.status === "Offboarding" || i.status === "Terminated");
       }
+    }
+
+    // Completed
+    if (activeTab === "completed") {
+      data = data.filter((i) => ["Completed", "Approved", "Reviewed"].includes(i.status));
     }
 
     // Text search
@@ -175,7 +260,10 @@ export default function AsrAssessmentsPage() {
     }
 
     return data;
-  }, [items, activeTab, subTab, search, dateFilter]);
+  }, [items, activeTab, subTab, search, dateFilter, currentUserId]);
+
+  // Determine if current sub-tab is "unassigned"
+  const isUnassignedQueue = (activeTab === "due-diligence" || activeTab === "reassessments") && subTab === "unassigned";
 
   // My Queue columns
   const myQueueColumns: ColumnDef<AssessmentItem>[] = [
@@ -204,13 +292,18 @@ export default function AsrAssessmentsPage() {
       cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
     },
     {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{row.getValue("status")}</Badge>,
+    },
+    {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.open(`/tprm/assessments?id=${row.original.id}`, "_self")}
+          onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}
         >
           <Eye className="h-4 w-4 text-primary" />
         </Button>
@@ -218,7 +311,49 @@ export default function AsrAssessmentsPage() {
     },
   ];
 
-  // Due Diligence columns
+  // Unassigned queue columns (with Assign button)
+  const unassignedColumns: ColumnDef<AssessmentItem>[] = [
+    {
+      accessorKey: "assessmentCode",
+      header: t("ID"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor Name"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "vendor.serviceCategory",
+      header: t("Service Category"),
+      cell: ({ row }) => row.original.vendor?.serviceCategory || "-",
+    },
+    {
+      accessorKey: "assessmentType",
+      header: t("Assessment Type"),
+    },
+    {
+      accessorKey: "vendorSubmissionDate",
+      header: t("Date of Submission"),
+      cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => openAssignDialog(row.original)}
+        >
+          <UserPlus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          {t("Assign")}
+        </Button>
+      ),
+    },
+  ];
+
+  // Due Diligence / general columns
   const dueDiligenceColumns: ColumnDef<AssessmentItem>[] = [
     {
       accessorKey: "assessmentCode",
@@ -236,9 +371,32 @@ export default function AsrAssessmentsPage() {
       cell: ({ row }) => row.original.vendor?.serviceCategory || "-",
     },
     {
+      accessorKey: "assessor.fullName",
+      header: t("Assessor"),
+      cell: ({ row }) => row.original.assessor?.fullName || "-",
+    },
+    {
       accessorKey: "vendorSubmissionDate",
       header: t("Date of Submission"),
       cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
+    },
+    {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{row.getValue("status")}</Badge>,
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}
+        >
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ),
     },
   ];
 
@@ -300,7 +458,7 @@ export default function AsrAssessmentsPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.open(`/tprm/assessments?id=${row.original.id}`, "_self")}
+          onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}
         >
           <Eye className="h-4 w-4 text-primary" />
         </Button>
@@ -344,7 +502,7 @@ export default function AsrAssessmentsPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.open(`/tprm/assessments?id=${row.original.id}`, "_self")}
+          onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}
         >
           <Eye className="h-4 w-4 text-primary" />
         </Button>
@@ -353,6 +511,7 @@ export default function AsrAssessmentsPage() {
   ];
 
   const getColumns = () => {
+    if (isUnassignedQueue) return unassignedColumns;
     switch (activeTab) {
       case "my-queue":
         return subTab === "reassessment"
@@ -369,9 +528,9 @@ export default function AsrAssessmentsPage() {
             } as ColumnDef<AssessmentItem>, myQueueColumns[myQueueColumns.length - 1]]
           : myQueueColumns;
       case "due-diligence":
-        return dueDiligenceColumns;
+        return subTab === "awaiting" ? dueDiligenceColumns.filter(c => c.id !== "actions") : dueDiligenceColumns;
       case "reassessments":
-        return reassessmentColumns;
+        return subTab === "awaiting" ? reassessmentColumns : reassessmentColumns;
       case "offboarding":
         return offboardingColumns;
       case "completed":
@@ -492,6 +651,45 @@ export default function AsrAssessmentsPage() {
           ))}
         </div>
       </Tabs>
+
+      {/* Assign Assessment Dialog */}
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Assign Assessment")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {assigningAssessment && (
+              <div className="text-sm space-y-1">
+                <p><span className="font-medium">{t("Assessment")}:</span> {assigningAssessment.assessmentCode}</p>
+                <p><span className="font-medium">{t("Vendor")}:</span> {assigningAssessment.vendor?.name}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium block mb-1.5">{t("Select Assessor")}</label>
+              <Select value={selectedAssessorId} onValueChange={setSelectedAssessorId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("Choose an assessor...")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {assessors.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleAssign} disabled={assigning || !selectedAssessorId}>
+              {assigning && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              {t("Assign")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

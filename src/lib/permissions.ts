@@ -587,8 +587,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
 
   // TPRM Assessor - Full assessor role with dashboard, assessments, inventory, monitoring, etc.
   TPRMAssessor: [
-    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-dashboard', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-inventory', actions: ['*'], scope: 'all' },

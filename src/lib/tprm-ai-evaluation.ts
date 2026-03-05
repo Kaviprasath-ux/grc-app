@@ -58,6 +58,18 @@ function isImageFile(filename: string | null): boolean {
 }
 
 /**
+ * Normalize AI status to Title Case (e.g., "unsatisfactory" → "Unsatisfactory")
+ */
+function normalizeStatus(status: string): string {
+  const s = status.toLowerCase().trim();
+  if (s === 'satisfactory') return 'Satisfactory';
+  if (s === 'unsatisfactory') return 'Unsatisfactory';
+  if (s === 'not_applicable' || s === 'not applicable') return 'Not_Applicable';
+  // Return as-is with first letter capitalized
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
  * Make an authenticated request to the AI backend
  */
 async function aiRequest(
@@ -247,18 +259,8 @@ async function evaluateResponse(
       updateData.poRecommendation = questionMeta.recommendation || null;
       updateData.poSeverity = questionMeta.severity || null;
     }
-    // --- Yes + no AI validation → Not applicable ---
-    else if (answer === 'Yes' && !questionMeta.validateThroughAI) {
-      updateData.poScore = 0;
-      updateData.poStatus = 'Not_Applicable';
-      updateData.poAnswer = null;
-      updateData.poIssue = null;
-      updateData.poRisk = null;
-      updateData.poRecommendation = null;
-      updateData.poSeverity = null;
-    }
-    // --- Yes + AI validation + image artifact → api/image ---
-    else if (answer === 'Yes' && questionMeta.validateThroughAI && isImageFile(resp.artifactName)) {
+    // --- Yes + image artifact → api/image ---
+    else if (answer === 'Yes' && isImageFile(resp.artifactName)) {
       const prompt = questionMeta.verifaiPrompt || questionMeta.questionText;
       const absolutePath = path.join(process.cwd(), (resp.artifactUrl || '').replace(/^\//, ''));
 
@@ -287,15 +289,15 @@ async function evaluateResponse(
       // Parse image API response
       const aiData = result.data;
       updateData.poScore = typeof aiData.score === 'number' ? aiData.score : parseFloat(String(aiData.score || '0'));
-      updateData.poStatus = String(aiData.status || 'Satisfactory');
+      updateData.poStatus = normalizeStatus(String(aiData.status || 'Satisfactory'));
       updateData.poAnswer = String(aiData.answer || aiData.response || '');
       updateData.poIssue = null;
       updateData.poRisk = null;
       updateData.poRecommendation = null;
       updateData.poSeverity = null;
     }
-    // --- Yes + AI validation + no image → api/query ---
-    else if (answer === 'Yes' && questionMeta.validateThroughAI) {
+    // --- Yes + no image → api/query (AI validates the response against ingested docs) ---
+    else if (answer === 'Yes') {
       const prompt = questionMeta.verifaiPrompt || questionMeta.questionText;
 
       const result = await aiRequest(
@@ -318,7 +320,7 @@ async function evaluateResponse(
       // Parse query API response
       const aiData = result.data;
       updateData.poScore = typeof aiData.score === 'number' ? aiData.score : parseFloat(String(aiData.score || '0'));
-      updateData.poStatus = String(aiData.status || 'Satisfactory');
+      updateData.poStatus = normalizeStatus(String(aiData.status || 'Satisfactory'));
       updateData.poAnswer = String(aiData.answer || aiData.response || '');
       updateData.aiUuid = String(aiData.uuid || aiData.id || '');
 
@@ -334,7 +336,18 @@ async function evaluateResponse(
         updateData.poRecommendation = String(aiData.recommendation || '') || null;
       }
 
-      updateData.poSeverity = String(aiData.severity || '') || null;
+      const rawSeverity = String(aiData.severity || '').trim();
+      updateData.poSeverity = rawSeverity ? rawSeverity.charAt(0).toUpperCase() + rawSeverity.slice(1).toLowerCase() : null;
+
+      // Fall back to template question's issue/risk/recommendation/severity
+      // when AI marks as unsatisfactory but doesn't provide specific details
+      const status = String(updateData.poStatus).toLowerCase();
+      if (status === 'unsatisfactory') {
+        if (!updateData.poIssue) updateData.poIssue = questionMeta.issue || null;
+        if (!updateData.poRisk) updateData.poRisk = questionMeta.risk || null;
+        if (!updateData.poRecommendation) updateData.poRecommendation = questionMeta.recommendation || null;
+        if (!updateData.poSeverity) updateData.poSeverity = questionMeta.severity || null;
+      }
     }
   } catch (error) {
     console.error(`[TPRM-AI] Error evaluating question ${questionMeta.id}:`, error);

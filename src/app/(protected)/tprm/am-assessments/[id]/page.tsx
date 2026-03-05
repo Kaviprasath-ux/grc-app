@@ -119,6 +119,7 @@ export default function AMResponseQuestionnairePage() {
   const [responses, setResponses] = useState<Record<string, AssessmentResponse>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState("all");
   const [filterMode, setFilterMode] = useState("all");
@@ -329,6 +330,7 @@ export default function AMResponseQuestionnairePage() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setShowSubmitConfirm(false);
     try {
       const res = await fetch(`/api/tprm/am-assessments/${assessmentId}/submit`, {
         method: "POST",
@@ -343,11 +345,9 @@ export default function AMResponseQuestionnairePage() {
         });
         return;
       }
-      toast({ title: t("Success"), description: t("Assessment submitted successfully. AI evaluation started.") });
-      // Update local status and start polling
-      setAssessment(prev => prev ? { ...prev, status: "Submitted" } : prev);
-      setAiStatus({ aiEvaluationStatus: "Pending", aiEvaluationStarted: new Date().toISOString(), aiEvaluationCompleted: null, aiEvaluationError: null });
-      startAIPolling();
+      toast({ title: t("Success"), description: t("Assessment submitted successfully. AI evaluation has started.") });
+      // Navigate back to assessments list
+      router.push("/tprm/am-assessments");
     } catch {
       toast({ title: t("Error"), description: t("Failed to submit assessment"), variant: "destructive" });
     } finally {
@@ -536,13 +536,14 @@ export default function AMResponseQuestionnairePage() {
   // Stats
   const totalQuestions = questions.length;
   const answeredQuestions = questions.filter(q => responses[q.id]?.response).length;
-  const isReadOnly = assessment?.status && !["Draft", "In Progress", "Returned"].includes(assessment.status);
+  const isReadOnly = assessment?.status && !["Draft", "In Progress", "In_Progress", "Returned", "Initiated", "Awaiting_Response"].includes(assessment.status);
 
   // AI evaluation status helpers
   const isAIInProgress = aiStatus?.aiEvaluationStatus === "Pending" || aiStatus?.aiEvaluationStatus === "Ingesting" || aiStatus?.aiEvaluationStatus === "Evaluating";
   const isAICompleted = aiStatus?.aiEvaluationStatus === "Completed";
   const isAIFailed = aiStatus?.aiEvaluationStatus === "Failed";
-  const showAIBanner = !!aiStatus?.aiEvaluationStatus;
+  const isAINotStarted = !aiStatus?.aiEvaluationStatus && assessment?.status === "Submitted";
+  const showAIBanner = !!aiStatus?.aiEvaluationStatus || isAINotStarted;
 
   // Render AI result section for a question
   const renderAIResult = (resp: AssessmentResponse | undefined) => {
@@ -699,7 +700,7 @@ export default function AMResponseQuestionnairePage() {
             </Button>
           )}
           {!isReadOnly && (
-            <Button onClick={handleSubmit} disabled={submitting}>
+            <Button onClick={() => setShowSubmitConfirm(true)} disabled={submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
               {t("Submit Assessment")}
             </Button>
@@ -709,13 +710,14 @@ export default function AMResponseQuestionnairePage() {
 
       {/* AI Evaluation Status Banner */}
       {showAIBanner && (
-        <Card className={`border-2 ${isAIInProgress ? "border-purple-300 bg-purple-50/50" : isAICompleted ? "border-green-300 bg-green-50/50" : isAIFailed ? "border-red-300 bg-red-50/50" : "border-gray-200"}`}>
+        <Card className={`border-2 ${isAIInProgress ? "border-purple-300 bg-purple-50/50" : isAICompleted ? "border-green-300 bg-green-50/50" : isAIFailed ? "border-red-300 bg-red-50/50" : isAINotStarted ? "border-amber-300 bg-amber-50/50" : "border-gray-200"}`}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {isAIInProgress && <Loader2 className="h-5 w-5 animate-spin text-purple-500" />}
                 {isAICompleted && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                 {isAIFailed && <XCircle className="h-5 w-5 text-red-500" />}
+                {isAINotStarted && <AlertCircle className="h-5 w-5 text-amber-500" />}
                 <div>
                   <p className="font-medium text-sm">
                     {isAIInProgress && (
@@ -728,13 +730,14 @@ export default function AMResponseQuestionnairePage() {
                     )}
                     {isAICompleted && t("AI Evaluation Complete")}
                     {isAIFailed && t("AI Evaluation Failed")}
+                    {isAINotStarted && t("AI Evaluation has not started yet")}
                   </p>
                   {isAIFailed && aiStatus?.aiEvaluationError && (
                     <p className="text-xs text-red-600 mt-1">{aiStatus.aiEvaluationError}</p>
                   )}
                 </div>
               </div>
-              {(isAIFailed || isAICompleted) && (
+              {(isAIFailed || isAICompleted || isAINotStarted) && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -742,7 +745,7 @@ export default function AMResponseQuestionnairePage() {
                   disabled={retriggering}
                 >
                   {retriggering ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <RefreshCw className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
-                  {t("Re-run AI Evaluation")}
+                  {isAINotStarted ? t("Start AI Evaluation") : t("Re-run AI Evaluation")}
                 </Button>
               )}
             </div>
@@ -956,6 +959,25 @@ export default function AMResponseQuestionnairePage() {
           })
         )}
       </div>
+
+      {/* Submit Confirmation Dialog */}
+      <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Confirm Submission")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("Are you sure you want to submit this assessment? Once submitted, AI evaluation will begin and you will not be able to make further changes.")}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSubmitConfirm(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleSubmit} disabled={submitting}>
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
+              {t("Submit")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Comment Dialog */}
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>

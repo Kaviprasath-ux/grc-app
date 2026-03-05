@@ -2847,6 +2847,14 @@ CREATE TABLE "TPRMAssessmentResponse" (
     "poSeverity" TEXT,
     "aiUuid" TEXT,
     "aiEvaluatedAt" TIMESTAMP(3),
+    "assessorStatus" TEXT,
+    "assessorIssue" TEXT,
+    "assessorRisk" TEXT,
+    "assessorRecommendation" TEXT,
+    "assessorComment" TEXT,
+    "assessorSeverity" TEXT,
+    "assessorOverriddenAt" TIMESTAMP(3),
+    "assessorOverriddenById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -2886,6 +2894,19 @@ CREATE TABLE "TPRMIssueRemediation" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TPRMIssueRemediation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMInternalComment" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "questionId" TEXT,
+    "message" TEXT NOT NULL,
+    "authorId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMInternalComment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -3815,6 +3836,12 @@ CREATE INDEX "TPRMIssueRemediation_customerAccountId_idx" ON "TPRMIssueRemediati
 
 -- CreateIndex
 CREATE INDEX "TPRMIssueRemediation_assessmentId_idx" ON "TPRMIssueRemediation"("assessmentId");
+
+-- CreateIndex
+CREATE INDEX "TPRMInternalComment_customerAccountId_idx" ON "TPRMInternalComment"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMInternalComment_assessmentId_idx" ON "TPRMInternalComment"("assessmentId");
 
 -- CreateIndex
 CREATE INDEX "TPRMVendorIssue_customerAccountId_idx" ON "TPRMVendorIssue"("customerAccountId");
@@ -4792,6 +4819,9 @@ ALTER TABLE "TPRMAssessmentResponse" ADD CONSTRAINT "TPRMAssessmentResponse_dele
 ALTER TABLE "TPRMAssessmentResponse" ADD CONSTRAINT "TPRMAssessmentResponse_respondedById_fkey" FOREIGN KEY ("respondedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TPRMAssessmentResponse" ADD CONSTRAINT "TPRMAssessmentResponse_assessorOverriddenById_fkey" FOREIGN KEY ("assessorOverriddenById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "TPRMClarification" ADD CONSTRAINT "TPRMClarification_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -4805,6 +4835,15 @@ ALTER TABLE "TPRMIssueRemediation" ADD CONSTRAINT "TPRMIssueRemediation_customer
 
 -- AddForeignKey
 ALTER TABLE "TPRMIssueRemediation" ADD CONSTRAINT "TPRMIssueRemediation_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMInternalComment" ADD CONSTRAINT "TPRMInternalComment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMInternalComment" ADD CONSTRAINT "TPRMInternalComment_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMInternalComment" ADD CONSTRAINT "TPRMInternalComment_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TPRMVendorIssue" ADD CONSTRAINT "TPRMVendorIssue_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

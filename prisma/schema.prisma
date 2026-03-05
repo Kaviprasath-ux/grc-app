@@ -142,6 +142,7 @@ model CustomerAccount {
   tprmClarifications         TPRMClarification[]
   tprmIssueRemediations      TPRMIssueRemediation[]
   tprmVendorIssues           TPRMVendorIssue[]
+  tprmInternalComments       TPRMInternalComment[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -430,6 +431,8 @@ model User {
   tprmResponsesResponded     TPRMAssessmentResponse[] @relation("TPRMResponseRespondedBy")
   tprmClarificationsRequested TPRMClarification[]     @relation("TPRMClarificationRequestedBy")
   tprmVendorIssuesReported   TPRMVendorIssue[]        @relation("TPRMVendorIssueReportedBy")
+  tprmResponsesOverridden    TPRMAssessmentResponse[] @relation("TPRMResponseAssessorOverride")
+  tprmInternalComments       TPRMInternalComment[]    @relation("TPRMInternalCommentAuthor")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -3366,6 +3369,7 @@ model TPRMAssessment {
   responses             TPRMAssessmentResponse[]
   clarifications        TPRMClarification[]
   issueRemediations     TPRMIssueRemediation[]
+  internalComments      TPRMInternalComment[]
 
   @@unique([customerAccountId, assessmentCode])
   @@index([customerAccountId])
@@ -3871,6 +3875,16 @@ model TPRMAssessmentResponse {
   poSeverity        String?
   aiUuid            String?         // uuid from api/query response
   aiEvaluatedAt     DateTime?
+  // Assessor override fields
+  assessorStatus        String?         // Satisfactory, Unsatisfactory, Not_Applicable (assessor override)
+  assessorIssue         String?         @db.Text
+  assessorRisk          String?         @db.Text
+  assessorRecommendation String?       @db.Text
+  assessorComment       String?         @db.Text
+  assessorSeverity      String?         // Low, Medium, High
+  assessorOverriddenAt  DateTime?
+  assessorOverriddenById String?
+  assessorOverriddenBy  User?           @relation("TPRMResponseAssessorOverride", fields: [assessorOverriddenById], references: [id])
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -3916,6 +3930,23 @@ model TPRMIssueRemediation {
   status            String          @default("Pending") // Pending, Submitted, Closed
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
+  @@index([assessmentId])
+}
+
+// TPRMInternalComment — Internal assessor comments on assessment questions
+model TPRMInternalComment {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessmentId      String
+  assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId        String?
+  message           String          @db.Text
+  authorId          String
+  author            User            @relation("TPRMInternalCommentAuthor", fields: [authorId], references: [id])
+  createdAt         DateTime        @default(now())
 
   @@index([customerAccountId])
   @@index([assessmentId])

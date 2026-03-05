@@ -29,6 +29,11 @@ export default async function Home() {
     redirect("/tprm/am-assessments");
   }
 
+  // Redirect TPRMAssessor users to Assessor Dashboard
+  if (session?.user?.roles?.includes("TPRMAssessor")) {
+    redirect("/tprm/asr-dashboard");
+  }
+
   // Redirect BusinessOwner users to BO Dashboard
   if (session?.user?.roles?.includes("BusinessOwner")) {
     redirect("/tprm/bo-dashboard");

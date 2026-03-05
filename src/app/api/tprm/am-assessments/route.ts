@@ -24,7 +24,7 @@ export const GET = withAuth(
       let statusFilter: string[] = [];
       switch (tab) {
         case 'active':
-          statusFilter = ['Draft', 'In Progress', 'Returned'];
+          statusFilter = ['Draft', 'In Progress', 'In_Progress', 'Returned', 'Initiated', 'Awaiting_Response'];
           break;
         case 'submitted':
           statusFilter = ['Submitted', 'Under Review'];

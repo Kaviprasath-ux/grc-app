@@ -33,7 +33,7 @@ export const POST = withAuth(
       }
 
       // Check assessment is in a submittable state
-      if (!['Draft', 'In Progress', 'Returned'].includes(assessment.status)) {
+      if (!['Draft', 'In Progress', 'In_Progress', 'Returned', 'Initiated', 'Awaiting_Response'].includes(assessment.status)) {
         return NextResponse.json({ error: `Cannot submit assessment in '${assessment.status}' status` }, { status: 400 });
       }
 

@@ -191,7 +191,7 @@ export default function TaskQueuePage() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => window.open(`/tprm/assessments?id=${row.original.id}`, "_self")}>
+        <Button variant="ghost" size="sm" onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}>
           <Eye className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
           {t("View")}
         </Button>
@@ -273,7 +273,7 @@ export default function TaskQueuePage() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => window.open(`/tprm/assessments?id=${row.original.id}`, "_self")}>
+        <Button variant="ghost" size="sm" onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}>
           <Eye className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
           {t("View")}
         </Button>

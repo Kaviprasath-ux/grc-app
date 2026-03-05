@@ -5,7 +5,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, Home, Eye, Link2,
   ClipboardList, FolderTree, Building2, BookOpen, FileQuestion,
   Award, UserCheck, ArrowLeft, Download, Upload, X, Search,
-  ImageIcon, FileSpreadsheet, CheckSquare, Clock, Save, Loader2,
+  ImageIcon, FileSpreadsheet, CheckSquare, Clock, Save, Loader2, Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1001,6 +1001,64 @@ function QuestionnaireManagementSection() {
   const [editItem, setEditItem] = useState<QuestionnaireTemplate | null>(null);
   const [editForm, setEditForm] = useState({ templateName: "", frameworkName: "", templateCategory: "Default" });
 
+  // ---- Cover Image ----
+  const [coverImageTemplate, setCoverImageTemplate] = useState<QuestionnaireTemplate | null>(null);
+  const [uploadingCoverImage, setUploadingCoverImage] = useState(false);
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCoverImageUpload = async (file: File, templateId: string) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: t("Error"), description: t("Please select an image file"), variant: "destructive" });
+      return;
+    }
+    setUploadingCoverImage(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const upRes = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!upRes.ok) throw new Error("Upload failed");
+      const upData = await upRes.json();
+      const imageUrl = upData.file?.filePath || null;
+      if (!imageUrl) throw new Error("No file path returned");
+
+      const res = await fetch("/api/tprm/configurations/questionnaire-templates", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: templateId, imageUrl }),
+      });
+      if (!res.ok) throw new Error("Failed to update template");
+
+      toast({ title: t("Success"), description: t("Cover image updated") });
+      setCoverImageTemplate((prev) => prev ? { ...prev, imageUrl } : null);
+      loadTemplates();
+    } catch (err) {
+      toast({ title: t("Error"), description: String(err), variant: "destructive" });
+    } finally {
+      setUploadingCoverImage(false);
+      if (coverImageInputRef.current) coverImageInputRef.current.value = "";
+    }
+  };
+
+  // ---- Enable AI Validation ----
+  const [enablingAI, setEnablingAI] = useState<string | null>(null);
+  const handleEnableAI = async (templateId: string) => {
+    setEnablingAI(templateId);
+    try {
+      const res = await fetch("/api/tprm/master-data/questionnaires-enable-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      toast({ title: t("AI Validation Enabled"), description: `${data.updatedCount} ${t("questions updated")}` });
+    } catch (err) {
+      toast({ title: t("Error"), description: String(err), variant: "destructive" });
+    } finally {
+      setEnablingAI(null);
+    }
+  };
+
   // ---- Template questions (sub-view) ----
   const [templateData, setTemplateData] = useState<TemplateWithQuestions | null>(null);
   const [questionsLoading, setQuestionsLoading] = useState(false);
@@ -1664,6 +1722,12 @@ function QuestionnaireManagementSection() {
             <ArrowLeft className={`h-4 w-4 ltr:mr-1 rtl:ml-1 ${isRTL ? "rotate-180" : ""}`} /> {t("Back")}
           </Button>
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline"
+              disabled={!selectedTemplateId || enablingAI === selectedTemplateId}
+              onClick={() => selectedTemplateId && handleEnableAI(selectedTemplateId)}>
+              {enablingAI === selectedTemplateId ? <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" /> : <Bot className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
+              {enablingAI === selectedTemplateId ? t("Enabling...") : t("Enable AI Validation")}
+            </Button>
             <Button size="sm" variant="outline" onClick={() => {
               setSelectedLinkIds(new Set()); setLinkSearch(""); setLinkDialogOpen(true);
             }}>
@@ -1732,6 +1796,10 @@ function QuestionnaireManagementSection() {
           <Button variant="ghost" size="icon" className="h-7 w-7" title={t("View Questions")}
             onClick={() => { setSelectedTemplateId(row.original.id); setSubView("questions"); }}>
             <Eye className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" title={t("Cover Image")}
+            onClick={() => setCoverImageTemplate(row.original)}>
+            <ImageIcon className="h-3.5 w-3.5" />
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7"
             onClick={() => {
@@ -2063,6 +2131,46 @@ function QuestionnaireManagementSection() {
               <Button onClick={handleEditSave}>{t("Save")}</Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cover Image Dialog */}
+      <Dialog open={!!coverImageTemplate} onOpenChange={() => setCoverImageTemplate(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Cover Image")} — {coverImageTemplate?.templateName}</DialogTitle>
+          </DialogHeader>
+          <input ref={coverImageInputRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0] && coverImageTemplate) {
+                handleCoverImageUpload(e.target.files[0], coverImageTemplate.id);
+              }
+            }} />
+          {coverImageTemplate?.imageUrl ? (
+            <div className="space-y-3">
+              <img src={coverImageTemplate.imageUrl} alt="Cover" className="w-full rounded-lg border" />
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={uploadingCoverImage}
+                  onClick={() => coverImageInputRef.current?.click()}>
+                  {uploadingCoverImage ? <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" /> : <ImageIcon className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
+                  {t("Change Image")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => coverImageInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files?.[0] && coverImageTemplate) handleCoverImageUpload(e.dataTransfer.files[0], coverImageTemplate.id); }}>
+              {uploadingCoverImage ? (
+                <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
+              ) : (
+                <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              )}
+              <p className="text-sm text-muted-foreground">{t("Click or drag to upload cover image")}</p>
+              <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WebP</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
