@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getAMVendorIds } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 
-// GET /api/tprm/am-assessments — List assessments for AM's vendor(s)
+// GET /api/tprm/am-assessments — List assessments for AM/SME's vendor(s)
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
@@ -14,21 +14,8 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get('limit') || '50');
       const offset = parseInt(searchParams.get('offset') || '0');
 
-      // Find vendors where this user is the Account Manager (by email, case-insensitive)
-      const userEmail = session.email?.toLowerCase();
-      if (!userEmail) {
-        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, hasMore: false } });
-      }
-
-      const vendors = await prisma.tPRMVendor.findMany({
-        where: {
-          customerAccountId,
-          accountManagerEmail: { contains: userEmail, mode: 'insensitive' },
-        },
-        select: { id: true },
-      });
-
-      const vendorIds = vendors.map(v => v.id);
+      // Find vendors accessible by this user (AM or SME via parent AM)
+      const vendorIds = await getAMVendorIds(session, customerAccountId);
       if (vendorIds.length === 0) {
         return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, hasMore: false } });
       }

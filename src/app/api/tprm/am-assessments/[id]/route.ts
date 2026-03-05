@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, verifyAMAccess } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 
 interface RouteContext {
@@ -32,9 +32,8 @@ export const GET = withAuth(
         return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
       }
 
-      // Verify AM access: check vendor's accountManagerEmail contains session user's email
-      const userEmail = session.email?.toLowerCase();
-      if (!userEmail || !assessment.vendor.accountManagerEmail?.toLowerCase().includes(userEmail)) {
+      // Verify AM/SME access
+      if (!await verifyAMAccess(session, assessment.vendor.accountManagerEmail)) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
 
@@ -120,9 +119,8 @@ export const PATCH = withAuth(
         return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
       }
 
-      // Verify AM access
-      const userEmail = session.email?.toLowerCase();
-      if (!userEmail || !assessment.vendor.accountManagerEmail?.toLowerCase().includes(userEmail)) {
+      // Verify AM/SME access
+      if (!await verifyAMAccess(session, assessment.vendor.accountManagerEmail)) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
 

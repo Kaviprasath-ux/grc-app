@@ -485,3 +485,66 @@ export async function getApiSession(): Promise<AuthenticatedRequest['user'] | nu
     permissions: user.permissions || [],
   };
 }
+
+// ==================== TPRM AM/SME HELPERS ====================
+
+import prisma from '@/lib/prisma';
+
+/**
+ * Resolve the effective Account Manager email for vendor access.
+ * - If the user is an AccountManager, returns their own email.
+ * - If the user is an SME (TPRMSME role), looks up their creator (the AM) and returns the AM's email.
+ * This allows SMEs to access the same vendor assessments as their parent AM.
+ */
+export async function getAMEmail(session: AuthenticatedRequest['user']): Promise<string | null> {
+  const isSME = session.roles.includes('TPRMSME');
+
+  if (!isSME) {
+    return session.email?.toLowerCase() || null;
+  }
+
+  // SME: look up the creator (Account Manager) and return their email
+  const smeUser = await prisma.user.findUnique({
+    where: { id: session.id },
+    select: { createdById: true },
+  });
+
+  if (!smeUser?.createdById) return null;
+
+  const amUser = await prisma.user.findUnique({
+    where: { id: smeUser.createdById },
+    select: { email: true },
+  });
+
+  return amUser?.email?.toLowerCase() || null;
+}
+
+/**
+ * Find vendor IDs accessible by the current user (AM or SME).
+ * For AMs: vendors where accountManagerEmail matches their email.
+ * For SMEs: vendors where accountManagerEmail matches their parent AM's email.
+ */
+export async function getAMVendorIds(session: AuthenticatedRequest['user'], customerAccountId: string): Promise<string[]> {
+  const amEmail = await getAMEmail(session);
+  if (!amEmail) return [];
+
+  const vendors = await prisma.tPRMVendor.findMany({
+    where: {
+      customerAccountId,
+      accountManagerEmail: { contains: amEmail, mode: 'insensitive' },
+    },
+    select: { id: true },
+  });
+
+  return vendors.map(v => v.id);
+}
+
+/**
+ * Verify AM/SME access to a specific assessment's vendor.
+ * Returns true if the user (AM or SME) has access to the vendor.
+ */
+export async function verifyAMAccess(session: AuthenticatedRequest['user'], vendorAccountManagerEmail: string | null): Promise<boolean> {
+  const amEmail = await getAMEmail(session);
+  if (!amEmail || !vendorAccountManagerEmail) return false;
+  return vendorAccountManagerEmail.toLowerCase().includes(amEmail);
+}
