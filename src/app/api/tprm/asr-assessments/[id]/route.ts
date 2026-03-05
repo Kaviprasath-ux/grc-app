@@ -108,7 +108,7 @@ export const GET = withAuth(
       console.log(`[ASR] GET /asr-assessments/${id} — OK, code=${assessment.assessmentCode} vendor=${assessment.vendor?.name} responses=${resps.length} satisfactory=${satisfactoryCount} unsatisfactory=${unsatisfactoryCount} questions=${questions.length}`);
       return NextResponse.json({ assessment, questions, domains, summary });
     } catch (error) {
-      console.error(`[ASR] GET /asr-assessments/${id} — FAILED user=${session.email}`, error);
+      console.error(`[ASR] GET /asr-assessments — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to fetch assessment' }, { status: 500 });
     }
   },

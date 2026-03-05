@@ -30,7 +30,7 @@ export const GET = withAuth(
       console.log(`[ASR] GET /asr-assessments/${id}/comments — OK, returned ${comments.length} comments`);
       return NextResponse.json(comments);
     } catch (error) {
-      console.error(`[ASR] GET /asr-assessments/${id}/comments — FAILED user=${session.email}`, error);
+      console.error(`[ASR] GET /asr-assessments/comments — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to fetch comments' }, { status: 500 });
     }
   },
@@ -77,7 +77,7 @@ export const POST = withAuth(
       console.log(`[ASR] POST /asr-assessments/${id}/comments — OK, created comment id=${comment.id} by ${comment.author.fullName}`);
       return NextResponse.json(comment);
     } catch (error) {
-      console.error(`[ASR] POST /asr-assessments/${id}/comments — FAILED user=${session.email}`, error);
+      console.error(`[ASR] POST /asr-assessments/comments — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to create comment' }, { status: 500 });
     }
   },

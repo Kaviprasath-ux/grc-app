@@ -21,7 +21,7 @@ import {
 import {
   Home, ArrowLeft, Eye, ChevronRight, ChevronDown,
   ShieldCheck, ShieldAlert, ShieldOff, Bot, MessageSquare,
-  FileText, Download, Flag, Send, Loader2, Clock, RotateCcw,
+  FileText, Download, Flag, Send, Loader2, Clock, RefreshCw,
   CheckCircle2, AlertTriangle, XCircle, ChevronLeft,
 } from "lucide-react";
 
@@ -228,7 +228,6 @@ export default function ASRAssessmentDetailPage() {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
-  const [returnOpen, setReturnOpen] = useState(false);
 
   // Override form
   const [overrideStatus, setOverrideStatus] = useState<string>("");
@@ -249,9 +248,8 @@ export default function ASRAssessmentDetailPage() {
   const [commentText, setCommentText] = useState("");
   const [commentSaving, setCommentSaving] = useState(false);
 
-  // Return reason
-  const [returnComment, setReturnComment] = useState("");
   const [actionSaving, setActionSaving] = useState(false);
+  const [rerunning, setRerunning] = useState(false);
 
   // ── Load Data ──────────────────────────────────────────────────────────
 
@@ -493,22 +491,46 @@ export default function ASRAssessmentDetailPage() {
     }
   };
 
-  const handleReturn = async () => {
-    setActionSaving(true);
+  // ── Re-run AI Evaluation ──────────────────────────────────────────────
+
+  const handleRerunAI = async () => {
+    setRerunning(true);
     try {
-      const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/complete`, {
+      const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/rerun-ai`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "return", comment: returnComment }),
       });
-      if (!res.ok) throw new Error("Failed");
-      toast({ title: t("Success"), description: t("Assessment returned") });
-      setReturnOpen(false);
-      loadAssessment();
-    } catch {
-      toast({ title: t("Error"), description: t("Failed to return"), variant: "destructive" });
-    } finally {
-      setActionSaving(false);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed");
+      }
+      toast({ title: t("Success"), description: t("AI re-evaluation started. This may take a few minutes.") });
+      // Poll for completion
+      const poll = setInterval(async () => {
+        try {
+          const r = await fetch(`/api/tprm/asr-assessments/${assessmentId}`);
+          if (r.ok) {
+            const d = await r.json();
+            const aiStatus = d.assessment?.aiEvaluationStatus;
+            if (aiStatus === "Completed" || aiStatus === "Failed") {
+              clearInterval(poll);
+              setRerunning(false);
+              loadAssessment();
+              toast({
+                title: aiStatus === "Completed" ? t("AI Evaluation Complete") : t("AI Evaluation Failed"),
+                description: aiStatus === "Completed"
+                  ? t("AI re-evaluation finished successfully.")
+                  : t("AI re-evaluation encountered errors."),
+                variant: aiStatus === "Completed" ? "default" : "destructive",
+              });
+            }
+          }
+        } catch { /* ignore poll errors */ }
+      }, 5000);
+      // Safety timeout: stop polling after 10 minutes
+      setTimeout(() => { clearInterval(poll); setRerunning(false); }, 600000);
+    } catch (err) {
+      toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to start AI re-evaluation"), variant: "destructive" });
+      setRerunning(false);
     }
   };
 
@@ -555,16 +577,15 @@ export default function ASRAssessmentDetailPage() {
             <h1 className="text-2xl font-bold">{t("Assessment Summary")}</h1>
           </div>
           <div className="flex items-center gap-2">
-            {assessment.status === "Submitted" || assessment.status === "Under Review" ? (
-              <>
-                <Button variant="outline" onClick={() => setReturnOpen(true)}>
-                  <RotateCcw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Return")}
-                </Button>
-                <Button onClick={() => setCompleteOpen(true)}>
-                  <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Mark as Reviewed")}
-                </Button>
-              </>
-            ) : null}
+            <Button variant="outline" onClick={handleRerunAI} disabled={rerunning}>
+              {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
+              {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
+            </Button>
+            {(assessment.status === "Submitted" || assessment.status === "Under Review") && (
+              <Button onClick={() => setCompleteOpen(true)}>
+                <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Mark as Reviewed")}
+              </Button>
+            )}
             <Button onClick={() => { setView("detail"); setCurrentPage(0); setSelectedQuestionId(null); }}>
               <FileText className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Detailed Assessment")}
             </Button>
@@ -764,24 +785,6 @@ export default function ASRAssessmentDetailPage() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{t("Return Assessment")}</DialogTitle></DialogHeader>
-            <Textarea
-              placeholder={t("Reason for returning...")}
-              value={returnComment}
-              onChange={e => setReturnComment(e.target.value)}
-              rows={4}
-            />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setReturnOpen(false)}>{t("Cancel")}</Button>
-              <Button variant="destructive" onClick={handleReturn} disabled={actionSaving}>
-                {actionSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
-                {t("Return")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     );
   }
@@ -802,15 +805,14 @@ export default function ASRAssessmentDetailPage() {
           <Button variant="outline" size="sm" onClick={() => setLogsOpen(true)}>
             <Clock className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Activity Logs")}
           </Button>
+          <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
+            {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
+            {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
+          </Button>
           {(assessment.status === "Submitted" || assessment.status === "Under Review") && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => setReturnOpen(true)}>
-                <RotateCcw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Return")}
-              </Button>
-              <Button size="sm" onClick={() => setCompleteOpen(true)}>
-                <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Mark as Reviewed")}
-              </Button>
-            </>
+            <Button size="sm" onClick={() => setCompleteOpen(true)}>
+              <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Mark as Reviewed")}
+            </Button>
           )}
         </div>
       </div>
@@ -1248,24 +1250,6 @@ export default function ASRAssessmentDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{t("Return Assessment")}</DialogTitle></DialogHeader>
-          <Textarea
-            placeholder={t("Reason for returning...")}
-            value={returnComment}
-            onChange={e => setReturnComment(e.target.value)}
-            rows={4}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReturnOpen(false)}>{t("Cancel")}</Button>
-            <Button variant="destructive" onClick={handleReturn} disabled={actionSaving}>
-              {actionSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
-              {t("Return")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -66,7 +66,7 @@ export const POST = withAuth(
       console.log(`[ASR] POST /asr-assessments/${id}/assign — OK, assigned to ${assessor.fullName}, status=${updated.status}`);
       return NextResponse.json(updated);
     } catch (error) {
-      console.error(`[ASR] POST /asr-assessments/${id}/assign — FAILED user=${session.email}`, error);
+      console.error(`[ASR] POST /asr-assessments/assign — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to assign assessment' }, { status: 500 });
     }
   },

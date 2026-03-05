@@ -60,7 +60,7 @@ export const POST = withAuth(
       console.log(`[ASR] POST /asr-assessments/${id}/override — OK, updated ${response.count} response(s) to ${assessorStatus}`);
       return NextResponse.json({ success: true, updated: response.count });
     } catch (error) {
-      console.error(`[ASR] POST /asr-assessments/${id}/override — FAILED user=${session.email}`, error);
+      console.error(`[ASR] POST /asr-assessments/override — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to override' }, { status: 500 });
     }
   },

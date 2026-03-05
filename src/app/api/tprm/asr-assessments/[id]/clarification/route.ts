@@ -30,7 +30,7 @@ export const GET = withAuth(
       console.log(`[ASR] GET /asr-assessments/${id}/clarification — OK, returned ${clarifications.length} clarifications`);
       return NextResponse.json(clarifications);
     } catch (error) {
-      console.error(`[ASR] GET /asr-assessments/${id}/clarification — FAILED user=${session.email}`, error);
+      console.error(`[ASR] GET /asr-assessments/clarification — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to fetch clarifications' }, { status: 500 });
     }
   },
@@ -85,7 +85,7 @@ export const POST = withAuth(
       console.log(`[ASR] POST /asr-assessments/${id}/clarification — OK, created clarification id=${clarification.id}`);
       return NextResponse.json(clarification);
     } catch (error) {
-      console.error(`[ASR] POST /asr-assessments/${id}/clarification — FAILED user=${session.email}`, error);
+      console.error(`[ASR] POST /asr-assessments/clarification — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to create clarification' }, { status: 500 });
     }
   },

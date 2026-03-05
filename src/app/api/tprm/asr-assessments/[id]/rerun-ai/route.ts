@@ -87,7 +87,7 @@ export const POST = withAuth(
       console.log(`[ASR] POST /asr-assessments/${assessmentId}/rerun-ai — OK, AI evaluation started (vendor=${vendor.vendorCode})`);
       return NextResponse.json({ message: 'AI evaluation started', status: 'Pending' });
     } catch (error) {
-      console.error(`[ASR] POST /asr-assessments/${assessmentId}/rerun-ai — FAILED user=${session.email}`, error);
+      console.error(`[ASR] POST /asr-assessments/rerun-ai — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to re-run AI evaluation' }, { status: 500 });
     }
   },

@@ -60,7 +60,7 @@ export const POST = withAuth(
       console.log(`[ASR] POST /asr-assessments/${id}/complete — OK, action=${action} newStatus=${updated.status}`);
       return NextResponse.json(updated);
     } catch (error) {
-      console.error(`[ASR] POST /asr-assessments/${id}/complete — FAILED user=${session.email}`, error);
+      console.error(`[ASR] POST /asr-assessments/complete — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to complete assessment' }, { status: 500 });
     }
   },
