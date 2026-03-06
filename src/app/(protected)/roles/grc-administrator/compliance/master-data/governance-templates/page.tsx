@@ -276,7 +276,7 @@ export default function GovernanceTemplatesPage() {
   };
 
   const handleView = (template: Template) => {
-    window.open(template.filePath, "_blank");
+    window.open(`/api/governance-templates/${template.id}/download`, "_blank");
   };
 
   const handleExport = () => {

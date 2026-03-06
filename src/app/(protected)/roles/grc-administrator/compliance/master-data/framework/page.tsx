@@ -274,15 +274,26 @@ export default function FrameworkMasterDataPage() {
     }
   };
 
-  const handleDownloadTemplate = () => {
-    // Download CSV template for requirement import
-    const template = "Code,Name,Description,Requirement Type,Chapter Type,Level\n";
-    const blob = new Blob([template], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "requirement_template.csv";
-    a.click();
+  const handleDownloadTemplate = async () => {
+    try {
+      const XLSX = await import("xlsx");
+      const columns = [
+        "Requirement Category",
+        "Requirement code",
+        "Requirement",
+        "Description",
+        "Control mapping",
+        "Requirement type",
+        "Chapter type",
+      ];
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.aoa_to_sheet([columns]);
+      worksheet["!cols"] = columns.map((col) => ({ wch: Math.max(col.length + 5, 20) }));
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Requirements");
+      XLSX.writeFile(workbook, "framework_requirements_template.xlsx");
+    } catch (error) {
+      console.error("Error generating template:", error);
+    }
   };
 
   const handleExport = () => {

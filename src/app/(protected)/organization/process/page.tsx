@@ -3149,7 +3149,7 @@ export default function ProcessPage() {
       {/* Edit Process Dialog */}
       <Dialog open={isEditProcessOpen} onOpenChange={(open) => {
         setIsEditProcessOpen(open);
-        if (!open) setEditingProcess(null);
+        if (!open) { setEditingProcess(null); setProcessFormErrors({}); }
       }}>
         <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" style={isRTL ? { direction: 'rtl' } : undefined} onInteractOutside={(e) => e.preventDefault()} onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
@@ -3186,10 +3186,14 @@ export default function ProcessPage() {
                   <Input
                     id="editName"
                     value={editingProcess.name}
-                    onChange={(e) => setEditingProcess({ ...editingProcess, name: e.target.value })}
+                    onChange={(e) => {
+                      setEditingProcess({ ...editingProcess, name: e.target.value });
+                      if (processFormErrors.name) setProcessFormErrors((prev) => { const { name, ...rest } = prev; return rest; });
+                    }}
                     placeholder={t("Enter process name")}
-                    className="mt-1.5 bg-white"
+                    className={`mt-1.5 bg-white ${processFormErrors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {processFormErrors.name && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{processFormErrors.name}</p></div>)}
                 </div>
                 <div>
                   <Label htmlFor="editDescription" className="text-sm font-medium text-slate-700">{t("Description")}</Label>
@@ -3574,7 +3578,7 @@ export default function ProcessPage() {
           )}
           {/* Fixed Footer */}
           <div className={`flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg justify-end [direction:ltr]`}>
-            <Button variant="outline" onClick={() => setIsEditProcessOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsEditProcessOpen(false); setEditingProcess(null); setProcessFormErrors({}); }}>
               {t("Cancel")}
             </Button>
             <Button onClick={handleEditProcess} disabled={saving}>

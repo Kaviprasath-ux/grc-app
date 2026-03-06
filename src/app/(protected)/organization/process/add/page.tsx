@@ -72,6 +72,7 @@ export default function AddProcessPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onboardingFileInputRef = useRef<HTMLInputElement>(null);
 
+  const [nameError, setNameError] = useState("");
   const [formData, setFormData] = useState({
     processCode: "",
     name: "",
@@ -241,13 +242,14 @@ export default function AddProcessPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({ title: t("Error"), description: t("Process Name is required"), variant: "destructive" });
+      setNameError(t("Process Name is required"));
       return;
     }
     if (!isValidName(formData.name.trim())) {
-      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
+      setNameError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
+    setNameError("");
 
     setSaving(true);
     try {
@@ -359,9 +361,11 @@ export default function AddProcessPage() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setNameError(""); }}
                 placeholder={t("Enter process name")}
+                className={nameError ? "border-semantic-error" : ""}
               />
+              {nameError && <p className="text-xs text-semantic-error mt-1">{nameError}</p>}
             </div>
 
             <div className="space-y-2">

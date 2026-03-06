@@ -90,6 +90,7 @@ export default function EditProcessPage() {
   const [rawProcess, setRawProcess] = useState<Process | null>(null);
   const formInitializedRef = useRef(false);
 
+  const [nameError, setNameError] = useState("");
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [processFrequencies, setProcessFrequencies] = useState<string[]>([]);
@@ -342,13 +343,14 @@ export default function EditProcessPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({ title: t("Error"), description: t("Process Name is required"), variant: "destructive" });
+      setNameError(t("Process Name is required"));
       return;
     }
     if (!isValidName(formData.name.trim())) {
-      toast({ title: t("Error"), description: t("Only letters, spaces, and hyphens are allowed"), variant: "destructive" });
+      setNameError(t("Only letters, spaces, and hyphens are allowed"));
       return;
     }
+    setNameError("");
 
     setSaving(true);
     try {
@@ -471,9 +473,11 @@ export default function EditProcessPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setNameError(""); }}
                   placeholder={t("Enter process name")}
+                  className={nameError ? "border-semantic-error" : ""}
                 />
+                {nameError && <p className="text-xs text-semantic-error mt-1">{nameError}</p>}
               </div>
             </div>
 
