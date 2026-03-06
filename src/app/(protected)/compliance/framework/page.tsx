@@ -86,11 +86,13 @@ const ITEMS_PER_PAGE = 15;
 
 // Template columns for framework requirements
 const TEMPLATE_COLUMNS = [
-  "Requirement Code",
-  "Requirement Name",
+  "Requirement Category",
+  "Requirement code",
+  "Requirement",
   "Description",
-  "Category",
-  "Control Mapping",
+  "Control mapping",
+  "Requirement type",
+  "Chapter type",
 ];
 
 export default function FrameworkOverviewPage() {

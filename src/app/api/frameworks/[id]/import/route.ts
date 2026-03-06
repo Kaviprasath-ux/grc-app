@@ -5,19 +5,23 @@ import { parseExcelFile, ColumnDefinition, ValidationError } from "@/lib/excel-i
 
 // Column definitions for framework requirements import
 const REQUIREMENT_COLUMNS: ColumnDefinition[] = [
-  { name: "Requirement Code", required: true, type: "string" },
-  { name: "Requirement Name", required: true, type: "string" },
+  { name: "Requirement Category", required: true, type: "string" },
+  { name: "Requirement code", required: true, type: "string" },
+  { name: "Requirement", required: true, type: "string" },
   { name: "Description", required: false, type: "string" },
-  { name: "Category", required: true, type: "string" },
-  { name: "Control Mapping", required: false, type: "string" },
+  { name: "Control mapping", required: false, type: "string" },
+  { name: "Requirement type", required: false, type: "string" },
+  { name: "Chapter type", required: false, type: "string" },
 ];
 
 interface RequirementRow extends Record<string, unknown> {
-  "Requirement Code": string;
-  "Requirement Name": string;
+  "Requirement Category": string;
+  "Requirement code": string;
+  "Requirement": string;
   Description: string;
-  Category: string;
-  "Control Mapping": string;
+  "Control mapping": string;
+  "Requirement type": string;
+  "Chapter type": string;
 }
 
 /**
@@ -151,7 +155,7 @@ export const POST = withAuth(
     // Group requirements by category
     const categoryMap = new Map<string, RequirementRow[]>();
     for (const row of result.data) {
-      const category = row["Category"];
+      const category = row["Requirement Category"];
       if (!categoryMap.has(category)) {
         categoryMap.set(category, []);
       }
@@ -161,7 +165,7 @@ export const POST = withAuth(
     // Track row numbers for error reporting
     const rowNumberMap = new Map<string, number>();
     result.data.forEach((row, index) => {
-      rowNumberMap.set(row["Requirement Code"], index + 2); // +2 for header row and 0-index
+      rowNumberMap.set(row["Requirement code"], index + 2); // +2 for header row and 0-index
     });
 
     // Fetch all existing controls for efficient lookup
@@ -221,21 +225,24 @@ export const POST = withAuth(
           const existingReq = await tx.requirement.findFirst({
             where: {
               frameworkId,
-              code: req["Requirement Code"],
+              code: req["Requirement code"],
             },
           });
 
           let requirementId: string;
 
+          const requirementType = req["Requirement type"]?.trim() || undefined;
+          const chapterType = req["Chapter type"]?.trim() || undefined;
+
           if (!existingReq) {
             const newReq = await tx.requirement.create({
               data: {
                 customerAccountId,
-                code: req["Requirement Code"],
-                name: req["Requirement Name"],
+                code: req["Requirement code"],
+                name: req["Requirement"],
                 description: req.Description || null,
-                requirementType: "Mandatory",
-                chapterType: "Domain",
+                ...(requirementType && { requirementType }),
+                ...(chapterType && { chapterType }),
                 frameworkId,
                 categoryId: category.id,
                 level: 2,
@@ -249,11 +256,11 @@ export const POST = withAuth(
           }
 
           // Parse and store control references for later processing
-          const controlRefs = parseControlMapping(req["Control Mapping"]);
+          const controlRefs = parseControlMapping(req["Control mapping"]);
           if (controlRefs.length > 0) {
             createdRequirements.push({
               id: requirementId,
-              code: req["Requirement Code"],
+              code: req["Requirement code"],
               controlRefs,
             });
           }

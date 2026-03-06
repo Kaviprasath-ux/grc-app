@@ -77,11 +77,13 @@ const ITEMS_PER_PAGE = 6;
 
 // Template columns for framework requirements (same as GRC Admin)
 const TEMPLATE_COLUMNS = [
-  "Requirement Code",
-  "Requirement Name",
+  "Requirement Category",
+  "Requirement code",
+  "Requirement",
   "Description",
-  "Category",
-  "Control Mapping",
+  "Control mapping",
+  "Requirement type",
+  "Chapter type",
 ];
 
 export default function CustomerAdminFrameworkPage() {
