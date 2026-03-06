@@ -24,10 +24,10 @@ export const GET = withAuth(
       let statusFilter: string[] = [];
       switch (tab) {
         case 'active':
-          statusFilter = ['Draft', 'In Progress', 'In-Progress', 'Returned', 'Initiated', 'Awaiting_Response'];
+          statusFilter = ['Draft', 'In Progress', 'In-Progress', 'Initiated', 'Awaiting_Response'];
           break;
         case 'submitted':
-          statusFilter = ['Submitted', 'Under Review'];
+          statusFilter = ['Submitted', 'Under Review', 'Returned', 'In-Progress(approver)'];
           break;
         case 'past':
           statusFilter = ['Completed', 'Approved', 'Rejected', 'Reviewed'];

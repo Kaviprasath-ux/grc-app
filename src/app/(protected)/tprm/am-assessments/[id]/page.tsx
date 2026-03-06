@@ -536,7 +536,7 @@ export default function AMResponseQuestionnairePage() {
   // Stats
   const totalQuestions = questions.length;
   const answeredQuestions = questions.filter(q => responses[q.id]?.response).length;
-  const isReadOnly = assessment?.status && !["Draft", "In Progress", "In-Progress", "Returned", "Initiated", "Awaiting_Response"].includes(assessment.status);
+  const isReadOnly = assessment?.status && !["Draft", "In Progress", "In-Progress", "Initiated", "Awaiting_Response"].includes(assessment.status);
 
   // AI evaluation status helpers
   const isAIInProgress = aiStatus?.aiEvaluationStatus === "Pending" || aiStatus?.aiEvaluationStatus === "Ingesting" || aiStatus?.aiEvaluationStatus === "Evaluating";
@@ -708,50 +708,6 @@ export default function AMResponseQuestionnairePage() {
         </div>
       </div>
 
-      {/* AI Evaluation Status Banner */}
-      {showAIBanner && (
-        <Card className={`border-2 ${isAIInProgress ? "border-purple-300 bg-purple-50/50" : isAICompleted ? "border-green-300 bg-green-50/50" : isAIFailed ? "border-red-300 bg-red-50/50" : isAINotStarted ? "border-amber-300 bg-amber-50/50" : "border-gray-200"}`}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {isAIInProgress && <Loader2 className="h-5 w-5 animate-spin text-purple-500" />}
-                {isAICompleted && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                {isAIFailed && <XCircle className="h-5 w-5 text-red-500" />}
-                {isAINotStarted && <AlertCircle className="h-5 w-5 text-amber-500" />}
-                <div>
-                  <p className="font-medium text-sm">
-                    {isAIInProgress && (
-                      <>
-                        {t("AI Evaluation")}:{" "}
-                        {aiStatus?.aiEvaluationStatus === "Pending" && t("Preparing...")}
-                        {aiStatus?.aiEvaluationStatus === "Ingesting" && t("Ingesting documents...")}
-                        {aiStatus?.aiEvaluationStatus === "Evaluating" && t("Evaluating responses...")}
-                      </>
-                    )}
-                    {isAICompleted && t("AI Evaluation Complete")}
-                    {isAIFailed && t("AI Evaluation Failed")}
-                    {isAINotStarted && t("AI Evaluation has not started yet")}
-                  </p>
-                  {isAIFailed && aiStatus?.aiEvaluationError && (
-                    <p className="text-xs text-red-600 mt-1">{aiStatus.aiEvaluationError}</p>
-                  )}
-                </div>
-              </div>
-              {(isAIFailed || isAICompleted || isAINotStarted) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRetriggerAI}
-                  disabled={retriggering}
-                >
-                  {retriggering ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <RefreshCw className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
-                  {isAINotStarted ? t("Start AI Evaluation") : t("Re-run AI Evaluation")}
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Filters */}
       <div className="flex items-center gap-4 flex-wrap">

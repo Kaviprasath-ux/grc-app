@@ -32,7 +32,7 @@ export const POST = withAuth(
       // Check for open clarifications before send_to_approver or approve
       if (action === 'send_to_approver' || action === 'approve') {
         const openClarifications = await prisma.tPRMClarification.count({
-          where: { assessmentId: id, customerAccountId, status: { not: 'Closed' } },
+          where: { assessmentId: id, customerAccountId, status: { notIn: ['Closed', 'Submitted'] } },
         });
         if (openClarifications > 0) {
           const msg = action === 'approve'

@@ -496,6 +496,9 @@ export default function ASRAssessmentDetailPage() {
   // ── Approve (Approver role) ───────────────────────────────────────────
 
   const handleApprove = async () => {
+    // Validate clarifications before approving
+    const ok = await checkOpenClarifications();
+    if (!ok) return;
     setActionSaving(true);
     try {
       const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/complete`, {
@@ -542,7 +545,27 @@ export default function ASRAssessmentDetailPage() {
 
   // ── Send to Approver (Assessor role) ──────────────────────────────────
 
+  // Check for open clarifications (used before send-to-approver and approve)
+  const [clarificationWarningOpen, setClarificationWarningOpen] = useState(false);
+  const checkOpenClarifications = async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/clarification?questionNo=`);
+      if (res.ok) {
+        const data = await res.json();
+        const open = (data || []).filter((c: Clarification) => c.status !== "Closed" && c.status !== "Submitted");
+        if (open.length > 0) {
+          setClarificationWarningOpen(true);
+          return false;
+        }
+      }
+    } catch { /* ignore, server-side will catch */ }
+    return true;
+  };
+
   const openSendToApprover = async () => {
+    // Validate clarifications before opening approver selection
+    const ok = await checkOpenClarifications();
+    if (!ok) return;
     setSendToApproverOpen(true);
     setSelectedApproverId("");
     try {
@@ -1740,6 +1763,19 @@ export default function ASRAssessmentDetailPage() {
               {actionSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
               <RotateCcw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Return to Assessor")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Open Clarifications Warning Dialog */}
+      <Dialog open={clarificationWarningOpen} onOpenChange={setClarificationWarningOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{t("Open Clarifications")}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("There are open clarifications. Please resolve all clarifications before proceeding.")}
+          </p>
+          <DialogFooter>
+            <Button onClick={() => setClarificationWarningOpen(false)}>{t("OK")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
