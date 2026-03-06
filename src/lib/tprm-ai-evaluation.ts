@@ -358,17 +358,7 @@ async function evaluateResponse(
     updateData.poStatus = 'Failed';
     updateData.poAnswer = 'AI evaluation could not be completed for this question. Please re-evaluate.';
 
-    // Log the error
-    await prisma.tPRMAssessmentLog.create({
-      data: {
-        customerAccountId: ctx.customerAccountId,
-        assessmentId: ctx.assessmentId,
-        domainName: questionMeta.domainName || null,
-        questionTitle: questionMeta.questionText.substring(0, 100),
-        logDate: new Date(),
-        logMessage: `AI evaluation failed for this question`,
-      },
-    }).catch(() => {});
+    // AI evaluation failures are not logged to activity logs
   }
 
   // Update the response in DB
