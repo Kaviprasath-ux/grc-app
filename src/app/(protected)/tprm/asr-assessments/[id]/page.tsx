@@ -231,7 +231,10 @@ export default function ASRAssessmentDetailPage() {
   const [clarificationOpen, setClarificationOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
+  const [logsScope, setLogsScope] = useState<"assessment" | "question">("assessment");
   const [completeOpen, setCompleteOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportResult, setReportResult] = useState<string>("Satisfactory");
 
   // Override form
   const [overrideStatus, setOverrideStatus] = useState<string>("");
@@ -800,18 +803,21 @@ export default function ASRAssessmentDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button size="sm" onClick={() => setView("summary")}>
+          <Button size="sm" onClick={() => { setView("summary"); setSelectedDomain("all"); }}>
             <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Back")}
           </Button>
           <h1 className="text-xl font-semibold">{t("Review Questionnaire")}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setLogsOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => { setLogsScope("assessment"); setLogsOpen(true); }}>
             <Clock className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Activity Logs")}
           </Button>
           <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
             {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
             {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
+            <FileText className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Generate Report")}
           </Button>
           {(assessment.status === "Submitted" || assessment.status === "Under Review") && (
             <Button size="sm" onClick={() => setCompleteOpen(true)}>
@@ -962,7 +968,7 @@ export default function ASRAssessmentDetailPage() {
                 <Button size="sm" onClick={openClarification}>
                   {t("Clarification")}
                 </Button>
-                <Button size="sm" onClick={() => setLogsOpen(true)}>
+                <Button size="sm" onClick={() => { setLogsScope("question"); setLogsOpen(true); }}>
                   {t("Activity Logs")}
                 </Button>
                 <Button size="sm" onClick={openComments}>
@@ -1226,24 +1232,41 @@ export default function ASRAssessmentDetailPage() {
       {/* Activity Logs Dialog */}
       <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{t("Activity Logs")}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>
+              {logsScope === "question" && selectedFlat
+                ? `${t("Activity Logs")} — Q${selectedFlat.questionNo}`
+                : t("Activity Logs")}
+            </DialogTitle>
+          </DialogHeader>
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
             {(() => {
-              const filteredLogs = assessment.logs.filter(log => !log.logMessage.startsWith("AI API "));
-              return filteredLogs.length === 0 ? (
+              const questionAllowedPrefixes = ["Clarification", "Assessor overrode", "Comment"];
+              const logs = logsScope === "question" && selectedFlat
+                ? assessment.logs.filter(log =>
+                    log.questionNo === selectedFlat.questionNo &&
+                    questionAllowedPrefixes.some(p => log.logMessage.startsWith(p))
+                  )
+                : assessment.logs.filter(log =>
+                    !log.logMessage.startsWith("AI API ") &&
+                    !log.logMessage.includes("AI API /api/") &&
+                    !log.logMessage.startsWith("Document ingest")
+                  );
+              return logs.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">{t("No activity logs")}</p>
-              ) : null;
+              ) : (
+                logs.map(log => (
+                  <div key={log.id} className="flex items-start gap-3 border-b pb-2">
+                    <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm">{log.logMessage}</p>
+                      <span className="text-xs text-muted-foreground">{new Date(log.logDate).toLocaleString()}</span>
+                      {logsScope === "assessment" && log.questionNo && <span className="text-xs text-muted-foreground"> — Q{log.questionNo}</span>}
+                    </div>
+                  </div>
+                ))
+              );
             })()}
-            {assessment.logs.filter(log => !log.logMessage.startsWith("AI API ")).map(log => (
-              <div key={log.id} className="flex items-start gap-3 border-b pb-2">
-                <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm">{log.logMessage}</p>
-                  <span className="text-xs text-muted-foreground">{new Date(log.logDate).toLocaleString()}</span>
-                  {log.questionNo && <span className="text-xs text-muted-foreground"> — Q{log.questionNo}</span>}
-                </div>
-              </div>
-            ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLogsOpen(false)}>{t("Close")}</Button>
@@ -1262,6 +1285,109 @@ export default function ASRAssessmentDetailPage() {
               {actionSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
               {t("Confirm")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Report Dialog */}
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="sm:max-w-[80vw] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{assessment.vendor.name}</span>
+              <span className="text-sm font-semibold text-primary">VerifAI</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Summary text */}
+          <p className="text-sm">
+            {t("Third Party Risk Management Team conducted a due diligence review of")} <strong>{assessment.vendor.name}</strong> {t("from")} <strong>{assessment.vendorSubmissionDate ? new Date(assessment.vendorSubmissionDate).toLocaleDateString() : "—"}</strong> {t("till")} <strong>{new Date().toLocaleDateString()}</strong>.
+          </p>
+          <p className="text-sm text-muted-foreground">{t("The control environment was found to be:")}</p>
+
+          {/* Assessment Result radio */}
+          <div className="flex items-center gap-6 border rounded-lg p-4">
+            {["Satisfactory", "Unsatisfactory", "Deficient"].map(opt => (
+              <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="reportResult"
+                  checked={reportResult === opt}
+                  onChange={() => setReportResult(opt)}
+                  className="accent-primary"
+                />
+                <span className="text-sm">{t(opt)}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Severity bar */}
+          <div className="border rounded-lg p-4">
+            <div className="grid grid-cols-3 text-center mb-2">
+              <div>
+                <span className="text-lg font-bold text-red-600">{summary?.highCount || 0}</span>
+                <p className="text-xs font-semibold text-red-600">{t("High")}</p>
+              </div>
+              <div>
+                <span className="text-lg font-bold text-amber-600">{summary?.mediumCount || 0}</span>
+                <p className="text-xs font-semibold text-amber-600">{t("Medium")}</p>
+              </div>
+              <div>
+                <span className="text-lg font-bold text-green-600">{summary?.lowCount || 0}</span>
+                <p className="text-xs font-semibold text-green-600">{t("Low")}</p>
+              </div>
+            </div>
+            <div className="h-2 flex rounded-full overflow-hidden">
+              {totalSeverity > 0 ? (
+                <>
+                  <div className="bg-red-500 h-full" style={{ width: `${((summary?.highCount || 0) / totalSeverity) * 100}%` }} />
+                  <div className="bg-amber-500 h-full" style={{ width: `${((summary?.mediumCount || 0) / totalSeverity) * 100}%` }} />
+                  <div className="bg-green-500 h-full" style={{ width: `${((summary?.lowCount || 0) / totalSeverity) * 100}%` }} />
+                </>
+              ) : (
+                <div className="bg-muted h-full w-full" />
+              )}
+            </div>
+          </div>
+
+          {/* Issues table */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="grid grid-cols-[50px_1fr_1fr_90px_1fr] gap-0 bg-primary text-primary-foreground text-xs font-semibold px-4 py-2.5">
+              <span>{t("Sr.No")}</span>
+              <span>{t("Issue")}</span>
+              <span>{t("Risk")}</span>
+              <span>{t("Severity")}</span>
+              <span>{t("Recommendation")}</span>
+            </div>
+            <div className="divide-y">
+              {verifaiRows
+                .filter(row => row.issue !== "—" || row.risk !== "—")
+                .map((row, idx) => (
+                  <div key={row.questionNo} className="grid grid-cols-[50px_1fr_1fr_90px_1fr] gap-0 px-4 py-3 text-sm items-start">
+                    <span className="font-medium">{idx + 1}</span>
+                    <span className="pr-3 leading-relaxed">{row.issue !== "—" ? row.issue : ""}</span>
+                    <span className="pr-3 leading-relaxed text-muted-foreground">{row.risk !== "—" ? row.risk : ""}</span>
+                    <span><SeverityBadge severity={row.severity !== "—" ? row.severity : null} /></span>
+                    <span className="pr-3 leading-relaxed text-muted-foreground">{row.recommendation !== "—" ? row.recommendation : ""}</span>
+                  </div>
+                ))}
+              {verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—").length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">{t("No issues found")}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-sm pt-2">
+            <p>{t("Sincerely,")}</p>
+            <p className="font-semibold">{t("Third Party Risk Management Team.")}</p>
+          </div>
+
+          {/* Action buttons */}
+          <DialogFooter className="flex-wrap gap-2">
+            <Button variant="outline" onClick={() => window.print()}>{t("Download Report")}</Button>
+            <Button onClick={() => { setReportOpen(false); setCompleteOpen(true); }}>{t("Complete Assessment")}</Button>
+            <Button variant="outline" onClick={() => setReportOpen(false)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
