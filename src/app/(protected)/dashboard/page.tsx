@@ -244,7 +244,6 @@ export default function DashboardPage() {
           yAxisDataKey="department"
           bars={[
             { dataKey: "achieved", fill: "#10B981", name: t("Achieved") },
-            { dataKey: "scheduled", fill: "#6366F1", name: t("Scheduled") },
             { dataKey: "missed", fill: "#F59E0B", name: t("Missed") },
             { dataKey: "overdue", fill: "#EF4444", name: t("Overdue") },
           ]}
@@ -256,7 +255,6 @@ export default function DashboardPage() {
           yAxisDataKey="department"
           bars={[
             { dataKey: "achieved", fill: "#10B981", name: t("Achieved") },
-            { dataKey: "scheduled", fill: "#6366F1", name: t("Scheduled") },
             { dataKey: "missed", fill: "#F59E0B", name: t("Missed") },
             { dataKey: "overdue", fill: "#EF4444", name: t("Overdue") },
           ]}

@@ -76,9 +76,9 @@ export function ChooseControlDialog({
           const data = await response.json();
           const apiControls: ApiControl[] = data.data || [];
 
-          // Filter to only Compliant and Non Compliant, and exclude already-linked controls
+          // Filter to only Compliant controls, and exclude already-linked controls
           const filtered = apiControls
-            .filter((c) => c.status === "Compliant" || c.status === "Non Compliant")
+            .filter((c) => c.status === "Compliant")
             .filter((c) => !excludeControlIds.includes(c.id))
             .map((c) => ({
               id: c.id,

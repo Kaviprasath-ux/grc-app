@@ -614,9 +614,9 @@ export default function AssetInventoryPage() {
         setCategories([...categories, cat]);
         triggerTranslation('AssetCategory', cat.id, { name: cat.name });
         if (editingAsset) {
-          setEditingAsset({ ...editingAsset, categoryId: cat.id, subCategoryId: null });
+          setEditingAsset({ ...editingAsset, categoryId: cat.id, subCategoryId: null, groupId: null });
         } else {
-          setNewAsset({ ...newAsset, categoryId: cat.id, subCategoryId: "" });
+          setNewAsset({ ...newAsset, categoryId: cat.id, subCategoryId: "", groupId: "" });
         }
         setNewCategoryName("");
         setIsAddCategoryOpen(false);
@@ -1348,7 +1348,7 @@ export default function AssetInventoryPage() {
                     <Select
                       value={newAsset.categoryId}
                       onValueChange={(value) => {
-                        setNewAsset({ ...newAsset, categoryId: value, subCategoryId: "" });
+                        setNewAsset({ ...newAsset, categoryId: value, subCategoryId: "", groupId: "" });
                         if (fieldErrors.categoryId) {
                           setFieldErrors({ ...fieldErrors, categoryId: "" });
                         }
@@ -1385,7 +1385,7 @@ export default function AssetInventoryPage() {
                     <Select
                       value={newAsset.subCategoryId}
                       onValueChange={(value) => {
-                        setNewAsset({ ...newAsset, subCategoryId: value });
+                        setNewAsset({ ...newAsset, subCategoryId: value, groupId: "" });
                         if (fieldErrors.subCategoryId) {
                           setFieldErrors({ ...fieldErrors, subCategoryId: "" });
                         }
@@ -1433,9 +1433,10 @@ export default function AssetInventoryPage() {
                           setFieldErrors({ ...fieldErrors, groupId: "" });
                         }
                       }}
+                      disabled={!newAsset.subCategoryId}
                     >
                       <SelectTrigger className={`flex-1 ${fieldErrors.groupId ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select Asset Group")} />
+                        <SelectValue placeholder={!newAsset.subCategoryId ? t("Select Sub Category first") : t("Select Asset Group")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {filteredGroups.map((g) => (
@@ -1450,6 +1451,7 @@ export default function AssetInventoryPage() {
                       variant="outline"
                       size="icon"
                       onClick={() => setIsAddGroupOpen(true)}
+                      disabled={!newAsset.subCategoryId}
                       className="flex-shrink-0"
                     >
                       <Plus className="h-4 w-4" />
@@ -1703,7 +1705,7 @@ export default function AssetInventoryPage() {
                       <Select
                         value={editingAsset.categoryId || ""}
                         onValueChange={(value) => {
-                          setEditingAsset({ ...editingAsset, categoryId: value, subCategoryId: null });
+                          setEditingAsset({ ...editingAsset, categoryId: value, subCategoryId: null, groupId: null });
                           if (fieldErrors.categoryId) {
                             setFieldErrors({ ...fieldErrors, categoryId: "" });
                           }
@@ -1740,7 +1742,7 @@ export default function AssetInventoryPage() {
                       <Select
                         value={editingAsset.subCategoryId || ""}
                         onValueChange={(value) => {
-                          setEditingAsset({ ...editingAsset, subCategoryId: value });
+                          setEditingAsset({ ...editingAsset, subCategoryId: value, groupId: null });
                           if (fieldErrors.subCategoryId) {
                             setFieldErrors({ ...fieldErrors, subCategoryId: "" });
                           }
@@ -1788,9 +1790,10 @@ export default function AssetInventoryPage() {
                             setFieldErrors({ ...fieldErrors, groupId: "" });
                           }
                         }}
+                        disabled={!editingAsset.subCategoryId}
                       >
                         <SelectTrigger className={`flex-1 ${fieldErrors.groupId ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select Asset Group")} />
+                          <SelectValue placeholder={!editingAsset.subCategoryId ? t("Select Sub Category first") : t("Select Asset Group")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           {editFilteredGroups.map((g) => (
@@ -1805,6 +1808,7 @@ export default function AssetInventoryPage() {
                         variant="outline"
                         size="icon"
                         onClick={() => setIsAddGroupOpen(true)}
+                        disabled={!editingAsset.subCategoryId}
                         className="flex-shrink-0"
                       >
                         <Plus className="h-4 w-4" />

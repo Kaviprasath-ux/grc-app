@@ -225,7 +225,9 @@ export default function RiskDetailPage() {
       }
       if (controlsRes.ok) {
         const ctrlData = await controlsRes.json();
-        setAvailableControls(Array.isArray(ctrlData) ? ctrlData : ctrlData.data || []);
+        const allControls = Array.isArray(ctrlData) ? ctrlData : ctrlData.data || [];
+        // Only show Compliant controls for linking
+        setAvailableControls(allControls.filter((c: { status?: string }) => c.status === "Compliant"));
       }
       if (categoriesRes.ok) {
         const catData = await categoriesRes.json();

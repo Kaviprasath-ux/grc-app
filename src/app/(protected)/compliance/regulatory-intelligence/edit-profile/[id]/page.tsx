@@ -119,8 +119,6 @@ export default function EditProfilePage() {
     }
     if (!url.trim()) {
       newErrors.url = "URL is required";
-    } else if (!/^https?:\/\/.+\..+/.test(url)) {
-      newErrors.url = "Please enter a valid URL (e.g., https://example.com)";
     }
     if (!country) {
       newErrors.country = "Country is required";
@@ -303,7 +301,7 @@ export default function EditProfilePage() {
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
+              placeholder={t("Enter URL")}
             />
             {errors.url && (
               <p className="text-sm text-red-500">{t(errors.url)}</p>

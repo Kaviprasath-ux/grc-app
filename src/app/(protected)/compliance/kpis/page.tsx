@@ -427,6 +427,7 @@ export default function KPIsPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Objective")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("KPI Description")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Expected Score")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Actual Score")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Review Date")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Department")}</TableHead>
@@ -436,7 +437,7 @@ export default function KPIsPage() {
           <TableBody>
             {paginatedKpis.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-12">
+                <TableCell colSpan={9} className="text-center py-12">
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
                       <BarChart3 className="h-6 w-6 text-primary-600" />
@@ -470,6 +471,9 @@ export default function KPIsPage() {
                     </TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       {kpi.expectedScore ?? "-"}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
+                      {kpi.actualScore ?? "-"}
                     </TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">
                       {displayReviewDate

@@ -96,6 +96,14 @@ interface RiskRange {
   color: string;
 }
 
+interface RiskScoreConfig {
+  useLikelihood: boolean;
+  useImpact: boolean;
+  useAssetScore: boolean;
+  useVulnerabilityScore: boolean;
+  riskTolerance: number;
+}
+
 // Assessment steps - will be translated in component
 const getAssessmentSteps = (t: (key: string) => string) => [
   { id: 1, name: t("Risk Context") },
@@ -127,6 +135,7 @@ export default function RiskAssessmentWizardPage() {
   const [impactRatings, setImpactRatings] = useState<ImpactRating[]>([]);
   const [vulnerabilityRatings, setVulnerabilityRatingsOptions] = useState<VulnerabilityRating[]>([]);
   const [riskRanges, setRiskRanges] = useState<RiskRange[]>([]);
+  const [scoreConfig, setScoreConfig] = useState<RiskScoreConfig>({ useLikelihood: true, useImpact: true, useAssetScore: false, useVulnerabilityScore: false, riskTolerance: 10 });
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -209,7 +218,7 @@ export default function RiskAssessmentWizardPage() {
     // Calculate scores
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability / 10 || 1);
+    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
     const simpleRiskScore = likelihoodRounded * impactRounded;
 
@@ -279,7 +288,7 @@ export default function RiskAssessmentWizardPage() {
     try {
       const [
         riskRes, threatsRes, vulnsRes,
-        likelihoodsRes, impactCatsRes, impactRatingsRes, vulnRatingsRes, riskRangesRes
+        likelihoodsRes, impactCatsRes, impactRatingsRes, vulnRatingsRes, riskRangesRes, scoreConfigRes
       ] = await Promise.all([
         fetch(`/api/risks/${riskId}`),
         fetch("/api/risk-threats"),
@@ -289,6 +298,7 @@ export default function RiskAssessmentWizardPage() {
         fetch("/api/impact-ratings"),
         fetch("/api/vulnerability-ratings"),
         fetch("/api/risk-ranges"),
+        fetch("/api/risk-score-config"),
       ]);
 
       if (riskRes.ok) {
@@ -341,6 +351,10 @@ export default function RiskAssessmentWizardPage() {
         const data = await riskRangesRes.json();
         setRiskRanges(data);
       }
+      if (scoreConfigRes.ok) {
+        const data = await scoreConfigRes.json();
+        setScoreConfig(data);
+      }
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
@@ -385,7 +399,7 @@ export default function RiskAssessmentWizardPage() {
     // Calculate scores
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability / 10 || 1);
+    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
     const simpleRiskScore = likelihoodRounded * impactRounded;
 
@@ -454,7 +468,7 @@ export default function RiskAssessmentWizardPage() {
       ? vulnerabilityValues.reduce((a, b) => a + b, 0) / vulnerabilityValues.length
       : 0;
 
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability / 10 || 1);
+    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
 
     // Check if risk rating is NOT "Low Risk" - show Risk Response dialog
@@ -491,7 +505,7 @@ export default function RiskAssessmentWizardPage() {
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
     const vulnerabilityRounded = Math.round(avgVulnerability);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability / 10 || 1);
+    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
 
     // Calculate simple risk score (likelihood * impact) for the riskScore field
@@ -601,7 +615,7 @@ export default function RiskAssessmentWizardPage() {
     ? Math.round(Object.values(vulnerabilityRatingsForm).reduce((a, b) => a + b, 0) / Object.values(vulnerabilityRatingsForm).length)
     : 0;
 
-  const riskScore = calcLikelihood * calcImpact * (calcVulnerability / 10 || 1);
+  const riskScore = calcLikelihood * calcImpact * (calcVulnerability || 1);
   const calculatedRating = getRiskRatingFromScore(riskScore);
 
   // Show loading state while permissions or data is being fetched
@@ -742,28 +756,43 @@ export default function RiskAssessmentWizardPage() {
         {/* Step 2: Likelihood */}
         {currentStep === 2 && (
           <div className="space-y-6">
-            {riskThreats.map((threat) => (
-              <div key={threat.id} className="space-y-2">
-                <h4 className="font-semibold">{threat.name}</h4>
-                <div className="flex flex-wrap gap-2">
-                  {likelihoodOptions.map((option) => (
-                    <Button
-                      key={option.id}
-                      variant={threatLikelihoods[threat.id] === option.score ? "default" : "outline"}
-                      onClick={() => setThreatLikelihoods(prev => ({ ...prev, [threat.id]: option.score }))}
-                      className="flex flex-col h-auto py-2"
-                    >
-                      <p>{option.title}</p>
-                      <p className="text-xs">{option.score}</p>
-                    </Button>
-                  ))}
+            {riskThreats.map((threat) => {
+              const selectedOption = likelihoodOptions.find(o => o.score === threatLikelihoods[threat.id]);
+              return (
+                <div key={threat.id} className="space-y-2">
+                  <h4 className="font-semibold">{threat.name}</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {likelihoodOptions.map((option) => (
+                      <Button
+                        key={option.id}
+                        variant={threatLikelihoods[threat.id] === option.score ? "default" : "outline"}
+                        onClick={() => setThreatLikelihoods(prev => ({ ...prev, [threat.id]: option.score }))}
+                        className="flex flex-col h-auto py-2"
+                      >
+                        <p>{option.title}</p>
+                        <p className="text-xs">{option.score}</p>
+                      </Button>
+                    ))}
+                  </div>
+                  {selectedOption && (selectedOption.timeFrame || selectedOption.probability) && (
+                    <div className="flex gap-8 pt-2">
+                      {selectedOption.timeFrame && (
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">{t("Timeframe")}</p>
+                          <p className="text-sm text-slate-500">{selectedOption.timeFrame}</p>
+                        </div>
+                      )}
+                      {selectedOption.probability && (
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">{t("Probability")}</p>
+                          <p className="text-sm text-slate-500">{selectedOption.probability}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              <span>{t("Timeframe")}</span>
-              <span>{t("Probability")}</span>
-            </div>
+              );
+            })}
           </div>
         )}
 
@@ -873,7 +902,7 @@ export default function RiskAssessmentWizardPage() {
                 <span className="text-muted-foreground">({riskScore.toFixed(2)})</span>
               </div>
               <p className="text-sm text-muted-foreground">{t("Risk Score = Likelihood * Impact * Vulnerability")}</p>
-              <p className="text-sm text-muted-foreground">{t("Risk Tolerance")} = 10</p>
+              <p className="text-sm text-muted-foreground">{t("Risk Tolerance")} = {scoreConfig.riskTolerance}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">

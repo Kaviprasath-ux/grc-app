@@ -339,10 +339,12 @@ export default function EditRiskPage() {
 
   const fetchControls = async () => {
     try {
-      const response = await fetch("/api/controls");
+      const response = await fetch("/api/controls?limit=500");
       if (response.ok) {
         const data = await response.json();
-        setControls(data.data || data);
+        const allControls = data.data || data;
+        // Only show Compliant controls for linking
+        setControls(allControls.filter((c: { status?: string }) => c.status === "Compliant"));
       }
     } catch (error) {
       console.error("Failed to fetch controls:", error);

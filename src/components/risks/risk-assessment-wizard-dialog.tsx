@@ -132,6 +132,7 @@ export function RiskAssessmentWizardDialog({
   const [impactRatings, setImpactRatings] = useState<ImpactRating[]>([]);
   const [vulnerabilityRatings, setVulnerabilityRatingsOptions] = useState<VulnerabilityRating[]>([]);
   const [riskRanges, setRiskRanges] = useState<RiskRange[]>([]);
+  const [riskTolerance, setRiskTolerance] = useState<number>(10);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -224,7 +225,7 @@ export function RiskAssessmentWizardDialog({
     // Calculate scores
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability / 10 || 1);
+    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
     const simpleRiskScore = likelihoodRounded * impactRounded;
 
@@ -295,7 +296,7 @@ export function RiskAssessmentWizardDialog({
     try {
       const [
         riskRes, threatsRes, vulnsRes,
-        likelihoodsRes, impactCatsRes, impactRatingsRes, vulnRatingsRes, riskRangesRes
+        likelihoodsRes, impactCatsRes, impactRatingsRes, vulnRatingsRes, riskRangesRes, scoreConfigRes
       ] = await Promise.all([
         fetch(`/api/risks/${riskId}`),
         fetch("/api/risk-threats"),
@@ -305,6 +306,7 @@ export function RiskAssessmentWizardDialog({
         fetch("/api/impact-ratings"),
         fetch("/api/vulnerability-ratings"),
         fetch("/api/risk-ranges"),
+        fetch("/api/risk-score-config"),
       ]);
 
       if (riskRes.ok) {
@@ -357,6 +359,10 @@ export function RiskAssessmentWizardDialog({
         const data = await riskRangesRes.json();
         setRiskRanges(data);
       }
+      if (scoreConfigRes.ok) {
+        const data = await scoreConfigRes.json();
+        if (data.riskTolerance) setRiskTolerance(data.riskTolerance);
+      }
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
@@ -399,7 +405,7 @@ export function RiskAssessmentWizardDialog({
 
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability / 10 || 1);
+    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
     const simpleRiskScore = likelihoodRounded * impactRounded;
 
@@ -466,7 +472,7 @@ export function RiskAssessmentWizardDialog({
       ? vulnerabilityValues.reduce((a, b) => a + b, 0) / vulnerabilityValues.length
       : 0;
 
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability / 10 || 1);
+    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
 
     if (riskRating !== "Low Risk") {
@@ -498,7 +504,7 @@ export function RiskAssessmentWizardDialog({
 
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability / 10 || 1);
+    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
     const simpleRiskScore = likelihoodRounded * impactRounded;
 
@@ -628,7 +634,7 @@ export function RiskAssessmentWizardDialog({
     ? Math.round(Object.values(vulnerabilityRatingsForm).reduce((a, b) => a + b, 0) / Object.values(vulnerabilityRatingsForm).length)
     : 0;
 
-  const riskScore = calcLikelihood * calcImpact * (calcVulnerability / 10 || 1);
+  const riskScore = calcLikelihood * calcImpact * (calcVulnerability || 1);
   const calculatedRating = getRiskRatingFromScore(riskScore);
 
   // Speedometer calculations for Risk Summary step
@@ -923,7 +929,7 @@ export function RiskAssessmentWizardDialog({
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-slate-400">{t("Risk Score = Likelihood × Impact × Vulnerability")}</p>
-                          <p className="text-xs text-slate-400">{t("Risk Tolerance = 10")}</p>
+                          <p className="text-xs text-slate-400">{t("Risk Tolerance")} = {riskTolerance}</p>
                         </div>
                       </div>
                     </div>

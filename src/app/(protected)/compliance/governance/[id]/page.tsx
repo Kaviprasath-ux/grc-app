@@ -2763,7 +2763,7 @@ export default function GovernanceDetailPage() {
               {/* Linked Vault Documents */}
               {linkedVaultDocuments.length > 0 && (
                 <div className="mt-6">
-                  <h4 className="text-sm font-semibold text-slate-800 mb-3">{t("Linked from Vault")}</h4>
+                  <h4 className="text-sm font-semibold text-slate-800 mb-3">{t("Linked Documents")}</h4>
                   <div className="space-y-2">
                     {linkedVaultDocuments.map((link) => (
                       <div
@@ -2876,7 +2876,7 @@ export default function GovernanceDetailPage() {
                   {/* Linked Vault Documents */}
                   {linkedVaultDocuments.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-800 mb-3">{t("Linked from Vault")}</h4>
+                      <h4 className="text-sm font-semibold text-slate-800 mb-3">{t("Linked Documents")}</h4>
                       <Table>
                         <TableHeader>
                           <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
