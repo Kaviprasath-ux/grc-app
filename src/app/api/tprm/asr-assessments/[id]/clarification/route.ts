@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -50,6 +51,7 @@ export const POST = withAuth(
       // Verify assessment exists
       const assessment = await prisma.tPRMAssessment.findFirst({
         where: { id, customerAccountId },
+        select: { id: true, assessmentCode: true, vendorId: true },
       });
       if (!assessment) {
         console.warn(`[ASR] POST /asr-assessments/${id}/clarification — 404 not found`);
@@ -81,6 +83,34 @@ export const POST = withAuth(
           logDate: new Date(),
         },
       });
+
+      // Notify account manager about clarification request
+      const vendor = await prisma.tPRMVendor.findUnique({
+        where: { id: assessment.vendorId },
+        select: { name: true, accountManagerEmail: true },
+      });
+
+      if (vendor?.accountManagerEmail) {
+        const am = await prisma.user.findFirst({
+          where: {
+            customerAccountId,
+            email: { equals: vendor.accountManagerEmail.split(';')[0].trim(), mode: 'insensitive' },
+            isActive: true,
+          },
+          select: { id: true },
+        });
+        if (am) {
+          void notificationService.notifyTPRMClarificationRequested({
+            customerAccountId,
+            actorId: session.id,
+            recipientId: am.id,
+            assessmentId: id,
+            assessmentCode: assessment.assessmentCode,
+            vendorName: vendor.name,
+            comment: rejectComment?.substring(0, 200) || undefined,
+          });
+        }
+      }
 
       console.log(`[ASR] POST /asr-assessments/${id}/clarification — OK, created clarification id=${clarification.id}`);
       return NextResponse.json(clarification);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { notificationService } from '@/lib/notification-service';
 
 // TPRM-specific roles that can be assigned by the customer admin (CustomerAdministrator)
 const TPRM_USER_ROLES = [
@@ -181,6 +182,41 @@ export const POST = withAuth(
         await prisma.userRole.create({
           data: { userId: user.id, roleId: systemRole.id },
         });
+      }
+
+      // Send in-app notification to new user
+      void notificationService.notifyTPRMAccountCreated({
+        customerAccountId,
+        actorId: session.id,
+        newUserId: user.id,
+        userName: user.fullName,
+        tprmRole,
+      });
+
+      // When BO creates an RM account, notify other admins/BOs
+      if (tprmRole === 'Relationship Manager') {
+        const adminsAndBOs = await prisma.user.findMany({
+          where: {
+            customerAccountId,
+            isActive: true,
+            id: { notIn: [session.id, user.id] },
+            OR: [
+              { role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
+              { tprmRole: 'Business Owner' },
+            ],
+          },
+          select: { id: true },
+          take: 10,
+        });
+        if (adminsAndBOs.length > 0) {
+          void notificationService.notifyTPRMRMAccountCreated({
+            customerAccountId,
+            actorId: session.id,
+            recipientIds: adminsAndBOs.map(a => a.id),
+            rmName: user.fullName,
+            rmEmail: user.email,
+          });
+        }
       }
 
       return NextResponse.json(user, { status: 201 });

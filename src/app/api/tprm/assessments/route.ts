@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 // GET assessments with search, filters, pagination
 export const GET = withAuth(
@@ -164,6 +165,30 @@ export const POST = withAuth(
           approver: { select: { id: true, fullName: true } },
         },
       });
+
+      // Notify the account manager that an assessment has been initiated
+      if (accountManagerUserId) {
+        void notificationService.notifyTPRMAssessmentInitiated({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: accountManagerUserId,
+          assessmentId: assessment.id,
+          assessmentCode: assessment.assessmentCode,
+          vendorName: assessment.vendor?.name || '',
+        });
+      }
+
+      // Notify the assessor if one was assigned at creation time
+      if (body.assessorId) {
+        void notificationService.notifyTPRMAssessmentAssigned({
+          customerAccountId,
+          actorId: session.id,
+          assessorId: body.assessorId,
+          assessmentId: assessment.id,
+          assessmentCode: assessment.assessmentCode,
+          vendorName: assessment.vendor?.name || '',
+        });
+      }
 
       return NextResponse.json(assessment, { status: 201 });
     } catch (error) {

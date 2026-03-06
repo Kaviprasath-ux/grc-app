@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId, verifyAMAccess } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { runAIEvaluation } from '@/lib/tprm-ai-evaluation';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -130,6 +131,33 @@ export const POST = withAuth(
           engagementId: vendor.engagementId || assessmentId,
         }).catch(err => {
           console.error('[TPRM-AI] Fire-and-forget evaluation error:', err);
+        });
+      }
+
+      // Get vendor name for notifications
+      const vendorName = vendor?.vendorCode || assessment.vendorId;
+
+      // Notify the assessor (if assigned) that assessment has been submitted
+      if (assessment.assessorId) {
+        void notificationService.notifyTPRMAssessmentSubmitted({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: assessment.assessorId,
+          assessmentId,
+          assessmentCode: assessment.assessmentCode,
+          vendorName,
+        });
+      }
+
+      // Notify the initiator (if different from submitter and assessor)
+      if (assessment.initiatedById && assessment.initiatedById !== session.id && assessment.initiatedById !== assessment.assessorId) {
+        void notificationService.notifyTPRMAssessmentSubmitted({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: assessment.initiatedById,
+          assessmentId,
+          assessmentCode: assessment.assessmentCode,
+          vendorName,
         });
       }
 

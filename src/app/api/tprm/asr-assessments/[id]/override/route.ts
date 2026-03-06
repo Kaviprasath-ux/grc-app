@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { notificationService, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -24,6 +25,7 @@ export const POST = withAuth(
       // Verify assessment exists and belongs to tenant
       const assessment = await prisma.tPRMAssessment.findFirst({
         where: { id, customerAccountId },
+        select: { id: true, assessmentCode: true, vendorId: true, initiatedById: true },
       });
       if (!assessment) {
         console.warn(`[ASR] POST /asr-assessments/${id}/override — 404 not found`);
@@ -56,6 +58,21 @@ export const POST = withAuth(
           logDate: new Date(),
         },
       });
+
+      // Notify the initiator about the override
+      if (assessment.initiatedById && assessment.initiatedById !== session.id) {
+        void notificationService.send({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: assessment.initiatedById,
+          event: NOTIFICATION_EVENTS.TPRM_OVERRIDE_APPLIED,
+          title: 'Assessment override applied',
+          message: `Assessor overrode AI evaluation on assessment ${assessment.assessmentCode}: ${assessorStatus}`,
+          relatedEntityType: 'assessment',
+          relatedEntityId: id,
+          link: `/tprm/asr-assessments/${id}`,
+        });
+      }
 
       console.log(`[ASR] POST /asr-assessments/${id}/override — OK, updated ${response.count} response(s) to ${assessorStatus}`);
       return NextResponse.json({ success: true, updated: response.count });

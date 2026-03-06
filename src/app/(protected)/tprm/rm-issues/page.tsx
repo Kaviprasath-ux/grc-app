@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Download, Search, X, Eye, MessageSquare, AlertTriangle, Home, ChevronRight } from "lucide-react";
+import { Download, Search, X, AlertTriangle, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DataGrid } from "@/components/shared";
@@ -20,19 +20,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 // ==================== TYPES ====================
 
-interface Vendor {
-  id: string;
-  name: string;
-  serviceCategory: string | null;
-  vrr: string | null;
-  contactEmail: string | null;
-}
-
 interface IssueRegisterEntry {
   id: string;
-  department: string;
+  department: string | null;
   vendorName: string;
-  vendorId: string;
+  vendorCode: string | null;
+  serviceCategory: string | null;
   high: number;
   medium: number;
   low: number;
@@ -42,27 +35,37 @@ interface IssueRegisterEntry {
 
 interface IssueRemediationEntry {
   id: string;
-  issueId: string;
   vendorName: string;
-  domain: string;
+  vendorCode: string;
+  domain: string | null;
   severity: string;
-  responseDate: string;
-  dueDate: string;
+  description: string | null;
+  amResponse: string | null;
+  requestedDate: string | null;
+  dueDate: string | null;
   status: string;
+  createdAt: string;
 }
 
 interface VendorIssueEntry {
   id: string;
   title: string;
-  status: string;
+  description: string | null;
+  vendorName: string;
+  vendorCode: string;
   severity: string;
-  dueDate: string;
+  dueDate: string | null;
+  resolution: string | null;
+  status: string;
+  reportedBy: string | null;
+  createdAt: string;
 }
 
 // ==================== HELPERS ====================
 
 const SEVERITY_COLORS: Record<string, string> = {
   High: "border-red-300 bg-red-50 text-red-700",
+  Critical: "border-red-300 bg-red-50 text-red-700",
   Medium: "border-orange-300 bg-orange-50 text-orange-700",
   Low: "border-green-300 bg-green-50 text-green-700",
 };
@@ -74,87 +77,14 @@ const STATUS_COLORS: Record<string, string> = {
   Resolved: "border-green-300 bg-green-50 text-green-700",
   "Awaiting Response": "border-purple-300 bg-purple-50 text-purple-700",
   Rejected: "border-red-300 bg-red-50 text-red-700",
+  Pending: "border-yellow-300 bg-yellow-50 text-yellow-700",
 };
 
-const DEPARTMENTS = ["IT", "Finance", "Operations", "HR", "Legal", "Procurement"];
 const SEVERITIES = ["High", "Medium", "Low"];
-const ISSUE_TITLES = [
-  "Data encryption not enforced",
-  "Expired SSL certificate",
-  "Missing access control policy",
-  "Incomplete incident response plan",
-  "Non-compliant data retention",
-  "Weak password policy",
-  "Unpatched vulnerabilities",
-  "Missing audit logs",
-  "Inadequate backup procedures",
-  "Third-party access not monitored",
-];
 
-function generateIssueData(vendors: Vendor[]) {
-  const registerEntries: IssueRegisterEntry[] = [];
-  const remediationEntries: IssueRemediationEntry[] = [];
-  const vendorIssueEntries: VendorIssueEntry[] = [];
-
-  vendors.forEach((v, idx) => {
-    const seed = v.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-    const rand = (min: number, max: number, offset: number) =>
-      min + ((seed + offset) % (max - min + 1));
-
-    const high = rand(0, 3, 1);
-    const medium = rand(0, 5, 2);
-    const low = rand(0, 4, 3);
-    const total = high + medium + low;
-    const statuses = ["Open", "In Progress", "Closed", "Resolved"];
-    const remStatuses = ["Open", "Closed", "Rejected"];
-
-    if (total > 0) {
-      registerEntries.push({
-        id: `REG-${String(idx + 1).padStart(3, "0")}`,
-        department: DEPARTMENTS[rand(0, DEPARTMENTS.length - 1, 4)],
-        vendorName: v.name,
-        vendorId: `V-${String(idx + 1).padStart(4, "0")}`,
-        high,
-        medium,
-        low,
-        total,
-        status: statuses[rand(0, statuses.length - 1, 5)],
-      });
-
-      for (let i = 0; i < Math.min(total, 3); i++) {
-        const severity = SEVERITIES[rand(0, 2, i + 6)];
-        const remStatus = remStatuses[rand(0, 2, i + 9)];
-        const monthOffset = rand(1, 6, i + 10);
-        const responseDate = new Date(2024, monthOffset, rand(1, 28, i + 11));
-        const dueDate = new Date(responseDate);
-        dueDate.setMonth(dueDate.getMonth() + rand(1, 3, i + 12));
-
-        remediationEntries.push({
-          id: `REM-${String(remediationEntries.length + 1).padStart(3, "0")}`,
-          issueId: `DD${rand(10, 99, i + 13)}`,
-          vendorName: v.name,
-          domain: v.contactEmail ? v.contactEmail.split("@")[1] || "" : "",
-          severity,
-          responseDate: responseDate.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }),
-          dueDate: dueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }),
-          status: remStatus,
-        });
-      }
-
-      for (let i = 0; i < Math.min(total, 2); i++) {
-        const viStatuses = ["Open", "Awaiting Response", "Closed"];
-        vendorIssueEntries.push({
-          id: `VI-${String(vendorIssueEntries.length + 1).padStart(3, "0")}`,
-          title: ISSUE_TITLES[rand(0, ISSUE_TITLES.length - 1, i + 14)],
-          status: viStatuses[rand(0, 2, i + 15)],
-          severity: SEVERITIES[rand(0, 2, i + 16)],
-          dueDate: new Date(2024, rand(1, 11, i + 17), rand(1, 28, i + 18)).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }),
-        });
-      }
-    }
-  });
-
-  return { registerEntries, remediationEntries, vendorIssueEntries };
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 // ==================== MAIN COMPONENT ====================
@@ -162,8 +92,12 @@ function generateIssueData(vendors: Vendor[]) {
 export default function RMIssuesPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
-  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Data from API
+  const [registerEntries, setRegisterEntries] = useState<IssueRegisterEntry[]>([]);
+  const [remediationEntries, setRemediationEntries] = useState<IssueRemediationEntry[]>([]);
+  const [vendorIssueEntries, setVendorIssueEntries] = useState<VendorIssueEntry[]>([]);
 
   // Issue Register filters
   const [regVendorSearch, setRegVendorSearch] = useState("");
@@ -178,13 +112,26 @@ export default function RMIssuesPage() {
   const [viSeverityFilter, setViSeverityFilter] = useState("all");
   const [viSubTab, setViSubTab] = useState("Open");
 
-  const loadVendors = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/tprm/vendors?limit=500");
-      if (res.ok) {
-        const data = await res.json();
-        setVendors(data.data || []);
+      const [regRes, remRes, viRes] = await Promise.all([
+        fetch("/api/tprm/rm-issues?tab=register"),
+        fetch("/api/tprm/rm-issues?tab=remediation"),
+        fetch("/api/tprm/rm-issues?tab=vendor-issues"),
+      ]);
+
+      if (regRes.ok) {
+        const regData = await regRes.json();
+        setRegisterEntries(regData.data || []);
+      }
+      if (remRes.ok) {
+        const remData = await remRes.json();
+        setRemediationEntries(remData.data || []);
+      }
+      if (viRes.ok) {
+        const viData = await viRes.json();
+        setVendorIssueEntries(viData.data || []);
       }
     } catch {
       toast({ title: t("Error"), description: t("Failed to load data"), variant: "destructive" });
@@ -193,12 +140,7 @@ export default function RMIssuesPage() {
     }
   }, [toast, t]);
 
-  useEffect(() => { loadVendors(); }, [loadVendors]);
-
-  const { registerEntries, remediationEntries, vendorIssueEntries } = useMemo(
-    () => generateIssueData(vendors),
-    [vendors]
-  );
+  useEffect(() => { loadData(); }, [loadData]);
 
   // ==================== ISSUE REGISTER ====================
 
@@ -223,9 +165,14 @@ export default function RMIssuesPage() {
       cell: ({ row }) => <span className="font-medium text-sm">{row.original.vendorName}</span>,
     },
     {
-      accessorKey: "vendorId",
-      header: t("Vendor ID"),
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorId}</span>,
+      accessorKey: "vendorCode",
+      header: t("Vendor Code"),
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span>,
+    },
+    {
+      accessorKey: "serviceCategory",
+      header: t("Service Category"),
+      cell: ({ row }) => <span className="text-sm">{row.original.serviceCategory || "-"}</span>,
     },
     {
       accessorKey: "high",
@@ -271,9 +218,9 @@ export default function RMIssuesPage() {
   ];
 
   const handleExport = () => {
-    const headers = ["Department", "Vendor Name", "Vendor ID", "High", "Medium", "Low", "Total", "Status"];
+    const headers = ["Department", "Vendor Name", "Vendor Code", "Service Category", "High", "Medium", "Low", "Total", "Status"];
     const rows = filteredRegister.map((e) => [
-      e.department, e.vendorName, e.vendorId, e.high, e.medium, e.low, e.total, e.status,
+      e.department || "", e.vendorName, e.vendorCode || "", e.serviceCategory || "", e.high, e.medium, e.low, e.total, e.status,
     ]);
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -291,7 +238,7 @@ export default function RMIssuesPage() {
     return remediationEntries.filter((e) => {
       const matchesSearch = remSearch === "" ||
         e.vendorName.toLowerCase().includes(remSearch.toLowerCase()) ||
-        e.issueId.toLowerCase().includes(remSearch.toLowerCase());
+        e.vendorCode.toLowerCase().includes(remSearch.toLowerCase());
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab = e.status === remSubTab;
       return matchesSearch && matchesSeverity && matchesSubTab;
@@ -300,14 +247,14 @@ export default function RMIssuesPage() {
 
   const remediationColumns: ColumnDef<IssueRemediationEntry>[] = [
     {
-      accessorKey: "issueId",
-      header: t("ID"),
-      cell: ({ row }) => <span className="text-sm font-medium">{row.original.issueId}</span>,
-    },
-    {
       accessorKey: "vendorName",
       header: t("Vendor Name"),
       cell: ({ row }) => <span className="text-sm font-medium">{row.original.vendorName}</span>,
+    },
+    {
+      accessorKey: "vendorCode",
+      header: t("Vendor Code"),
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span>,
     },
     {
       accessorKey: "domain",
@@ -324,31 +271,36 @@ export default function RMIssuesPage() {
       ),
     },
     {
-      accessorKey: "responseDate",
-      header: t("Response Date"),
-      cell: ({ row }) => <span className="text-sm">{row.original.responseDate}</span>,
+      accessorKey: "description",
+      header: t("Description"),
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground line-clamp-2">{row.original.description || "-"}</span>
+      ),
+    },
+    {
+      accessorKey: "requestedDate",
+      header: t("Requested Date"),
+      cell: ({ row }) => <span className="text-sm">{formatDate(row.original.requestedDate)}</span>,
     },
     {
       accessorKey: "dueDate",
       header: t("Due Date"),
-      cell: ({ row }) => <span className="text-sm">{row.original.dueDate}</span>,
+      cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span>,
     },
     {
-      id: "comments",
-      header: t("Comments"),
-      cell: () => (
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MessageSquare className="h-4 w-4 text-muted-foreground" />
-        </Button>
+      accessorKey: "amResponse",
+      header: t("AM Response"),
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground line-clamp-2">{row.original.amResponse || "-"}</span>
       ),
     },
     {
-      id: "action",
-      header: t("Action"),
-      cell: () => (
-        <Button variant="default" size="icon" className="h-8 w-8">
-          <Eye className="h-4 w-4" />
-        </Button>
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => (
+        <Badge variant="outline" className={`${STATUS_COLORS[row.original.status] || ""} text-xs font-medium`}>
+          {t(row.original.status)}
+        </Badge>
       ),
     },
   ];
@@ -370,13 +322,9 @@ export default function RMIssuesPage() {
       cell: ({ row }) => <span className="text-sm font-medium">{row.original.title}</span>,
     },
     {
-      accessorKey: "status",
-      header: t("Status"),
-      cell: ({ row }) => (
-        <Badge variant="outline" className={`${STATUS_COLORS[row.original.status] || ""} text-xs font-medium`}>
-          {t(row.original.status)}
-        </Badge>
-      ),
+      accessorKey: "vendorName",
+      header: t("Vendor Name"),
+      cell: ({ row }) => <span className="text-sm">{row.original.vendorName}</span>,
     },
     {
       accessorKey: "severity",
@@ -390,15 +338,20 @@ export default function RMIssuesPage() {
     {
       accessorKey: "dueDate",
       header: t("Due Date"),
-      cell: ({ row }) => <span className="text-sm">{row.original.dueDate}</span>,
+      cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span>,
     },
     {
-      id: "action",
-      header: t("Action"),
-      cell: () => (
-        <Button variant="default" size="icon" className="h-8 w-8">
-          <Eye className="h-4 w-4" />
-        </Button>
+      accessorKey: "reportedBy",
+      header: t("Reported By"),
+      cell: ({ row }) => <span className="text-sm">{row.original.reportedBy || "-"}</span>,
+    },
+    {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => (
+        <Badge variant="outline" className={`${STATUS_COLORS[row.original.status] || ""} text-xs font-medium`}>
+          {t(row.original.status)}
+        </Badge>
       ),
     },
   ];
@@ -457,7 +410,7 @@ export default function RMIssuesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("All Statuses")}</SelectItem>
-                {["Open", "In Progress", "Closed", "Resolved"].map((s) => (
+                {["Open", "Closed"].map((s) => (
                   <SelectItem key={s} value={s}>{t(s)}</SelectItem>
                 ))}
               </SelectContent>

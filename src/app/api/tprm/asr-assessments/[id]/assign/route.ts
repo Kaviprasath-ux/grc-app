@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { notificationService, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -94,6 +95,32 @@ export const POST = withAuth(
           logDate: new Date(),
         },
       });
+
+      // Notify the assessor about assignment
+      const isReassignment = assessment.assessorId && assessment.assessorId !== assessorId;
+      void notificationService.notifyTPRMAssessmentAssigned({
+        customerAccountId,
+        actorId: session.id,
+        assessorId,
+        assessmentId: id,
+        assessmentCode: updated.vendor?.vendorCode ? `${assessment.assessmentCode}` : assessment.assessmentCode,
+        vendorName: updated.vendor?.name || '',
+      });
+
+      // If reassigned, notify the previous assessor too
+      if (isReassignment && assessment.assessorId) {
+        void notificationService.send({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: assessment.assessorId,
+          event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_REASSIGNED,
+          title: 'Assessment reassigned',
+          message: `Assessment ${assessment.assessmentCode} has been reassigned to ${assessor.fullName}.`,
+          relatedEntityType: 'assessment',
+          relatedEntityId: id,
+          link: `/tprm/asr-assessments`,
+        });
+      }
 
       console.log(`[ASR] POST /asr-assessments/${id}/assign — OK, assigned to ${assessor.fullName}, status=${updated.status}`);
       return NextResponse.json(updated);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { notificationService } from '@/lib/notification-service';
 
 // GET /api/tprm/am-sme-management — List SMEs created by this AM
 export const GET = withAuth(
@@ -117,6 +118,15 @@ export const POST = withAuth(
           tprmFunctionCategory: true,
           createdAt: true,
         },
+      });
+
+      // Notify the new SME about account creation
+      void notificationService.notifyTPRMAccountCreated({
+        customerAccountId,
+        actorId: session.id,
+        newUserId: sme.id,
+        userName: sme.fullName,
+        tprmRole: 'SME',
       });
 
       return NextResponse.json(sme, { status: 201 });

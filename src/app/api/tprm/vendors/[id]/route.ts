@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -88,6 +89,32 @@ export const PATCH = withAuth<RouteContext>(
           department: { select: { id: true, name: true } },
         },
       });
+
+      // Notify account manager if vendor status changed to offboarding
+      const offboardStatuses = ['Offboarding', 'Offboarded', 'Inactive'];
+      if (body.status && offboardStatuses.includes(body.status) && existing.status !== body.status) {
+        const customerAccountId = getCustomerAccountId(session);
+        if (existing.accountManagerEmail) {
+          const am = await prisma.user.findFirst({
+            where: {
+              customerAccountId,
+              email: { equals: existing.accountManagerEmail.split(";")[0].trim(), mode: "insensitive" },
+              isActive: true,
+            },
+            select: { id: true },
+          });
+          if (am) {
+            void notificationService.notifyTPRMVendorOffboarding({
+              customerAccountId,
+              actorId: session.id,
+              recipientId: am.id,
+              vendorId: vendor.id,
+              vendorName: vendor.name,
+              vendorCode: vendor.vendorCode || '',
+            });
+          }
+        }
+      }
 
       return NextResponse.json(vendor);
     } catch (error) {

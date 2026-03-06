@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -52,9 +53,10 @@ export const POST = withAuth(
         return NextResponse.json({ error: 'Message is required' }, { status: 400 });
       }
 
-      // Verify assessment exists
+      // Verify assessment exists and get details for notification
       const assessment = await prisma.tPRMAssessment.findFirst({
         where: { id, customerAccountId },
+        select: { id: true, assessmentCode: true, assessorId: true, initiatedById: true },
       });
       if (!assessment) {
         console.warn(`[ASR] POST /asr-assessments/${id}/comments — 404 not found`);
@@ -73,6 +75,26 @@ export const POST = withAuth(
           author: { select: { id: true, fullName: true } },
         },
       });
+
+      // Notify the assessor (if commenter is not the assessor) or the initiator
+      const notifyTargets: string[] = [];
+      if (assessment.assessorId && assessment.assessorId !== session.id) {
+        notifyTargets.push(assessment.assessorId);
+      }
+      if (assessment.initiatedById && assessment.initiatedById !== session.id && !notifyTargets.includes(assessment.initiatedById)) {
+        notifyTargets.push(assessment.initiatedById);
+      }
+
+      for (const recipientId of notifyTargets) {
+        void notificationService.notifyTPRMCommentAdded({
+          customerAccountId,
+          actorId: session.id,
+          recipientId,
+          assessmentId: id,
+          assessmentCode: assessment.assessmentCode,
+          commentPreview: message.trim().substring(0, 100),
+        });
+      }
 
       console.log(`[ASR] POST /asr-assessments/${id}/comments — OK, created comment id=${comment.id} by ${comment.author.fullName}`);
       return NextResponse.json(comment);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 // GET all vendors with search and pagination
 export const GET = withAuth(
@@ -121,6 +122,28 @@ export const POST = withAuth(
           department: { select: { id: true, name: true } },
         },
       });
+
+      // Notify the account manager (if exists) about vendor onboarding
+      if (body.accountManagerEmail) {
+        const am = await prisma.user.findFirst({
+          where: {
+            customerAccountId,
+            email: { equals: body.accountManagerEmail.split(";")[0].trim(), mode: "insensitive" },
+            isActive: true,
+          },
+          select: { id: true },
+        });
+        if (am) {
+          void notificationService.notifyTPRMVendorOnboarded({
+            customerAccountId,
+            actorId: session.id,
+            recipientId: am.id,
+            vendorId: vendor.id,
+            vendorName: vendor.name,
+            vendorCode: vendor.vendorCode,
+          });
+        }
+      }
 
       return NextResponse.json(vendor, { status: 201 });
     } catch (error) {

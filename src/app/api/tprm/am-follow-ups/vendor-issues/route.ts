@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { notificationService } from '@/lib/notification-service';
 
 // GET /api/tprm/am-follow-ups/vendor-issues — List vendor issues reported by AM
 export const GET = withAuth(
@@ -91,6 +92,31 @@ export const POST = withAuth(
           reportedBy: { select: { id: true, fullName: true } },
         },
       });
+
+      // Notify admins/BO about the new vendor issue
+      const admins = await prisma.user.findMany({
+        where: {
+          customerAccountId,
+          isActive: true,
+          OR: [
+            { role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
+            { tprmRole: 'Business Owner' },
+          ],
+        },
+        select: { id: true },
+        take: 10,
+      });
+
+      if (admins.length > 0) {
+        void notificationService.notifyTPRMVendorIssueCreated({
+          customerAccountId,
+          actorId: session.id,
+          recipientIds: admins.map(a => a.id),
+          issueId: issue.id,
+          issueTitle: title,
+          vendorName: vendor?.name || '',
+        });
+      }
 
       return NextResponse.json(issue, { status: 201 });
     } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -23,6 +24,7 @@ export const POST = withAuth(
 
       const assessment = await prisma.tPRMAssessment.findFirst({
         where: { id, customerAccountId },
+        select: { id: true, assessmentCode: true, vendorId: true, status: true, initiatedById: true, assessorId: true },
       });
       if (!assessment) {
         console.warn(`[ASR] POST /asr-assessments/${id}/complete — 404 not found`);
@@ -184,6 +186,70 @@ export const POST = withAuth(
           logDate: new Date(),
         },
       });
+
+      // Notify the initiator/account manager about completion or return
+      if (assessment.initiatedById) {
+        if (action === 'complete') {
+          void notificationService.notifyTPRMAssessmentCompleted({
+            customerAccountId,
+            actorId: session.id,
+            recipientId: assessment.initiatedById,
+            assessmentId: id,
+            assessmentCode: assessment.assessmentCode,
+            vendorName: assessment.vendorId, // Will be resolved below
+          });
+        } else {
+          void notificationService.notifyTPRMAssessmentReturned({
+            customerAccountId,
+            actorId: session.id,
+            recipientId: assessment.initiatedById,
+            assessmentId: id,
+            assessmentCode: assessment.assessmentCode,
+            vendorName: assessment.vendorId,
+            comment: comment || undefined,
+          });
+        }
+      }
+
+      // Also look up vendor name & AM to send more useful notifications
+      const vendor = await prisma.tPRMVendor.findUnique({
+        where: { id: assessment.vendorId },
+        select: { name: true, accountManagerEmail: true },
+      });
+
+      // Notify account manager (if different from initiator)
+      if (vendor?.accountManagerEmail) {
+        const am = await prisma.user.findFirst({
+          where: {
+            customerAccountId,
+            email: { equals: vendor.accountManagerEmail.split(';')[0].trim(), mode: 'insensitive' },
+            isActive: true,
+          },
+          select: { id: true },
+        });
+        if (am && am.id !== assessment.initiatedById) {
+          if (action === 'complete') {
+            void notificationService.notifyTPRMAssessmentCompleted({
+              customerAccountId,
+              actorId: session.id,
+              recipientId: am.id,
+              assessmentId: id,
+              assessmentCode: assessment.assessmentCode,
+              vendorName: vendor.name,
+            });
+          } else {
+            void notificationService.notifyTPRMAssessmentReturned({
+              customerAccountId,
+              actorId: session.id,
+              recipientId: am.id,
+              assessmentId: id,
+              assessmentCode: assessment.assessmentCode,
+              vendorName: vendor.name,
+              comment: comment || undefined,
+            });
+          }
+        }
+      }
 
       console.log(`[ASR] POST /asr-assessments/${id}/complete — OK, action=${action} newStatus=${updated.status}`);
       return NextResponse.json(updated);

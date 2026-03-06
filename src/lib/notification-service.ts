@@ -451,6 +451,25 @@ class NotificationService {
       [NOTIFICATION_EVENTS.ESCALATE_FIELDWORK_RESPONSE]: 'ESCALATE_FIELDWORK_RESPONSE',
       [NOTIFICATION_EVENTS.ESCALATE_CLARIFICATION]: 'ESCALATE_CLARIFICATION',
       [NOTIFICATION_EVENTS.ESCALATE_ACKNOWLEDGMENT]: 'ESCALATE_ACKNOWLEDGMENT',
+
+      // ===================== TPRM =====================
+      [NOTIFICATION_EVENTS.TPRM_ACCOUNT_CREATED]: 'TPRM_ACCOUNT_CREATED',
+      [NOTIFICATION_EVENTS.TPRM_VENDOR_ONBOARDED]: 'TPRM_VENDOR_ONBOARDED',
+      [NOTIFICATION_EVENTS.TPRM_VENDOR_OFFBOARDING]: 'TPRM_VENDOR_OFFBOARDING',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_INITIATED]: 'TPRM_ASSESSMENT_INITIATED',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_ASSIGNED]: 'TPRM_ASSESSMENT_ASSIGNED',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_SUBMITTED]: 'TPRM_ASSESSMENT_SUBMITTED',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_COMPLETED]: 'TPRM_ASSESSMENT_COMPLETED',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_RETURNED]: 'TPRM_ASSESSMENT_RETURNED',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_REASSIGNED]: 'TPRM_ASSESSMENT_REASSIGNED',
+      [NOTIFICATION_EVENTS.TPRM_SME_ASSIGNED]: 'TPRM_SME_ASSIGNED',
+      [NOTIFICATION_EVENTS.TPRM_CLARIFICATION_REQUESTED]: 'TPRM_CLARIFICATION_REQUESTED',
+      [NOTIFICATION_EVENTS.TPRM_COMMENT_ADDED]: 'TPRM_COMMENT_ADDED',
+      [NOTIFICATION_EVENTS.TPRM_OVERRIDE_APPLIED]: 'TPRM_OVERRIDE_APPLIED',
+      [NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_CREATED]: 'TPRM_VENDOR_ISSUE_CREATED',
+      [NOTIFICATION_EVENTS.TPRM_SUPPORT_REQUEST]: 'TPRM_SUPPORT_REQUEST',
+      [NOTIFICATION_EVENTS.TPRM_CONTRACT_EXPIRY]: 'TPRM_CONTRACT_EXPIRY',
+      [NOTIFICATION_EVENTS.TPRM_RM_ACCOUNT_CREATED]: 'TPRM_RM_ACCOUNT_CREATED',
     };
 
     return templateMap[event] || 'GENERIC_NOTIFICATION';
@@ -968,6 +987,339 @@ class NotificationService {
       console.error('[NotificationService] Error sending announcement:', error);
       return { success: false, count: 0 };
     }
+  }
+
+  // ==================== TPRM CONVENIENCE METHODS ====================
+
+  /**
+   * Notify when a TPRM user account is created.
+   */
+  async notifyTPRMAccountCreated(params: {
+    customerAccountId: string;
+    actorId: string;
+    newUserId: string;
+    userName: string;
+    tprmRole: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.newUserId,
+      event: NOTIFICATION_EVENTS.TPRM_ACCOUNT_CREATED,
+      title: 'TPRM account created',
+      message: `Your TPRM account has been created with role: ${params.tprmRole}.`,
+      channels: params.channels,
+      metadata: { userName: params.userName, tprmRole: params.tprmRole },
+    });
+  }
+
+  /**
+   * Notify admins/BO when a Relationship Manager account is created.
+   */
+  async notifyTPRMRMAccountCreated(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    rmName: string;
+    rmEmail: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_RM_ACCOUNT_CREATED,
+      title: 'Relationship Manager account created',
+      message: `A new Relationship Manager account has been created for ${params.rmName} (${params.rmEmail}).`,
+      channels: params.channels,
+      metadata: { rmName: params.rmName, rmEmail: params.rmEmail },
+    });
+  }
+
+  /**
+   * Notify when a vendor is onboarded (created).
+   * Notifies the account manager for the vendor.
+   */
+  async notifyTPRMVendorOnboarded(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    vendorId: string;
+    vendorName: string;
+    vendorCode: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_VENDOR_ONBOARDED,
+      title: 'Vendor access provisioned',
+      message: `Vendor ${params.vendorCode}: ${params.vendorName} has been onboarded.`,
+      relatedEntityType: 'vendor',
+      relatedEntityId: params.vendorId,
+      link: `/tprm/bo-inventory`,
+      channels: params.channels,
+      metadata: { entityName: params.vendorName, vendorCode: params.vendorCode },
+    });
+  }
+
+  /**
+   * Notify when vendor offboarding is initiated.
+   */
+  async notifyTPRMVendorOffboarding(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    vendorId: string;
+    vendorName: string;
+    vendorCode: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_VENDOR_OFFBOARDING,
+      title: 'Vendor offboarding initiated',
+      message: `Vendor offboarding process has started for ${params.vendorCode}: ${params.vendorName}.`,
+      relatedEntityType: 'vendor',
+      relatedEntityId: params.vendorId,
+      link: `/tprm/bo-inventory`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.vendorName, vendorCode: params.vendorCode },
+    });
+  }
+
+  /**
+   * Notify when a TPRM assessment is initiated.
+   * Notifies the account manager that a new assessment is created for their vendor.
+   */
+  async notifyTPRMAssessmentInitiated(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_INITIATED,
+      title: 'Assessment initiated',
+      message: `A new assessment ${params.assessmentCode} has been initiated for vendor ${params.vendorName}.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/am-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  /**
+   * Notify when an assessment is assigned to an assessor.
+   */
+  async notifyTPRMAssessmentAssigned(params: {
+    customerAccountId: string;
+    actorId: string;
+    assessorId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.assessorId,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_ASSIGNED,
+      title: 'Assessment assigned to you',
+      message: `Assessment ${params.assessmentCode} for vendor ${params.vendorName} has been assigned to you.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  /**
+   * Notify when an assessment is submitted by AM/vendor.
+   * Notifies the assigned assessor.
+   */
+  async notifyTPRMAssessmentSubmitted(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_SUBMITTED,
+      title: 'Assessment submitted for review',
+      message: `Assessment ${params.assessmentCode} for vendor ${params.vendorName} has been submitted for your review.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  /**
+   * Notify when an assessment is completed/reviewed by assessor.
+   * Notifies the initiator/account manager.
+   */
+  async notifyTPRMAssessmentCompleted(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_COMPLETED,
+      title: 'Assessment reviewed',
+      message: `Assessment ${params.assessmentCode} for vendor ${params.vendorName} has been reviewed.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/am-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  /**
+   * Notify when an assessment is returned/rejected by assessor.
+   * Notifies the account manager.
+   */
+  async notifyTPRMAssessmentReturned(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    comment?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_RETURNED,
+      title: 'Assessment returned',
+      message: params.comment
+        ? `Assessment ${params.assessmentCode} for vendor ${params.vendorName} has been returned: ${params.comment}`
+        : `Assessment ${params.assessmentCode} for vendor ${params.vendorName} has been returned. Please review comments.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/am-assessments/${params.assessmentId}`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName, reason: params.comment },
+    });
+  }
+
+  /**
+   * Notify when a clarification is requested on an assessment.
+   * Notifies the account manager/vendor.
+   */
+  async notifyTPRMClarificationRequested(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    comment?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_CLARIFICATION_REQUESTED,
+      title: 'Clarification requested',
+      message: params.comment
+        ? `Assessor has requested clarification on assessment ${params.assessmentCode}: ${params.comment}`
+        : `Assessor has requested clarification on assessment ${params.assessmentCode} for vendor ${params.vendorName}.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/am-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  /**
+   * Notify when a comment is added on a TPRM assessment.
+   */
+  async notifyTPRMCommentAdded(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    commentPreview: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_COMMENT_ADDED,
+      title: 'New comment on assessment',
+      message: `New comment on assessment ${params.assessmentCode}: ${params.commentPreview}`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, commentPreview: params.commentPreview },
+    });
+  }
+
+  /**
+   * Notify when a vendor issue is created.
+   */
+  async notifyTPRMVendorIssueCreated(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    issueId: string;
+    issueTitle: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_CREATED,
+      title: 'Vendor issue reported',
+      message: `A new issue has been reported for vendor ${params.vendorName}: ${params.issueTitle}`,
+      relatedEntityType: 'vendor-issue',
+      relatedEntityId: params.issueId,
+      link: `/tprm/am-follow-ups`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.issueTitle, vendorName: params.vendorName },
+    });
   }
 
   // ==================== MAINTENANCE METHODS ====================
