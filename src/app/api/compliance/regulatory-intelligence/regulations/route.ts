@@ -26,6 +26,8 @@ export const GET = withAuth(
             select: {
               id: true,
               fullLegalEntityName: true,
+              country: true,
+              industrySectors: true,
             },
           },
         },

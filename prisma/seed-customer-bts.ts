@@ -34,6 +34,30 @@ async function main() {
   const customerAccountId = customerAccount.id;
   console.log("  ✓ Customer Account ready");
 
+  // ==================== ENSURE SUBSCRIPTION PLAN EXISTS ====================
+  console.log("\n📋 Ensuring Subscription Plan exists...");
+  await prisma.subscriptionPlan.upsert({
+    where: { id: "subscription-plan-1" },
+    update: {
+      expiryDate: new Date("2030-12-31"),
+      status: "Active",
+    },
+    create: {
+      id: "subscription-plan-1",
+      customerAccountId: customerAccountId,
+      startDate: new Date(),
+      expiryDate: new Date("2030-12-31"),
+      maxFrameworksAllowed: 100,
+      maxAccountsAllowed: 50,
+      assessmentLimit: 100,
+      vendorLimit: 100,
+      frameworksUsed: 0,
+      accountsUsed: 0,
+      status: "Active",
+    },
+  });
+  console.log("  ✓ Subscription Plan ready");
+
   // ==================== CREATE CUSTOMERADMIN USER 'bts' ====================
   console.log("\n👤 Creating CustomerAdmin user 'bts'...");
 

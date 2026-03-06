@@ -133,6 +133,8 @@
   "Framework/Regulation/Law/Standard": "Ietvars/Noteikums/Likums/Standarts",
   "Mandatory/Recommended/Optional": "Obligāts/Ieteicams/Neobligāts",
   "Onboard Framework": "Ieviest ietvaru",
+  "No Selection": "Nav izvēles",
+  "Please select a regulation to onboard as a framework": "Lūdzu, izvēlieties noteikumu, lai to ieviestu kā ietvaru",
   "Subscribing...": "Abonē...",
   "Delete Profile": "Dzēst profilu",
   "Are you sure you want to delete this organisation profile? This action cannot be undone.": "Vai tiešām vēlaties dzēst šo organizācijas profilu? Šo darbību nevar atsaukt.",

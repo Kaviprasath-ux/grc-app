@@ -44,12 +44,11 @@ import {
   Home,
   Loader2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { isValidName } from "@/lib/validations";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
@@ -96,6 +95,7 @@ const TEMPLATE_COLUMNS = [
 
 export default function FrameworkOverviewPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { t } = useLanguage();
   const isGRCAdmin = useHasRole("GRCAdministrator");
@@ -149,6 +149,37 @@ export default function FrameworkOverviewPage() {
   useEffect(() => {
     fetchFrameworks();
   }, []);
+
+  // Handle onboard from regulatory intelligence
+  useEffect(() => {
+    const onboard = searchParams.get("onboard");
+    if (onboard === "true") {
+      const name = searchParams.get("name") || "";
+      const type = searchParams.get("type") || "Regulation";
+      const description = searchParams.get("description") || "";
+      const country = searchParams.get("country") || "";
+      const industry = searchParams.get("industry") || "";
+
+      // Pre-fill the form
+      setFormData({
+        code: "",
+        name: name,
+        description: description,
+        type: type,
+        country: country,
+        industry: industry,
+      });
+
+      // Open the create dialog (AI mode for onboarding)
+      setIsAICreate(true);
+      setIsEditMode(false);
+      setEditingFramework(null);
+      setIsCreateDialogOpen(true);
+
+      // Clear the URL params without navigation
+      router.replace("/compliance/framework", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const fetchFrameworks = async () => {
     try {
@@ -256,18 +287,6 @@ export default function FrameworkOverviewPage() {
   };
 
   const handleCreateOrUpdate = async () => {
-    // Validate name field
-    const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) {
-      newErrors.name = t("Framework name is required");
-    } else if (!/^[\p{L}\d\s.\-:]+$/u.test(formData.name.trim())) {
-      newErrors.name = t("Only letters, numbers, spaces, hyphens, and colons are allowed");
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setFormErrors(newErrors);
-      return;
-    }
     setFormErrors({});
 
     try {
@@ -873,20 +892,14 @@ export default function FrameworkOverviewPage() {
 
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  {t("Framework Name")} <span className="text-error">*</span>
+                  {t("Framework Name")}
                 </Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => {
-                    setFormData({ ...formData, name: e.target.value });
-                    if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: "" }));
-                  }}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder={t("Enter framework name")}
-                  className={`mt-1.5 bg-white ${formErrors.name ? "border-red-500" : ""}`}
+                  className="mt-1.5 bg-white"
                 />
-                {formErrors.name && (
-                  <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>
-                )}
               </div>
 
               <div>

@@ -133,6 +133,8 @@
   "Framework/Regulation/Law/Standard": "إطار/لائحة/قانون/معيار",
   "Mandatory/Recommended/Optional": "إلزامي/موصى به/اختياري",
   "Onboard Framework": "إدراج الإطار",
+  "No Selection": "لا يوجد اختيار",
+  "Please select a regulation to onboard as a framework": "يرجى اختيار لائحة لإدراجها كإطار",
   "Subscribing...": "جاري الاشتراك...",
   "Delete Profile": "حذف الملف",
   "Are you sure you want to delete this organisation profile? This action cannot be undone.": "هل أنت متأكد أنك تريد حذف ملف المنظمة هذا؟ لا يمكن التراجع عن هذا الإجراء.",

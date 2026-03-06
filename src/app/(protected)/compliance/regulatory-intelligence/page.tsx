@@ -63,6 +63,7 @@ import {
   Shield,
   AlertTriangle,
   Info,
+  ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -88,6 +89,8 @@ interface SuggestedRegulation {
   regulatoryProfile?: {
     id: string;
     fullLegalEntityName: string;
+    country: string;
+    industrySectors: string;
   };
 }
 
@@ -193,6 +196,7 @@ export default function RegulatoryIntelligenceHubPage() {
   const [sortField, setSortField] = useState<"name" | "applicability" | "type">("applicability");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+  const [selectedRegulationId, setSelectedRegulationId] = useState<string | null>(null);
 
   const fetchProfiles = useCallback(async () => {
     try {
@@ -347,6 +351,48 @@ export default function RegulatoryIntelligenceHubPage() {
   const mandatoryCount = regulations.filter(r => r.applicability === "Mandatory").length;
   const recommendedCount = regulations.filter(r => r.applicability === "Recommended").length;
   const optionalCount = regulations.filter(r => r.applicability === "Optional").length;
+
+  // Get selected regulation details
+  const selectedRegulation = selectedRegulationId
+    ? regulations.find(r => r.id === selectedRegulationId)
+    : null;
+
+  // Handle onboard framework navigation
+  const handleOnboardFramework = () => {
+    if (!selectedRegulation) {
+      toast({
+        title: t("No Selection"),
+        description: t("Please select a regulation to onboard as a framework"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get country and industry from the profile
+    const profile = selectedRegulation.regulatoryProfile;
+    const country = profile?.country || "";
+    let industry = "";
+    if (profile?.industrySectors) {
+      try {
+        const sectors = JSON.parse(profile.industrySectors);
+        industry = Array.isArray(sectors) && sectors.length > 0 ? sectors[0] : "";
+      } catch {
+        industry = "";
+      }
+    }
+
+    // Navigate to framework page with query params to open the create modal
+    const params = new URLSearchParams({
+      onboard: "true",
+      name: selectedRegulation.name,
+      type: selectedRegulation.type || "Regulation",
+      description: selectedRegulation.reason || "",
+      country: country,
+      industry: industry,
+    });
+
+    router.push(`/compliance/framework?${params.toString()}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -596,6 +642,16 @@ export default function RegulatoryIntelligenceHubPage() {
                   <SelectItem value="Optional">{t("Optional")}</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex-1" />
+              <Button
+                onClick={handleOnboardFramework}
+                disabled={!selectedRegulationId}
+                size="sm"
+                className="gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                {t("Onboard Framework")}
+              </Button>
             </div>
 
             {/* Companies List with Regulations */}
@@ -676,7 +732,10 @@ export default function RegulatoryIntelligenceHubPage() {
                             <Table>
                               <TableHeader>
                                 <TableRow className="border-b border-slate-200/60 bg-slate-100/50 hover:bg-slate-100/50">
-                                  <TableHead className="w-[30%] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5 ps-6 sm:ps-8">
+                                  <TableHead className="w-[40px] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5 ps-4 sm:ps-6">
+                                    {t("Select")}
+                                  </TableHead>
+                                  <TableHead className="w-[28%] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5">
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleSort("name"); }}
                                       className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
@@ -685,7 +744,7 @@ export default function RegulatoryIntelligenceHubPage() {
                                       <ArrowUpDown className="h-3 w-3 text-slate-400" />
                                     </button>
                                   </TableHead>
-                                  <TableHead className="w-[15%] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5">
+                                  <TableHead className="w-[12%] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5">
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleSort("type"); }}
                                       className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
@@ -712,9 +771,27 @@ export default function RegulatoryIntelligenceHubPage() {
                                 {companyRegs.map((reg, index) => (
                                   <TableRow
                                     key={reg.id}
-                                    className={`hover:bg-white/80 transition-colors ${index < companyRegs.length - 1 ? 'border-b border-slate-200/40' : ''}`}
+                                    onClick={() => setSelectedRegulationId(selectedRegulationId === reg.id ? null : reg.id)}
+                                    className={`cursor-pointer transition-colors ${
+                                      selectedRegulationId === reg.id
+                                        ? 'bg-primary/5 hover:bg-primary/10'
+                                        : 'hover:bg-white/80'
+                                    } ${index < companyRegs.length - 1 ? 'border-b border-slate-200/40' : ''}`}
                                   >
-                                    <TableCell className="py-3 ps-6 sm:ps-8">
+                                    <TableCell className="py-3 ps-4 sm:ps-6">
+                                      <div
+                                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                          selectedRegulationId === reg.id
+                                            ? 'border-primary bg-primary'
+                                            : 'border-slate-300 bg-white'
+                                        }`}
+                                      >
+                                        {selectedRegulationId === reg.id && (
+                                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="py-3">
                                       <span className="text-sm font-medium text-slate-800">{reg.name}</span>
                                     </TableCell>
                                     <TableCell className="py-3">

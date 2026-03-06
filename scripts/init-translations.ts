@@ -165,6 +165,8 @@ const translations: [string, string, string][] = [
   ['Framework/Regulation/Law/Standard', 'إطار/لائحة/قانون/معيار', 'Ietvars/Noteikums/Likums/Standarts'],
   ['Mandatory/Recommended/Optional', 'إلزامي/موصى به/اختياري', 'Obligāts/Ieteicams/Neobligāts'],
   ['Onboard Framework', 'إدراج الإطار', 'Ieviest ietvaru'],
+  ['No Selection', 'لا يوجد اختيار', 'Nav izvēles'],
+  ['Please select a regulation to onboard as a framework', 'يرجى اختيار لائحة لإدراجها كإطار', 'Lūdzu, izvēlieties noteikumu, lai to ieviestu kā ietvaru'],
   ['Subscribing...', 'جاري الاشتراك...', 'Abonē...'],
   ['Delete Profile', 'حذف الملف', 'Dzēst profilu'],
   ['Are you sure you want to delete this organisation profile? This action cannot be undone.', 'هل أنت متأكد أنك تريد حذف ملف المنظمة هذا؟ لا يمكن التراجع عن هذا الإجراء.', 'Vai tiešām vēlaties dzēst šo organizācijas profilu? Šo darbību nevar atsaukt.'],

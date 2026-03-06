@@ -57,6 +57,77 @@ async function main() {
   console.log("✅ GRC Admin 2 Customer Account created");
   const grcAdmin2CustomerAccountId = grcAdmin2CustomerAccount.id;
 
+  // ==================== SUBSCRIPTION PLANS ====================
+
+  // Create subscription plan for default customer account
+  await prisma.subscriptionPlan.upsert({
+    where: { id: "subscription-plan-1" },
+    update: {
+      expiryDate: new Date("2030-12-31"),
+      status: "Active",
+    },
+    create: {
+      id: "subscription-plan-1",
+      customerAccountId: customerAccountId,
+      startDate: new Date(),
+      expiryDate: new Date("2030-12-31"),
+      maxFrameworksAllowed: 100,
+      maxAccountsAllowed: 50,
+      assessmentLimit: 100,
+      vendorLimit: 100,
+      frameworksUsed: 0,
+      accountsUsed: 0,
+      status: "Active",
+    },
+  });
+  console.log("✅ Subscription Plan for default customer created");
+
+  // Create subscription plan for GRC Admin account
+  await prisma.subscriptionPlan.upsert({
+    where: { id: "subscription-plan-grc-admin-1" },
+    update: {
+      expiryDate: new Date("2030-12-31"),
+      status: "Active",
+    },
+    create: {
+      id: "subscription-plan-grc-admin-1",
+      customerAccountId: grcAdminCustomerAccountId,
+      startDate: new Date(),
+      expiryDate: new Date("2030-12-31"),
+      maxFrameworksAllowed: 500,
+      maxAccountsAllowed: 100,
+      assessmentLimit: 500,
+      vendorLimit: 500,
+      frameworksUsed: 0,
+      accountsUsed: 0,
+      status: "Active",
+    },
+  });
+  console.log("✅ Subscription Plan for GRC Admin created");
+
+  // Create subscription plan for GRC Admin 2 account
+  await prisma.subscriptionPlan.upsert({
+    where: { id: "subscription-plan-grc-admin-2" },
+    update: {
+      expiryDate: new Date("2030-12-31"),
+      status: "Active",
+    },
+    create: {
+      id: "subscription-plan-grc-admin-2",
+      customerAccountId: grcAdmin2CustomerAccountId,
+      startDate: new Date(),
+      expiryDate: new Date("2030-12-31"),
+      maxFrameworksAllowed: 500,
+      maxAccountsAllowed: 100,
+      assessmentLimit: 500,
+      vendorLimit: 500,
+      frameworksUsed: 0,
+      accountsUsed: 0,
+      status: "Active",
+    },
+  });
+  console.log("✅ Subscription Plan for GRC Admin 2 created");
+
   // ==================== ORGANIZATION MODULE ====================
 
   // Create Organization with complete profile data
