@@ -47,6 +47,16 @@ export const DELETE = withAuth(
         where: { id: link.id },
       });
 
+      // Also remove the underlying ControlRisk link so sync doesn't re-add it
+      if (entry.riskId) {
+        await prisma.controlRisk.deleteMany({
+          where: {
+            controlId,
+            riskId: entry.riskId,
+          },
+        });
+      }
+
       return NextResponse.json({ message: "Control unlinked" });
     } catch (error) {
       console.error("Error unlinking control:", error);

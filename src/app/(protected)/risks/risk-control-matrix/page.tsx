@@ -3,35 +3,23 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Pagination } from "@/components/ui/pagination";
 import {
   ChevronRight,
-  Link2,
-  RefreshCw,
+  ChevronUp,
+  ChevronDown,
   Home,
   Search,
   AlertTriangle,
-  Trash2,
+  Plus,
+  Minus,
+  Unlink,
   Eye,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { usePermissions, useHasRole } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface LinkedControl {
   id: string;
@@ -59,23 +47,35 @@ interface MatrixEntry {
     riskId: string;
     name: string;
     status: string;
+    impactedAsset?: {
+      id: string;
+      assetId: string;
+      name: string;
+      description: string | null;
+      classification: { name: string } | null;
+    } | null;
+    impactedProcess?: {
+      id: string;
+      processCode: string;
+      name: string;
+      description: string | null;
+      status: string;
+    } | null;
   } | null;
   linkedControls: LinkedControl[];
 }
 
 export default function RiskControlMatrixPage() {
   const router = useRouter();
-  const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
-  const isCustomerAdmin = useHasRole('CustomerAdministrator');
+  const { canView, canDelete, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
   const { t } = useLanguage();
   const [entries, setEntries] = useState<MatrixEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [importing, setImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedRisks, setExpandedRisks] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Record<string, Set<string>>>({});
+  const [unlinking, setUnlinking] = useState<string | null>(null);
   const { toast } = useToast();
-  const ITEMS_PER_PAGE = 10;
 
   const fetchEntries = useCallback(async () => {
     try {
@@ -96,98 +96,58 @@ export default function RiskControlMatrixPage() {
     fetchEntries();
   }, [fetchEntries]);
 
-  const handleDeleteEntry = async (entryId: string) => {
-    setDeleting(`entry-${entryId}`);
+  const toggleRisk = (entryId: string) => {
+    setExpandedRisks(prev => {
+      const next = new Set(prev);
+      if (next.has(entryId)) next.delete(entryId);
+      else next.add(entryId);
+      return next;
+    });
+  };
+
+  const toggleSection = (entryId: string, section: string) => {
+    setExpandedSections(prev => {
+      const entrySections = new Set(prev[entryId] || []);
+      if (entrySections.has(section)) entrySections.delete(section);
+      else entrySections.add(section);
+      return { ...prev, [entryId]: entrySections };
+    });
+  };
+
+  const isSectionExpanded = (entryId: string, section: string) => {
+    return expandedSections[entryId]?.has(section) || false;
+  };
+
+  const handleUnlinkControl = async (entryId: string, controlId: string) => {
+    const key = `${entryId}-${controlId}`;
+    setUnlinking(key);
     try {
-      const response = await fetch(`/api/risk-control-matrix/${entryId}`, {
+      const response = await fetch(`/api/risk-control-matrix/${entryId}/controls/${controlId}`, {
         method: "DELETE",
       });
       if (response.ok) {
-        setEntries(prev => prev.filter(entry => entry.id !== entryId));
-        toast({
-          title: t("Entry deleted"),
-          description: t("The matrix entry has been removed. The underlying risk is NOT affected."),
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting matrix entry:", error);
-      toast({
-        title: t("Error"),
-        description: t("Failed to delete matrix entry."),
-        variant: "destructive",
-      });
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  const handleDeleteAllEntries = async () => {
-    setDeleting("all-entries");
-    try {
-      const response = await fetch(`/api/risk-control-matrix`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        setEntries([]);
-        toast({
-          title: t("All entries deleted"),
-          description: t("All matrix entries have been removed. The underlying risks are NOT affected."),
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting all matrix entries:", error);
-      toast({
-        title: t("Error"),
-        description: t("Failed to delete matrix entries."),
-        variant: "destructive",
-      });
-    } finally {
-      setDeleting(null);
-    }
-  };
-
-  const handleImportRisks = async () => {
-    setImporting(true);
-    try {
-      const response = await fetch(`/api/risk-control-matrix/import`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ includeControls: true }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: t("Import completed"),
-          description: `${t("Imported")} ${result.imported} ${t("risks to the matrix.")} ${result.skipped} ${t("already existed.")}`,
-        });
-        setCurrentPage(1);
-        fetchEntries();
+        setEntries(prev => prev.map(e => {
+          if (e.id !== entryId) return e;
+          return {
+            ...e,
+            linkedControls: e.linkedControls.filter(lc => lc.control.id !== controlId),
+          };
+        }));
+        toast({ title: t("Control unlinked"), description: t("The control has been removed from this risk.") });
       } else {
-        const text = await response.text();
-        const error = text ? JSON.parse(text) : {};
-        toast({
-          title: t("Import failed"),
-          description: error.error || t("Failed to import risks."),
-          variant: "destructive",
-        });
+        const err = await response.json().catch(() => ({}));
+        toast({ title: t("Error"), description: err.error || t("Failed to unlink control."), variant: "destructive" });
       }
     } catch (error) {
-      console.error("Error importing risks:", error);
-      toast({
-        title: t("Error"),
-        description: t("Failed to import risks to matrix."),
-        variant: "destructive",
-      });
+      console.error("Error unlinking control:", error);
+      toast({ title: t("Error"), description: t("Failed to unlink control."), variant: "destructive" });
     } finally {
-      setImporting(false);
+      setUnlinking(null);
     }
   };
 
   // Search filtering
-  const filteredEntries = entries.filter((entry) => {
+  const filteredEntries = useMemo(() => entries.filter((entry) => {
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -196,31 +156,8 @@ export default function RiskControlMatrixPage() {
       (entry.description || "").toLowerCase().includes(term) ||
       (entry.ownerName || "").toLowerCase().includes(term)
     );
-  });
+  }), [entries, searchTerm]);
 
-  // Reset page when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
-  const paginatedEntries = filteredEntries.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-  // Translate dynamic data — use Risk model since name/description come from Risk records
-  const riskItems = useMemo(() =>
-    paginatedEntries.filter(e => e.risk).map(e => ({ id: e.risk!.id, name: e.name, description: e.description })),
-    [paginatedEntries]
-  );
-  const { data: translatedRisks } = useTranslatedData(riskItems, { modelName: 'Risk' });
-
-  const showActions = isCustomerAdmin && canDelete;
-
-  const gridCols = showActions
-    ? "grid-cols-[90px_1.5fr_100px_100px_100px_80px_120px_80px]"
-    : "grid-cols-[90px_1.5fr_100px_100px_100px_80px_120px_50px]";
 
   if (permissionsLoading || loading) {
     return (
@@ -269,228 +206,288 @@ export default function RiskControlMatrixPage() {
 
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Control Matrix")}</h1>
-        <div className="flex items-center gap-2">
-          {isCustomerAdmin && canDelete && entries.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                  disabled={deleting === "all-entries"}
-                >
-                  <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                  {deleting === "all-entries" ? t("Deleting...") : t("Delete All")}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="p-0 gap-0">
-                <AlertDialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
-                  <AlertDialogTitle>{t("Delete All Matrix Entries?")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {`${t("This will remove all")} ${entries.length} ${t("entry(ies) from the Risk Control Matrix.")}`}
-                    <strong className="block mt-2 text-green-600">{t("The underlying Risk records will NOT be deleted.")}</strong>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-                  <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={handleDeleteAllEntries}
-                  >
-                    {t("Delete All")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-
-          {canCreate && (
-            <Button
-              size="sm"
-              onClick={handleImportRisks}
-              disabled={importing}
-              className="bg-primary-600 hover:bg-primary-700"
-            >
-              <RefreshCw className={`h-4 w-4 ltr:mr-2 rtl:ml-2 ${importing ? 'animate-spin' : ''}`} />
-              {importing ? t("Importing...") : t("Sync from Risks")}
-            </Button>
-          )}
-        </div>
+        <h1 className="text-xl sm:text-2xl font-bold text-primary-700">{t("Risk Control Matrix")}</h1>
       </div>
 
-      {/* Main Table Card */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {/* Search Bar */}
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 px-3 sm:px-5 py-3 border-b border-slate-100">
-          <div className="relative flex-1 min-w-0 sm:min-w-[280px] max-w-md">
-            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder={t("Search by risk code, name, or owner...")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Column Headers */}
-        <div className="overflow-x-auto">
-        <div className={`grid ${gridCols} gap-2 sm:gap-4 px-3 sm:px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider min-w-[800px]`}>
-          <span>{t("Risk Code")}</span>
-          <span>{t("Risk Name")}</span>
-          <span>{t("Inherent")}</span>
-          <span>{t("Residual")}</span>
-          <span>{t("Status")}</span>
-          <span>{t("Controls")}</span>
-          <span>{t("Owner")}</span>
-          {showActions && <span>{t("Actions")}</span>}
-          {!showActions && <span></span>}
-        </div>
-
-        {/* Rows */}
-        <div className="divide-y divide-slate-100">
-          {filteredEntries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                <AlertTriangle className="h-6 w-6 text-primary-400" />
-              </div>
-              {entries.length === 0 ? (
-                <>
-                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No entries in the Risk Control Matrix")}</p>
-                  <p className="text-xs text-slate-400 mb-4">{t("Import risks from the risk register to get started")}</p>
-                  {canCreate && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleImportRisks}
-                      disabled={importing}
-                    >
-                      <RefreshCw className={`h-4 w-4 ltr:mr-2 rtl:ml-2 ${importing ? 'animate-spin' : ''}`} />
-                      {importing ? t("Importing...") : t("Import Risks")}
-                    </Button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No risks found")}</p>
-                  <p className="text-xs text-slate-400">{t("Try adjusting your search")}</p>
-                </>
-              )}
-            </div>
-          ) : (
-            paginatedEntries.map((entry) => (
-              <div
-                key={entry.id}
-                onClick={() => entry.riskId && router.push(`/risks/risk-control-matrix/${entry.riskId}`)}
-                className={`grid ${gridCols} gap-2 sm:gap-4 px-3 sm:px-5 py-3 items-center transition-colors min-w-[800px] ${entry.riskId ? "cursor-pointer hover:bg-slate-50/60" : ""}`}
-              >
-                {/* Risk Code */}
-                <span className="text-sm font-medium text-slate-800">{entry.riskCode}</span>
-
-                {/* Risk Name */}
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm text-slate-700 truncate">{translatedRisks.find(r => r.id === entry.risk?.id)?.name || entry.name}</span>
-                  {!entry.riskId && (
-                    <Badge variant="outline" className="text-[10px] text-slate-400 border-dashed border-slate-300 flex-shrink-0 px-1.5 py-0">
-                      {t("Deleted")}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Inherent Risk Rating */}
-                <span className="text-sm text-slate-600">{entry.riskRating ? t(entry.riskRating) : "--"}</span>
-
-                {/* Residual Risk Rating */}
-                <span className="text-sm text-slate-600">{entry.residualRiskRating ? t(entry.residualRiskRating) : "--"}</span>
-
-                {/* Status */}
-                <span className="text-sm text-slate-600">{t(entry.status)}</span>
-
-                {/* Controls Count */}
-                <div className="flex items-center gap-1.5">
-                  <Link2 className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-sm font-medium text-slate-600">{entry.linkedControls?.length || 0}</span>
-                </div>
-
-                {/* Owner */}
-                <span className="text-sm text-slate-600 truncate">{entry.ownerName || "-"}</span>
-
-                {/* Actions */}
-                {showActions && (
-                  <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                      onClick={() => entry.riskId && router.push(`/risks/risk-control-matrix/${entry.riskId}`)}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                          disabled={deleting === `entry-${entry.id}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="p-0 gap-0">
-                        <AlertDialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
-                          <AlertDialogTitle>{t("Delete Matrix Entry?")}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {`${t("This will remove entry")} ${entry.riskCode} (${entry.name}) ${t("from the Risk Control Matrix.")}`}
-                            <strong className="block mt-2 text-green-600">{t("The underlying Risk record will NOT be deleted.")}</strong>
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="flex justify-end gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-                          <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-red-600 hover:bg-red-700"
-                            onClick={() => handleDeleteEntry(entry.id)}
-                          >
-                            {t("Delete")}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                )}
-
-                {/* View button when no delete permission */}
-                {!showActions && (
-                  <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                      onClick={() => entry.riskId && router.push(`/risks/risk-control-matrix/${entry.riskId}`)}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-        </div>
-
-        {/* Pagination */}
-        {filteredEntries.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredEntries.length}
-            itemsPerPage={ITEMS_PER_PAGE}
-            onPageChange={setCurrentPage}
+      {/* Search Bar */}
+      <div className="bg-white rounded-xl border border-slate-200 px-3 sm:px-5 py-3">
+        <div className="relative max-w-md">
+          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder={t("Search by risk code, name, or owner...")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
           />
-        )}
+        </div>
       </div>
+
+      {/* Risk Accordion Cards */}
+      {filteredEntries.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-16 text-center">
+          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+            <AlertTriangle className="h-6 w-6 text-primary-400" />
+          </div>
+          {entries.length === 0 ? (
+            <>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("No entries in the Risk Control Matrix")}</p>
+              <p className="text-xs text-slate-400">{t("Risks from the risk register will appear here automatically")}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("No risks found")}</p>
+              <p className="text-xs text-slate-400">{t("Try adjusting your search")}</p>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredEntries.map((entry) => {
+            const isExpanded = expandedRisks.has(entry.id);
+            const assetCount = entry.risk?.impactedAsset ? 1 : 0;
+            const processCount = entry.risk?.impactedProcess ? 1 : 0;
+            const controlCount = entry.linkedControls?.length || 0;
+
+            return (
+              <div key={entry.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                {/* Accordion Header */}
+                <div className="flex items-center bg-primary-50 hover:bg-primary-100/80 transition-colors">
+                  <button
+                    onClick={() => toggleRisk(entry.id)}
+                    className="flex-1 flex items-center justify-between px-4 sm:px-5 py-3 text-left"
+                  >
+                    <span className="text-sm font-semibold text-primary-700">
+                      {entry.riskCode} - {entry.name} | {t("Mapped Asset")}: {assetCount} | {t("Mapped Process")}: {processCount} | {t("Mapped Controls")}: {controlCount} | {t("Risk Rating")}: {entry.riskRating ? t(entry.riskRating) : "-"}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-primary-500 flex-shrink-0" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-primary-500 flex-shrink-0" />
+                    )}
+                  </button>
+                  {entry.risk && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 ltr:mr-3 rtl:ml-3 text-primary-600 hover:text-primary-800 hover:bg-primary-100"
+                      onClick={() => router.push(`/risks/register/${entry.risk!.id}/edit`)}
+                      title={t("View Risk")}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Accordion Body */}
+                {isExpanded && (
+                  <div className="border-t border-slate-200">
+                    {/* Risk Details */}
+                    <div className="px-4 sm:px-6 py-4 space-y-4 border border-slate-100 mx-4 my-4 rounded-lg">
+                      {/* Description */}
+                      <div>
+                        <p className="text-sm font-semibold text-primary-600 mb-1">{t("Description")}</p>
+                        <p className="text-sm text-slate-700">{entry.description || "-"}</p>
+                      </div>
+
+                      {/* Ratings & Status Row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm font-semibold text-primary-600 mb-1">{t("Inherent Risk Rating")}</p>
+                          <p className="text-sm text-slate-700">{entry.riskRating ? t(entry.riskRating) : "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-primary-600 mb-1">{t("Residual Risk Rating")}</p>
+                          <p className="text-sm text-slate-700">{entry.residualRiskRating ? t(entry.residualRiskRating) : "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-primary-600 mb-1">{t("Status")}</p>
+                          <p className="text-sm text-slate-700">{t(entry.status)}</p>
+                        </div>
+                      </div>
+
+                      {/* Risk Owner */}
+                      <div>
+                        <p className="text-sm font-semibold text-primary-600 mb-1">{t("Risk Owner")}</p>
+                        <p className="text-sm text-slate-700">{entry.ownerName || "-"}</p>
+                      </div>
+
+                      {/* Linked Controls Section */}
+                      <div className="bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden">
+                        <button
+                          onClick={() => toggleSection(entry.id, "controls")}
+                          className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-100/50 transition-colors text-left"
+                        >
+                          <span className="text-sm font-semibold text-primary-600">{t("Linked Controls")}</span>
+                          {isSectionExpanded(entry.id, "controls") ? (
+                            <Minus className="h-4 w-4 text-slate-500" />
+                          ) : (
+                            <Plus className="h-4 w-4 text-slate-500" />
+                          )}
+                        </button>
+                        {isSectionExpanded(entry.id, "controls") && (
+                          <div className="border-t border-slate-100">
+                            {controlCount > 0 ? (
+                              <table className="w-full">
+                                <thead>
+                                  <tr className="bg-primary-600 text-white">
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Control code")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Control name")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Status")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Action")}</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {entry.linkedControls.map((lc) => (
+                                    <tr key={lc.id} className="border-b border-slate-100 last:border-0">
+                                      <td className="py-2.5 px-4 text-sm text-slate-700">{lc.control.controlCode}</td>
+                                      <td className="py-2.5 px-4 text-sm text-slate-700">{lc.control.name}</td>
+                                      <td className="py-2.5 px-4 text-sm text-slate-700">{t(lc.control.status)}</td>
+                                      <td className="py-2.5 px-4">
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0 text-primary-600 hover:text-primary-800 hover:bg-primary-50"
+                                            onClick={() => router.push(`/compliance/control/${lc.control.id}`)}
+                                            title={t("View Control")}
+                                          >
+                                            <Eye className="h-3.5 w-3.5" />
+                                          </Button>
+                                          {canDelete && (
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                              disabled={unlinking === `${entry.id}-${lc.control.id}`}
+                                              onClick={() => handleUnlinkControl(entry.id, lc.control.id)}
+                                            >
+                                              <Unlink className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                                              <span className="text-xs">{unlinking === `${entry.id}-${lc.control.id}` ? t("Unlinking...") : t("Unlink")}</span>
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            ) : (
+                              <p className="px-4 py-3 text-sm text-slate-400">{t("No linked controls")}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Asset Class Section */}
+                      <div className="bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden">
+                        <button
+                          onClick={() => toggleSection(entry.id, "assets")}
+                          className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-100/50 transition-colors text-left"
+                        >
+                          <span className="text-sm font-semibold text-primary-600">{t("Asset Class")}</span>
+                          {isSectionExpanded(entry.id, "assets") ? (
+                            <Minus className="h-4 w-4 text-slate-500" />
+                          ) : (
+                            <Plus className="h-4 w-4 text-slate-500" />
+                          )}
+                        </button>
+                        {isSectionExpanded(entry.id, "assets") && (
+                          <div className="border-t border-slate-100">
+                            {entry.risk?.impactedAsset ? (
+                              <table className="w-full">
+                                <thead>
+                                  <tr className="bg-primary-600 text-white">
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Asset ID")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Name")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Classification")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Action")}</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-b border-slate-100">
+                                    <td className="py-2.5 px-4 text-sm text-slate-700">{entry.risk.impactedAsset.assetId}</td>
+                                    <td className="py-2.5 px-4 text-sm text-slate-700">{entry.risk.impactedAsset.name}</td>
+                                    <td className="py-2.5 px-4 text-sm text-slate-700">{entry.risk.impactedAsset.classification?.name || "-"}</td>
+                                    <td className="py-2.5 px-4">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0 text-primary-600 hover:text-primary-800 hover:bg-primary-50"
+                                        onClick={() => router.push("/assets/inventory")}
+                                        title={t("View Asset")}
+                                      >
+                                        <Eye className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            ) : (
+                              <p className="px-4 py-3 text-sm text-slate-400">{t("No linked assets")}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Linked Process Section */}
+                      <div className="bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden">
+                        <button
+                          onClick={() => toggleSection(entry.id, "processes")}
+                          className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-100/50 transition-colors text-left"
+                        >
+                          <span className="text-sm font-semibold text-primary-600">{t("Linked Process")}</span>
+                          {isSectionExpanded(entry.id, "processes") ? (
+                            <Minus className="h-4 w-4 text-slate-500" />
+                          ) : (
+                            <Plus className="h-4 w-4 text-slate-500" />
+                          )}
+                        </button>
+                        {isSectionExpanded(entry.id, "processes") && (
+                          <div className="border-t border-slate-100">
+                            {entry.risk?.impactedProcess ? (
+                              <table className="w-full">
+                                <thead>
+                                  <tr className="bg-primary-600 text-white">
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Reference ID")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Name")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Process status")}</th>
+                                    <th className="text-xs font-medium uppercase tracking-wider py-2.5 px-4 text-left">{t("Action")}</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-b border-slate-100">
+                                    <td className="py-2.5 px-4 text-sm text-slate-700">{entry.risk.impactedProcess.processCode}</td>
+                                    <td className="py-2.5 px-4 text-sm text-slate-700">{entry.risk.impactedProcess.name}</td>
+                                    <td className="py-2.5 px-4 text-sm text-slate-700">{entry.risk.impactedProcess.status || "-"}</td>
+                                    <td className="py-2.5 px-4">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0 text-primary-600 hover:text-primary-800 hover:bg-primary-50"
+                                        onClick={() => router.push("/organization/process")}
+                                        title={t("View Process")}
+                                      >
+                                        <Eye className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            ) : (
+                              <p className="px-4 py-3 text-sm text-slate-400">{t("No linked processes")}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

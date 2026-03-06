@@ -26,86 +26,86 @@ async function generateMatrixEntryId(customerAccountId: string): Promise<string>
 
 // Auto-sync risks to matrix entries - creates entries for risks that don't have one
 async function syncRisksToMatrix(customerAccountId: string): Promise<void> {
-  // Get all risks that don't have a matrix entry yet
+  // Get all risks with their relations
   const risks = await prisma.risk.findMany({
-    where: {
-      customerAccountId,
-    },
+    where: { customerAccountId },
     include: {
-      owner: {
-        select: { fullName: true },
-      },
+      owner: { select: { fullName: true } },
       controlRisks: {
-        include: {
-          control: {
-            select: { id: true },
-          },
-        },
+        include: { control: { select: { id: true } } },
       },
     },
   });
 
-  // Get existing matrix entries to check which risks already have one
+  // Get existing matrix entries
   const existingEntries = await prisma.riskControlMatrixEntry.findMany({
     where: { customerAccountId },
-    select: { riskId: true },
+    select: { id: true, riskId: true },
   });
 
-  const existingRiskIds = new Set(existingEntries.map(e => e.riskId).filter(Boolean));
+  const existingByRiskId = new Map(
+    existingEntries.filter(e => e.riskId).map(e => [e.riskId!, e.id])
+  );
 
-  // Update existing entries whose riskCode is stale (differs from the linked risk's riskId)
-  const existingEntries2 = await prisma.riskControlMatrixEntry.findMany({
-    where: { customerAccountId, riskId: { not: null } },
-    select: { id: true, riskId: true, riskCode: true },
-  });
-
-  for (const entry of existingEntries2) {
-    const linkedRisk = risks.find(r => r.id === entry.riskId);
-    if (linkedRisk && entry.riskCode !== linkedRisk.riskId) {
-      await prisma.riskControlMatrixEntry.update({
-        where: { id: entry.id },
-        data: { riskCode: linkedRisk.riskId },
-      });
-    }
+  function calcResidualRating(score: number | null): string | null {
+    if (!score) return null;
+    if (score >= 20) return "Catastrophic";
+    if (score >= 15) return "Very high";
+    if (score >= 10) return "High";
+    if (score >= 5) return "Medium";
+    return "Low";
   }
 
-  // Create matrix entries for risks that don't have one
   for (const risk of risks) {
-    if (existingRiskIds.has(risk.id)) {
-      continue; // Skip if already exists
-    }
+    const residualRiskRating = calcResidualRating(risk.residualRiskScore);
+    const controlIds = risk.controlRisks.map(cr => cr.control.id);
 
-    const matrixEntryId = await generateMatrixEntryId(customerAccountId);
+    if (existingByRiskId.has(risk.id)) {
+      // Update existing entry — refresh all fields and re-sync linked controls
+      const entryId = existingByRiskId.get(risk.id)!;
 
-    // Calculate residual risk rating from scores
-    let residualRiskRating: string | null = null;
-    if (risk.residualRiskScore) {
-      if (risk.residualRiskScore >= 20) residualRiskRating = "Catastrophic";
-      else if (risk.residualRiskScore >= 15) residualRiskRating = "Very high";
-      else if (risk.residualRiskScore >= 10) residualRiskRating = "High";
-      else if (risk.residualRiskScore >= 5) residualRiskRating = "Medium";
-      else residualRiskRating = "Low";
-    }
-
-    await prisma.riskControlMatrixEntry.create({
-      data: {
-        customerAccountId,
-        riskId: risk.id,
-        matrixEntryId,
-        riskCode: risk.riskId,
-        name: risk.name,
-        description: risk.description,
-        riskRating: risk.riskRating,
-        residualRiskRating,
-        status: risk.status,
-        ownerName: risk.owner?.fullName || null,
-        linkedControls: {
-          create: risk.controlRisks.map(cr => ({
-            controlId: cr.control.id,
-          })),
+      await prisma.riskControlMatrixEntry.update({
+        where: { id: entryId },
+        data: {
+          riskCode: risk.riskId,
+          name: risk.name,
+          description: risk.description,
+          riskRating: risk.riskRating,
+          residualRiskRating,
+          status: risk.status,
+          ownerName: risk.owner?.fullName || null,
         },
-      },
-    });
+      });
+
+      // Re-sync linked controls: delete old and create current
+      await prisma.riskControlMatrixControl.deleteMany({ where: { riskControlMatrixEntryId: entryId } });
+      if (controlIds.length > 0) {
+        await prisma.riskControlMatrixControl.createMany({
+          data: controlIds.map(controlId => ({ riskControlMatrixEntryId: entryId, controlId })),
+        });
+      }
+    } else {
+      // Create new entry
+      const matrixEntryId = await generateMatrixEntryId(customerAccountId);
+
+      await prisma.riskControlMatrixEntry.create({
+        data: {
+          customerAccountId,
+          riskId: risk.id,
+          matrixEntryId,
+          riskCode: risk.riskId,
+          name: risk.name,
+          description: risk.description,
+          riskRating: risk.riskRating,
+          residualRiskRating,
+          status: risk.status,
+          ownerName: risk.owner?.fullName || null,
+          linkedControls: {
+            create: controlIds.map(controlId => ({ controlId })),
+          },
+        },
+      });
+    }
   }
 }
 
@@ -140,7 +140,10 @@ export const GET = withAuth(
                     id: true,
                     assetId: true,
                     name: true,
-                    classification: true,
+                    description: true,
+                    classification: {
+                      select: { name: true },
+                    },
                   },
                 },
                 impactedProcess: {
@@ -149,6 +152,7 @@ export const GET = withAuth(
                     processCode: true,
                     name: true,
                     description: true,
+                    status: true,
                   },
                 },
               },

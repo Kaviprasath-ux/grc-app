@@ -1031,7 +1031,6 @@ export default function EvidencePage() {
                   <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Evidence Code")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Evidence Name")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Domain")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Issue Identified by AI")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
@@ -1047,7 +1046,6 @@ export default function EvidencePage() {
                     >
                       <TableCell className="py-3.5 ps-5 text-sm font-medium text-slate-800">{evidence.evidenceCode}</TableCell>
                       <TableCell className="py-3.5 text-sm text-slate-600">{evidence.name}</TableCell>
-                      <TableCell className="py-3.5 text-sm text-slate-600">{evidence.domain || "-"}</TableCell>
                       <TableCell className="py-3.5">
                         <Badge className={statusColors[evidence.status] || "bg-slate-100 text-slate-600"}>
                           {t(evidence.status)}

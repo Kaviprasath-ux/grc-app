@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,6 @@ import {
 import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { Card, CardContent } from "@/components/ui/card";
-import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName, isValidNameWithNumbers } from "@/lib/validations";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
@@ -111,10 +110,10 @@ const getSteps = (t: (key: string) => string) => [
   { id: 2, name: t("riskMapping"), description: t("linkControlsToRisk") },
 ];
 
-export default function EditRiskPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function EditRiskPage() {
+  const params = useParams();
+  const id = params.id as string;
   const router = useRouter();
-  const { data: session } = useSession();
   const userRoles = useUserRoles();
   const { canEdit, isLoading: permissionsLoading } = usePermissions('risk.register');
   const { t } = useLanguage();
@@ -172,16 +171,21 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   });
 
   useEffect(() => {
-    fetchCategories();
-    fetchDepartments();
-    fetchRiskTypes();
-    fetchThreats();
-    fetchVulnerabilities();
-    fetchCauses();
-    fetchAssets();
-    fetchProcesses();
-    fetchControls();
-    fetchRisk();
+    const loadData = async () => {
+      await Promise.all([
+        fetchCategories(),
+        fetchDepartments(),
+        fetchRiskTypes(),
+        fetchThreats(),
+        fetchVulnerabilities(),
+        fetchCauses(),
+        fetchAssets(),
+        fetchProcesses(),
+        fetchControls(),
+      ]);
+      fetchRisk();
+    };
+    loadData();
   }, [id]);
 
   const fetchRisk = async () => {
@@ -604,7 +608,6 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
 
           {/* Step Content */}
           <div className="min-h-[500px]">
-            {/* Step 1: Risk Details */}
             {currentStep === 1 && (
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">{t("riskDetails")}</h3>
@@ -649,7 +652,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   <div>
                     <Label htmlFor="department">{t("department")}</Label>
                     <Select
-                      value={formData.departmentId}
+                      value={formData.departmentId || undefined}
                       onValueChange={(value) => handleInputChange("departmentId", value)}
                       disabled={isDepartmentRole}
                     >
@@ -668,7 +671,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   <div>
                     <Label htmlFor="owner">{t("riskOwner")}</Label>
                     <Select
-                      value={formData.ownerId}
+                      value={formData.ownerId || undefined}
                       onValueChange={(value) => handleInputChange("ownerId", value)}
                       disabled={!formData.departmentId}
                     >
@@ -706,7 +709,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     <Label htmlFor="category">{t("riskCategory")}</Label>
                     <div className="flex gap-2">
                       <Select
-                        value={formData.categoryId}
+                        value={formData.categoryId || undefined}
                         onValueChange={(value) => handleInputChange("categoryId", value)}
                       >
                         <SelectTrigger className="flex-1">
@@ -731,7 +734,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   <div>
                     <Label htmlFor="riskType">{t("riskType")}</Label>
                     <Select
-                      value={formData.typeId}
+                      value={formData.typeId || undefined}
                       onValueChange={(value) => handleInputChange("typeId", value)}
                     >
                       <SelectTrigger>
@@ -750,7 +753,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     <div>
                       <Label>{t("impactedAsset")}</Label>
                       <Select
-                        value={formData.impactedAssetId}
+                        value={formData.impactedAssetId || undefined}
                         onValueChange={(value) => handleInputChange("impactedAssetId", value)}
                       >
                         <SelectTrigger>
@@ -770,7 +773,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     <div>
                       <Label>{t("impactedProcess")}</Label>
                       <Select
-                        value={formData.impactedProcessId}
+                        value={formData.impactedProcessId || undefined}
                         onValueChange={(value) => handleInputChange("impactedProcessId", value)}
                       >
                         <SelectTrigger>
@@ -1106,7 +1109,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
               {currentStep === 1 ? t("cancel") : t("previous")}
             </Button>
             {currentStep < steps.length ? (
-              <Button onClick={handleNext} disabled={!validateStep()}>
+              <Button onClick={handleNext}>
                 {t("next")}
                 <ChevronRight className="h-4 w-4 ms-1" />
               </Button>

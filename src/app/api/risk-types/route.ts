@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+// Default risk types that should always exist
+const DEFAULT_RISK_TYPES = [
+  { name: "Asset Risk", description: "Risk associated with impacted assets from Asset Inventory" },
+  { name: "Process Risk", description: "Risk associated with impacted processes from Process Repository" },
+];
+
 // GET all risk types
 // Note: RiskType model doesn't have customerAccountId field yet - tenant filtering disabled
 export async function GET() {
   try {
-    const types = await prisma.riskType.findMany({
+    let types = await prisma.riskType.findMany({
       include: {
         _count: {
           select: { risks: true },
@@ -13,6 +19,17 @@ export async function GET() {
       },
       orderBy: { name: "asc" },
     });
+
+    // Auto-create default risk types if none exist
+    if (types.length === 0) {
+      for (const rt of DEFAULT_RISK_TYPES) {
+        await prisma.riskType.create({ data: rt });
+      }
+      types = await prisma.riskType.findMany({
+        include: { _count: { select: { risks: true } } },
+        orderBy: { name: "asc" },
+      });
+    }
 
     return NextResponse.json(types);
   } catch (error) {

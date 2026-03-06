@@ -228,6 +228,8 @@ export const POST = withAuth(
           typeId,
           departmentId,
           ownerId,
+          impactedAssetId: impactedAssetId || null,
+          impactedProcessId: impactedProcessId || null,
           likelihood,
           impact,
           riskScore,
@@ -259,6 +261,11 @@ export const POST = withAuth(
           causes: {
             create: causes.map((causeId: string) => ({
               causeId,
+            })),
+          },
+          controlRisks: {
+            create: controls.map((controlId: string) => ({
+              controlId,
             })),
           },
           // Create activity log entry for risk creation
