@@ -153,10 +153,10 @@ function AssessmentStatusBadge({ status }: { status: string }) {
       return <Badge className="bg-green-100 text-green-700">{status}</Badge>;
     case "Returned": case "Rejected":
       return <Badge className="bg-red-100 text-red-700">{status}</Badge>;
-    case "Submitted": case "Under Review": case "In_Progress_approver_":
-      return <Badge className="bg-blue-100 text-blue-700">{status === "In_Progress_approver_" ? "In Progress (Approver)" : status}</Badge>;
-    case "In_Progress":
-      return <Badge className="bg-amber-100 text-amber-700">In Progress</Badge>;
+    case "Submitted": case "Under Review": case "In-Progress(approver)":
+      return <Badge className="bg-blue-100 text-blue-700">{status}</Badge>;
+    case "In-Progress":
+      return <Badge className="bg-amber-100 text-amber-700">{status}</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -503,12 +503,15 @@ export default function ASRAssessmentDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "approve", assessmentResult: reportResult }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed");
+      }
       toast({ title: t("Success"), description: t("Assessment approved") });
       setReportOpen(false);
       loadAssessment();
-    } catch {
-      toast({ title: t("Error"), description: t("Failed to approve assessment"), variant: "destructive" });
+    } catch (err) {
+      toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to approve assessment"), variant: "destructive" });
     } finally {
       setActionSaving(false);
     }
@@ -529,7 +532,7 @@ export default function ASRAssessmentDetailPage() {
       setReturnOpen(false);
       setReturnComment("");
       setReportOpen(false);
-      loadAssessment();
+      router.push("/tprm/asr-assessments");
     } catch {
       toast({ title: t("Error"), description: t("Failed to return assessment"), variant: "destructive" });
     } finally {
@@ -559,13 +562,16 @@ export default function ASRAssessmentDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "send_to_approver", approverId: selectedApproverId }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed");
+      }
       const approverName = approvers.find(a => a.id === selectedApproverId)?.fullName || "";
       toast({ title: t("Success"), description: `${t("Assessment sent to approver")} ${approverName}` });
       setSendToApproverOpen(false);
       router.push("/tprm/asr-assessments");
-    } catch {
-      toast({ title: t("Error"), description: t("Failed to send to approver"), variant: "destructive" });
+    } catch (err) {
+      toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to send to approver"), variant: "destructive" });
     } finally {
       setSendingToApprover(false);
     }
@@ -1017,7 +1023,7 @@ export default function ASRAssessmentDetailPage() {
                 <SelectTrigger><SelectValue placeholder={t("Select an approver")} /></SelectTrigger>
                 <SelectContent>
                   {approvers.map(a => (
-                    <SelectItem key={a.id} value={a.id}>{a.fullName} ({a.email})</SelectItem>
+                    <SelectItem key={a.id} value={a.id}>{a.fullName}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1196,7 +1202,7 @@ export default function ASRAssessmentDetailPage() {
 
               {/* Action buttons — centered, filled style */}
               <div className="flex flex-wrap gap-2 pt-3 justify-center">
-                <Button size="sm" onClick={openOverride} disabled={assessment.status === "Reviewed" || assessment.status === "Approved" || isApprover}>
+                <Button size="sm" onClick={openOverride} disabled={assessment.status === "Reviewed" || assessment.status === "Approved"}>
                   {t("Override AI")}
                 </Button>
                 <Button size="sm" onClick={openClarification}>
@@ -1293,7 +1299,7 @@ export default function ASRAssessmentDetailPage() {
                   {/* Assessor Comment (if overridden) */}
                   {selectedResp?.assessorComment && (
                     <div className="border-t pt-3">
-                      <h4 className="text-sm font-semibold mb-1">{t("Assessor Comment")}</h4>
+                      <h4 className="text-sm font-semibold mb-1">{isApprover ? t("Approver Comment") : t("Assessor Comment")}</h4>
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp.assessorComment}</p>
                     </div>
                   )}
@@ -1346,7 +1352,7 @@ export default function ASRAssessmentDetailPage() {
               <Textarea value={overrideRec} onChange={e => setOverrideRec(e.target.value)} rows={2} />
             </div>
             <div>
-              <span className="text-sm font-medium block mb-1">{t("Assessor Comment")}</span>
+              <span className="text-sm font-medium block mb-1">{isApprover ? t("Approver Comment") : t("Assessor Comment")}</span>
               <Textarea value={overrideComment} onChange={e => setOverrideComment(e.target.value)} rows={2} />
             </div>
             <div>
@@ -1519,7 +1525,7 @@ export default function ASRAssessmentDetailPage() {
               <SelectTrigger><SelectValue placeholder={t("Select an approver")} /></SelectTrigger>
               <SelectContent>
                 {approvers.map(a => (
-                  <SelectItem key={a.id} value={a.id}>{a.fullName} ({a.email})</SelectItem>
+                  <SelectItem key={a.id} value={a.id}>{a.fullName}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

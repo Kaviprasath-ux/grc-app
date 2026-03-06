@@ -192,7 +192,7 @@ export default function AsrAssessmentsPage() {
     if (activeTab === "my-queue") {
       if (isApprover) {
         // Approver's queue: assessments sent to me for approval
-        data = data.filter((i) => i.approver?.id === currentUserId && i.status === "In_Progress_approver_");
+        data = data.filter((i) => i.approver?.id === currentUserId && i.status === "In-Progress(approver)");
       } else if (subTab === "reassessment") {
         data = data.filter((i) => i.assessor?.id === currentUserId && i.assessmentType === "Reassessment");
       } else if (subTab === "returned") {

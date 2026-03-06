@@ -29,6 +29,19 @@ export const POST = withAuth(
         return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
       }
 
+      // Check for open clarifications before send_to_approver or approve
+      if (action === 'send_to_approver' || action === 'approve') {
+        const openClarifications = await prisma.tPRMClarification.count({
+          where: { assessmentId: id, customerAccountId, status: { not: 'Closed' } },
+        });
+        if (openClarifications > 0) {
+          const msg = action === 'approve'
+            ? `Cannot approve: ${openClarifications} clarification(s) are still open.`
+            : `Cannot send to approver: ${openClarifications} clarification(s) are still open.`;
+          return NextResponse.json({ error: msg }, { status: 400 });
+        }
+      }
+
       const updateData: Record<string, unknown> = {};
       let logMessage = '';
 
@@ -37,7 +50,7 @@ export const POST = withAuth(
         if (!approverId) {
           return NextResponse.json({ error: 'Approver is required' }, { status: 400 });
         }
-        updateData.status = 'In_Progress_approver_';
+        updateData.status = 'In-Progress(approver)';
         updateData.approverId = approverId;
         updateData.assessorCompletionDate = new Date();
         // Look up approver name for log
@@ -53,7 +66,7 @@ export const POST = withAuth(
         updateData.assessmentResult = body.assessmentResult || null;
         logMessage = `Assessment approved by ${session.name || session.email}`;
       } else if (action === 'return_to_assessor') {
-        updateData.status = 'In_Progress';
+        updateData.status = 'Returned';
         updateData.approverComment = comment || '';
         logMessage = `Assessment returned to assessor by ${session.name || session.email}: ${comment || 'No comment'}`;
       } else {

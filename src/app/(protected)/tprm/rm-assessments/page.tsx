@@ -42,7 +42,7 @@ function getStatusVariant(status: string): "default" | "secondary" | "destructiv
   switch (status) {
     case "Completed": case "Approved": case "Offboard_Completed": return "default";
     case "Offboard_Approve_BO": return "destructive";
-    case "In_Progress": case "In_Progress_approver_": case "Offboard_In_Progress": return "secondary";
+    case "In-Progress": case "In-Progress(approver)": case "Offboard_In_Progress": return "secondary";
     case "Awaiting_Response": case "Offboard_Awaiting_Respose": case "Initiated": return "outline";
     default: return "outline";
   }
@@ -52,10 +52,10 @@ function formatStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     Approved: "Approved",
     Initiated: "Initiated",
-    In_Progress: "In-Progress",
+    "In-Progress": "In-Progress",
     Awaiting_Response: "Awaiting Response",
     Completed: "Completed",
-    "In_Progress_approver_": "In-Progress (Approver)",
+    "In-Progress(approver)": "In-Progress(approver)",
     Offboard_In_Progress: "Offboard In-Progress",
     Offboard_Completed: "Offboard Completed",
     Offboard_Awaiting_Respose: "Offboard Awaiting Response",
@@ -71,10 +71,10 @@ function formatDate(dateStr: string | null | undefined): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-const ONGOING_STATUSES = ["Initiated", "Awaiting_Response", "In_Progress", "In_Progress_approver_"];
+const ONGOING_STATUSES = ["Initiated", "Awaiting_Response", "In-Progress", "In-Progress(approver)"];
 const COMPLETED_STATUSES = ["Completed", "Approved"];
 const AWAITING_STATUSES = ["Awaiting_Response"];
-const PENDING_ASSESSOR_STATUSES = ["In_Progress", "In_Progress_approver_"];
+const PENDING_ASSESSOR_STATUSES = ["In-Progress", "In-Progress(approver)"];
 const OFFBOARD_STATUSES = ["Offboard_In_Progress", "Offboard_Completed", "Offboard_Awaiting_Respose", "Offboard_Approve_Assessor", "Offboard_Approve_RM", "Offboard_Approve_BO"];
 
 // ── Main Component ──────────────────────────────────────

@@ -536,7 +536,7 @@ export default function AMResponseQuestionnairePage() {
   // Stats
   const totalQuestions = questions.length;
   const answeredQuestions = questions.filter(q => responses[q.id]?.response).length;
-  const isReadOnly = assessment?.status && !["Draft", "In Progress", "In_Progress", "Returned", "Initiated", "Awaiting_Response"].includes(assessment.status);
+  const isReadOnly = assessment?.status && !["Draft", "In Progress", "In-Progress", "Returned", "Initiated", "Awaiting_Response"].includes(assessment.status);
 
   // AI evaluation status helpers
   const isAIInProgress = aiStatus?.aiEvaluationStatus === "Pending" || aiStatus?.aiEvaluationStatus === "Ingesting" || aiStatus?.aiEvaluationStatus === "Evaluating";
