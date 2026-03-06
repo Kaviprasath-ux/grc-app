@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { saveUploadedFile } from '@/lib/file-upload';
 
 // GET /api/tprm/am-follow-ups/issue-remediations — List issue remediations for AM
 export const GET = withAuth(
@@ -63,8 +64,10 @@ export const PATCH = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
-      const body = await req.json();
-      const { id, amResponse } = body;
+      const formData = await req.formData();
+      const id = formData.get('id') as string;
+      const amResponse = formData.get('amResponse') as string;
+      const amComment = formData.get('amComment') as string;
 
       if (!id || !amResponse?.trim()) {
         return NextResponse.json({ error: 'ID and response are required' }, { status: 400 });
@@ -78,13 +81,37 @@ export const PATCH = withAuth(
         return NextResponse.json({ error: 'Issue remediation not found' }, { status: 404 });
       }
 
+      // Handle file uploads
+      const files = formData.getAll('files');
+      let artifactUrl: string | null = null;
+      let artifactName: string | null = null;
+
+      if (files && files.length > 0) {
+        const uploadedNames: string[] = [];
+        const uploadedUrls: string[] = [];
+        for (const file of files) {
+          if (file instanceof File) {
+            const subDir = `tprm/remediations/${id}`;
+            const { urlPath } = await saveUploadedFile(file, subDir);
+            uploadedNames.push(file.name);
+            uploadedUrls.push(urlPath);
+          }
+        }
+        if (uploadedNames.length > 0) {
+          artifactName = uploadedNames.join(', ');
+          artifactUrl = uploadedUrls.join(', ');
+        }
+      }
+
       const updated = await prisma.tPRMIssueRemediation.update({
         where: { id },
         data: {
           amResponse,
-          amComment: body.amComment || amResponse,
+          amComment: amComment || amResponse,
           responseDate: new Date(),
           status: 'Submitted',
+          ...(artifactName && { artifactName }),
+          ...(artifactUrl && { artifactUrl }),
         },
       });
 

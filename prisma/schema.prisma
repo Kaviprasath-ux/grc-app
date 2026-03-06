@@ -3923,6 +3923,7 @@ model TPRMIssueRemediation {
   assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   questionNo        String?
   questionText      String?         @db.Text
+  questionResponse  String?         // Original AM answer: Yes, No, NA
   domainName        String?
   severity          String?         // Critical, High, Medium, Low
   description       String?         @db.Text

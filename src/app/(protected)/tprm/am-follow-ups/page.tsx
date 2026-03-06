@@ -19,8 +19,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Home, Loader2, MessageSquare, AlertTriangle, Plus,
+  Home, Loader2, MessageSquare, AlertTriangle, Plus, Upload, X, FileText,
 } from "lucide-react";
 
 interface Clarification {
@@ -39,6 +40,7 @@ interface IssueRemediation {
   id: string;
   questionNo: string | null;
   questionText: string | null;
+  questionResponse: string | null;
   domainName: string | null;
   severity: string | null;
   description: string | null;
@@ -102,6 +104,8 @@ export default function AMFollowUpsPage() {
   const [selectedRemediation, setSelectedRemediation] = useState<IssueRemediation | null>(null);
   const [remediationComment, setRemediationComment] = useState("");
   const [remediationSubmitting, setRemediationSubmitting] = useState(false);
+  const [uploadArtifacts, setUploadArtifacts] = useState(false);
+  const [artifactFiles, setArtifactFiles] = useState<File[]>([]);
 
   // Vendor Issue dialog
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
@@ -177,16 +181,26 @@ export default function AMFollowUpsPage() {
     if (!selectedRemediation) return;
     setRemediationSubmitting(true);
     try {
+      const formData = new FormData();
+      formData.append("id", selectedRemediation.id);
+      formData.append("amResponse", remediationComment || "Evidence submitted");
+      formData.append("amComment", remediationComment);
+      if (uploadArtifacts && artifactFiles.length > 0) {
+        for (const file of artifactFiles) {
+          formData.append("files", file);
+        }
+      }
       const res = await fetch("/api/tprm/am-follow-ups/issue-remediations", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: selectedRemediation.id, amResponse: remediationComment }),
+        body: formData,
       });
       if (!res.ok) throw new Error("Failed");
       toast({ title: t("Success"), description: t("Evidence submitted successfully") });
       setRemediationDialogOpen(false);
       setSelectedRemediation(null);
       setRemediationComment("");
+      setUploadArtifacts(false);
+      setArtifactFiles([]);
       fetchData();
     } catch {
       toast({ title: t("Error"), description: t("Failed to submit evidence"), variant: "destructive" });
@@ -198,6 +212,8 @@ export default function AMFollowUpsPage() {
   const openRemediationDialog = (r: IssueRemediation) => {
     setSelectedRemediation(r);
     setRemediationComment(r.amComment || "");
+    setUploadArtifacts(!!r.artifactName);
+    setArtifactFiles([]);
     setRemediationDialogOpen(true);
   };
 
@@ -511,48 +527,62 @@ export default function AMFollowUpsPage() {
 
       {/* Remediation Detail Dialog (Mendix-style) */}
       <Dialog open={remediationDialogOpen} onOpenChange={setRemediationDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("Remediation")}</DialogTitle>
           </DialogHeader>
           {selectedRemediation && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Question info */}
               <div>
                 <h5 className="font-semibold text-sm">{t("Question")} {selectedRemediation.questionNo} —</h5>
                 <p className="text-sm text-muted-foreground mt-1">{selectedRemediation.questionText || "-"}</p>
               </div>
 
+              {/* Selected Response (Yes/No/NA) */}
+              {selectedRemediation.questionResponse && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("Selected Response")}</Label>
+                  <div className="mt-1">
+                    <Badge variant="outline" className={`text-sm ${
+                      selectedRemediation.questionResponse === "Yes" ? "bg-green-50 text-green-700 border-green-300" :
+                      selectedRemediation.questionResponse === "No" ? "bg-red-50 text-red-700 border-red-300" :
+                      "bg-gray-50 text-gray-700 border-gray-300"
+                    }`}>{selectedRemediation.questionResponse}</Badge>
+                  </div>
+                </div>
+              )}
+
               {/* VerifAI Summary */}
               <h5 className="font-semibold text-sm border-b pb-1">{t("VerifAI Summary")}</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{t("Issue")}</Label>
-                  <Textarea value={selectedRemediation.issue || ""} readOnly rows={3} className="mt-1 bg-muted/50 text-sm" />
+                  <Textarea value={selectedRemediation.issue || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">{t("Risk")}</Label>
-                  <Textarea value={selectedRemediation.risk || ""} readOnly rows={3} className="mt-1 bg-muted/50 text-sm" />
+                  <Textarea value={selectedRemediation.risk || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{t("Recommendation")}</Label>
-                  <Textarea value={selectedRemediation.recommendation || ""} readOnly rows={3} className="mt-1 bg-muted/50 text-sm" />
+                  <Textarea value={selectedRemediation.recommendation || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">{t("Remediation Comments")}</Label>
                   <Textarea
                     value={remediationComment}
                     onChange={e => setRemediationComment(e.target.value)}
-                    rows={3}
+                    rows={4}
                     className="mt-1 text-sm"
                     placeholder={t("Add your comments...")}
                     readOnly={selectedRemediation.status !== "Pending"}
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{t("Severity")}</Label>
                   <div className="mt-1">
@@ -565,7 +595,94 @@ export default function AMFollowUpsPage() {
                   <Label className="text-xs font-semibold">{t("Due Date")}</Label>
                   <p className="text-sm mt-1">{formatDate(selectedRemediation.dueDate)}</p>
                 </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Requested Date")}</Label>
+                  <p className="text-sm mt-1">{formatDate(selectedRemediation.requestedDate)}</p>
+                </div>
               </div>
+
+              {/* Upload Supporting Artifacts */}
+              {selectedRemediation.status === "Pending" && (
+                <div className="space-y-3 border-t pt-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="upload-artifacts"
+                      checked={uploadArtifacts}
+                      onCheckedChange={(checked) => {
+                        setUploadArtifacts(!!checked);
+                        if (!checked) setArtifactFiles([]);
+                      }}
+                    />
+                    <label htmlFor="upload-artifacts" className="text-sm font-medium cursor-pointer">
+                      {t("Upload Supporting Artifacts")}
+                    </label>
+                  </div>
+                  {uploadArtifacts && (
+                    <div className="space-y-3">
+                      <div
+                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
+                        onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                        onDrop={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const droppedFiles = Array.from(e.dataTransfer.files);
+                          setArtifactFiles(prev => [...prev, ...droppedFiles]);
+                        }}
+                        onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.multiple = true;
+                          input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.bmp,.webp,.txt,.rtf,.zip,.rar";
+                          input.onchange = (ev) => {
+                            const files = Array.from((ev.target as HTMLInputElement).files || []);
+                            setArtifactFiles(prev => [...prev, ...files]);
+                          };
+                          input.click();
+                        }}
+                      >
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">{t("Drag & drop files here or click to browse")}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t("Supports PDF, Excel, CSV, Word, PowerPoint, Images, and more")}</p>
+                      </div>
+                      {artifactFiles.length > 0 && (
+                        <div className="space-y-2">
+                          {artifactFiles.map((file, idx) => (
+                            <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-md px-3 py-2 text-sm">
+                              <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="truncate flex-1">{file.name}</span>
+                              <span className="text-xs text-muted-foreground flex-shrink-0">{(file.size / 1024).toFixed(1)} KB</span>
+                              <button
+                                type="button"
+                                onClick={() => setArtifactFiles(prev => prev.filter((_, i) => i !== idx))}
+                                className="text-muted-foreground hover:text-destructive flex-shrink-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Show existing artifacts for submitted/closed */}
+              {selectedRemediation.status !== "Pending" && selectedRemediation.artifactName && (
+                <div className="border-t pt-4">
+                  <Label className="text-xs font-semibold">{t("Uploaded Artifacts")}</Label>
+                  <div className="mt-2 flex items-center gap-2 bg-muted/50 rounded-md px-3 py-2 text-sm">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    {selectedRemediation.artifactUrl ? (
+                      <a href={selectedRemediation.artifactUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
+                        {selectedRemediation.artifactName}
+                      </a>
+                    ) : (
+                      <span className="truncate">{selectedRemediation.artifactName}</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>

@@ -2885,6 +2885,7 @@ CREATE TABLE "TPRMIssueRemediation" (
     "assessmentId" TEXT NOT NULL,
     "questionNo" TEXT,
     "questionText" TEXT,
+    "questionResponse" TEXT,
     "domainName" TEXT,
     "severity" TEXT,
     "description" TEXT,

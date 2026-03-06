@@ -141,6 +141,7 @@ export const POST = withAuth(
               assessmentId: id,
               questionNo: r.questionNo || '',
               questionText: qInfo?.questionText || '',
+              questionResponse: r.response || '',
               domainName: qInfo?.domainName || r.domainId || '',
               severity,
               issue: r.assessorIssue || r.poIssue || '',
