@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Home, Loader2, MessageSquare, AlertTriangle, Plus, Upload, X, FileText,
+  Home, Loader2, MessageSquare, AlertTriangle, Plus, Upload, X, FileText, Download, ExternalLink, Trash2,
 } from "lucide-react";
+import { RemediationComments } from "@/components/tprm/remediation-comments";
 
 interface Clarification {
   id: string;
@@ -38,6 +39,7 @@ interface Clarification {
 
 interface IssueRemediation {
   id: string;
+  issueCode: string | null;
   questionNo: string | null;
   questionText: string | null;
   questionResponse: string | null;
@@ -49,11 +51,13 @@ interface IssueRemediation {
   recommendation: string | null;
   amResponse: string | null;
   amComment: string | null;
+  assessorComment: string | null;
   artifactUrl: string | null;
   artifactName: string | null;
   requestedDate: string | null;
   dueDate: string | null;
   responseDate: string | null;
+  returnedAt: string | null;
   status: string;
   createdAt: string;
   assessment: { assessmentCode: string; vendor: { name: string } };
@@ -102,7 +106,6 @@ export default function AMFollowUpsPage() {
   // Remediation detail dialog
   const [remediationDialogOpen, setRemediationDialogOpen] = useState(false);
   const [selectedRemediation, setSelectedRemediation] = useState<IssueRemediation | null>(null);
-  const [remediationComment, setRemediationComment] = useState("");
   const [remediationSubmitting, setRemediationSubmitting] = useState(false);
   const [uploadArtifacts, setUploadArtifacts] = useState(false);
   const [artifactFiles, setArtifactFiles] = useState<File[]>([]);
@@ -183,8 +186,7 @@ export default function AMFollowUpsPage() {
     try {
       const formData = new FormData();
       formData.append("id", selectedRemediation.id);
-      formData.append("amResponse", remediationComment || "Evidence submitted");
-      formData.append("amComment", remediationComment);
+      formData.append("amResponse", "Evidence submitted");
       if (uploadArtifacts && artifactFiles.length > 0) {
         for (const file of artifactFiles) {
           formData.append("files", file);
@@ -198,7 +200,6 @@ export default function AMFollowUpsPage() {
       toast({ title: t("Success"), description: t("Evidence submitted successfully") });
       setRemediationDialogOpen(false);
       setSelectedRemediation(null);
-      setRemediationComment("");
       setUploadArtifacts(false);
       setArtifactFiles([]);
       fetchData();
@@ -211,10 +212,25 @@ export default function AMFollowUpsPage() {
 
   const openRemediationDialog = (r: IssueRemediation) => {
     setSelectedRemediation(r);
-    setRemediationComment(r.amComment || "");
     setUploadArtifacts(!!r.artifactName);
     setArtifactFiles([]);
     setRemediationDialogOpen(true);
+  };
+
+  const handleDeleteArtifact = async (remediationId: string, artifactIndex: number) => {
+    try {
+      const res = await fetch(`/api/tprm/am-follow-ups/issue-remediations?id=${remediationId}&artifactIndex=${artifactIndex}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast({ title: t("Success"), description: t("Artifact deleted") });
+      // Update the selected remediation in place
+      const updated = await res.json();
+      setSelectedRemediation(prev => prev ? { ...prev, artifactName: updated.artifactName, artifactUrl: updated.artifactUrl } : null);
+      fetchData();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to delete artifact"), variant: "destructive" });
+    }
   };
 
   const handleCreateIssue = async () => {
@@ -350,6 +366,7 @@ export default function AMFollowUpsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>{t("Issue ID")}</TableHead>
                       <TableHead>{t("Assessment ID")}</TableHead>
                       <TableHead>{t("Domain")}</TableHead>
                       <TableHead>{t("Severity")}</TableHead>
@@ -361,6 +378,17 @@ export default function AMFollowUpsPage() {
                   <TableBody>
                     {remediations.map(r => (
                       <TableRow key={r.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm">{r.issueCode || "-"}</span>
+                            {r.returnedAt && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 border border-orange-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                {t("Returned")}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="font-mono text-sm">{r.assessment.assessmentCode}</TableCell>
                         <TableCell>{r.domainName || "-"}</TableCell>
                         <TableCell>
@@ -527,7 +555,7 @@ export default function AMFollowUpsPage() {
 
       {/* Remediation Detail Dialog (Mendix-style) */}
       <Dialog open={remediationDialogOpen} onOpenChange={setRemediationDialogOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-7xl w-[98vw] max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("Remediation")}</DialogTitle>
           </DialogHeader>
@@ -553,6 +581,20 @@ export default function AMFollowUpsPage() {
                 </div>
               )}
 
+              {/* Assessor comment (shown when returned) */}
+              {selectedRemediation.assessorComment && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 border border-orange-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      {t("Returned")}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t("Assessor marked this as unsatisfactory")}</span>
+                  </div>
+                  <p className="text-sm text-orange-900">{selectedRemediation.assessorComment}</p>
+                </div>
+              )}
+
               {/* VerifAI Summary */}
               <h5 className="font-semibold text-sm border-b pb-1">{t("VerifAI Summary")}</h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -571,13 +613,8 @@ export default function AMFollowUpsPage() {
                   <Textarea value={selectedRemediation.recommendation || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold">{t("Remediation Comments")}</Label>
-                  <Textarea
-                    value={remediationComment}
-                    onChange={e => setRemediationComment(e.target.value)}
-                    rows={4}
-                    className="mt-1 text-sm"
-                    placeholder={t("Add your comments...")}
+                  <RemediationComments
+                    remediationId={selectedRemediation.id}
                     readOnly={selectedRemediation.status !== "Pending"}
                   />
                 </div>
@@ -667,19 +704,45 @@ export default function AMFollowUpsPage() {
                 </div>
               )}
 
-              {/* Show existing artifacts for submitted/closed */}
-              {selectedRemediation.status !== "Pending" && selectedRemediation.artifactName && (
+              {/* Show existing uploaded artifacts for all statuses */}
+              {selectedRemediation.artifactName && (
                 <div className="border-t pt-4">
                   <Label className="text-xs font-semibold">{t("Uploaded Artifacts")}</Label>
-                  <div className="mt-2 flex items-center gap-2 bg-muted/50 rounded-md px-3 py-2 text-sm">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    {selectedRemediation.artifactUrl ? (
-                      <a href={selectedRemediation.artifactUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
-                        {selectedRemediation.artifactName}
-                      </a>
-                    ) : (
-                      <span className="truncate">{selectedRemediation.artifactName}</span>
-                    )}
+                  <div className="mt-2 space-y-1">
+                    {selectedRemediation.artifactName.split(", ").map((name, idx) => {
+                      const urls = selectedRemediation.artifactUrl?.split(", ") || [];
+                      const rawUrl = urls[idx];
+                      const url = rawUrl ? (rawUrl.startsWith("/uploads/") ? `/api${rawUrl}` : rawUrl) : null;
+                      return (
+                        <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-md px-3 py-2 text-sm">
+                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate flex-1">{name}</span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {url && (
+                              <>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title={t("View")} onClick={() => window.open(url, "_blank")}>
+                                  <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                                <a href={url} download={name} title={t("Download")} className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent">
+                                  <Download className="h-3.5 w-3.5 text-primary" />
+                                </a>
+                              </>
+                            )}
+                            {selectedRemediation.status === "Pending" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                title={t("Delete")}
+                                onClick={() => handleDeleteArtifact(selectedRemediation.id, idx)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

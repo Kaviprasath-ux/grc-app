@@ -123,3 +123,51 @@ export const PATCH = withAuth(
   },
   { resource: 'tprm.am-follow-ups', action: 'edit' }
 );
+
+// DELETE /api/tprm/am-follow-ups/issue-remediations?id=xxx&artifactIndex=0 — Remove an artifact
+export const DELETE = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const { searchParams } = new URL(req.url);
+      const id = searchParams.get('id');
+      const artifactIndex = parseInt(searchParams.get('artifactIndex') || '-1');
+
+      if (!id || artifactIndex < 0) {
+        return NextResponse.json({ error: 'ID and artifactIndex are required' }, { status: 400 });
+      }
+
+      const remediation = await prisma.tPRMIssueRemediation.findFirst({
+        where: { id, customerAccountId },
+      });
+
+      if (!remediation) {
+        return NextResponse.json({ error: 'Remediation not found' }, { status: 404 });
+      }
+
+      const names = remediation.artifactName?.split(', ') || [];
+      const urls = remediation.artifactUrl?.split(', ') || [];
+
+      if (artifactIndex >= names.length) {
+        return NextResponse.json({ error: 'Artifact index out of range' }, { status: 400 });
+      }
+
+      names.splice(artifactIndex, 1);
+      urls.splice(artifactIndex, 1);
+
+      const updated = await prisma.tPRMIssueRemediation.update({
+        where: { id },
+        data: {
+          artifactName: names.length > 0 ? names.join(', ') : null,
+          artifactUrl: urls.length > 0 ? urls.join(', ') : null,
+        },
+      });
+
+      return NextResponse.json(updated);
+    } catch (error) {
+      console.error('AM Issue Remediations DELETE error:', error);
+      return NextResponse.json({ error: 'Failed to delete artifact' }, { status: 500 });
+    }
+  },
+  { resource: 'tprm.am-follow-ups', action: 'edit' }
+);

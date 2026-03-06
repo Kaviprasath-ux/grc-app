@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
 // GET follow-ups data for assessor (clarifications and remediations)
 export const GET = withAuth(
@@ -59,15 +59,26 @@ export const GET = withAuth(
 
         const data = remediations.map((r) => ({
           id: r.id,
-          issueId: r.id.substring(0, 8) || null,
+          issueId: r.issueCode || r.assessment?.assessmentCode || r.id.substring(0, 8),
           vendorName: r.assessment?.vendor?.name || null,
           engagementId: r.assessment?.assessmentCode || null,
           domain: r.domainName || null,
           severity: r.severity || null,
-          responseDate: r.requestedDate?.toISOString() || null,
+          questionNo: r.questionNo || null,
+          questionText: r.questionText || null,
+          questionResponse: r.questionResponse || null,
+          issue: r.issue || null,
+          risk: r.risk || null,
+          recommendation: r.recommendation || null,
+          amComment: r.amComment || null,
+          assessorComment: r.assessorComment || null,
+          artifactUrl: r.artifactUrl || null,
+          artifactName: r.artifactName || null,
+          returnedAt: r.returnedAt?.toISOString() || null,
+          responseDate: r.responseDate?.toISOString() || r.requestedDate?.toISOString() || null,
           dueDate: r.dueDate?.toISOString() || null,
-          reassignStatus: r.status === "Pending" ? "Not Assigned" : "Assigned to BO",
-          status: r.status || "Open",
+          reassignStatus: r.status === "Assigned to BO" ? "Assigned to BO" : r.status === "Assigned to IT" ? "Assigned to IT" : "Not Assigned",
+          status: r.status === "Submitted" ? "Received" : r.status || "Pending",
         }));
 
         return NextResponse.json({ data, total: data.length });
@@ -80,4 +91,81 @@ export const GET = withAuth(
     }
   },
   { resource: "tprm.asr-follow-ups", action: "view" }
+);
+
+// PATCH /api/tprm/asr-follow-ups — Assessor actions on remediations
+export const PATCH = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const body = await req.json();
+      const { id, action, comment } = body;
+
+      if (!id || !action) {
+        return NextResponse.json({ error: "ID and action are required" }, { status: 400 });
+      }
+
+      const remediation = await prisma.tPRMIssueRemediation.findFirst({
+        where: { id, customerAccountId },
+      });
+
+      if (!remediation) {
+        return NextResponse.json({ error: "Remediation not found" }, { status: 404 });
+      }
+
+      let updateData: Record<string, unknown> = {};
+
+      switch (action) {
+        case "satisfied":
+          updateData = { status: "Closed" };
+          break;
+        case "unsatisfied":
+          // Send back to AM with comment — resets to Pending so AM sees it again
+          updateData = {
+            status: "Pending",
+            amResponse: null,
+            responseDate: null,
+            returnedAt: new Date(),
+            ...(comment ? { assessorComment: comment } : {}),
+          };
+          break;
+        case "send-to-business":
+          updateData = { status: "Assigned to BO" };
+          break;
+        case "reassign-to-it":
+          updateData = { status: "Assigned to IT" };
+          break;
+        default:
+          return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+      }
+
+      const updated = await prisma.tPRMIssueRemediation.update({
+        where: { id },
+        data: updateData,
+      });
+
+      // Also save the unsatisfied comment as a chat-style remediation comment
+      if (action === "unsatisfied" && comment?.trim()) {
+        const roles = session.roles || [];
+        let userRole = "Assessor";
+        if (roles.some((r: string) => r.includes("Approver"))) userRole = "Approver";
+        else if (roles.some((r: string) => r.includes("Admin"))) userRole = "Admin";
+
+        await prisma.tPRMRemediationComment.create({
+          data: {
+            remediationId: id,
+            userId: session.id,
+            userRole,
+            message: comment.trim(),
+          },
+        });
+      }
+
+      return NextResponse.json(updated);
+    } catch (error) {
+      console.error("ASR Follow-ups PATCH error:", error);
+      return NextResponse.json({ error: "Failed to update remediation" }, { status: 500 });
+    }
+  },
+  { resource: "tprm.asr-follow-ups", action: "edit" }
 );

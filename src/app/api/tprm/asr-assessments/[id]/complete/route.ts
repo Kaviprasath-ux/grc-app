@@ -155,7 +155,22 @@ export const POST = withAuth(
           });
 
         if (issueData.length > 0) {
-          await prisma.tPRMIssueRemediation.createMany({ data: issueData });
+          // Get the last issue code number for this customer
+          const lastIssue = await prisma.tPRMIssueRemediation.findFirst({
+            where: { customerAccountId },
+            orderBy: { createdAt: 'desc' },
+            select: { issueCode: true },
+          });
+          let nextNum = 1;
+          if (lastIssue?.issueCode) {
+            const match = lastIssue.issueCode.match(/ISS-(\d+)/);
+            if (match) nextNum = parseInt(match[1]) + 1;
+          }
+          for (const data of issueData) {
+            const issueCode = `ISS-${String(nextNum).padStart(3, '0')}`;
+            await prisma.tPRMIssueRemediation.create({ data: { ...data, issueCode } });
+            nextNum++;
+          }
           console.log(`[ASR] Created ${issueData.length} issue remediations for assessment ${id}`);
         }
       }

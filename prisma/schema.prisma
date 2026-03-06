@@ -433,6 +433,7 @@ model User {
   tprmVendorIssuesReported   TPRMVendorIssue[]        @relation("TPRMVendorIssueReportedBy")
   tprmResponsesOverridden    TPRMAssessmentResponse[] @relation("TPRMResponseAssessorOverride")
   tprmInternalComments       TPRMInternalComment[]    @relation("TPRMInternalCommentAuthor")
+  tprmRemediationComments    TPRMRemediationComment[] @relation("TPRMRemediationComments")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -3917,6 +3918,7 @@ model TPRMClarification {
 // TPRMIssueRemediation — Issue remediation requests for Account Manager
 model TPRMIssueRemediation {
   id                String          @id @default(cuid())
+  issueCode         String?         // e.g., ISS-001, ISS-002
   customerAccountId String
   customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
   assessmentId      String
@@ -3932,17 +3934,34 @@ model TPRMIssueRemediation {
   recommendation    String?         @db.Text
   amResponse        String?         @db.Text
   amComment         String?         @db.Text
+  assessorComment   String?         @db.Text    // Assessor comment when marking unsatisfied
   artifactUrl       String?
   artifactName      String?
   requestedDate     DateTime?
   dueDate           DateTime?
   responseDate      DateTime?
-  status            String          @default("Pending") // Pending, Submitted, Closed
+  returnedAt        DateTime?                    // Set when assessor sends back as unsatisfied
+  status            String          @default("Pending") // Pending, Submitted, Closed, Assigned to BO, Assigned to IT
+  comments          TPRMRemediationComment[]
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
   @@index([customerAccountId])
   @@index([assessmentId])
+}
+
+// TPRMRemediationComment — Chat-style comments on issue remediations
+model TPRMRemediationComment {
+  id              String              @id @default(cuid())
+  remediationId   String
+  remediation     TPRMIssueRemediation @relation(fields: [remediationId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                @relation("TPRMRemediationComments", fields: [userId], references: [id])
+  userRole        String?             // e.g., "Account Manager", "Assessor", "Approver"
+  message         String              @db.Text
+  createdAt       DateTime            @default(now())
+
+  @@index([remediationId])
 }
 
 // TPRMInternalComment — Internal assessor comments on assessment questions
