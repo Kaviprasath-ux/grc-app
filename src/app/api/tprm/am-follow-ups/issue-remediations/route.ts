@@ -46,7 +46,7 @@ export const GET = withAuth(
             select: { assessmentCode: true, vendor: { select: { name: true } } },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
       });
 
       return NextResponse.json({ data: remediations });
@@ -82,6 +82,8 @@ export const PATCH = withAuth(
         where: { id },
         data: {
           amResponse,
+          amComment: body.amComment || amResponse,
+          responseDate: new Date(),
           status: 'Submitted',
         },
       });

@@ -104,6 +104,13 @@ export default function AsrAssessmentsPage() {
   const [selectedAssessorId, setSelectedAssessorId] = useState<string>("");
   const [assigning, setAssigning] = useState(false);
 
+  // Reassign dialog state
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [reassigningAssessment, setReassigningAssessment] = useState<AssessmentItem | null>(null);
+  const [reassignTargets, setReassignTargets] = useState<Assessor[]>([]);
+  const [selectedReassignId, setSelectedReassignId] = useState<string>("");
+  const [reassigning, setReassigning] = useState(false);
+
   // Get current user ID from session
   useEffect(() => {
     fetch("/api/auth/session").then(r => r.json()).then(s => {
@@ -161,6 +168,46 @@ export default function AsrAssessmentsPage() {
       toast({ title: t("Error"), description: t("Failed to assign assessment"), variant: "destructive" });
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const openReassignDialog = useCallback(async (assessment: AssessmentItem) => {
+    setReassigningAssessment(assessment);
+    setSelectedReassignId("");
+    setReassignOpen(true);
+    try {
+      // Approver reassigns to other approvers, assessor reassigns to other assessors
+      const endpoint = isApprover
+        ? "/api/tprm/asr-assessments/approvers"
+        : "/api/tprm/asr-assessments/assessors";
+      const res = await fetch(endpoint);
+      if (res.ok) setReassignTargets(await res.json());
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to load users"), variant: "destructive" });
+    }
+  }, [isApprover, toast, t]);
+
+  const handleReassign = async () => {
+    if (!reassigningAssessment || !selectedReassignId) return;
+    setReassigning(true);
+    try {
+      const bodyData = isApprover
+        ? { approverId: selectedReassignId }
+        : { assessorId: selectedReassignId };
+      const res = await fetch(`/api/tprm/asr-assessments/${reassigningAssessment.id}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyData),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const targetName = reassignTargets.find(a => a.id === selectedReassignId)?.fullName || "";
+      toast({ title: t("Success"), description: `${t("Assessment reassigned to")} ${targetName}` });
+      setReassignOpen(false);
+      fetchData();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to reassign assessment"), variant: "destructive" });
+    } finally {
+      setReassigning(false);
     }
   };
 
@@ -268,8 +315,9 @@ export default function AsrAssessmentsPage() {
     return data;
   }, [items, activeTab, subTab, search, dateFilter, currentUserId, isApprover]);
 
-  // Determine if current sub-tab is "unassigned"
+  // Determine if current sub-tab is "unassigned" or "assigned"
   const isUnassignedQueue = (activeTab === "due-diligence" || activeTab === "reassessments") && subTab === "unassigned";
+  const isAssignedQueue = (activeTab === "due-diligence" || activeTab === "reassessments") && subTab === "assigned";
 
   // My Queue columns
   const myQueueColumns: ColumnDef<AssessmentItem>[] = [
@@ -406,6 +454,56 @@ export default function AsrAssessmentsPage() {
     },
   ];
 
+  // Assigned queue columns (with Reassign button)
+  const assignedColumns: ColumnDef<AssessmentItem>[] = [
+    {
+      accessorKey: "assessmentCode",
+      header: t("ID"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor Name"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "vendor.serviceCategory",
+      header: t("Service Category"),
+      cell: ({ row }) => row.original.vendor?.serviceCategory || "-",
+    },
+    {
+      accessorKey: isApprover ? "approver.fullName" : "assessor.fullName",
+      header: isApprover ? t("Approver") : t("Assessor"),
+      cell: ({ row }) => isApprover
+        ? row.original.approver?.fullName || "-"
+        : row.original.assessor?.fullName || "-",
+    },
+    {
+      accessorKey: "vendorSubmissionDate",
+      header: t("Date of Submission"),
+      cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
+    },
+    {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{row.getValue("status")}</Badge>,
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => openReassignDialog(row.original)}
+        >
+          <RotateCcw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          {t("Reassign")}
+        </Button>
+      ),
+    },
+  ];
+
   // Reassessment columns
   const reassessmentColumns: ColumnDef<AssessmentItem>[] = [
     {
@@ -518,6 +616,7 @@ export default function AsrAssessmentsPage() {
 
   const getColumns = () => {
     if (isUnassignedQueue) return unassignedColumns;
+    if (isAssignedQueue) return assignedColumns;
     switch (activeTab) {
       case "my-queue":
         return subTab === "reassessment"
@@ -700,6 +799,50 @@ export default function AsrAssessmentsPage() {
             <Button onClick={handleAssign} disabled={assigning || !selectedAssessorId}>
               {assigning && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
               {t("Assign")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reassign Assessment Dialog */}
+      <Dialog open={reassignOpen} onOpenChange={setReassignOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Reassign Assessment")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {reassigningAssessment && (
+              <div className="text-sm space-y-1">
+                <p><span className="font-medium">{t("Assessment")}:</span> {reassigningAssessment.assessmentCode}</p>
+                <p><span className="font-medium">{t("Vendor")}:</span> {reassigningAssessment.vendor?.name}</p>
+                <p><span className="font-medium">{isApprover ? t("Current Approver") : t("Current Assessor")}:</span>{" "}
+                  {isApprover ? reassigningAssessment.approver?.fullName || "-" : reassigningAssessment.assessor?.fullName || "-"}
+                </p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium block mb-1.5">
+                {isApprover ? t("Select Approver") : t("Select Assessor")}
+              </label>
+              <Select value={selectedReassignId} onValueChange={setSelectedReassignId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isApprover ? t("Choose an approver...") : t("Choose an assessor...")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {reassignTargets.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReassignOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleReassign} disabled={reassigning || !selectedReassignId}>
+              {reassigning && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              {t("Reassign")}
             </Button>
           </DialogFooter>
         </DialogContent>

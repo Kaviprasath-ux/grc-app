@@ -37,12 +37,21 @@ interface Clarification {
 
 interface IssueRemediation {
   id: string;
+  questionNo: string | null;
+  questionText: string | null;
   domainName: string | null;
   severity: string | null;
   description: string | null;
+  issue: string | null;
+  risk: string | null;
+  recommendation: string | null;
   amResponse: string | null;
+  amComment: string | null;
+  artifactUrl: string | null;
+  artifactName: string | null;
   requestedDate: string | null;
   dueDate: string | null;
+  responseDate: string | null;
   status: string;
   createdAt: string;
   assessment: { assessmentCode: string; vendor: { name: string } };
@@ -87,6 +96,12 @@ export default function AMFollowUpsPage() {
   const [respondId, setRespondId] = useState("");
   const [respondText, setRespondText] = useState("");
   const [respondLoading, setRespondLoading] = useState(false);
+
+  // Remediation detail dialog
+  const [remediationDialogOpen, setRemediationDialogOpen] = useState(false);
+  const [selectedRemediation, setSelectedRemediation] = useState<IssueRemediation | null>(null);
+  const [remediationComment, setRemediationComment] = useState("");
+  const [remediationSubmitting, setRemediationSubmitting] = useState(false);
 
   // Vendor Issue dialog
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
@@ -156,6 +171,34 @@ export default function AMFollowUpsPage() {
     } finally {
       setRespondLoading(false);
     }
+  };
+
+  const handleRemediationSubmit = async () => {
+    if (!selectedRemediation) return;
+    setRemediationSubmitting(true);
+    try {
+      const res = await fetch("/api/tprm/am-follow-ups/issue-remediations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: selectedRemediation.id, amResponse: remediationComment }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast({ title: t("Success"), description: t("Evidence submitted successfully") });
+      setRemediationDialogOpen(false);
+      setSelectedRemediation(null);
+      setRemediationComment("");
+      fetchData();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to submit evidence"), variant: "destructive" });
+    } finally {
+      setRemediationSubmitting(false);
+    }
+  };
+
+  const openRemediationDialog = (r: IssueRemediation) => {
+    setSelectedRemediation(r);
+    setRemediationComment(r.amComment || "");
+    setRemediationDialogOpen(true);
   };
 
   const handleCreateIssue = async () => {
@@ -291,40 +334,35 @@ export default function AMFollowUpsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t("Assessment")}</TableHead>
-                      <TableHead>{t("Vendor")}</TableHead>
+                      <TableHead>{t("Assessment ID")}</TableHead>
                       <TableHead>{t("Domain")}</TableHead>
                       <TableHead>{t("Severity")}</TableHead>
-                      <TableHead>{t("Description")}</TableHead>
+                      <TableHead>{t("Requested Date")}</TableHead>
                       <TableHead>{t("Due Date")}</TableHead>
-                      <TableHead>{t("Actions")}</TableHead>
+                      <TableHead>{t("Action")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {remediations.map(r => (
                       <TableRow key={r.id}>
-                        <TableCell>{r.assessment.assessmentCode}</TableCell>
-                        <TableCell>{r.assessment.vendor.name}</TableCell>
+                        <TableCell className="font-mono text-sm">{r.assessment.assessmentCode}</TableCell>
                         <TableCell>{r.domainName || "-"}</TableCell>
                         <TableCell>
                           {r.severity ? (
                             <Badge className={SEVERITY_COLORS[r.severity] || ""}>{t(r.severity)}</Badge>
                           ) : "-"}
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">{r.description || "-"}</TableCell>
+                        <TableCell>{formatDate(r.requestedDate)}</TableCell>
                         <TableCell>{formatDate(r.dueDate)}</TableCell>
                         <TableCell>
                           {r.status === "Pending" ? (
-                            <Button size="sm" variant="outline" onClick={() => {
-                              setRespondType("remediation");
-                              setRespondId(r.id);
-                              setRespondText("");
-                              setRespondDialogOpen(true);
-                            }}>
-                              {t("Respond")}
+                            <Button size="sm" variant="outline" onClick={() => openRemediationDialog(r)}>
+                              {t("Submit Evidence")}
                             </Button>
                           ) : (
-                            <span className="text-sm text-muted-foreground">{r.amResponse?.substring(0, 50) || "-"}</span>
+                            <Button size="sm" variant="ghost" onClick={() => openRemediationDialog(r)}>
+                              {t("View")}
+                            </Button>
                           )}
                         </TableCell>
                       </TableRow>
@@ -467,6 +505,77 @@ export default function AMFollowUpsPage() {
             <Button onClick={handleCreateIssue} disabled={!newIssue.title.trim()}>
               {t("Create Issue")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remediation Detail Dialog (Mendix-style) */}
+      <Dialog open={remediationDialogOpen} onOpenChange={setRemediationDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Remediation")}</DialogTitle>
+          </DialogHeader>
+          {selectedRemediation && (
+            <div className="space-y-4">
+              {/* Question info */}
+              <div>
+                <h5 className="font-semibold text-sm">{t("Question")} {selectedRemediation.questionNo} —</h5>
+                <p className="text-sm text-muted-foreground mt-1">{selectedRemediation.questionText || "-"}</p>
+              </div>
+
+              {/* VerifAI Summary */}
+              <h5 className="font-semibold text-sm border-b pb-1">{t("VerifAI Summary")}</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{t("Issue")}</Label>
+                  <Textarea value={selectedRemediation.issue || ""} readOnly rows={3} className="mt-1 bg-muted/50 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Risk")}</Label>
+                  <Textarea value={selectedRemediation.risk || ""} readOnly rows={3} className="mt-1 bg-muted/50 text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{t("Recommendation")}</Label>
+                  <Textarea value={selectedRemediation.recommendation || ""} readOnly rows={3} className="mt-1 bg-muted/50 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Remediation Comments")}</Label>
+                  <Textarea
+                    value={remediationComment}
+                    onChange={e => setRemediationComment(e.target.value)}
+                    rows={3}
+                    className="mt-1 text-sm"
+                    placeholder={t("Add your comments...")}
+                    readOnly={selectedRemediation.status !== "Pending"}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{t("Severity")}</Label>
+                  <div className="mt-1">
+                    {selectedRemediation.severity ? (
+                      <Badge className={SEVERITY_COLORS[selectedRemediation.severity] || ""}>{t(selectedRemediation.severity)}</Badge>
+                    ) : "-"}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Due Date")}</Label>
+                  <p className="text-sm mt-1">{formatDate(selectedRemediation.dueDate)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            {selectedRemediation?.status === "Pending" && (
+              <Button onClick={handleRemediationSubmit} disabled={remediationSubmitting}>
+                {remediationSubmitting && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+                {t("Submit")}
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setRemediationDialogOpen(false)}>{t("Cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

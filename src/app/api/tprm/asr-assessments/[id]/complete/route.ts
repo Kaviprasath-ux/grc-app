@@ -80,12 +80,83 @@ export const POST = withAuth(
         data: updateData,
       });
 
-      // When approved, set vendor status to Inactive
+      // When approved, set vendor status to Inactive and create issue remediations
       if (action === 'approve') {
         await prisma.tPRMVendor.update({
           where: { id: assessment.vendorId },
           data: { status: 'Inactive' },
         });
+
+        // Create issue remediations from unsatisfactory responses
+        const responses = await prisma.tPRMAssessmentResponse.findMany({
+          where: { assessmentId: id, customerAccountId },
+          include: {
+            assessment: {
+              include: {
+                vendor: { select: { name: true } },
+              },
+            },
+          },
+        });
+
+        // Load question texts via the template
+        const questionMap = new Map<string, { questionText: string; domainName: string }>();
+        if (assessment.questionnaireTemplate) {
+          const template = await prisma.tPRMQuestionnaireTemplate.findFirst({
+            where: { customerAccountId, templateName: assessment.questionnaireTemplate },
+            include: {
+              masterQuestionLinks: {
+                include: {
+                  question: {
+                    select: { id: true, questionText: true, domain: { select: { name: true } } },
+                  },
+                },
+              },
+            },
+          });
+          if (template) {
+            for (const link of template.masterQuestionLinks) {
+              questionMap.set(link.question.id, {
+                questionText: link.question.questionText,
+                domainName: link.question.domain?.name || '',
+              });
+            }
+          }
+        }
+
+        const now = new Date();
+        const issueData = responses
+          .filter(r => {
+            // Use assessor override status if available, otherwise AI status
+            const status = r.assessorStatus || r.poStatus;
+            return status === 'Unsatisfactory';
+          })
+          .map(r => {
+            const severity = r.assessorSeverity || r.poSeverity || 'Medium';
+            const dueDays = severity === 'High' ? 60 : severity === 'Medium' ? 50 : 40;
+            const dueDate = new Date(now.getTime() + dueDays * 24 * 60 * 60 * 1000);
+            const qInfo = questionMap.get(r.questionId);
+            return {
+              customerAccountId,
+              assessmentId: id,
+              questionNo: r.questionNo || '',
+              questionText: qInfo?.questionText || '',
+              domainName: qInfo?.domainName || r.domainId || '',
+              severity,
+              issue: r.assessorIssue || r.poIssue || '',
+              risk: r.assessorRisk || r.poRisk || '',
+              recommendation: r.assessorRecommendation || r.poRecommendation || '',
+              description: r.assessorIssue || r.poIssue || '',
+              requestedDate: now,
+              dueDate,
+              status: 'Pending',
+            };
+          });
+
+        if (issueData.length > 0) {
+          await prisma.tPRMIssueRemediation.createMany({ data: issueData });
+          console.log(`[ASR] Created ${issueData.length} issue remediations for assessment ${id}`);
+        }
       }
 
       // Log

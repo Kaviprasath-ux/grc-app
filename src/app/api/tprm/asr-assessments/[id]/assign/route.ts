@@ -13,12 +13,12 @@ export const POST = withAuth(
       const { id } = await context.params;
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { assessorId } = body;
-      console.log(`[ASR] POST /asr-assessments/${id}/assign — user=${session.email} assessorId=${assessorId}`);
+      const { assessorId, approverId } = body;
+      console.log(`[ASR] POST /asr-assessments/${id}/assign — user=${session.email} assessorId=${assessorId} approverId=${approverId}`);
 
-      if (!assessorId) {
-        console.warn(`[ASR] POST /asr-assessments/${id}/assign — 400 missing assessorId`);
-        return NextResponse.json({ error: 'assessorId is required' }, { status: 400 });
+      if (!assessorId && !approverId) {
+        console.warn(`[ASR] POST /asr-assessments/${id}/assign — 400 missing assessorId or approverId`);
+        return NextResponse.json({ error: 'assessorId or approverId is required' }, { status: 400 });
       }
 
       // Verify assessment exists and belongs to tenant
@@ -30,7 +30,39 @@ export const POST = withAuth(
         return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
       }
 
-      // Verify the target assessor belongs to the same customer
+      // Handle approver reassignment
+      if (approverId) {
+        const approver = await prisma.user.findFirst({
+          where: { id: approverId, customerAccountId },
+          select: { id: true, fullName: true },
+        });
+        if (!approver) {
+          return NextResponse.json({ error: 'Approver not found' }, { status: 404 });
+        }
+
+        const updated = await prisma.tPRMAssessment.update({
+          where: { id },
+          data: { approverId },
+          include: {
+            vendor: { select: { id: true, name: true, vendorCode: true, serviceCategory: true } },
+            approver: { select: { id: true, fullName: true } },
+          },
+        });
+
+        await prisma.tPRMAssessmentLog.create({
+          data: {
+            customerAccountId,
+            assessmentId: id,
+            logMessage: `Assessment reassigned to approver ${approver.fullName} by ${session.name || session.email}`,
+            logDate: new Date(),
+          },
+        });
+
+        console.log(`[ASR] POST /asr-assessments/${id}/assign — OK, approver reassigned to ${approver.fullName}`);
+        return NextResponse.json(updated);
+      }
+
+      // Handle assessor assignment/reassignment
       const assessor = await prisma.user.findFirst({
         where: { id: assessorId, customerAccountId },
         select: { id: true, fullName: true },
@@ -58,7 +90,7 @@ export const POST = withAuth(
         data: {
           customerAccountId,
           assessmentId: id,
-          logMessage: `Assessment assigned to ${assessor.fullName}`,
+          logMessage: `Assessment ${assessment.assessorId ? 'reassigned' : 'assigned'} to ${assessor.fullName} by ${session.name || session.email}`,
           logDate: new Date(),
         },
       });

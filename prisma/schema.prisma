@@ -3921,12 +3921,21 @@ model TPRMIssueRemediation {
   customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
   assessmentId      String
   assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionNo        String?
+  questionText      String?         @db.Text
   domainName        String?
   severity          String?         // Critical, High, Medium, Low
   description       String?         @db.Text
+  issue             String?         @db.Text
+  risk              String?         @db.Text
+  recommendation    String?         @db.Text
   amResponse        String?         @db.Text
+  amComment         String?         @db.Text
+  artifactUrl       String?
+  artifactName      String?
   requestedDate     DateTime?
   dueDate           DateTime?
+  responseDate      DateTime?
   status            String          @default("Pending") // Pending, Submitted, Closed
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt

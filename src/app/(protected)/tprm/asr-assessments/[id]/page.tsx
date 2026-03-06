@@ -286,6 +286,11 @@ export default function ASRAssessmentDetailPage() {
       setSummary(data.summary);
       setMonitoringScores(data.monitoringScores || null);
 
+      // Initialize report result from saved assessment result
+      if (data.assessment.assessmentResult) {
+        setReportResult(data.assessment.assessmentResult);
+      }
+
       // Build response map
       const respMap: Record<string, AssessmentResponse> = {};
       for (const r of data.assessment.responses) {
@@ -307,7 +312,6 @@ export default function ASRAssessmentDetailPage() {
     const result: { question: Question | Question["children"][0]; isChild: boolean; parentIndex: number; questionNo: string; domainName: string; domainId: string | null }[] = [];
     let parentIdx = 0;
     for (const q of questions) {
-      if (!q.isParentQuestion) continue;
       parentIdx++;
       // Domain filter
       if (selectedDomain !== "all" && q.domainId !== selectedDomain) continue;
@@ -315,9 +319,11 @@ export default function ASRAssessmentDetailPage() {
       const qNo = String(parentIdx);
       result.push({ question: q, isChild: false, parentIndex: parentIdx, questionNo: qNo, domainName: q.domainName, domainId: q.domainId });
 
-      for (let ci = 0; ci < q.children.length; ci++) {
-        const child = q.children[ci];
-        result.push({ question: child, isChild: true, parentIndex: parentIdx, questionNo: `${qNo}.${ci + 1}`, domainName: q.domainName, domainId: q.domainId });
+      if (q.children && q.children.length > 0) {
+        for (let ci = 0; ci < q.children.length; ci++) {
+          const child = q.children[ci];
+          result.push({ question: child, isChild: true, parentIndex: parentIdx, questionNo: `${qNo}.${ci + 1}`, domainName: q.domainName, domainId: q.domainId });
+        }
       }
     }
     return result;
@@ -1603,19 +1609,29 @@ export default function ASRAssessmentDetailPage() {
 
               {/* Assessment Result radio — inline with summary feel */}
               <div className="flex items-center gap-8 pl-2">
-                {["Satisfactory", "Unsatisfactory", "Deficient"].map(opt => (
-                  <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="reportResultRadio"
-                      value={opt}
-                      checked={reportResult === opt}
-                      onChange={() => setReportResult(opt)}
-                      className="accent-primary w-4 h-4 cursor-pointer"
-                    />
-                    <span className={`text-sm ${reportResult === opt ? "font-semibold" : ""}`}>{t(opt)}</span>
-                  </label>
-                ))}
+                {assessment.status === "Approved" ? (
+                  <Badge className={
+                    reportResult === "Satisfactory" ? "bg-green-100 text-green-700 border-green-300" :
+                    reportResult === "Unsatisfactory" ? "bg-red-100 text-red-700 border-red-300" :
+                    "bg-orange-100 text-orange-700 border-orange-300"
+                  }>
+                    {t(reportResult)}
+                  </Badge>
+                ) : (
+                  ["Satisfactory", "Unsatisfactory", "Deficient"].map(opt => (
+                    <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="reportResultRadio"
+                        value={opt}
+                        checked={reportResult === opt}
+                        onChange={() => setReportResult(opt)}
+                        className="accent-primary w-4 h-4 cursor-pointer"
+                      />
+                      <span className={`text-sm ${reportResult === opt ? "font-semibold" : ""}`}>{t(opt)}</span>
+                    </label>
+                  ))
+                )}
               </div>
 
               {/* Monitoring Scores — only shown if monitoring data exists */}
