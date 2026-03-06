@@ -323,6 +323,11 @@ export function filterNavigationByPermissions(
     .map(item => {
       // If item has children, filter them first
       if (item.children && item.children.length > 0) {
+        // Check parent's own permission first — if specified and user lacks it, hide entirely
+        if (item.permission && !canAccessNavItem(item, userPermissions)) {
+          return null;
+        }
+
         const filteredChildren = filterNavigationByPermissions(item.children, userPermissions);
 
         // Only include parent if it has visible children or is always visible
