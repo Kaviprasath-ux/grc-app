@@ -80,6 +80,14 @@ export const POST = withAuth(
         data: updateData,
       });
 
+      // When approved, set vendor status to Inactive
+      if (action === 'approve') {
+        await prisma.tPRMVendor.update({
+          where: { id: assessment.vendorId },
+          data: { status: 'Inactive' },
+        });
+      }
+
       // Log
       await prisma.tPRMAssessmentLog.create({
         data: {

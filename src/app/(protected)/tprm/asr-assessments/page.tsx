@@ -556,14 +556,22 @@ export default function AsrAssessmentsPage() {
           { value: "returned", label: t("Returned") },
         ];
       case "due-diligence":
-        return [
+        return isApprover ? [
+          { value: "awaiting", label: t("Awaiting Response") },
+          { value: "assigned", label: t("Assigned Queue") },
+          { value: "completed", label: t("Completed") },
+        ] : [
           { value: "awaiting", label: t("Awaiting Response") },
           { value: "unassigned", label: t("Unassigned Queue") },
           { value: "assigned", label: t("Assigned Queue") },
           { value: "completed", label: t("Completed") },
         ];
       case "reassessments":
-        return [
+        return isApprover ? [
+          { value: "awaiting", label: t("Awaiting Response") },
+          { value: "assigned", label: t("Assigned Queue") },
+          { value: "completed", label: t("Completed") },
+        ] : [
           { value: "awaiting", label: t("Awaiting Response") },
           { value: "unassigned", label: t("Unassigned Queue") },
           { value: "assigned", label: t("Assigned Queue") },

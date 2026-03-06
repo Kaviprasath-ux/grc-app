@@ -512,7 +512,7 @@ export default function ASRAssessmentDetailPage() {
       }
       toast({ title: t("Success"), description: t("Assessment approved") });
       setReportOpen(false);
-      loadAssessment();
+      router.push("/tprm/asr-assessments");
     } catch (err) {
       toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to approve assessment"), variant: "destructive" });
     } finally {
@@ -840,7 +840,7 @@ export default function ASRAssessmentDetailPage() {
             <h1 className="text-xl font-semibold">{t("Assessment Summary")}</h1>
           </div>
           <div className="flex items-center gap-2">
-            {!isApprover && (
+            {!isApprover && (assessment.status === "In-Progress" || assessment.status === "Returned" || assessment.status === "Submitted" || assessment.status === "Under Review") && (
               <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
                 {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
                 {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
@@ -1225,12 +1225,16 @@ export default function ASRAssessmentDetailPage() {
 
               {/* Action buttons — centered, filled style */}
               <div className="flex flex-wrap gap-2 pt-3 justify-center">
-                <Button size="sm" onClick={openOverride} disabled={assessment.status === "Reviewed" || assessment.status === "Approved"}>
-                  {t("Override AI")}
-                </Button>
-                <Button size="sm" onClick={openClarification}>
-                  {t("Clarification")}
-                </Button>
+                {assessment.status !== "Approved" && (
+                  <>
+                    <Button size="sm" onClick={openOverride}>
+                      {t("Override AI")}
+                    </Button>
+                    <Button size="sm" onClick={openClarification}>
+                      {t("Clarification")}
+                    </Button>
+                  </>
+                )}
                 <Button size="sm" onClick={() => { setLogsScope("question"); setLogsOpen(true); }}>
                   {t("Activity Logs")}
                 </Button>
@@ -1716,13 +1720,17 @@ export default function ASRAssessmentDetailPage() {
                 <Button variant="outline" size="sm" onClick={handleDownloadReport}>
                   <Download className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Download PDF Report")}
                 </Button>
-                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleApprove} disabled={actionSaving}>
-                  {actionSaving ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1.5 rtl:ml-1.5" /> : <CheckCircle2 className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />}
-                  {t("Approve")}
-                </Button>
-                <Button variant="outline" size="sm" className="border-amber-500 text-amber-700 hover:bg-amber-50" onClick={() => setReturnOpen(true)}>
-                  <RotateCcw className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Return to Assessor")}
-                </Button>
+                {assessment.status === "In-Progress(approver)" && (
+                  <>
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleApprove} disabled={actionSaving}>
+                      {actionSaving ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1.5 rtl:ml-1.5" /> : <CheckCircle2 className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />}
+                      {t("Approve")}
+                    </Button>
+                    <Button variant="outline" size="sm" className="border-amber-500 text-amber-700 hover:bg-amber-50" onClick={() => setReturnOpen(true)}>
+                      <RotateCcw className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Return to Assessor")}
+                    </Button>
+                  </>
+                )}
                 <Button variant="outline" size="sm" onClick={() => setReportOpen(false)}>{t("Close")}</Button>
               </>
             ) : (
@@ -1734,9 +1742,11 @@ export default function ASRAssessmentDetailPage() {
                 <Button variant="outline" size="sm" onClick={handleDownloadReport}>
                   <Download className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Download Report")}
                 </Button>
-                <Button size="sm" onClick={() => { setReportOpen(false); openSendToApprover(); }}>
-                  <UserCheck className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Complete Assessment")}
-                </Button>
+                {assessment.status !== "In-Progress(approver)" && assessment.status !== "Approved" && (
+                  <Button size="sm" onClick={() => { setReportOpen(false); openSendToApprover(); }}>
+                    <UserCheck className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Complete Assessment")}
+                  </Button>
+                )}
               </>
             )}
           </div>
