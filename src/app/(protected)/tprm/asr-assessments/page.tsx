@@ -25,6 +25,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2, Eye, RotateCcw, Home, ChevronRight, UserPlus } from "lucide-react";
+import { useHasRole } from "@/hooks/usePermissions";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface AssessmentItem {
@@ -39,6 +40,7 @@ interface AssessmentItem {
   vendor: { id: string; name: string; vendorCode: string; serviceCategory: string | null };
   initiatedBy: { id: string; fullName: string } | null;
   assessor: { id: string; fullName: string } | null;
+  approver: { id: string; fullName: string } | null;
 }
 
 interface Assessor {
@@ -84,6 +86,7 @@ export default function AsrAssessmentsPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "my-queue";
 
+  const isApprover = useHasRole("TPRMApprover");
   const [activeTab, setActiveTab] = useState(TAB_MAP[initialTab] || "my-queue");
   const [subTab, setSubTab] = useState("main");
   const [items, setItems] = useState<AssessmentItem[]>([]);
@@ -187,7 +190,10 @@ export default function AsrAssessmentsPage() {
 
     // My Queue: assessments assigned to the current user with active statuses
     if (activeTab === "my-queue") {
-      if (subTab === "reassessment") {
+      if (isApprover) {
+        // Approver's queue: assessments sent to me for approval
+        data = data.filter((i) => i.approver?.id === currentUserId && i.status === "In_Progress_approver_");
+      } else if (subTab === "reassessment") {
         data = data.filter((i) => i.assessor?.id === currentUserId && i.assessmentType === "Reassessment");
       } else if (subTab === "returned") {
         data = data.filter((i) => i.assessor?.id === currentUserId && (i.status === "Returned" || i.status === "Rejected"));
@@ -260,7 +266,7 @@ export default function AsrAssessmentsPage() {
     }
 
     return data;
-  }, [items, activeTab, subTab, search, dateFilter, currentUserId]);
+  }, [items, activeTab, subTab, search, dateFilter, currentUserId, isApprover]);
 
   // Determine if current sub-tab is "unassigned"
   const isUnassignedQueue = (activeTab === "due-diligence" || activeTab === "reassessments") && subTab === "unassigned";

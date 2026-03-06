@@ -20,9 +20,10 @@ import {
 import {
   Home, ArrowLeft, Eye, ChevronRight, ChevronDown,
   ShieldCheck, ShieldAlert, ShieldOff, Bot, MessageSquare,
-  FileText, Download, Flag, Send, Loader2, Clock, RefreshCw,
-  CheckCircle2, AlertTriangle, XCircle, ChevronLeft,
+  FileText, FileSpreadsheet, Download, Flag, Send, Loader2, Clock, RefreshCw,
+  CheckCircle2, AlertTriangle, XCircle, ChevronLeft, RotateCcw, UserCheck,
 } from "lucide-react";
+import { useHasRole } from "@/hooks/usePermissions";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -152,8 +153,10 @@ function AssessmentStatusBadge({ status }: { status: string }) {
       return <Badge className="bg-green-100 text-green-700">{status}</Badge>;
     case "Returned": case "Rejected":
       return <Badge className="bg-red-100 text-red-700">{status}</Badge>;
-    case "Submitted": case "Under Review":
-      return <Badge className="bg-blue-100 text-blue-700">{status}</Badge>;
+    case "Submitted": case "Under Review": case "In_Progress_approver_":
+      return <Badge className="bg-blue-100 text-blue-700">{status === "In_Progress_approver_" ? "In Progress (Approver)" : status}</Badge>;
+    case "In_Progress":
+      return <Badge className="bg-amber-100 text-amber-700">In Progress</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -216,6 +219,7 @@ export default function ASRAssessmentDetailPage() {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [responses, setResponses] = useState<Record<string, AssessmentResponse>>({});
+  const [monitoringScores, setMonitoringScores] = useState<{ overallScore: number | null; securityPostureScore: number | null; threatExposureScore: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // View state
@@ -232,7 +236,6 @@ export default function ASRAssessmentDetailPage() {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsScope, setLogsScope] = useState<"assessment" | "question">("assessment");
-  const [completeOpen, setCompleteOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportResult, setReportResult] = useState<string>("Satisfactory");
 
@@ -258,6 +261,17 @@ export default function ASRAssessmentDetailPage() {
   const [actionSaving, setActionSaving] = useState(false);
   const [rerunning, setRerunning] = useState(false);
   const [summaryTab, setSummaryTab] = useState<"assessment" | "domain">("assessment");
+  const [returnComment, setReturnComment] = useState("");
+  const [returnOpen, setReturnOpen] = useState(false);
+
+  // Send to Approver dialog
+  const [sendToApproverOpen, setSendToApproverOpen] = useState(false);
+  const [approvers, setApprovers] = useState<{ id: string; fullName: string; email: string }[]>([]);
+  const [selectedApproverId, setSelectedApproverId] = useState<string>("");
+  const [sendingToApprover, setSendingToApprover] = useState(false);
+
+  // Role detection — approver sees different buttons than assessor
+  const isApprover = useHasRole("TPRMApprover");
 
   // ── Load Data ──────────────────────────────────────────────────────────
 
@@ -270,6 +284,7 @@ export default function ASRAssessmentDetailPage() {
       setQuestions(data.questions);
       setDomains(data.domains);
       setSummary(data.summary);
+      setMonitoringScores(data.monitoringScores || null);
 
       // Build response map
       const respMap: Record<string, AssessmentResponse> = {};
@@ -478,25 +493,129 @@ export default function ASRAssessmentDetailPage() {
     }
   };
 
-  // ── Complete / Return ──────────────────────────────────────────────────
+  // ── Approve (Approver role) ───────────────────────────────────────────
 
-  const handleComplete = async () => {
+  const handleApprove = async () => {
     setActionSaving(true);
     try {
       const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "complete" }),
+        body: JSON.stringify({ action: "approve", assessmentResult: reportResult }),
       });
       if (!res.ok) throw new Error("Failed");
-      toast({ title: t("Success"), description: t("Assessment marked as Reviewed") });
-      setCompleteOpen(false);
+      toast({ title: t("Success"), description: t("Assessment approved") });
+      setReportOpen(false);
       loadAssessment();
     } catch {
-      toast({ title: t("Error"), description: t("Failed to complete"), variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to approve assessment"), variant: "destructive" });
     } finally {
       setActionSaving(false);
     }
+  };
+
+  // ── Return to Assessor (Approver role) ──────────────────────────────
+
+  const handleReturnToAssessor = async () => {
+    setActionSaving(true);
+    try {
+      const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "return_to_assessor", comment: returnComment }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast({ title: t("Success"), description: t("Assessment returned to assessor") });
+      setReturnOpen(false);
+      setReturnComment("");
+      setReportOpen(false);
+      loadAssessment();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to return assessment"), variant: "destructive" });
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
+  // ── Send to Approver (Assessor role) ──────────────────────────────────
+
+  const openSendToApprover = async () => {
+    setSendToApproverOpen(true);
+    setSelectedApproverId("");
+    try {
+      const res = await fetch("/api/tprm/asr-assessments/approvers");
+      if (res.ok) setApprovers(await res.json());
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to load approvers"), variant: "destructive" });
+    }
+  };
+
+  const handleSendToApprover = async () => {
+    if (!selectedApproverId) return;
+    setSendingToApprover(true);
+    try {
+      const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send_to_approver", approverId: selectedApproverId }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const approverName = approvers.find(a => a.id === selectedApproverId)?.fullName || "";
+      toast({ title: t("Success"), description: `${t("Assessment sent to approver")} ${approverName}` });
+      setSendToApproverOpen(false);
+      router.push("/tprm/asr-assessments");
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to send to approver"), variant: "destructive" });
+    } finally {
+      setSendingToApprover(false);
+    }
+  };
+
+  // ── Download Excel Report ───────────────────────────────────────────
+
+  const handleDownloadExcel = () => {
+    if (!assessment) return;
+
+    const issueRows = verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—");
+
+    const getDueBy = (severity: string) => {
+      const days = severity === "High" ? 60 : severity === "Medium" ? 50 : severity === "Low" ? 40 : 0;
+      if (!days) return "—";
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
+    };
+
+    // Build CSV content
+    const headers = ["Sr", "Issue", "Risk", "Severity", "Due By", "Recommendation"];
+    const rows = issueRows.map((row, idx) => [
+      idx + 1,
+      `"${(row.issue !== "—" ? row.issue : "").replace(/"/g, '""')}"`,
+      `"${(row.risk !== "—" ? row.risk : "").replace(/"/g, '""')}"`,
+      row.severity !== "—" ? row.severity : "",
+      getDueBy(row.severity !== "—" ? row.severity : ""),
+      `"${(row.recommendation !== "—" ? row.recommendation : "").replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent = [
+      `Assessment Report - ${assessment.vendor.name}`,
+      `Assessment Code: ${assessment.assessmentCode}`,
+      `Status: ${assessment.status}`,
+      `Vendor: ${assessment.vendor.name}`,
+      `Submission Date: ${assessment.vendorSubmissionDate ? new Date(assessment.vendorSubmissionDate).toLocaleDateString() : "—"}`,
+      `High: ${summary?.highCount || 0}, Medium: ${summary?.mediumCount || 0}, Low: ${summary?.lowCount || 0}`,
+      "",
+      headers.join(","),
+      ...rows.map(r => r.join(",")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Assessment_Report_${assessment.vendor.name}_${assessment.assessmentCode}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   // ── Re-run AI Evaluation ──────────────────────────────────────────────
@@ -542,6 +661,119 @@ export default function ASRAssessmentDetailPage() {
     }
   };
 
+  // ── Download Report as PDF ─────────────────────────────────────────────
+
+  const handleDownloadReport = () => {
+    if (!assessment) return;
+
+    const issueRows = verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—");
+
+    const getDueBy = (severity: string) => {
+      const days = severity === "High" ? 60 : severity === "Medium" ? 50 : severity === "Low" ? 40 : 0;
+      if (!days) return "—";
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
+    };
+
+    const today = new Date().toLocaleDateString("en-US");
+    const submissionDate = assessment.vendorSubmissionDate
+      ? new Date(assessment.vendorSubmissionDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-")
+      : "—";
+    const todayFmt = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
+
+    const tableRows = issueRows.map((row, idx) => `
+      <tr>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;width:40px;">${idx + 1}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${row.issue !== "—" ? row.issue : ""}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${row.risk !== "—" ? row.risk : ""}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;width:70px;">${row.severity !== "—" ? row.severity : ""}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;width:90px;white-space:nowrap;">${getDueBy(row.severity !== "—" ? row.severity : "")}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${row.recommendation !== "—" ? row.recommendation : ""}</td>
+      </tr>
+    `).join("");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Assessment Report - ${assessment.vendor.name}</title>
+  <style>
+    @page { margin: 40px 50px; size: A4; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #222; font-size: 11px; line-height: 1.5; margin: 0; padding: 0; }
+    table { border-collapse: collapse; width: 100%; }
+    .header { text-align: center; position: relative; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 2px solid #333; }
+    .header h1 { font-size: 24px; margin: 0; font-weight: bold; }
+    .header h2 { font-size: 20px; margin: 0; font-weight: bold; }
+    .verifai { position: absolute; top: 0; right: 0; font-size: 18px; font-weight: bold; }
+    .verifai span { color: #d4a017; }
+    .meta { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 11px; }
+    .summary { font-size: 11px; margin-bottom: 5px; }
+    .summary strong { font-weight: bold; }
+    .scores { font-size: 11px; margin-bottom: 15px; padding-left: 10px; }
+    .scores div { margin-bottom: 2px; }
+    .issue-table th { background-color: #f3f3f3; padding: 10px 8px; border: 1px solid #e0e0e0; text-align: left; font-size: 11px; font-weight: bold; }
+    .footer { margin-top: 30px; font-size: 11px; }
+    .footer-sign { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="verifai">Verif<span>AI</span></div>
+    <h1>Assessment Report</h1>
+    <h2>- ${assessment.vendor.name}</h2>
+  </div>
+  <div class="meta">
+    <span>${today}</span>
+    <span>Version: Draft</span>
+  </div>
+
+  <p class="summary">
+    <strong>Third Party Risk Management Team conducted a due diligence review of ${assessment.vendor.name} from ${submissionDate} till ${todayFmt}. The control environment was found to be:- &nbsp;${reportResult}</strong>
+  </p>
+  ${monitoringScores ? `<div class="scores">
+    <div>Overall Cybersecurity Score : ${monitoringScores.overallScore != null ? Math.round(monitoringScores.overallScore) : ""}</div>
+    <div>Security Posture Score : ${monitoringScores.securityPostureScore != null ? Math.round(monitoringScores.securityPostureScore) : ""}</div>
+    <div>Threat Exposure Score : ${monitoringScores.threatExposureScore != null ? Math.round(monitoringScores.threatExposureScore) : ""}</div>
+  </div>` : ""}
+
+  <table class="issue-table">
+    <thead>
+      <tr>
+        <th style="width:40px;">Sr</th>
+        <th>Issue</th>
+        <th>Risk</th>
+        <th style="width:70px;">Severity</th>
+        <th style="width:90px;">Due By</th>
+        <th>Recommendation</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows.length > 0 ? tableRows : '<tr><td colspan="6" style="padding:20px;text-align:center;border:1px solid #e0e0e0;">No issues found</td></tr>'}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <p>For any further questions or follow-ups on this report, please reach out to us.</p>
+    <p style="text-align:right;">Sincerely,<br/><strong>${assessment.vendor.name}</strong></p>
+  </div>
+
+  <div class="footer-sign">
+    <span>Prepared By : ${assessment.assessor?.fullName || "Assessor"}</span>
+    <span>Third Party Risk Management Team.</span>
+  </div>
+
+</body>
+</html>`;
+
+    const w = window.open("", "_blank");
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.onload = () => w.print();
+    }
+  };
+
   // ── Loading State ──────────────────────────────────────────────────────
 
   if (loading) {
@@ -579,13 +811,10 @@ export default function ASRAssessmentDetailPage() {
             <h1 className="text-xl font-semibold">{t("Assessment Summary")}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
-              {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
-              {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
-            </Button>
-            {(assessment.status === "Submitted" || assessment.status === "Under Review") && (
-              <Button variant="outline" size="sm" onClick={() => setCompleteOpen(true)}>
-                <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Mark as Reviewed")}
+            {!isApprover && (
+              <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
+                {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
+                {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
               </Button>
             )}
             <Button size="sm" onClick={() => { setView("detail"); setCurrentPage(0); setSelectedQuestionId(null); }}>
@@ -777,16 +1006,30 @@ export default function ASRAssessmentDetailPage() {
           </div>
         </Collapsible>
 
-        {/* Complete dialog */}
-        <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{t("Mark as Reviewed")}</DialogTitle></DialogHeader>
-            <p className="text-sm text-muted-foreground">{t("Are you sure you want to mark this assessment as reviewed?")}</p>
+        {/* Send to Approver dialog */}
+        <Dialog open={sendToApproverOpen} onOpenChange={setSendToApproverOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader><DialogTitle>{t("Complete Assessment")}</DialogTitle></DialogHeader>
+            <p className="text-sm text-muted-foreground">{t("Select an approver to send this assessment for final approval.")}</p>
+            <div>
+              <span className="text-sm font-medium block mb-2">{t("Approver")}</span>
+              <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
+                <SelectTrigger><SelectValue placeholder={t("Select an approver")} /></SelectTrigger>
+                <SelectContent>
+                  {approvers.map(a => (
+                    <SelectItem key={a.id} value={a.id}>{a.fullName} ({a.email})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {approvers.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-2">{t("No approvers found. Please add users with the TPRMApprover role.")}</p>
+              )}
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCompleteOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleComplete} disabled={actionSaving}>
-                {actionSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
-                {t("Confirm")}
+              <Button variant="outline" onClick={() => setSendToApproverOpen(false)}>{t("Cancel")}</Button>
+              <Button onClick={handleSendToApprover} disabled={sendingToApprover || !selectedApproverId}>
+                {sendingToApprover && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+                <Send className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Send to Approver")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -812,18 +1055,9 @@ export default function ASRAssessmentDetailPage() {
           <Button variant="outline" size="sm" onClick={() => { setLogsScope("assessment"); setLogsOpen(true); }}>
             <Clock className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Activity Logs")}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
-            {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
-            {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
-          </Button>
           <Button variant="outline" size="sm" onClick={() => setReportOpen(true)}>
             <FileText className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Generate Report")}
           </Button>
-          {(assessment.status === "Submitted" || assessment.status === "Under Review") && (
-            <Button size="sm" onClick={() => setCompleteOpen(true)}>
-              <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Mark as Reviewed")}
-            </Button>
-          )}
         </div>
       </div>
 
@@ -962,7 +1196,7 @@ export default function ASRAssessmentDetailPage() {
 
               {/* Action buttons — centered, filled style */}
               <div className="flex flex-wrap gap-2 pt-3 justify-center">
-                <Button size="sm" onClick={openOverride} disabled={assessment.status === "Reviewed"}>
+                <Button size="sm" onClick={openOverride} disabled={assessment.status === "Reviewed" || assessment.status === "Approved" || isApprover}>
                   {t("Override AI")}
                 </Button>
                 <Button size="sm" onClick={openClarification}>
@@ -1274,16 +1508,30 @@ export default function ASRAssessmentDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Complete / Return dialogs (same as summary view) */}
-      <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{t("Mark as Reviewed")}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">{t("Are you sure you want to mark this assessment as reviewed?")}</p>
+      {/* Send to Approver dialog (detail view, same as summary) */}
+      <Dialog open={sendToApproverOpen} onOpenChange={setSendToApproverOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{t("Complete Assessment")}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{t("Select an approver to send this assessment for final approval.")}</p>
+          <div>
+            <span className="text-sm font-medium block mb-2">{t("Approver")}</span>
+            <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
+              <SelectTrigger><SelectValue placeholder={t("Select an approver")} /></SelectTrigger>
+              <SelectContent>
+                {approvers.map(a => (
+                  <SelectItem key={a.id} value={a.id}>{a.fullName} ({a.email})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {approvers.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-2">{t("No approvers found. Please add users with the TPRMApprover role.")}</p>
+            )}
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCompleteOpen(false)}>{t("Cancel")}</Button>
-            <Button onClick={handleComplete} disabled={actionSaving}>
-              {actionSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
-              {t("Confirm")}
+            <Button variant="outline" onClick={() => setSendToApproverOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleSendToApprover} disabled={sendingToApprover || !selectedApproverId}>
+              {sendingToApprover && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              <Send className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Send to Approver")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1291,103 +1539,201 @@ export default function ASRAssessmentDetailPage() {
 
       {/* Generate Report Dialog */}
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>
-        <DialogContent className="sm:max-w-[80vw] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{assessment.vendor.name}</span>
-              <span className="text-sm font-semibold text-primary">VerifAI</span>
-            </DialogTitle>
-          </DialogHeader>
-
-          {/* Summary text */}
-          <p className="text-sm">
-            {t("Third Party Risk Management Team conducted a due diligence review of")} <strong>{assessment.vendor.name}</strong> {t("from")} <strong>{assessment.vendorSubmissionDate ? new Date(assessment.vendorSubmissionDate).toLocaleDateString() : "—"}</strong> {t("till")} <strong>{new Date().toLocaleDateString()}</strong>.
-          </p>
-          <p className="text-sm text-muted-foreground">{t("The control environment was found to be:")}</p>
-
-          {/* Assessment Result radio */}
-          <div className="flex items-center gap-6 border rounded-lg p-4">
-            {["Satisfactory", "Unsatisfactory", "Deficient"].map(opt => (
-              <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="reportResult"
-                  checked={reportResult === opt}
-                  onChange={() => setReportResult(opt)}
-                  className="accent-primary"
-                />
-                <span className="text-sm">{t(opt)}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* Severity bar */}
-          <div className="border rounded-lg p-4">
-            <div className="grid grid-cols-3 text-center mb-2">
-              <div>
-                <span className="text-lg font-bold text-red-600">{summary?.highCount || 0}</span>
-                <p className="text-xs font-semibold text-red-600">{t("High")}</p>
+        <DialogContent className="sm:max-w-[85vw] max-h-[90vh] overflow-y-auto p-0" showCloseButton={false} accessibleTitle="Assessment Report">
+          {/* Report document area — styled like a PDF preview */}
+          <div className="bg-white dark:bg-background">
+            {/* Header with border bottom */}
+            <div className="px-8 pt-8 pb-4 border-b-2 border-foreground/80">
+              <div className="flex items-start justify-between">
+                <div className="text-center flex-1">
+                  <h1 className="text-2xl font-bold tracking-tight">{t("Assessment Report")}</h1>
+                  <h2 className="text-xl font-bold mt-0.5">- {assessment.vendor.name}</h2>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-lg font-bold">Verif<span className="text-amber-500">AI</span></span>
+                </div>
               </div>
-              <div>
-                <span className="text-lg font-bold text-amber-600">{summary?.mediumCount || 0}</span>
-                <p className="text-xs font-semibold text-amber-600">{t("Medium")}</p>
-              </div>
-              <div>
-                <span className="text-lg font-bold text-green-600">{summary?.lowCount || 0}</span>
-                <p className="text-xs font-semibold text-green-600">{t("Low")}</p>
+              <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+                <span>{new Date().toLocaleDateString()}</span>
+                <span>{t("Version")}: {t("Draft")}</span>
               </div>
             </div>
-            <div className="h-2 flex rounded-full overflow-hidden">
-              {totalSeverity > 0 ? (
-                <>
-                  <div className="bg-red-500 h-full" style={{ width: `${((summary?.highCount || 0) / totalSeverity) * 100}%` }} />
-                  <div className="bg-amber-500 h-full" style={{ width: `${((summary?.mediumCount || 0) / totalSeverity) * 100}%` }} />
-                  <div className="bg-green-500 h-full" style={{ width: `${((summary?.lowCount || 0) / totalSeverity) * 100}%` }} />
-                </>
-              ) : (
-                <div className="bg-muted h-full w-full" />
-              )}
-            </div>
-          </div>
 
-          {/* Issues table */}
-          <div className="border rounded-lg overflow-hidden">
-            <div className="grid grid-cols-[50px_1fr_1fr_90px_1fr] gap-0 bg-primary text-primary-foreground text-xs font-semibold px-4 py-2.5">
-              <span>{t("Sr.No")}</span>
-              <span>{t("Issue")}</span>
-              <span>{t("Risk")}</span>
-              <span>{t("Severity")}</span>
-              <span>{t("Recommendation")}</span>
-            </div>
-            <div className="divide-y">
-              {verifaiRows
-                .filter(row => row.issue !== "—" || row.risk !== "—")
-                .map((row, idx) => (
-                  <div key={row.questionNo} className="grid grid-cols-[50px_1fr_1fr_90px_1fr] gap-0 px-4 py-3 text-sm items-start">
-                    <span className="font-medium">{idx + 1}</span>
-                    <span className="pr-3 leading-relaxed">{row.issue !== "—" ? row.issue : ""}</span>
-                    <span className="pr-3 leading-relaxed text-muted-foreground">{row.risk !== "—" ? row.risk : ""}</span>
-                    <span><SeverityBadge severity={row.severity !== "—" ? row.severity : null} /></span>
-                    <span className="pr-3 leading-relaxed text-muted-foreground">{row.recommendation !== "—" ? row.recommendation : ""}</span>
-                  </div>
+            {/* Body content */}
+            <div className="px-8 py-5 space-y-5">
+              {/* Summary paragraph */}
+              <p className="text-sm leading-relaxed">
+                <strong>
+                  {t("Third Party Risk Management Team conducted a due diligence review of")} {assessment.vendor.name} {t("from")} {assessment.vendorSubmissionDate ? new Date(assessment.vendorSubmissionDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-") : "—"} {t("till")} {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-")}. {t("The control environment was found to be:")}
+                </strong>
+              </p>
+
+              {/* Assessment Result radio — inline with summary feel */}
+              <div className="flex items-center gap-8 pl-2">
+                {["Satisfactory", "Unsatisfactory", "Deficient"].map(opt => (
+                  <label key={opt} className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="reportResultRadio"
+                      value={opt}
+                      checked={reportResult === opt}
+                      onChange={() => setReportResult(opt)}
+                      className="accent-primary w-4 h-4 cursor-pointer"
+                    />
+                    <span className={`text-sm ${reportResult === opt ? "font-semibold" : ""}`}>{t(opt)}</span>
+                  </label>
                 ))}
-              {verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—").length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">{t("No issues found")}</p>
+              </div>
+
+              {/* Monitoring Scores — only shown if monitoring data exists */}
+              {monitoringScores && (
+                <div className="text-sm space-y-0.5 pl-2">
+                  <p className="text-muted-foreground">{t("Overall Cybersecurity Score")} : {monitoringScores.overallScore != null ? <span className="font-semibold text-foreground">{Math.round(monitoringScores.overallScore)}</span> : ""}</p>
+                  <p className="text-muted-foreground">{t("Security Posture Score")} : {monitoringScores.securityPostureScore != null ? <span className="font-semibold text-foreground">{Math.round(monitoringScores.securityPostureScore)}</span> : ""}</p>
+                  <p className="text-muted-foreground">{t("Threat Exposure Score")} : {monitoringScores.threatExposureScore != null ? <span className="font-semibold text-foreground">{Math.round(monitoringScores.threatExposureScore)}</span> : ""}</p>
+                </div>
               )}
+
+              {/* Severity summary bar */}
+              <div className="border rounded-lg p-4">
+                <div className="grid grid-cols-3 text-center mb-3">
+                  <div>
+                    <span className="text-2xl font-bold text-red-600">{summary?.highCount || 0}</span>
+                    <p className="text-xs font-semibold text-red-600 mt-0.5">{t("High")}</p>
+                  </div>
+                  <div>
+                    <span className="text-2xl font-bold text-amber-600">{summary?.mediumCount || 0}</span>
+                    <p className="text-xs font-semibold text-amber-600 mt-0.5">{t("Medium")}</p>
+                  </div>
+                  <div>
+                    <span className="text-2xl font-bold text-green-600">{summary?.lowCount || 0}</span>
+                    <p className="text-xs font-semibold text-green-600 mt-0.5">{t("Low")}</p>
+                  </div>
+                </div>
+                <div className="h-3 flex rounded-full overflow-hidden">
+                  {totalSeverity > 0 ? (
+                    <>
+                      <div className="bg-red-500 h-full transition-all" style={{ width: `${((summary?.highCount || 0) / totalSeverity) * 100}%` }} />
+                      <div className="bg-amber-500 h-full transition-all" style={{ width: `${((summary?.mediumCount || 0) / totalSeverity) * 100}%` }} />
+                      <div className="bg-green-500 h-full transition-all" style={{ width: `${((summary?.lowCount || 0) / totalSeverity) * 100}%` }} />
+                    </>
+                  ) : (
+                    <div className="bg-muted h-full w-full" />
+                  )}
+                </div>
+              </div>
+
+              {/* Issues table — clean bordered table style matching PDF */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-muted/60">
+                      <th className="border border-border/60 px-3 py-2.5 text-left font-semibold w-[45px]">{t("Sr")}</th>
+                      <th className="border border-border/60 px-3 py-2.5 text-left font-semibold">{t("Issue")}</th>
+                      <th className="border border-border/60 px-3 py-2.5 text-left font-semibold">{t("Risk")}</th>
+                      <th className="border border-border/60 px-3 py-2.5 text-left font-semibold w-[80px]">{t("Severity")}</th>
+                      <th className="border border-border/60 px-3 py-2.5 text-left font-semibold w-[95px]">{t("Due By")}</th>
+                      <th className="border border-border/60 px-3 py-2.5 text-left font-semibold">{t("Recommendation")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {verifaiRows
+                      .filter(row => row.issue !== "—" || row.risk !== "—")
+                      .map((row, idx) => {
+                        const dueDays = row.severity === "High" ? 60 : row.severity === "Medium" ? 50 : row.severity === "Low" ? 40 : 0;
+                        const dueDate = new Date(); if (dueDays) dueDate.setDate(dueDate.getDate() + dueDays);
+                        const dueBy = dueDays ? dueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-") : "—";
+                        return (
+                          <tr key={row.questionNo} className="align-top">
+                            <td className="border border-border/60 px-3 py-2.5">{idx + 1}</td>
+                            <td className="border border-border/60 px-3 py-2.5">{row.issue !== "—" ? row.issue : ""}</td>
+                            <td className="border border-border/60 px-3 py-2.5 text-muted-foreground">{row.risk !== "—" ? row.risk : ""}</td>
+                            <td className="border border-border/60 px-3 py-2.5">{row.severity !== "—" ? row.severity : ""}</td>
+                            <td className="border border-border/60 px-3 py-2.5 whitespace-nowrap">{dueBy}</td>
+                            <td className="border border-border/60 px-3 py-2.5 text-muted-foreground">{row.recommendation !== "—" ? row.recommendation : ""}</td>
+                          </tr>
+                        );
+                      })}
+                    {verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—").length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="border border-border/60 px-3 py-8 text-center text-muted-foreground">{t("No issues found")}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer text */}
+              <div className="pt-4 space-y-4 text-sm">
+                <p>{t("For any further questions or follow-ups on this report, please reach out to us.")}</p>
+                <div className="text-right">
+                  <p>{t("Sincerely,")}</p>
+                  <p className="font-bold">{assessment.vendor.name}</p>
+                </div>
+              </div>
+
+              {/* Prepared By / Team line */}
+              <div className="flex items-center justify-between pt-2 border-t text-sm text-muted-foreground">
+                <span>{t("Prepared By")} : {assessment.assessor?.fullName || t("Assessor")}</span>
+                <span>{t("Third Party Risk Management Team.")}</span>
+              </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="text-sm pt-2">
-            <p>{t("Sincerely,")}</p>
-            <p className="font-semibold">{t("Third Party Risk Management Team.")}</p>
+          {/* Action bar — sticky at bottom */}
+          <div className="sticky bottom-0 bg-muted/50 backdrop-blur-sm border-t px-8 py-3 flex items-center justify-end gap-3">
+            {isApprover ? (
+              <>
+                <Button variant="outline" size="sm" onClick={handleDownloadReport}>
+                  <Download className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Download PDF Report")}
+                </Button>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleApprove} disabled={actionSaving}>
+                  {actionSaving ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1.5 rtl:ml-1.5" /> : <CheckCircle2 className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />}
+                  {t("Approve")}
+                </Button>
+                <Button variant="outline" size="sm" className="border-amber-500 text-amber-700 hover:bg-amber-50" onClick={() => setReturnOpen(true)}>
+                  <RotateCcw className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Return to Assessor")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setReportOpen(false)}>{t("Close")}</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setReportOpen(false)}>{t("Close")}</Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadExcel}>
+                  <FileSpreadsheet className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Download Excel Report")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadReport}>
+                  <Download className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Download Report")}
+                </Button>
+                <Button size="sm" onClick={() => { setReportOpen(false); openSendToApprover(); }}>
+                  <UserCheck className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Complete Assessment")}
+                </Button>
+              </>
+            )}
           </div>
+        </DialogContent>
+      </Dialog>
 
-          {/* Action buttons */}
-          <DialogFooter className="flex-wrap gap-2">
-            <Button variant="outline" onClick={() => window.print()}>{t("Download Report")}</Button>
-            <Button onClick={() => { setReportOpen(false); setCompleteOpen(true); }}>{t("Complete Assessment")}</Button>
-            <Button variant="outline" onClick={() => setReportOpen(false)}>{t("Close")}</Button>
+      {/* Return to Assessor Dialog (Approver only) */}
+      <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t("Return to Assessor")}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{t("This will return the assessment back to the assessor for further review.")}</p>
+          <div>
+            <span className="text-sm font-medium block mb-1">{t("Comment")}</span>
+            <Textarea
+              value={returnComment}
+              onChange={e => setReturnComment(e.target.value)}
+              placeholder={t("Reason for returning (optional)...")}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReturnOpen(false)}>{t("Cancel")}</Button>
+            <Button className="bg-amber-600 hover:bg-amber-700" onClick={handleReturnToAssessor} disabled={actionSaving}>
+              {actionSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              <RotateCcw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Return to Assessor")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

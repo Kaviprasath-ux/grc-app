@@ -16,9 +16,9 @@ export const POST = withAuth(
       const { action, comment } = body;
       console.log(`[ASR] POST /asr-assessments/${id}/complete — user=${session.email} action=${action}`);
 
-      if (!action || !['complete', 'return'].includes(action)) {
+      if (!action || !['complete', 'return', 'approve', 'return_to_assessor', 'send_to_approver'].includes(action)) {
         console.warn(`[ASR] POST /asr-assessments/${id}/complete — 400 invalid action="${action}"`);
-        return NextResponse.json({ error: 'Invalid action. Use "complete" or "return".' }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid action.' }, { status: 400 });
       }
 
       const assessment = await prisma.tPRMAssessment.findFirst({
@@ -32,10 +32,30 @@ export const POST = withAuth(
       const updateData: Record<string, unknown> = {};
       let logMessage = '';
 
-      if (action === 'complete') {
+      if (action === 'send_to_approver') {
+        const { approverId } = body;
+        if (!approverId) {
+          return NextResponse.json({ error: 'Approver is required' }, { status: 400 });
+        }
+        updateData.status = 'In_Progress_approver_';
+        updateData.approverId = approverId;
+        updateData.assessorCompletionDate = new Date();
+        // Look up approver name for log
+        const approverUser = await prisma.user.findUnique({ where: { id: approverId }, select: { fullName: true } });
+        logMessage = `Assessment sent to approver ${approverUser?.fullName || approverId} by ${session.name || session.email}`;
+      } else if (action === 'complete') {
         updateData.status = 'Reviewed';
         updateData.assessorCompletionDate = new Date();
         logMessage = 'Assessment marked as Reviewed by assessor';
+      } else if (action === 'approve') {
+        updateData.status = 'Approved';
+        updateData.approvalDate = new Date();
+        updateData.assessmentResult = body.assessmentResult || null;
+        logMessage = `Assessment approved by ${session.name || session.email}`;
+      } else if (action === 'return_to_assessor') {
+        updateData.status = 'In_Progress';
+        updateData.approverComment = comment || '';
+        logMessage = `Assessment returned to assessor by ${session.name || session.email}: ${comment || 'No comment'}`;
       } else {
         updateData.status = 'Returned';
         updateData.approverComment = comment || '';

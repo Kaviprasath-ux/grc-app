@@ -17,7 +17,28 @@ export const GET = withAuth(
       const assessment = await prisma.tPRMAssessment.findFirst({
         where: { id, customerAccountId },
         include: {
-          vendor: { select: { id: true, name: true, vendorCode: true, accountManagerEmail: true } },
+          vendor: {
+            select: {
+              id: true, name: true, vendorCode: true, accountManagerEmail: true,
+              monitoringVendor: {
+                select: {
+                  id: true,
+                  assessments: {
+                    where: { isLatest: true },
+                    take: 1,
+                    select: {
+                      overallScore: true,
+                      securityPostureScore: true,
+                      threatExposureScore: true,
+                      calculatedOverallScore: true,
+                      calculatedSecurityPosture: true,
+                      calculatedThreatExposure: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           initiatedBy: { select: { id: true, fullName: true } },
           assessor: { select: { id: true, fullName: true } },
           approver: { select: { id: true, fullName: true } },
@@ -105,8 +126,16 @@ export const GET = withAuth(
         totalResponses: resps.length,
       };
 
-      console.log(`[ASR] GET /asr-assessments/${id} — OK, code=${assessment.assessmentCode} vendor=${assessment.vendor?.name} responses=${resps.length} satisfactory=${satisfactoryCount} unsatisfactory=${unsatisfactoryCount} questions=${questions.length}`);
-      return NextResponse.json({ assessment, questions, domains, summary });
+      // Extract monitoring scores from vendor's linked monitoring data
+      const latestMonitoring = (assessment.vendor as Record<string, unknown> & { monitoringVendor?: { assessments?: Record<string, unknown>[] } })?.monitoringVendor?.assessments?.[0];
+      const monitoringScores = latestMonitoring ? {
+        overallScore: latestMonitoring.calculatedOverallScore ?? latestMonitoring.overallScore ?? null,
+        securityPostureScore: latestMonitoring.calculatedSecurityPosture ?? latestMonitoring.securityPostureScore ?? null,
+        threatExposureScore: latestMonitoring.calculatedThreatExposure ?? latestMonitoring.threatExposureScore ?? null,
+      } : null;
+
+      console.log(`[ASR] GET /asr-assessments/${id} — OK, code=${assessment.assessmentCode} vendor=${assessment.vendor?.name} responses=${resps.length} satisfactory=${satisfactoryCount} unsatisfactory=${unsatisfactoryCount} questions=${questions.length} monitoring=${!!monitoringScores}`);
+      return NextResponse.json({ assessment, questions, domains, summary, monitoringScores });
     } catch (error) {
       console.error(`[ASR] GET /asr-assessments — FAILED user=${session.email}`, error);
       return NextResponse.json({ error: 'Failed to fetch assessment' }, { status: 500 });

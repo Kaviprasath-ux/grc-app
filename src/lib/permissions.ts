@@ -599,10 +599,18 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.asr-factory-reports', actions: ['*'], scope: 'all' },
   ],
 
-  // TPRM Approver - Assessment Workspace + Task Queue (review/approve)
+  // TPRM Approver - Same workspace as Assessor (no task-queue/assessments workspace)
   TPRMApprover: [
-    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-inventory', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-monitoring', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-follow-ups', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-issue-register', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-assessment-factory', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-template', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-support', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-factory-reports', actions: ['*'], scope: 'all' },
   ],
 
   // TPRM Auditor - Assessment Workspace + Task Queue (audit)
