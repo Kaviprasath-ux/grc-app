@@ -125,21 +125,6 @@ async function aiRequest(
 
   console.log(`[TPRM-AI] ${endpoint} => ${response.status} (${latency}ms)`);
 
-  // Log to TPRMAssessmentLog
-  await prisma.tPRMAssessmentLog.create({
-    data: {
-      customerAccountId: ctx.customerAccountId,
-      assessmentId: ctx.assessmentId,
-      domainName: logDetails.domainName || null,
-      questionNo: logDetails.questionNo || null,
-      questionTitle: logDetails.questionTitle || null,
-      logDate: new Date(),
-      logMessage: `AI API ${endpoint} => ${response.status} (${latency}ms)`,
-      apiUrl: url,
-      documentName: logDetails.documentName || null,
-    },
-  }).catch(err => console.error('[TPRM-AI] Failed to write log:', err));
-
   if (!response.ok) {
     throw new Error(`AI API ${endpoint} returned ${response.status}: ${JSON.stringify(data)}`);
   }
@@ -271,7 +256,7 @@ async function evaluateResponse(
       const imageFormData = new FormData();
       const buffer = fs.readFileSync(absolutePath);
       const blob = new Blob([buffer]);
-      imageFormData.append('file', blob, resp.artifactName || 'image.png');
+      imageFormData.append('image', blob, resp.artifactName || 'image.png');
 
       const endpoint = `${AI_ENDPOINTS.TPRM_IMAGE}?prompt=${encodeURIComponent(prompt)}`;
 
@@ -291,10 +276,29 @@ async function evaluateResponse(
       updateData.poScore = typeof aiData.score === 'number' ? aiData.score : parseFloat(String(aiData.score || '0'));
       updateData.poStatus = normalizeStatus(String(aiData.status || 'Satisfactory'));
       updateData.poAnswer = String(aiData.answer || aiData.response || '');
-      updateData.poIssue = null;
-      updateData.poRisk = null;
-      updateData.poRecommendation = null;
-      updateData.poSeverity = null;
+
+      // Try to extract issue/risk/recommendation from image response
+      if (aiData.issue_risk_recommendation && typeof aiData.issue_risk_recommendation === 'object') {
+        const irr = aiData.issue_risk_recommendation as Record<string, string>;
+        updateData.poIssue = irr.issue || null;
+        updateData.poRisk = irr.risk || null;
+        updateData.poRecommendation = irr.recommendation || null;
+      } else {
+        updateData.poIssue = String(aiData.issue || '') || null;
+        updateData.poRisk = String(aiData.risk || '') || null;
+        updateData.poRecommendation = String(aiData.recommendation || '') || null;
+      }
+      const rawImgSeverity = String(aiData.severity || '').trim();
+      updateData.poSeverity = rawImgSeverity ? rawImgSeverity.charAt(0).toUpperCase() + rawImgSeverity.slice(1).toLowerCase() : null;
+
+      // Fall back to template question's issue/risk/recommendation/severity
+      const imgStatus = String(updateData.poStatus).toLowerCase();
+      if (imgStatus === 'unsatisfactory') {
+        if (!updateData.poIssue) updateData.poIssue = questionMeta.issue || null;
+        if (!updateData.poRisk) updateData.poRisk = questionMeta.risk || null;
+        if (!updateData.poRecommendation) updateData.poRecommendation = questionMeta.recommendation || null;
+        if (!updateData.poSeverity) updateData.poSeverity = questionMeta.severity || null;
+      }
     }
     // --- Yes + no image → api/query (AI validates the response against ingested docs) ---
     else if (answer === 'Yes') {
@@ -352,7 +356,7 @@ async function evaluateResponse(
   } catch (error) {
     console.error(`[TPRM-AI] Error evaluating question ${questionMeta.id}:`, error);
     updateData.poStatus = 'Failed';
-    updateData.poAnswer = error instanceof Error ? error.message : 'AI evaluation failed';
+    updateData.poAnswer = 'AI evaluation could not be completed for this question. Please re-evaluate.';
 
     // Log the error
     await prisma.tPRMAssessmentLog.create({
@@ -362,7 +366,7 @@ async function evaluateResponse(
         domainName: questionMeta.domainName || null,
         questionTitle: questionMeta.questionText.substring(0, 100),
         logDate: new Date(),
-        logMessage: `AI evaluation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        logMessage: `AI evaluation failed for this question`,
       },
     }).catch(() => {});
   }
@@ -509,7 +513,7 @@ export async function runAIEvaluation(ctx: EvaluationContext): Promise<void> {
           customerAccountId: ctx.customerAccountId,
           assessmentId: ctx.assessmentId,
           logDate: new Date(),
-          logMessage: `Document ingest warning: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          logMessage: `Document ingest encountered an issue`,
         },
       }).catch(() => {});
     }

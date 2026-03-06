@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -177,22 +176,27 @@ function PieChart({ data, title }: { data: { label: string; value: number; color
   const gradientParts = segments.map(s => `${s.color} ${s.start}% ${s.start + s.percent}%`);
   const gradient = `conic-gradient(${gradientParts.join(", ")})`;
 
+  // Find the dominant segment to show its percentage
+  const dominant = segments.length > 0 ? segments.reduce((a, b) => a.percent > b.percent ? a : b) : null;
+
   return (
     <div className="flex flex-col items-center gap-3">
-      <h4 className="font-medium text-sm">{title}</h4>
-      <div className="relative w-32 h-32 rounded-full" style={{ background: gradient }}>
-        <div className="absolute inset-4 bg-background rounded-full flex items-center justify-center">
-          <span className="text-lg font-bold">{total}</span>
+      {title && <h4 className="font-medium text-sm">{title}</h4>}
+      <div className="relative w-44 h-44 rounded-full" style={{ background: gradient }}>
+        <div className="absolute inset-6 bg-background rounded-full flex items-center justify-center">
+          <span className="text-lg font-bold">{dominant ? `${Math.round(dominant.percent)}%` : "0%"}</span>
         </div>
       </div>
-      <div className="flex flex-wrap gap-3 justify-center">
-        {data.map(d => (
-          <div key={d.label} className="flex items-center gap-1.5 text-xs">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: d.color }} />
-            <span>{d.label}: {d.value} ({total > 0 ? Math.round((d.value / total) * 100) : 0}%)</span>
-          </div>
-        ))}
-      </div>
+      {title && (
+        <div className="flex flex-wrap gap-3 justify-center">
+          {data.map(d => (
+            <div key={d.label} className="flex items-center gap-1.5 text-xs">
+              <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: d.color }} />
+              <span>{d.label}: {d.value} ({total > 0 ? Math.round((d.value / total) * 100) : 0}%)</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -250,6 +254,7 @@ export default function ASRAssessmentDetailPage() {
 
   const [actionSaving, setActionSaving] = useState(false);
   const [rerunning, setRerunning] = useState(false);
+  const [summaryTab, setSummaryTab] = useState<"assessment" | "domain">("assessment");
 
   // ── Load Data ──────────────────────────────────────────────────────────
 
@@ -555,222 +560,221 @@ export default function ASRAssessmentDetailPage() {
     );
   }
 
+  const totalSeverity = (summary?.highCount || 0) + (summary?.mediumCount || 0) + (summary?.lowCount || 0);
+
   // ── RENDER: Summary View ─────────────────────────────────────────────
 
   if (view === "summary") {
     return (
-      <div className="space-y-6">
-        {/* Breadcrumb & header */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Home className="h-4 w-4" />
-          <ChevronRight className="h-3 w-3" />
-          <span className="cursor-pointer hover:underline" onClick={() => router.push("/tprm/asr-assessments")}>{t("Assessments")}</span>
-          <ChevronRight className="h-3 w-3" />
-          <span className="font-medium text-foreground">{assessment.assessmentCode}</span>
-        </div>
-
+      <div className="space-y-5">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => router.push("/tprm/asr-assessments")}>
+            <Button size="sm" onClick={() => router.push("/tprm/asr-assessments")}>
               <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Back")}
             </Button>
-            <h1 className="text-2xl font-bold">{t("Assessment Summary")}</h1>
+            <h1 className="text-xl font-semibold">{t("Assessment Summary")}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleRerunAI} disabled={rerunning}>
+            <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
               {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
               {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
             </Button>
             {(assessment.status === "Submitted" || assessment.status === "Under Review") && (
-              <Button onClick={() => setCompleteOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setCompleteOpen(true)}>
                 <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Mark as Reviewed")}
               </Button>
             )}
-            <Button onClick={() => { setView("detail"); setCurrentPage(0); setSelectedQuestionId(null); }}>
-              <FileText className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Detailed Assessment")}
+            <Button size="sm" onClick={() => { setView("detail"); setCurrentPage(0); setSelectedQuestionId(null); }}>
+              {t("Detailed Assessment")}
             </Button>
           </div>
         </div>
 
-        {/* Info bar */}
-        <Card>
-          <CardContent className="py-4 flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-4">
-              <span className="font-medium">{assessment.vendor.name}</span>
-              <span className="text-sm text-muted-foreground">{assessment.assessmentCode}</span>
-              <span className="text-sm text-muted-foreground">{assessment.assessmentType}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <AssessmentStatusBadge status={assessment.status} />
-              {assessment.vendorSubmissionDate && (
-                <span className="text-xs text-muted-foreground">
-                  {t("Submitted")}: {new Date(assessment.vendorSubmissionDate).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Info banner */}
+        <div className="bg-primary text-primary-foreground rounded-lg px-6 py-3 flex items-center justify-between">
+          <span className="font-medium">{t("Vendor")}:<span className="ltr:ml-1 rtl:mr-1">{assessment.vendor.name}</span></span>
+          <span className="font-medium">{t("VerifAI Summary")}</span>
+          <span className="text-sm">{t("Status")}: <span className="font-medium">{assessment.status}</span></span>
+        </div>
 
-        {/* Summary tabs */}
-        <Tabs defaultValue="assessment">
-          <TabsList>
-            <TabsTrigger value="assessment">{t("Assessment Summary")}</TabsTrigger>
-            <TabsTrigger value="domain">{t("Domain Summary")}</TabsTrigger>
-          </TabsList>
+        {/* Tab buttons — full width, two equal columns */}
+        <div className="grid grid-cols-2 gap-0">
+          <button
+            onClick={() => setSummaryTab("assessment")}
+            className={`py-2.5 text-sm font-semibold text-center rounded-l-lg transition-colors ${summaryTab === "assessment" ? "bg-primary text-primary-foreground" : "bg-background text-primary border border-primary/30 hover:bg-primary/5"}`}
+          >
+            {t("Assessment Summary")}
+          </button>
+          <button
+            onClick={() => setSummaryTab("domain")}
+            className={`py-2.5 text-sm font-semibold text-center rounded-r-lg transition-colors ${summaryTab === "domain" ? "bg-primary text-primary-foreground" : "bg-background text-primary border border-primary/30 hover:bg-primary/5"}`}
+          >
+            {t("Domain Summary")}
+          </button>
+        </div>
 
-          <TabsContent value="assessment">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Pie Charts */}
-              <Card>
-                <CardContent className="pt-6">
-                  <PieChart
-                    title={t("Response Distribution")}
-                    data={[
-                      { label: t("Yes"), value: summary?.yesCount || 0, color: "#22c55e" },
-                      { label: t("No"), value: summary?.noCount || 0, color: "#ef4444" },
-                      { label: t("N/A"), value: summary?.naCount || 0, color: "#94a3b8" },
-                    ]}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <PieChart
-                    title={t("Compliance Status")}
-                    data={[
-                      { label: t("Satisfactory"), value: summary?.satisfactoryCount || 0, color: "#22c55e" },
-                      { label: t("Unsatisfactory"), value: summary?.unsatisfactoryCount || 0, color: "#ef4444" },
-                    ]}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Severity Counts */}
-              <Card>
-                <CardHeader><CardTitle className="text-sm">{t("Severity Distribution")}</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-sm bg-red-500" />
-                        <span className="text-sm">{t("High")}</span>
-                      </div>
-                      <span className="font-bold text-red-600">{summary?.highCount || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-sm bg-amber-500" />
-                        <span className="text-sm">{t("Medium")}</span>
-                      </div>
-                      <span className="font-bold text-amber-600">{summary?.mediumCount || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-sm bg-blue-500" />
-                        <span className="text-sm">{t("Low")}</span>
-                      </div>
-                      <span className="font-bold text-blue-600">{summary?.lowCount || 0}</span>
-                    </div>
+        {summaryTab === "assessment" && (
+          <>
+            {/* Legends row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {[
+                  { label: t("Yes"), color: "#14b8a6" },
+                  { label: t("No"), color: "#ef4444" },
+                  { label: t("NA"), color: "#d1d5db" },
+                ].map(l => (
+                  <div key={l.label} className="flex items-center gap-1.5 text-xs">
+                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: l.color }} />
+                    <span>{l.label}</span>
                   </div>
-                </CardContent>
-              </Card>
+                ))}
+              </div>
+              <div className="flex items-center gap-4">
+                {[
+                  { label: t("Satisfactory"), color: "#14b8a6" },
+                  { label: t("Unsatisfactory"), color: "#f87171" },
+                ].map(l => (
+                  <div key={l.label} className="flex items-center gap-1.5 text-xs">
+                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: l.color }} />
+                    <span>{l.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="domain">
-            <Card>
-              <CardContent className="pt-6">
-                {/* Domain bar chart */}
-                <div className="space-y-3">
-                  {domains.map(domain => {
-                    const domainResps = flatQuestions.filter(fq => fq.domainId === domain.id);
-                    const total = domainResps.length;
-                    const unsat = domainResps.filter(fq => {
-                      const r = responses[fq.question.id];
-                      return r && (r.assessorStatus || r.poStatus) === "Unsatisfactory";
-                    }).length;
-                    const pct = total > 0 ? Math.round((unsat / total) * 100) : 0;
-                    return (
-                      <div key={domain.id} className="flex items-center gap-3">
-                        <span className="w-40 text-sm truncate" title={domain.name}>{domain.name}</span>
-                        <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
-                          <div className="h-full bg-red-400 rounded" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="text-sm font-medium w-12 text-right">{pct}%</span>
-                      </div>
-                    );
-                  })}
+            {/* Two large pie charts side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="flex flex-col items-center">
+                <PieChart
+                  title=""
+                  data={[
+                    { label: t("Yes"), value: summary?.yesCount || 0, color: "#14b8a6" },
+                    { label: t("No"), value: summary?.noCount || 0, color: "#ef4444" },
+                    { label: t("N/A"), value: summary?.naCount || 0, color: "#d1d5db" },
+                  ]}
+                />
+                <p className="text-xs font-semibold text-muted-foreground mt-3 uppercase tracking-wider">{t("RESPONSE")}</p>
+              </div>
+              <div className="flex flex-col items-center">
+                <PieChart
+                  title=""
+                  data={[
+                    { label: t("Satisfactory"), value: summary?.satisfactoryCount || 0, color: "#14b8a6" },
+                    { label: t("Unsatisfactory"), value: summary?.unsatisfactoryCount || 0, color: "#f87171" },
+                  ]}
+                />
+                <p className="text-xs font-semibold text-muted-foreground mt-3 uppercase tracking-wider">{t("COMPLIANCE")}</p>
+              </div>
+            </div>
+
+            {/* Severity horizontal bar */}
+            <div className="border rounded-lg p-4">
+              <div className="grid grid-cols-3 text-center mb-2">
+                <div>
+                  <span className="text-lg font-bold text-red-600">{summary?.highCount || 0}</span>
+                  <p className="text-xs font-semibold text-red-600">{t("High")}</p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <div>
+                  <span className="text-lg font-bold text-amber-600">{summary?.mediumCount || 0}</span>
+                  <p className="text-xs font-semibold text-amber-600">{t("Medium")}</p>
+                </div>
+                <div>
+                  <span className="text-lg font-bold text-green-600">{summary?.lowCount || 0}</span>
+                  <p className="text-xs font-semibold text-green-600">{t("Low")}</p>
+                </div>
+              </div>
+              <div className="h-2 flex rounded-full overflow-hidden">
+                {totalSeverity > 0 ? (
+                  <>
+                    <div className="bg-red-500 h-full" style={{ width: `${((summary?.highCount || 0) / totalSeverity) * 100}%` }} />
+                    <div className="bg-amber-500 h-full" style={{ width: `${((summary?.mediumCount || 0) / totalSeverity) * 100}%` }} />
+                    <div className="bg-green-500 h-full" style={{ width: `${((summary?.lowCount || 0) / totalSeverity) * 100}%` }} />
+                  </>
+                ) : (
+                  <div className="bg-muted h-full w-full" />
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
-        {/* VerifAI Summary */}
-        <Collapsible open={verifaiOpen} onOpenChange={setVerifaiOpen}>
+        {summaryTab === "domain" && (
           <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                {domains.map(domain => {
+                  const domainResps = flatQuestions.filter(fq => fq.domainId === domain.id);
+                  const total = domainResps.length;
+                  const unsat = domainResps.filter(fq => {
+                    const r = responses[fq.question.id];
+                    return r && (r.assessorStatus || r.poStatus || '').toLowerCase() === "unsatisfactory";
+                  }).length;
+                  const pct = total > 0 ? Math.round((unsat / total) * 100) : 0;
+                  return (
+                    <div key={domain.id} className="flex items-center gap-3">
+                      <span className="w-48 text-sm truncate" title={domain.name}>{domain.name}</span>
+                      <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
+                        <div className="h-full bg-red-400 rounded" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-sm font-medium w-12 text-right">{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* VerifAI Summary — Collapsible */}
+        <Collapsible open={verifaiOpen} onOpenChange={setVerifaiOpen}>
+          <div className="border rounded-lg">
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5" />{t("VerifAI Summary")}
-                  <Badge variant="outline">{verifaiRows.length} {t("questions")}</Badge>
-                </CardTitle>
-                {verifaiOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </CardHeader>
+              <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30">
+                <span className="font-semibold text-sm">{t("VerifAI Summary")}</span>
+                <span className="text-muted-foreground text-lg">{verifaiOpen ? "−" : "+"}</span>
+              </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <CardContent>
+              <div className="border-t">
+                {/* Table header */}
+                <div className="grid grid-cols-[50px_1fr_1fr_1fr_1fr_40px] gap-0 bg-muted/40 text-xs font-semibold text-muted-foreground uppercase px-4 py-2.5">
+                  <span>{t("Que.No")}</span>
+                  <span>{t("Domain")}</span>
+                  <span>{t("Issue")}</span>
+                  <span>{t("Risk")}</span>
+                  <span>{t("Recommendation")}</span>
+                  <span>{t("Action")}</span>
+                </div>
+                {/* Table rows */}
                 {verifaiRows.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">{t("No answered questions found")}</p>
+                  <p className="text-sm text-muted-foreground text-center py-6">{t("No answered questions found")}</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="py-2 px-3 text-left">{t("Que.No")}</th>
-                          <th className="py-2 px-3 text-left">{t("Domain")}</th>
-                          <th className="py-2 px-3 text-left">{t("Response")}</th>
-                          <th className="py-2 px-3 text-left">{t("AI Status")}</th>
-                          <th className="py-2 px-3 text-left">{t("Issue")}</th>
-                          <th className="py-2 px-3 text-left">{t("Risk")}</th>
-                          <th className="py-2 px-3 text-left">{t("Recommendation")}</th>
-                          <th className="py-2 px-3 text-left">{t("Severity")}</th>
-                          <th className="py-2 px-3 text-center">{t("Action")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {verifaiRows.map(row => (
-                          <tr key={row.questionNo} className="border-b hover:bg-muted/50">
-                            <td className="py-2 px-3 font-medium">{row.questionNo}</td>
-                            <td className="py-2 px-3">{row.domainName}</td>
-                            <td className="py-2 px-3"><ResponseBadge response={row.response} /></td>
-                            <td className="py-2 px-3"><StatusBadge status={row.status === "—" ? null : row.status} /></td>
-                            <td className="py-2 px-3 max-w-48 truncate" title={row.issue}>{row.issue}</td>
-                            <td className="py-2 px-3 max-w-48 truncate" title={row.risk}>{row.risk}</td>
-                            <td className="py-2 px-3 max-w-48 truncate" title={row.recommendation}>{row.recommendation}</td>
-                            <td className="py-2 px-3"><SeverityBadge severity={row.severity} /></td>
-                            <td className="py-2 px-3 text-center">
-                              <Button variant="ghost" size="sm" onClick={() => {
-                                setView("detail");
-                                setSelectedQuestionId(row.questionId);
-                                setCurrentPage(0);
-                              }}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="divide-y">
+                    {verifaiRows.map(row => (
+                      <div key={row.questionNo} className="grid grid-cols-[50px_1fr_1fr_1fr_1fr_40px] gap-0 px-4 py-3 text-sm hover:bg-muted/20 items-start">
+                        <span className="font-medium text-muted-foreground">{row.questionNo}</span>
+                        <span className="font-medium pr-3">{row.domainName}</span>
+                        <span className="text-muted-foreground pr-3 leading-relaxed">{row.issue !== "—" ? row.issue : ""}</span>
+                        <span className="text-muted-foreground pr-3 leading-relaxed">{row.risk !== "—" ? row.risk : ""}</span>
+                        <span className="text-muted-foreground pr-3 leading-relaxed">{row.recommendation !== "—" ? row.recommendation : ""}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => {
+                          setView("detail");
+                          setSelectedQuestionId(row.questionId);
+                          setCurrentPage(0);
+                        }}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </CardContent>
+              </div>
             </CollapsibleContent>
-          </Card>
+          </div>
         </Collapsible>
 
-        {/* Complete / Return dialogs */}
+        {/* Complete dialog */}
         <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
           <DialogContent>
             <DialogHeader><DialogTitle>{t("Mark as Reviewed")}</DialogTitle></DialogHeader>
@@ -796,10 +800,10 @@ export default function ASRAssessmentDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => setView("summary")}>
-            <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Back to Summary")}
+          <Button size="sm" onClick={() => setView("summary")}>
+            <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Back")}
           </Button>
-          <h1 className="text-2xl font-bold">{t("Review Questionnaire")}</h1>
+          <h1 className="text-xl font-semibold">{t("Review Questionnaire")}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setLogsOpen(true)}>
@@ -817,241 +821,250 @@ export default function ASRAssessmentDetailPage() {
         </div>
       </div>
 
-      {/* Filter bar */}
-      <Card>
-        <CardContent className="py-3 flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{t("Domain")}:</span>
-            <Select value={selectedDomain} onValueChange={v => { setSelectedDomain(v); setCurrentPage(0); setSelectedQuestionId(null); }}>
-              <SelectTrigger className="w-48 h-8"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("All Domains")}</SelectItem>
-                {domains.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{t("Vendor")}: <strong>{assessment.vendor.name}</strong></span>
-            {assessment.vendorSubmissionDate && (
-              <span>| {t("Submitted")}: {new Date(assessment.vendorSubmissionDate).toLocaleDateString()}</span>
-            )}
-          </div>
-          <div className="ltr:ml-auto rtl:mr-auto">
-            <AssessmentStatusBadge status={assessment.status} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Question count + filter + pagination */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium">{t("Questions")} ({filteredQuestions.length})</span>
-          <Select value={filterMode} onValueChange={v => { setFilterMode(v); setCurrentPage(0); setSelectedQuestionId(null); }}>
-            <SelectTrigger className="w-44 h-8"><SelectValue /></SelectTrigger>
+      {/* Filter bar — 4 colored info cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="rounded-lg border p-4" style={{ borderColor: "var(--primary-200)", backgroundColor: "var(--primary-50)" }}>
+          <span className="text-xs font-semibold" style={{ color: "var(--primary-600)" }}>{t("Domain")}</span>
+          <Select value={selectedDomain} onValueChange={v => { setSelectedDomain(v); setCurrentPage(0); setSelectedQuestionId(null); }}>
+            <SelectTrigger className="mt-1 h-8 bg-white/80" style={{ borderColor: "var(--primary-200)" }}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("All")}</SelectItem>
-              <SelectItem value="satisfactory">{t("Satisfactory")}</SelectItem>
-              <SelectItem value="unsatisfactory">{t("Unsatisfactory")}</SelectItem>
-              <SelectItem value="flagged">{t("Flagged")}</SelectItem>
-              <SelectItem value="mandatory">{t("Mandatory Attachments")}</SelectItem>
-              <SelectItem value="yes">{t("Yes")}</SelectItem>
-              <SelectItem value="no">{t("No")}</SelectItem>
-              <SelectItem value="na">{t("N/A")}</SelectItem>
+              <SelectItem value="all">{t("All Domains")}</SelectItem>
+              {domains.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {currentPage * ITEMS_PER_PAGE + 1} - {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredQuestions.length)} {t("of")} {filteredQuestions.length}
-          </span>
-          <Button variant="outline" size="icon" className="h-7 w-7" disabled={currentPage === 0} onClick={() => { setCurrentPage(p => p - 1); setSelectedQuestionId(null); }}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" className="h-7 w-7" disabled={currentPage >= totalPages - 1} onClick={() => { setCurrentPage(p => p + 1); setSelectedQuestionId(null); }}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="rounded-lg border p-4" style={{ borderColor: "var(--border-light)", backgroundColor: "var(--surface-secondary)" }}>
+          <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{t("Vendor")}</span>
+          <p className="mt-1 text-sm font-medium">{assessment.vendor.name}</p>
+        </div>
+        <div className="rounded-lg border p-4" style={{ borderColor: "var(--border-light)", backgroundColor: "var(--surface-secondary)" }}>
+          <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{t("Date of Submission")}</span>
+          <p className="mt-1 text-sm font-medium">{assessment.vendorSubmissionDate ? new Date(assessment.vendorSubmissionDate).toLocaleDateString() : "—"}</p>
+        </div>
+        <div className="rounded-lg border p-4" style={{ borderColor: "var(--primary-200)", backgroundColor: "var(--primary-50)" }}>
+          <span className="text-xs font-semibold" style={{ color: "var(--primary-600)" }}>{t("Status")}</span>
+          <p className="mt-1 text-sm font-medium">{assessment.status}</p>
         </div>
       </div>
 
-      {/* Question navigator pills */}
-      <div className="flex flex-wrap gap-1.5">
-        {pageQuestions.map(fq => {
-          const isSelected = fq.question.id === (selectedQuestionId || pageQuestions[0]?.question.id);
-          const resp = responses[fq.question.id];
-          const effectiveStatus = resp?.assessorStatus || resp?.poStatus;
-          let pillColor = "bg-gray-100 text-gray-600 border-gray-300";
-          if (effectiveStatus === "Satisfactory") pillColor = "bg-green-100 text-green-700 border-green-300";
-          else if (effectiveStatus === "Unsatisfactory") pillColor = "bg-red-100 text-red-700 border-red-300";
+      {/* Main two-column layout — left: questions, right: AI review */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Left column (3/5) */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Question count + filter */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">{t("Number of Questions")} ({filteredQuestions.length})</span>
+            <Select value={filterMode} onValueChange={v => { setFilterMode(v); setCurrentPage(0); setSelectedQuestionId(null); }}>
+              <SelectTrigger className="w-44 h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All")}</SelectItem>
+                <SelectItem value="satisfactory">{t("Satisfactory")}</SelectItem>
+                <SelectItem value="unsatisfactory">{t("Unsatisfactory")}</SelectItem>
+                <SelectItem value="flagged">{t("Flagged")}</SelectItem>
+                <SelectItem value="mandatory">{t("Mandatory Attachments")}</SelectItem>
+                <SelectItem value="yes">{t("Yes")}</SelectItem>
+                <SelectItem value="no">{t("No")}</SelectItem>
+                <SelectItem value="na">{t("N/A")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          return (
-            <button
-              key={fq.question.id}
-              onClick={() => setSelectedQuestionId(fq.question.id)}
-              className={`px-2.5 py-1 text-xs font-medium border transition-all ${fq.isChild ? "rounded-full" : "rounded-md"} ${pillColor} ${isSelected ? "ring-2 ring-primary ring-offset-1" : "hover:opacity-80"}`}
-            >
-              {fq.questionNo}
-            </button>
-          );
-        })}
-      </div>
+          {/* Pagination */}
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="outline" size="icon" className="h-7 w-7" disabled={currentPage === 0} onClick={() => { setCurrentPage(p => p - 1); setSelectedQuestionId(null); }}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground px-1">
+              {currentPage * ITEMS_PER_PAGE + 1} {t("to")} {Math.min((currentPage + 1) * ITEMS_PER_PAGE, filteredQuestions.length)} {t("of")} {filteredQuestions.length}
+            </span>
+            <Button variant="outline" size="icon" className="h-7 w-7" disabled={currentPage >= totalPages - 1} onClick={() => { setCurrentPage(p => p + 1); setSelectedQuestionId(null); }}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
 
-      {/* Main two-column layout */}
-      {selectedQ && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* Left column: Question detail (3/5) */}
-          <div className="lg:col-span-3 space-y-4">
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                {/* Question header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-lg">{selectedFlat?.questionNo}</span>
-                      {selectedResp?.isFlagged && <Flag className="h-4 w-4 text-amber-500 fill-amber-500" />}
-                    </div>
-                    <p className="text-sm">{selectedQ.questionText}</p>
+          {/* Question navigator pills */}
+          <div className="flex flex-wrap gap-1.5">
+            {pageQuestions.map(fq => {
+              const isSelected = fq.question.id === (selectedQuestionId || pageQuestions[0]?.question.id);
+              const resp = responses[fq.question.id];
+              const effectiveStatus = resp?.assessorStatus || resp?.poStatus;
+              const isSat = effectiveStatus === "Satisfactory";
+              const isUnsat = effectiveStatus === "Unsatisfactory";
+
+              return (
+                <button
+                  key={fq.question.id}
+                  onClick={() => setSelectedQuestionId(fq.question.id)}
+                  className={`w-9 h-9 text-xs font-semibold border transition-all flex items-center justify-center ${fq.isChild ? "rounded-full" : "rounded-md"} ${isSelected ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary ring-offset-1" : isSat ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100" : isUnsat ? "border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100" : "hover:opacity-80"}`}
+                  style={!isSelected && !isSat && !isUnsat ? { borderColor: "#c4c4c4", backgroundColor: "#f9f9f9", color: "#555" } : undefined}
+                >
+                  {fq.questionNo}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selected question detail */}
+          {selectedQ && (
+            <div className="space-y-4">
+              {/* Question text + flag */}
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-medium" style={{ color: "var(--primary-600)" }}>
+                  <span className="font-bold">{selectedFlat?.questionNo}.</span> {selectedQ.questionText}
+                </p>
+                <button
+                  className="shrink-0 mt-0.5"
+                  onClick={() => {/* flag toggle placeholder */}}
+                >
+                  <Flag className={`h-5 w-5 ${selectedResp?.isFlagged ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`} />
+                </button>
+              </div>
+
+              {/* Response badge */}
+              <div>
+                <ResponseBadge response={selectedResp?.response || null} />
+              </div>
+
+              {/* Evidence */}
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+                  <FileText className="h-4 w-4" />{t("Evidence")}
+                </h4>
+                {(selectedResp?.artifactUrl || selectedResp?.artifactName) ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{selectedResp?.artifactName || t("Attached file")}</span>
+                    {selectedResp?.artifactUrl && (
+                      <a href={selectedResp.artifactUrl} target="_blank" rel="noopener noreferrer">
+                        <Button variant="ghost" size="sm"><Download className="h-3 w-3" /></Button>
+                      </a>
+                    )}
                   </div>
-                  <ResponseBadge response={selectedResp?.response || null} />
-                </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t("No evidence attached")}</p>
+                )}
+              </div>
 
-                {/* Evidence */}
-                {(selectedResp?.artifactUrl || selectedResp?.artifactName) && (
-                  <div className="border rounded-lg p-3 bg-muted/30">
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-                      <FileText className="h-4 w-4" />{t("Evidence")}
-                    </h4>
-                    {selectedResp.artifactName && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{selectedResp.artifactName}</span>
-                        {selectedResp.artifactUrl && (
-                          <a href={selectedResp.artifactUrl} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="sm"><Download className="h-3 w-3" /></Button>
-                          </a>
-                        )}
+              {/* Vendor's Comment */}
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+                  <MessageSquare className="h-4 w-4" />{t("Vendor's Comment")}
+                </h4>
+                <div className="rounded-md border bg-muted/20 p-3 min-h-[40px]">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.comment || ""}</p>
+                </div>
+              </div>
+
+              {/* Action buttons — centered, filled style */}
+              <div className="flex flex-wrap gap-2 pt-3 justify-center">
+                <Button size="sm" onClick={openOverride} disabled={assessment.status === "Reviewed"}>
+                  {t("Override AI")}
+                </Button>
+                <Button size="sm" onClick={openClarification}>
+                  {t("Clarification")}
+                </Button>
+                <Button size="sm" onClick={() => setLogsOpen(true)}>
+                  {t("Activity Logs")}
+                </Button>
+                <Button size="sm" onClick={openComments}>
+                  {t("Internal Comments")}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {filteredQuestions.length === 0 && (
+            <div className="py-12 text-center text-muted-foreground">
+              {t("No questions match the selected filters")}
+            </div>
+          )}
+        </div>
+
+        {/* Right column: AI Review panel (2/5) */}
+        <div className="lg:col-span-2">
+          <Card className="sticky top-4 bg-muted/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{t("AI Review")}</CardTitle>
+              {selectedResp?.assessorOverriddenAt && (
+                <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-300 w-fit">{t("Overridden")}</Badge>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selectedQ ? (
+                <>
+                  {/* Status badge + Confidence */}
+                  <div className="flex items-center justify-between">
+                    <StatusBadge status={selectedResp?.assessorStatus || selectedResp?.poStatus} />
+                    {selectedResp?.poScore != null && (
+                      <div className="text-right">
+                        <span className="text-xs text-muted-foreground">{t("Confidence level of AI")}</span>
+                        <div className="flex items-center gap-0.5 mt-1 justify-end">
+                          {[0.2, 0.4, 0.6, 0.8, 1.0].map((threshold, i) => (
+                            <div
+                              key={i}
+                              className={`w-1.5 rounded-sm ${(selectedResp?.poScore ?? 0) >= threshold ? "bg-primary" : "bg-muted"}`}
+                              style={{ height: `${12 + i * 4}px` }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
-                )}
 
-                {/* Vendor's Comment */}
-                {selectedResp?.comment && (
-                  <div className="border rounded-lg p-3 bg-muted/30">
-                    <h4 className="text-sm font-medium mb-1">{t("Vendor's Comment")}</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp.comment}</p>
+                  {/* VerifAI Summary */}
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1">{t("VerifAI Summary")}</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedResp?.poStatus?.toLowerCase() === "failed"
+                        ? t("AI evaluation could not be completed for this question. Please re-evaluate.")
+                        : selectedResp?.poAnswer || "—"}
+                    </p>
                   </div>
-                )}
 
-                {/* Action buttons */}
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <Button variant="outline" size="sm" onClick={openOverride} disabled={assessment.status === "Reviewed"}>
-                    <Bot className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Override AI")}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={openClarification}>
-                    <AlertTriangle className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Clarification")}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setLogsOpen(true)}>
-                    <Clock className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Activity Logs")}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={openComments}>
-                    <MessageSquare className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Internal Comments")}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right column: AI Review panel (2/5) */}
-          <div className="lg:col-span-2">
-            <Card className="sticky top-4">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Bot className="h-5 w-5" />{t("AI Review")}
-                  {selectedResp?.assessorOverriddenAt && (
-                    <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-300">{t("Overridden")}</Badge>
+                  {/* Issue */}
+                  {(selectedResp?.assessorIssue || selectedResp?.poIssue) && (
+                    <div>
+                      <h4 className="text-sm font-semibold mb-1">{t("Issue")}</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorIssue || selectedResp?.poIssue}</p>
+                    </div>
                   )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t("Status")}</span>
-                  <StatusBadge status={selectedResp?.assessorStatus || selectedResp?.poStatus} />
-                </div>
 
-                {/* Confidence */}
-                {selectedResp?.poScore != null && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-muted-foreground">{t("Confidence")}</span>
-                      <span className="text-sm font-medium">{Math.round(selectedResp.poScore * 100)}%</span>
+                  {/* Risk */}
+                  {(selectedResp?.assessorRisk || selectedResp?.poRisk) && (
+                    <div>
+                      <h4 className="text-sm font-semibold mb-1">{t("Risk")}</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorRisk || selectedResp?.poRisk}</p>
                     </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${selectedResp.poScore >= 0.7 ? "bg-green-500" : selectedResp.poScore >= 0.4 ? "bg-amber-500" : "bg-red-500"}`}
-                        style={{ width: `${selectedResp.poScore * 100}%` }}
-                      />
+                  )}
+
+                  {/* Recommendation */}
+                  {(selectedResp?.assessorRecommendation || selectedResp?.poRecommendation) && (
+                    <div>
+                      <h4 className="text-sm font-semibold mb-1">{t("Recommendation")}</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorRecommendation || selectedResp?.poRecommendation}</p>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* VerifAI Summary */}
-                {(selectedResp?.poAnswer) && (
+                  {/* Severity */}
                   <div>
-                    <span className="text-sm font-medium">{t("VerifAI Summary")}</span>
-                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{selectedResp.poAnswer}</p>
+                    <h4 className="text-sm font-semibold mb-1">{t("Severity")}</h4>
+                    <SeverityBadge severity={selectedResp?.assessorSeverity || selectedResp?.poSeverity} />
                   </div>
-                )}
 
-                {/* Issue */}
-                {(selectedResp?.assessorIssue || selectedResp?.poIssue) && (
-                  <div>
-                    <span className="text-sm font-medium">{t("Issue")}</span>
-                    <p className="text-sm text-muted-foreground mt-0.5 whitespace-pre-wrap">{selectedResp.assessorIssue || selectedResp.poIssue}</p>
-                  </div>
-                )}
-
-                {/* Risk */}
-                {(selectedResp?.assessorRisk || selectedResp?.poRisk) && (
-                  <div>
-                    <span className="text-sm font-medium">{t("Risk")}</span>
-                    <p className="text-sm text-muted-foreground mt-0.5 whitespace-pre-wrap">{selectedResp.assessorRisk || selectedResp.poRisk}</p>
-                  </div>
-                )}
-
-                {/* Recommendation */}
-                {(selectedResp?.assessorRecommendation || selectedResp?.poRecommendation) && (
-                  <div>
-                    <span className="text-sm font-medium">{t("Recommendation")}</span>
-                    <p className="text-sm text-muted-foreground mt-0.5 whitespace-pre-wrap">{selectedResp.assessorRecommendation || selectedResp.poRecommendation}</p>
-                  </div>
-                )}
-
-                {/* Severity */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t("Severity")}</span>
-                  <SeverityBadge severity={selectedResp?.assessorSeverity || selectedResp?.poSeverity} />
-                </div>
-
-                {/* Assessor Comment (if overridden) */}
-                {selectedResp?.assessorComment && (
-                  <div className="border-t pt-3">
-                    <span className="text-sm font-medium">{t("Assessor Comment")}</span>
-                    <p className="text-sm text-muted-foreground mt-0.5 whitespace-pre-wrap">{selectedResp.assessorComment}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                  {/* Assessor Comment (if overridden) */}
+                  {selectedResp?.assessorComment && (
+                    <div className="border-t pt-3">
+                      <h4 className="text-sm font-semibold mb-1">{t("Assessor Comment")}</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp.assessorComment}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-6">{t("Select a question to view AI review")}</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
-
-      {filteredQuestions.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            {t("No questions match the selected filters")}
-          </CardContent>
-        </Card>
-      )}
+      </div>
 
       {/* ── Dialogs ──────────────────────────────────────────────────────── */}
 
@@ -1105,7 +1118,7 @@ export default function ASRAssessmentDetailPage() {
                     variant={overrideSeverity === s ? "default" : "outline"}
                     size="sm"
                     onClick={() => setOverrideSeverity(s)}
-                    className={overrideSeverity === s ? (s === "High" ? "bg-red-600 hover:bg-red-700" : s === "Medium" ? "bg-amber-600 hover:bg-amber-700" : "bg-blue-600 hover:bg-blue-700") : ""}
+                    className={overrideSeverity === s ? (s === "High" ? "bg-red-600 hover:bg-red-700" : s === "Medium" ? "bg-amber-600 hover:bg-amber-700" : "bg-green-600 hover:bg-green-700") : ""}
                   >
                     {t(s)}
                   </Button>
@@ -1215,10 +1228,13 @@ export default function ASRAssessmentDetailPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t("Activity Logs")}</DialogTitle></DialogHeader>
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-            {assessment.logs.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">{t("No activity logs")}</p>
-            )}
-            {assessment.logs.map(log => (
+            {(() => {
+              const filteredLogs = assessment.logs.filter(log => !log.logMessage.startsWith("AI API "));
+              return filteredLogs.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">{t("No activity logs")}</p>
+              ) : null;
+            })()}
+            {assessment.logs.filter(log => !log.logMessage.startsWith("AI API ")).map(log => (
               <div key={log.id} className="flex items-start gap-3 border-b pb-2">
                 <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div>
