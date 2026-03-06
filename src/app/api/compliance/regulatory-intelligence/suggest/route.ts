@@ -4,7 +4,6 @@ import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import regulatoryAIClient, {
   RegulatoryIntelligenceRequest,
   RegulatoryIntelligenceResponse,
-  RegulationSuggestion,
 } from "@/lib/regulatory-ai-client";
 
 // POST - Call AI service to suggest regulations for a profile
@@ -13,7 +12,7 @@ export const POST = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { profileId } = body;
+      const { profileId, targetLanguage } = body;
 
       if (!profileId) {
         return NextResponse.json(
@@ -50,6 +49,7 @@ export const POST = withAuth(
         industry: industrySectors.length > 0 ? industrySectors[0] : "",
         organisation_type: profile.organisationType.toLowerCase(),
         technology_used: technologyUsed,
+        target_language: targetLanguage || "en",
       };
 
       // Call AI service

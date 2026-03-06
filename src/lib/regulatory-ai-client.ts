@@ -24,6 +24,7 @@ export interface RegulatoryIntelligenceRequest {
   industry: string;
   organisation_type: string;
   technology_used: string[];
+  target_language: string;
 }
 
 export interface RegulationSuggestion {

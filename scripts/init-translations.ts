@@ -175,6 +175,8 @@ const translations: [string, string, string][] = [
   ['AI-powered framework suggestions will be available soon.', 'ستتوفر اقتراحات الأطر المدعومة بالذكاء الاصطناعي قريباً.', 'AI darbināti ietvaru ieteikumi drīzumā būs pieejami.'],
   ['No organisation profiles yet. Click \'Add Profile\' to create one.', 'لا توجد ملفات منظمة بعد. انقر على \'إضافة ملف\' لإنشاء واحد.', 'Vēl nav organizācijas profilu. Noklikšķiniet uz \'Pievienot profilu\', lai izveidotu.'],
   ['No regulations yet. Use \'Suggest Frameworks\' on an organisation profile to generate recommendations.', 'لا توجد لوائح بعد. استخدم \'اقتراح الأطر\' في ملف المنظمة لإنشاء التوصيات.', 'Vēl nav noteikumu. Izmantojiet \'Ieteikt ietvarus\' organizācijas profilā, lai ģenerētu ieteikumus.'],
+  ['companies', 'شركات', 'uzņēmumi'],
+  ['Unknown Company', 'شركة غير معروفة', 'Nezināms uzņēmums'],
   ['Coming Soon', 'قريباً', 'Drīzumā'],
   ['KPI', 'مؤشرات الأداء', 'KPI'],
   ['Master Data', 'البيانات الرئيسية', 'Pamatdati'],

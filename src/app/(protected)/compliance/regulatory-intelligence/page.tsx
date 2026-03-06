@@ -57,15 +57,12 @@ import {
   Pencil,
   Trash2,
   Sparkles,
-  Check,
   Loader2,
   Search,
   ArrowUpDown,
   Shield,
   AlertTriangle,
   Info,
-  CheckCircle2,
-  XCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -181,12 +178,11 @@ function BadgeList({ items }: { items: string[] }) {
 }
 
 export default function RegulatoryIntelligenceHubPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<RegulatoryProfile[]>([]);
   const [regulations, setRegulations] = useState<SuggestedRegulation[]>([]);
-  const [subscribingId, setSubscribingId] = useState<string | null>(null);
   const [suggestingId, setSuggestingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -196,6 +192,7 @@ export default function RegulatoryIntelligenceHubPage() {
   const [applicabilityFilter, setApplicabilityFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<"name" | "applicability" | "type">("applicability");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
 
   const fetchProfiles = useCallback(async () => {
     try {
@@ -258,7 +255,7 @@ export default function RegulatoryIntelligenceHubPage() {
       const res = await fetch("/api/compliance/regulatory-intelligence/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId }),
+        body: JSON.stringify({ profileId, targetLanguage: locale }),
       });
 
       if (res.ok) {
@@ -317,43 +314,39 @@ export default function RegulatoryIntelligenceHubPage() {
     }
   };
 
+  // Group regulations by company (profile)
+  const regulationsByCompany = sortedRegulations.reduce((acc, reg) => {
+    const companyId = reg.regulatoryProfileId;
+    const companyName = reg.regulatoryProfile?.fullLegalEntityName || t("Unknown Company");
+    if (!acc[companyId]) {
+      acc[companyId] = {
+        companyId,
+        companyName,
+        regulations: [],
+      };
+    }
+    acc[companyId].regulations.push(reg);
+    return acc;
+  }, {} as Record<string, { companyId: string; companyName: string; regulations: SuggestedRegulation[] }>);
+
+  const companiesWithRegulations = Object.values(regulationsByCompany);
+
+  const toggleCompany = (companyId: string) => {
+    setExpandedCompanies(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(companyId)) {
+        newSet.delete(companyId);
+      } else {
+        newSet.add(companyId);
+      }
+      return newSet;
+    });
+  };
+
   // Stats for regulation cards
   const mandatoryCount = regulations.filter(r => r.applicability === "Mandatory").length;
   const recommendedCount = regulations.filter(r => r.applicability === "Recommended").length;
   const optionalCount = regulations.filter(r => r.applicability === "Optional").length;
-  const subscribedCount = regulations.filter(r => r.isSubscribed).length;
-
-  const handleSubscribe = async (regulation: SuggestedRegulation) => {
-    if (!regulation.masterFrameworkId || regulation.isSubscribed) return;
-    setSubscribingId(regulation.id);
-    try {
-      const res = await fetch("/api/compliance/regulatory-intelligence/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          frameworkId: regulation.masterFrameworkId,
-          suggestedRegulationId: regulation.id,
-        }),
-      });
-      if (res.ok) {
-        setRegulations((prev) =>
-          prev.map((r) => r.id === regulation.id ? { ...r, isSubscribed: true } : r)
-        );
-        toast({ title: t("Success"), description: t("Framework subscribed successfully") });
-      } else {
-        const data = await res.json();
-        throw new Error(data.error || "Subscribe failed");
-      }
-    } catch (error) {
-      toast({
-        title: t("Error"),
-        description: error instanceof Error ? error.message : t("Failed to subscribe framework"),
-        variant: "destructive",
-      });
-    } finally {
-      setSubscribingId(null);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -525,85 +518,75 @@ export default function RegulatoryIntelligenceHubPage() {
         <TabsContent value="regulation-list" className="mt-4 space-y-4">
           {/* Stats Cards */}
           {regulations.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setApplicabilityFilter(applicabilityFilter === "Mandatory" ? "all" : "Mandatory")}
-                className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border transition-all ${
                   applicabilityFilter === "Mandatory"
-                    ? "bg-red-50 border-red-200 ring-2 ring-red-200"
-                    : "bg-white border-slate-200 hover:border-slate-300"
+                    ? "bg-red-50 border-red-200 ring-1 ring-red-200"
+                    : "bg-white border-slate-200 hover:border-red-200 hover:bg-red-50/30"
                 }`}
               >
-                <div className={`p-2 rounded-lg ${applicabilityFilter === "Mandatory" ? "bg-red-100" : "bg-red-50"}`}>
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                <div className={`p-1.5 sm:p-2 rounded-lg ${applicabilityFilter === "Mandatory" ? "bg-red-100" : "bg-red-50"}`}>
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                 </div>
-                <div className="text-left">
-                  <p className="text-2xl font-bold text-slate-800">{mandatoryCount}</p>
-                  <p className="text-xs text-slate-500">{t("Mandatory")}</p>
+                <div className="text-left min-w-0">
+                  <p className="text-lg sm:text-2xl font-bold text-slate-800">{mandatoryCount}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 truncate">{t("Mandatory")}</p>
                 </div>
               </button>
 
               <button
                 onClick={() => setApplicabilityFilter(applicabilityFilter === "Recommended" ? "all" : "Recommended")}
-                className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border transition-all ${
                   applicabilityFilter === "Recommended"
-                    ? "bg-blue-50 border-blue-200 ring-2 ring-blue-200"
-                    : "bg-white border-slate-200 hover:border-slate-300"
+                    ? "bg-blue-50 border-blue-200 ring-1 ring-blue-200"
+                    : "bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/30"
                 }`}
               >
-                <div className={`p-2 rounded-lg ${applicabilityFilter === "Recommended" ? "bg-blue-100" : "bg-blue-50"}`}>
-                  <Shield className="h-5 w-5 text-blue-600" />
+                <div className={`p-1.5 sm:p-2 rounded-lg ${applicabilityFilter === "Recommended" ? "bg-blue-100" : "bg-blue-50"}`}>
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                 </div>
-                <div className="text-left">
-                  <p className="text-2xl font-bold text-slate-800">{recommendedCount}</p>
-                  <p className="text-xs text-slate-500">{t("Recommended")}</p>
+                <div className="text-left min-w-0">
+                  <p className="text-lg sm:text-2xl font-bold text-slate-800">{recommendedCount}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 truncate">{t("Recommended")}</p>
                 </div>
               </button>
 
               <button
                 onClick={() => setApplicabilityFilter(applicabilityFilter === "Optional" ? "all" : "Optional")}
-                className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border transition-all ${
                   applicabilityFilter === "Optional"
-                    ? "bg-slate-100 border-slate-300 ring-2 ring-slate-300"
-                    : "bg-white border-slate-200 hover:border-slate-300"
+                    ? "bg-amber-50 border-amber-200 ring-1 ring-amber-200"
+                    : "bg-white border-slate-200 hover:border-amber-200 hover:bg-amber-50/30"
                 }`}
               >
-                <div className={`p-2 rounded-lg ${applicabilityFilter === "Optional" ? "bg-slate-200" : "bg-slate-50"}`}>
-                  <Info className="h-5 w-5 text-slate-600" />
+                <div className={`p-1.5 sm:p-2 rounded-lg ${applicabilityFilter === "Optional" ? "bg-amber-100" : "bg-amber-50"}`}>
+                  <Info className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
                 </div>
-                <div className="text-left">
-                  <p className="text-2xl font-bold text-slate-800">{optionalCount}</p>
-                  <p className="text-xs text-slate-500">{t("Optional")}</p>
+                <div className="text-left min-w-0">
+                  <p className="text-lg sm:text-2xl font-bold text-slate-800">{optionalCount}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 truncate">{t("Optional")}</p>
                 </div>
               </button>
-
-              <div className="flex items-center gap-3 p-4 rounded-xl border bg-white border-slate-200">
-                <div className="p-2 rounded-lg bg-green-50">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <p className="text-2xl font-bold text-slate-800">{subscribedCount}</p>
-                  <p className="text-xs text-slate-500">{t("Subscribed")}</p>
-                </div>
-              </div>
             </div>
           )}
 
-          {/* Data Table Card */}
+          {/* Main Content Card */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             {/* Search & Filter Toolbar */}
             <div className="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3 border-b border-slate-100">
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <div className="relative flex-1 min-w-[180px] max-w-sm">
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder={t("Search regulations...")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+                  className="w-full ltr:pl-9 rtl:pr-9 py-2 text-sm bg-slate-50 border-slate-200 rounded-lg placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                 />
               </div>
               <Select value={applicabilityFilter} onValueChange={setApplicabilityFilter}>
-                <SelectTrigger className="w-[160px] bg-slate-50 border-slate-200">
+                <SelectTrigger className="w-[150px] sm:w-[160px] bg-slate-50 border-slate-200 text-sm">
                   <SelectValue placeholder={t("Applicability")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -615,157 +598,176 @@ export default function RegulatoryIntelligenceHubPage() {
               </Select>
             </div>
 
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">
+            {/* Companies List with Regulations */}
+            {companiesWithRegulations.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="flex flex-col items-center justify-center gap-3">
+                  <div className="p-4 rounded-full bg-slate-100">
+                    <ScrollText className="h-10 w-10 text-slate-400" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-medium text-slate-700">
+                      {regulations.length === 0
+                        ? t("No regulations yet")
+                        : t("No matching regulations")}
+                    </p>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      {regulations.length === 0
+                        ? t("Use 'Suggest Frameworks' on an organisation profile to generate AI-powered recommendations")
+                        : t("Try adjusting your search or filter criteria")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {companiesWithRegulations.map(({ companyId, companyName, regulations: companyRegs }) => {
+                  const isExpanded = expandedCompanies.has(companyId);
+                  const companyMandatoryCount = companyRegs.filter(r => r.applicability === "Mandatory").length;
+                  const companyRecommendedCount = companyRegs.filter(r => r.applicability === "Recommended").length;
+                  const companyOptionalCount = companyRegs.filter(r => r.applicability === "Optional").length;
+
+                  return (
+                    <div key={companyId}>
+                      {/* Company Header - Clickable */}
                       <button
-                        onClick={() => handleSort("name")}
-                        className="flex items-center gap-2 hover:text-slate-700"
+                        onClick={() => toggleCompany(companyId)}
+                        className="w-full flex items-center justify-between px-4 sm:px-5 py-3.5 hover:bg-slate-50/80 transition-colors text-left group"
                       >
-                        {t("Regulation Name")}
-                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
-                      <button
-                        onClick={() => handleSort("type")}
-                        className="flex items-center gap-2 hover:text-slate-700"
-                      >
-                        {t("Type")}
-                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">
-                      <button
-                        onClick={() => handleSort("applicability")}
-                        className="flex items-center gap-2 hover:text-slate-700"
-                      >
-                        {t("Applicability")}
-                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[35%]">
-                      {t("Justification")}
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 text-center">
-                      {t("Status")}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedRegulations.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-40 text-center">
-                        <div className="flex flex-col items-center justify-center gap-3">
-                          <div className="p-3 rounded-full bg-slate-100">
-                            <ScrollText className="h-8 w-8 text-slate-400" />
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm font-medium text-slate-600">
-                              {regulations.length === 0
-                                ? t("No regulations yet")
-                                : t("No matching regulations")}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                              {regulations.length === 0
-                                ? t("Use 'Suggest Frameworks' on an organisation profile to generate AI-powered recommendations")
-                                : t("Try adjusting your search or filter criteria")}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    sortedRegulations.map((reg) => (
-                      <TableRow
-                        key={reg.id}
-                        className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
-                      >
-                        <TableCell className="py-3.5 ps-5">
-                          <span className="text-sm font-medium text-slate-800">{reg.name}</span>
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          <Badge variant="outline" className="bg-slate-50 border-slate-200 text-slate-600 text-xs font-normal">
-                            {reg.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          <Badge
-                            className={`text-xs font-medium ${
-                              reg.applicability === "Mandatory"
-                                ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                                : reg.applicability === "Recommended"
-                                ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                                : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                            }`}
-                            variant="outline"
-                          >
-                            {t(reg.applicability)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <p className="text-sm text-slate-500 line-clamp-2 cursor-help">
-                                  {reg.reason}
-                                </p>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-md p-3">
-                                <p className="text-sm">{reg.reason}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </TableCell>
-                        <TableCell className="py-3.5 pe-5">
-                          <div className="flex justify-center">
-                            {reg.isSubscribed ? (
-                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                <span className="text-xs font-medium">{t("Subscribed")}</span>
-                              </div>
-                            ) : reg.masterFrameworkId ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={subscribingId === reg.id}
-                                onClick={() => handleSubscribe(reg)}
-                                className="h-8 px-3 text-xs bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-                              >
-                                {subscribingId === reg.id ? (
-                                  <>
-                                    <Loader2 className="h-3 w-3 me-1.5 animate-spin" />
-                                    {t("Subscribing...")}
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="h-3 w-3 me-1.5" />
-                                    {t("Subscribe")}
-                                  </>
-                                )}
-                              </Button>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-6 h-6">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
                             ) : (
-                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
-                                <XCircle className="h-3.5 w-3.5" />
-                                <span className="text-xs">{t("Not Available")}</span>
-                              </div>
+                              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors ltr:rotate-0 rtl:rotate-180" />
                             )}
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                            <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-sm sm:text-base text-slate-800 truncate">{companyName}</h3>
+                            <p className="text-xs text-slate-500">{companyRegs.length} {t("regulations")}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                          {companyMandatoryCount > 0 && (
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+                              {companyMandatoryCount}
+                            </Badge>
+                          )}
+                          {companyRecommendedCount > 0 && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+                              {companyRecommendedCount}
+                            </Badge>
+                          )}
+                          {companyOptionalCount > 0 && (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+                              {companyOptionalCount}
+                            </Badge>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Regulations Table - Collapsible */}
+                      {isExpanded && (
+                        <div className="bg-slate-50/50 border-t border-slate-100">
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="border-b border-slate-200/60 bg-slate-100/50 hover:bg-slate-100/50">
+                                  <TableHead className="w-[30%] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5 ps-6 sm:ps-8">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleSort("name"); }}
+                                      className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                                    >
+                                      {t("Regulation Name")}
+                                      <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                                    </button>
+                                  </TableHead>
+                                  <TableHead className="w-[15%] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleSort("type"); }}
+                                      className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                                    >
+                                      {t("Type")}
+                                      <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                                    </button>
+                                  </TableHead>
+                                  <TableHead className="w-[15%] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleSort("applicability"); }}
+                                      className="flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                                    >
+                                      {t("Applicability")}
+                                      <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                                    </button>
+                                  </TableHead>
+                                  <TableHead className="w-[40%] text-xs font-medium text-slate-500 uppercase tracking-wider py-2.5 pe-6 sm:pe-8">
+                                    {t("Justification")}
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {companyRegs.map((reg, index) => (
+                                  <TableRow
+                                    key={reg.id}
+                                    className={`hover:bg-white/80 transition-colors ${index < companyRegs.length - 1 ? 'border-b border-slate-200/40' : ''}`}
+                                  >
+                                    <TableCell className="py-3 ps-6 sm:ps-8">
+                                      <span className="text-sm font-medium text-slate-800">{reg.name}</span>
+                                    </TableCell>
+                                    <TableCell className="py-3">
+                                      <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 text-xs font-normal">
+                                        {reg.type}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="py-3">
+                                      <Badge
+                                        className={`text-xs font-medium ${
+                                          reg.applicability === "Mandatory"
+                                            ? "bg-red-50 text-red-700 border-red-200"
+                                            : reg.applicability === "Recommended"
+                                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                                            : "bg-amber-50 text-amber-700 border-amber-200"
+                                        }`}
+                                        variant="outline"
+                                      >
+                                        {t(reg.applicability)}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="py-3 pe-6 sm:pe-8">
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <p className="text-sm text-slate-600 line-clamp-2 cursor-help leading-relaxed">
+                                              {reg.reason}
+                                            </p>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-md p-3 bg-slate-900 text-white border-0">
+                                            <p className="text-sm leading-relaxed">{reg.reason}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Results Summary Footer */}
             {sortedRegulations.length > 0 && (
-              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+              <div className="px-4 sm:px-5 py-3 border-t border-slate-100 bg-slate-50/50">
                 <p className="text-xs text-slate-500">
-                  {t("Showing")} <span className="font-medium text-slate-700">{sortedRegulations.length}</span> {t("of")} <span className="font-medium text-slate-700">{regulations.length}</span> {t("regulations")}
+                  {t("Showing")} <span className="font-medium text-slate-700">{sortedRegulations.length}</span> {t("of")} <span className="font-medium text-slate-700">{regulations.length}</span> {t("regulations")} {t("across")} <span className="font-medium text-slate-700">{companiesWithRegulations.length}</span> {t("companies")}
                 </p>
               </div>
             )}
