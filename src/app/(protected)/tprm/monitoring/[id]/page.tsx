@@ -1003,6 +1003,7 @@ export default function MonitoringDetailPage() {
   // Report Issue state
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const [selectedFindings, setSelectedFindings] = useState<Set<string>>(new Set());
+  const [reportedFindingIds, setReportedFindingIds] = useState<Set<string>>(new Set());
   const [issueSaving, setIssueSaving] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -1124,20 +1125,22 @@ export default function MonitoringDetailPage() {
     return recs;
   }, [assessment]);
 
-  // Collect all key findings across KPIs for the report issue dialog
+  // Collect all key findings across KPIs for the report issue dialog (exclude already reported)
   const allFindings = useMemo(() => {
     if (!assessment) return [];
     return assessment.kpiDetails.flatMap(kpi =>
-      kpi.keyFindings.map(f => ({
-        findingId: f.id,
-        statement: f.statement,
-        kpiName: kpi.kpiName,
-        severity: kpi.severity || null,
-        score: kpi.securityScore,
-        recommendation: kpi.recommendation || null,
-      }))
+      kpi.keyFindings
+        .filter(f => !reportedFindingIds.has(f.id))
+        .map(f => ({
+          findingId: f.id,
+          statement: f.statement,
+          kpiName: kpi.kpiName,
+          severity: kpi.severity || null,
+          score: kpi.securityScore,
+          recommendation: kpi.recommendation || null,
+        }))
     );
-  }, [assessment]);
+  }, [assessment, reportedFindingIds]);
 
   const toggleFinding = (findingId: string) => {
     setSelectedFindings(prev => {
@@ -1172,8 +1175,13 @@ export default function MonitoringDetailPage() {
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       toast({ title: t("Success"), description: `${data.count || findings.length} ${t("issue(s) reported successfully")}` });
-      setReportIssueOpen(false);
+      setReportedFindingIds(prev => {
+        const next = new Set(prev);
+        for (const f of findings) next.add(f.findingId);
+        return next;
+      });
       setSelectedFindings(new Set());
+      setReportIssueOpen(false);
     } catch {
       toast({ title: t("Error"), description: t("Failed to report issues"), variant: "destructive" });
     } finally {

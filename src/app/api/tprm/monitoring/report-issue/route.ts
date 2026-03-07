@@ -69,10 +69,9 @@ export const POST = withAuth(
             customerAccountId,
             assessmentId: latestAssessment.id,
             domainName: f.kpiName,
+            questionText: f.kpiName,
             severity: f.severity || 'Medium',
             issue: f.statement,
-            description: f.statement,
-            recommendation: f.recommendation || null,
             requestedDate: new Date(),
             dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
             status: 'Pending',

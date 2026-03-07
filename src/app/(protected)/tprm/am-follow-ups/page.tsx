@@ -597,28 +597,49 @@ export default function AMFollowUpsPage() {
 
               {/* VerifAI Summary */}
               <h5 className="font-semibold text-sm border-b pb-1">{t("VerifAI Summary")}</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold">{t("Issue")}</Label>
-                  <Textarea value={selectedRemediation.issue || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+              {!selectedRemediation.risk && !selectedRemediation.recommendation ? (
+                /* Monitoring-reported issue: compact 2-col layout */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedRemediation.issue && (
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Issue")}</Label>
+                      <Textarea value={selectedRemediation.issue} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                  )}
+                  <div>
+                    <RemediationComments
+                      remediationId={selectedRemediation.id}
+                      readOnly={selectedRemediation.status !== "Pending"}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-xs font-semibold">{t("Risk")}</Label>
-                  <Textarea value={selectedRemediation.risk || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold">{t("Recommendation")}</Label>
-                  <Textarea value={selectedRemediation.recommendation || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
-                </div>
-                <div>
-                  <RemediationComments
-                    remediationId={selectedRemediation.id}
-                    readOnly={selectedRemediation.status !== "Pending"}
-                  />
-                </div>
-              </div>
+              ) : (
+                /* Normal assessment remediation: original layout */
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Issue")}</Label>
+                      <Textarea value={selectedRemediation.issue || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Risk")}</Label>
+                      <Textarea value={selectedRemediation.risk || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Recommendation")}</Label>
+                      <Textarea value={selectedRemediation.recommendation || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                    <div>
+                      <RemediationComments
+                        remediationId={selectedRemediation.id}
+                        readOnly={selectedRemediation.status !== "Pending"}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{t("Severity")}</Label>
