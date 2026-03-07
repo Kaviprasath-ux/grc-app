@@ -948,6 +948,8 @@ CREATE TABLE "ControlRisk" (
     "id" TEXT NOT NULL,
     "controlId" TEXT NOT NULL,
     "riskId" TEXT NOT NULL,
+    "controlStrengthId" TEXT,
+    "justification" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ControlRisk_pkey" PRIMARY KEY ("id")
@@ -2383,6 +2385,7 @@ CREATE TABLE "TPRMVendor" (
     "pii" BOOLEAN NOT NULL DEFAULT false,
     "businessJustification" TEXT,
     "vendorCertification" TEXT,
+    "vendorUrl" TEXT,
     "onboardedDate" TIMESTAMP(3),
     "offboardedDate" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -4236,6 +4239,9 @@ ALTER TABLE "ControlRisk" ADD CONSTRAINT "ControlRisk_controlId_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "ControlRisk" ADD CONSTRAINT "ControlRisk_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ControlRisk" ADD CONSTRAINT "ControlRisk_controlStrengthId_fkey" FOREIGN KEY ("controlStrengthId") REFERENCES "ControlStrength"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PolicyException" ADD CONSTRAINT "PolicyException_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "Policy"("id") ON DELETE CASCADE ON UPDATE CASCADE;

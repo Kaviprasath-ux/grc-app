@@ -56,6 +56,7 @@ interface Vendor {
   engagementId: string | null;
   vrr: string | null;
   serviceDescription: string | null;
+  vendorUrl: string | null;
   contractStartDate: string | null;
   contractEndDate: string | null;
   accessToNetwork: boolean;
@@ -297,10 +298,11 @@ export default function VendorManagementPage() {
     name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
     accountManagerEmail: "", serviceCategory: "", departmentId: "",
     status: "Onboarding", engagementId: "", vrr: "", serviceDescription: "",
-    contractStartDate: "", contractEndDate: "",
+    vendorUrl: "", contractStartDate: "", contractEndDate: "",
     accessToNetwork: false, cloud: false, accessToData: false, pii: false,
     businessJustification: "", vendorCertification: "",
   });
+  const [performMonitoring, setPerformMonitoring] = useState(false);
 
   const loadVendors = useCallback(async () => {
     setLoading(true);
@@ -336,12 +338,12 @@ export default function VendorManagementPage() {
     name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
     accountManagerEmail: "", serviceCategory: "", departmentId: "",
     status: "Onboarding", engagementId: "", vrr: "", serviceDescription: "",
-    contractStartDate: "", contractEndDate: "",
+    vendorUrl: "", contractStartDate: "", contractEndDate: "",
     accessToNetwork: false, cloud: false, accessToData: false, pii: false,
     businessJustification: "", vendorCertification: "",
   });
 
-  const openCreate = () => { setEditItem(null); resetForm(); setDialogOpen(true); };
+  const openCreate = () => { setEditItem(null); resetForm(); setPerformMonitoring(false); setDialogOpen(true); };
 
   const openEdit = (vendor: Vendor) => {
     setEditItem(vendor);
@@ -357,6 +359,7 @@ export default function VendorManagementPage() {
       engagementId: vendor.engagementId || "",
       vrr: vendor.vrr || "",
       serviceDescription: vendor.serviceDescription || "",
+      vendorUrl: vendor.vendorUrl || "",
       contractStartDate: vendor.contractStartDate ? vendor.contractStartDate.slice(0, 10) : "",
       contractEndDate: vendor.contractEndDate ? vendor.contractEndDate.slice(0, 10) : "",
       accessToNetwork: vendor.accessToNetwork,
@@ -397,12 +400,21 @@ export default function VendorManagementPage() {
           pii: form.pii,
           businessJustification: form.businessJustification.trim() || null,
           vendorCertification: form.vendorCertification.trim() || null,
+          vendorUrl: form.vendorUrl.trim() || null,
         }),
       });
       if (!res.ok) {
         const err = await res.json();
         toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
         return;
+      }
+      // Trigger monitoring assessment for new vendors if toggle is on and vendor URL is provided
+      if (!editItem && performMonitoring && form.vendorUrl.trim()) {
+        void fetch("/api/tprm/monitoring/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vendorName: form.name.trim(), vendorUrl: form.vendorUrl.trim() }),
+        });
       }
       toast({ title: t("Success"), description: editItem ? t("Vendor updated") : t("Vendor created") });
       setDialogOpen(false);
@@ -594,6 +606,13 @@ export default function VendorManagementPage() {
             <div><Label>{t("Contract Start Date")}</Label><Input type="date" value={form.contractStartDate} onChange={(e) => setForm({ ...form, contractStartDate: e.target.value })} /></div>
             <div><Label>{t("Contract End Date")}</Label><Input type="date" value={form.contractEndDate} onChange={(e) => setForm({ ...form, contractEndDate: e.target.value })} /></div>
             <div className="col-span-full"><Label>{t("Service Description")}</Label><Textarea value={form.serviceDescription} onChange={(e) => setForm({ ...form, serviceDescription: e.target.value })} rows={2} /></div>
+            <div className="col-span-full"><Label>{t("Vendor URL")}</Label><Input value={form.vendorUrl} onChange={(e) => setForm({ ...form, vendorUrl: e.target.value })} placeholder={t("e.g. https://vendor-website.com")} /></div>
+            {!editItem && (
+              <div className="col-span-full flex items-center gap-3">
+                <Switch checked={performMonitoring} onCheckedChange={setPerformMonitoring} />
+                <Label className="text-sm">{t("Perform Monitoring Assessment")}</Label>
+              </div>
+            )}
             <div className="col-span-full"><Label>{t("Business Justification")}</Label><Textarea value={form.businessJustification} onChange={(e) => setForm({ ...form, businessJustification: e.target.value })} rows={2} /></div>
             <div><Label>{t("Vendor Certification")}</Label><Input value={form.vendorCertification} onChange={(e) => setForm({ ...form, vendorCertification: e.target.value })} /></div>
             <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t">

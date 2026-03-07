@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getAMEmail } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { notificationService } from '@/lib/notification-service';
 
@@ -11,7 +11,8 @@ export const GET = withAuth(
       const { searchParams } = new URL(req.url);
       const status = searchParams.get('status') || 'Open';
 
-      const userEmail = session.email?.toLowerCase();
+      // Resolves SME → parent AM email
+      const userEmail = await getAMEmail(session);
       if (!userEmail) {
         return NextResponse.json({ data: [] });
       }
@@ -63,8 +64,8 @@ export const POST = withAuth(
         return NextResponse.json({ error: 'Vendor ID and title are required' }, { status: 400 });
       }
 
-      // Verify vendor belongs to this tenant and AM has access
-      const userEmail = session.email?.toLowerCase();
+      // Verify vendor belongs to this tenant and AM/SME has access
+      const userEmail = await getAMEmail(session);
       const vendor = await prisma.tPRMVendor.findFirst({
         where: {
           id: vendorId,

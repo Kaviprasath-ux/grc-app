@@ -61,7 +61,7 @@ export const GET = withAuth(
             include: { cause: true },
           },
           controlRisks: {
-            include: { control: true },
+            include: { control: true, controlStrength: true },
           },
           assessments: {
             orderBy: { assessmentDate: "desc" },
@@ -292,10 +292,15 @@ export const PUT = withAuth(
         await tx.controlRisk.deleteMany({ where: { riskId: id } });
         if (controls.length > 0) {
           await tx.controlRisk.createMany({
-            data: controls.map((controlId: string) => ({
-              riskId: id,
-              controlId,
-            })),
+            data: controls.map((c: string | { controlId: string; controlStrengthId?: string; justification?: string }) => {
+              if (typeof c === "string") return { riskId: id, controlId: c };
+              return {
+                riskId: id,
+                controlId: c.controlId,
+                controlStrengthId: c.controlStrengthId || null,
+                justification: c.justification || null,
+              };
+            }),
           });
         }
       }
@@ -339,7 +344,7 @@ export const PUT = withAuth(
             include: { cause: true },
           },
           controlRisks: {
-            include: { control: true },
+            include: { control: true, controlStrength: true },
           },
         },
       });

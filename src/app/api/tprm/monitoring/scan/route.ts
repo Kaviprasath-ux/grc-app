@@ -489,7 +489,7 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "create" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "create" }
 );
 
 // GET — poll status; when done, fetch result, map, and persist
@@ -619,5 +619,5 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "view" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "view" }
 );

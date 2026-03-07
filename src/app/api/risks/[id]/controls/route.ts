@@ -9,7 +9,7 @@ export async function POST(
   try {
     const { id: riskId } = await params;
     const body = await request.json();
-    const { controlId } = body;
+    const { controlId, controlStrengthId, justification } = body;
 
     if (!controlId) {
       return NextResponse.json(
@@ -22,10 +22,13 @@ export async function POST(
       data: {
         controlId,
         riskId,
+        controlStrengthId: controlStrengthId || null,
+        justification: justification || null,
       },
       include: {
         control: true,
         risk: true,
+        controlStrength: true,
       },
     });
 

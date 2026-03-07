@@ -39,6 +39,7 @@ interface Risk {
   assessmentStatus: string;
   threats?: { threat: { id: string; name: string } }[];
   vulnerabilities?: { vulnerability: { id: string; name: string } }[];
+  controlRisks?: { controlId: string; controlStrengthId: string | null; justification: string | null; control: { id: string; controlCode?: string; name: string }; controlStrength: { id: string; name: string; score: number } | null }[];
   riskSources?: string | null;
   assessmentFormData?: string | null;
 }
@@ -47,6 +48,7 @@ interface AssessmentFormData {
   threatLikelihoods: Record<string, number>;
   threatImpacts: Record<string, Record<string, number>>;
   vulnerabilityRatings: Record<string, number>;
+  lastStep?: number;
 }
 
 interface Threat {
@@ -133,6 +135,7 @@ export function RiskAssessmentWizardDialog({
   const [vulnerabilityRatings, setVulnerabilityRatingsOptions] = useState<VulnerabilityRating[]>([]);
   const [riskRanges, setRiskRanges] = useState<RiskRange[]>([]);
   const [riskTolerance, setRiskTolerance] = useState<number>(10);
+  const [controlStrengths, setControlStrengths] = useState<{ id: string; name: string; score: number }[]>([]);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -234,6 +237,7 @@ export function RiskAssessmentWizardDialog({
       threatLikelihoods,
       threatImpacts,
       vulnerabilityRatings: vulnerabilityRatingsForm,
+      lastStep: currentStep,
     };
 
     try {
@@ -296,7 +300,7 @@ export function RiskAssessmentWizardDialog({
     try {
       const [
         riskRes, threatsRes, vulnsRes,
-        likelihoodsRes, impactCatsRes, impactRatingsRes, vulnRatingsRes, riskRangesRes, scoreConfigRes
+        likelihoodsRes, impactCatsRes, impactRatingsRes, vulnRatingsRes, riskRangesRes, scoreConfigRes, controlStrengthsRes
       ] = await Promise.all([
         fetch(`/api/risks/${riskId}`),
         fetch("/api/risk-threats"),
@@ -307,6 +311,7 @@ export function RiskAssessmentWizardDialog({
         fetch("/api/vulnerability-ratings"),
         fetch("/api/risk-ranges"),
         fetch("/api/risk-score-config"),
+        fetch("/api/control-strengths"),
       ]);
 
       if (riskRes.ok) {
@@ -325,6 +330,11 @@ export function RiskAssessmentWizardDialog({
             }
             if (savedFormData.vulnerabilityRatings) {
               setVulnerabilityRatingsForm(savedFormData.vulnerabilityRatings);
+            }
+            // Resume from last saved step (for In-Progress assessments)
+            const status = data.assessmentStatus || "Open";
+            if (savedFormData.lastStep && (status === "In-Progress" || status === "Draft")) {
+              setCurrentStep(savedFormData.lastStep);
             }
           } catch (e) {
             console.error("Failed to parse assessment form data:", e);
@@ -362,6 +372,10 @@ export function RiskAssessmentWizardDialog({
       if (scoreConfigRes.ok) {
         const data = await scoreConfigRes.json();
         if (data.riskTolerance) setRiskTolerance(data.riskTolerance);
+      }
+      if (controlStrengthsRes.ok) {
+        const data = await controlStrengthsRes.json();
+        setControlStrengths(data);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -413,6 +427,7 @@ export function RiskAssessmentWizardDialog({
       threatLikelihoods,
       threatImpacts,
       vulnerabilityRatings: vulnerabilityRatingsForm,
+      lastStep: currentStep,
     };
 
     try {
@@ -475,15 +490,24 @@ export function RiskAssessmentWizardDialog({
     const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
 
-    if (riskRating !== "Low Risk") {
+    // Check if Risk Response Strategy is needed:
+    // Condition: (RiskScore / RiskTolerance) <= ResidualRiskScore
+    // If true → response needed, assessment status = "Closed"
+    // If false → no response needed, assessment status = "Completed", risk status = "Completed"
+    const toleranceThreshold = riskScoreCalc / (riskTolerance || 1);
+    const needsResponse = toleranceThreshold <= residualRiskScore;
+
+    if (needsResponse) {
       setShowResponseDialog(true);
       return;
     }
 
-    await saveAssessment();
+    // No response needed - mark as completed
+    await saveAssessment(undefined, false);
   };
 
-  const saveAssessment = async (responseStrategy?: string) => {
+  // responseNeeded: true = response strategy required (assessment "Closed"), false = no response needed (assessment "Completed")
+  const saveAssessment = async (responseStrategy?: string, responseNeeded: boolean = true) => {
     if (!risk) return;
 
     const likelihoodValues = Object.values(threatLikelihoods);
@@ -512,7 +536,12 @@ export function RiskAssessmentWizardDialog({
       threatLikelihoods,
       threatImpacts,
       vulnerabilityRatings: vulnerabilityRatingsForm,
+      lastStep: currentStep,
     };
+
+    // Determine statuses based on whether response strategy is needed
+    const assessmentStatus = responseNeeded ? "Closed" : "Completed";
+    const riskStatus = responseNeeded ? undefined : "Completed";
 
     try {
       await fetch(`/api/risks/${risk.id}`, {
@@ -529,14 +558,17 @@ export function RiskAssessmentWizardDialog({
           residualLikelihood: likelihoodRounded,
           residualImpact: impactRounded,
           residualRiskScore: simpleRiskScore,
-          assessmentStatus: "Completed",
+          assessmentStatus,
+          ...(riskStatus && { status: riskStatus }),
           responseStrategy: responseStrategy || undefined,
           lastAssessmentDate: new Date().toISOString(),
           assessmentFormData: JSON.stringify(formData),
         }),
       });
 
-      toast.success("Assessment completed successfully");
+      toast.success(responseNeeded
+        ? t("Assessment closed. Risk Response Strategy required.")
+        : t("Assessment completed successfully. No response action needed."));
       onOpenChange(false);
       onAssessmentComplete?.();
     } catch (error) {
@@ -570,7 +602,7 @@ export function RiskAssessmentWizardDialog({
         return;
       }
 
-      await saveAssessment(selectedStrategy);
+      await saveAssessment(selectedStrategy, true);
 
       setShowResponseDialog(false);
       setSelectedStrategy("");
@@ -636,6 +668,54 @@ export function RiskAssessmentWizardDialog({
 
   const riskScore = calcLikelihood * calcImpact * (calcVulnerability || 1);
   const calculatedRating = getRiskRatingFromScore(riskScore);
+
+  // Control Rating calculation
+  const controlRatingResult = useMemo(() => {
+    const linkedControls = risk?.controlRisks || [];
+    const totalControlCount = linkedControls.length;
+    const empty = { rating: 0, count: 0, hasControls: false, controls: [] as { controlCode: string; name: string; strengthName: string; value: number }[] };
+    if (totalControlCount === 0) return empty;
+
+    // Use control strengths from settings if available, otherwise fall back to max from linked controls
+    const maxScore = controlStrengths.length > 0
+      ? Math.max(...controlStrengths.map(cs => cs.score))
+      : Math.max(...linkedControls.map(cr => cr.controlStrength?.score || 0), 0);
+
+    if (maxScore === 0) return { ...empty, count: totalControlCount, hasControls: true, controls: linkedControls.map(cr => ({ controlCode: cr.control?.controlCode || "", name: cr.control?.name || "", strengthName: cr.controlStrength?.name || "-", value: 0 })) };
+
+    const controlDetails: { controlCode: string; name: string; strengthName: string; value: number }[] = [];
+    let sumControlValues = 0;
+    for (const cr of linkedControls) {
+      const controlWeight = cr.controlStrength?.score || 0;
+      const controlValue = Math.round(((controlWeight / maxScore) * 100) * 100) / 100;
+      sumControlValues += controlValue;
+      controlDetails.push({
+        controlCode: cr.control?.controlCode || "",
+        name: cr.control?.name || "",
+        strengthName: cr.controlStrength?.name || "-",
+        value: controlValue,
+      });
+    }
+
+    const rating = Math.round((sumControlValues / totalControlCount) * 100) / 100;
+    return { rating, count: totalControlCount, hasControls: true, controls: controlDetails };
+  }, [risk?.controlRisks, controlStrengths]);
+
+  // Residual Risk = InherentRiskScore / TotalControlStrength (if TotalControlStrength != 0)
+  const totalControlStrength = useMemo(() => {
+    const linkedControls = risk?.controlRisks || [];
+    let total = 0;
+    for (const cr of linkedControls) {
+      const score = cr.controlStrength?.score || 0;
+      if (score !== 0) total += score;
+    }
+    return total;
+  }, [risk?.controlRisks]);
+
+  const residualRiskScore = totalControlStrength !== 0
+    ? Math.round((riskScore / totalControlStrength) * 100) / 100
+    : riskScore;
+  const residualRiskRating = getRiskRatingFromScore(residualRiskScore);
 
   // Speedometer calculations for Risk Summary step
   const speedometerMaxScore = riskRanges.length > 0 ? Math.max(...riskRanges.map(r => r.highRange)) : 125;
@@ -1050,23 +1130,70 @@ export function RiskAssessmentWizardDialog({
                       </div>
                       <div className="p-4 text-center rounded-lg border border-slate-200">
                         <p className="text-xs text-slate-500 uppercase mb-2">{t("Control Rating")}</p>
-                        <p className="text-lg font-semibold text-slate-800">-</p>
-                        <p className="text-xs text-slate-400 mt-1.5">{t("No controls linked")}</p>
+                        {controlRatingResult.hasControls ? (
+                          <>
+                            <p className="text-lg font-semibold text-slate-800">{controlRatingResult.rating.toFixed(2)}%</p>
+                            <p className="text-xs text-slate-400 mt-1.5">{controlRatingResult.count} {t("controls linked")}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-lg font-semibold text-slate-800">-</p>
+                            <p className="text-xs text-slate-400 mt-1.5">{t("No controls linked")}</p>
+                          </>
+                        )}
                       </div>
                       <div className="p-4 text-center rounded-lg border border-slate-200">
                         <p className="text-xs text-slate-500 uppercase mb-2">{t("Residual Risk")}</p>
                         <span className={cn(
                           "inline-block px-3 py-1.5 rounded-lg text-sm font-semibold",
-                          calculatedRating === "Critical" || calculatedRating === "Catastrophic" ? "bg-red-100 text-red-800" : "",
-                          calculatedRating === "Very High" ? "bg-orange-100 text-orange-800" : "",
-                          calculatedRating === "High" ? "bg-amber-100 text-amber-800" : "",
-                          calculatedRating === "Medium" ? "bg-yellow-100 text-yellow-800" : "",
-                          calculatedRating === "Low" || calculatedRating === "Low Risk" ? "bg-green-100 text-green-800" : ""
+                          residualRiskRating === "Critical" || residualRiskRating === "Catastrophic" || residualRiskRating === "CataStrophic" ? "bg-red-100 text-red-800" : "",
+                          residualRiskRating === "Very High" ? "bg-orange-100 text-orange-800" : "",
+                          residualRiskRating === "High" ? "bg-amber-100 text-amber-800" : "",
+                          residualRiskRating === "Medium" ? "bg-yellow-100 text-yellow-800" : "",
+                          residualRiskRating === "Low" || residualRiskRating === "Low Risk" ? "bg-green-100 text-green-800" : ""
                         )}>
-                          {t(calculatedRating)}
+                          {t(residualRiskRating)}
                         </span>
-                        <p className="text-xs text-slate-400 mt-1.5">{t("Score")}: {riskScore.toFixed(2)}</p>
+                        <p className="text-xs text-slate-400 mt-1.5">{t("Score")}: {residualRiskScore.toFixed(2)}</p>
                       </div>
+                    </div>
+
+                    {/* Existing Controls */}
+                    <div className="pb-5 border-b border-slate-200">
+                      <h4 className="font-semibold text-primary-700 mb-3">{t("Existing Controls")}</h4>
+                      {controlRatingResult.hasControls ? (
+                        <div className="space-y-2">
+                          {controlRatingResult.controls.map((ctrl, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                              <p className="text-sm font-medium text-primary-700">
+                                {ctrl.controlCode} : {ctrl.name}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                {/* Mini gauge */}
+                                <svg width="32" height="20" viewBox="0 0 32 20">
+                                  <path d="M4 18 A14 14 0 0 1 28 18" fill="none" stroke="#e2e8f0" strokeWidth="3" strokeLinecap="round" />
+                                  <path
+                                    d="M4 18 A14 14 0 0 1 28 18"
+                                    fill="none"
+                                    stroke={ctrl.value >= 75 ? "#22c55e" : ctrl.value >= 50 ? "#eab308" : "#f59e0b"}
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeDasharray={`${(ctrl.value / 100) * 37.7} 37.7`}
+                                  />
+                                </svg>
+                                <div className="text-right">
+                                  <p className="text-sm font-bold text-slate-800">{ctrl.value.toFixed(0)}%</p>
+                                  <p className="text-[10px] text-slate-500">{ctrl.strengthName}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-6 text-center">
+                          <p className="text-sm text-slate-500">{t("No controls linked")}</p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Assessment Details */}
@@ -1094,8 +1221,8 @@ export function RiskAssessmentWizardDialog({
                           <p className="text-sm font-medium text-slate-800">{calcVulnerability}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500 uppercase mb-0.5">{t("Existing Controls")}</p>
-                          <p className="text-sm font-medium text-slate-500">{t("No controls linked")}</p>
+                          <p className="text-xs text-slate-500 uppercase mb-0.5">{t("Control Rating")}</p>
+                          <p className="text-sm font-medium text-slate-800">{controlRatingResult.hasControls ? `${controlRatingResult.rating.toFixed(2)}%` : "-"}</p>
                         </div>
                       </div>
                     </div>

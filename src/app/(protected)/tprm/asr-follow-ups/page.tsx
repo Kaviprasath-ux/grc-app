@@ -452,28 +452,49 @@ export default function AsrFollowUpsPage() {
 
               {/* VerifAI Summary */}
               <h5 className="font-semibold text-sm border-b pb-1">{t("VerifAI Summary")}</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold">{t("Issue")}</Label>
-                  <Textarea value={viewRemediation.issue || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+              {!viewRemediation.risk && !viewRemediation.recommendation ? (
+                /* Monitoring-reported issue: compact 2-col layout */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {viewRemediation.issue && (
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Issue")}</Label>
+                      <Textarea value={viewRemediation.issue} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                  )}
+                  <div>
+                    <RemediationComments
+                      remediationId={viewRemediation.id}
+                      readOnly
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-xs font-semibold">{t("Risk")}</Label>
-                  <Textarea value={viewRemediation.risk || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-semibold">{t("Recommendation")}</Label>
-                  <Textarea value={viewRemediation.recommendation || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
-                </div>
-                <div>
-                  <RemediationComments
-                    remediationId={viewRemediation.id}
-                    readOnly
-                  />
-                </div>
-              </div>
+              ) : (
+                /* Normal assessment remediation: original layout */
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Issue")}</Label>
+                      <Textarea value={viewRemediation.issue || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Risk")}</Label>
+                      <Textarea value={viewRemediation.risk || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Recommendation")}</Label>
+                      <Textarea value={viewRemediation.recommendation || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                    <div>
+                      <RemediationComments
+                        remediationId={viewRemediation.id}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-semibold">{t("Severity")}</Label>

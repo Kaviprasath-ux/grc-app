@@ -87,6 +87,18 @@ interface Control {
   domain: { id: string; name: string } | null;
 }
 
+interface ControlStrengthOption {
+  id: string;
+  name: string;
+  score: number;
+}
+
+interface ControlAssessment {
+  controlId: string;
+  controlStrengthId: string;
+  justification: string;
+}
+
 interface Risk {
   id: string;
   riskId: string;
@@ -102,7 +114,7 @@ interface Risk {
   threats?: { threat: { id: string; name: string } }[];
   vulnerabilities?: { vulnerability: { id: string; name: string } }[];
   causes?: { cause: { id: string; name: string } }[];
-  controlRisks?: { control: { id: string } }[];
+  controlRisks?: { control: { id: string }; controlStrengthId?: string | null; justification?: string | null }[];
 }
 
 const getSteps = (t: (key: string) => string) => [
@@ -135,6 +147,8 @@ export default function EditRiskPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
+  const [controlStrengths, setControlStrengths] = useState<ControlStrengthOption[]>([]);
+  const [controlAssessments, setControlAssessments] = useState<Record<string, ControlAssessment>>({});
   const [loading, setLoading] = useState(false);
   const [loadingRisk, setLoadingRisk] = useState(true);
   const [riskId, setRiskId] = useState("");
@@ -182,6 +196,7 @@ export default function EditRiskPage() {
         fetchAssets(),
         fetchProcesses(),
         fetchControls(),
+        fetchControlStrengths(),
       ]);
       fetchRisk();
     };
@@ -209,6 +224,18 @@ export default function EditRiskPage() {
           selectedCauses: risk.causes?.map(c => c.cause.id) || [],
           selectedControls: risk.controlRisks?.map(cr => cr.control.id) || [],
         });
+        // Pre-fill control assessments from existing data
+        if (risk.controlRisks) {
+          const assessments: Record<string, ControlAssessment> = {};
+          risk.controlRisks.forEach(cr => {
+            assessments[cr.control.id] = {
+              controlId: cr.control.id,
+              controlStrengthId: cr.controlStrengthId || "",
+              justification: cr.justification || "",
+            };
+          });
+          setControlAssessments(assessments);
+        }
         // Fetch users for the department if set
         if (risk.department?.id) {
           fetchUsers(risk.department.id);
@@ -351,6 +378,18 @@ export default function EditRiskPage() {
     }
   };
 
+  const fetchControlStrengths = async () => {
+    try {
+      const response = await fetch("/api/control-strengths");
+      if (response.ok) {
+        const data = await response.json();
+        setControlStrengths(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch control strengths:", error);
+    }
+  };
+
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
@@ -402,7 +441,21 @@ export default function EditRiskPage() {
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
       case 2:
-        return true;
+        if (formData.selectedControls.length > 0) {
+          for (const controlId of formData.selectedControls) {
+            const assessment = controlAssessments[controlId];
+            if (!assessment?.controlStrengthId) {
+              const control = controls.find(c => c.id === controlId);
+              errors[`strength_${controlId}`] = t("pleaseSelectControlStrengthFor") + ` ${control?.name || control?.controlCode || ""}`;
+            }
+            if (!assessment?.justification?.trim()) {
+              const control = controls.find(c => c.id === controlId);
+              errors[`justification_${controlId}`] = t("pleaseEnterJustificationFor") + ` ${control?.name || control?.controlCode || ""}`;
+            }
+          }
+        }
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
       default:
         return true;
     }
@@ -439,7 +492,11 @@ export default function EditRiskPage() {
           threats: formData.selectedThreats,
           vulnerabilities: formData.selectedVulnerabilities,
           causes: formData.selectedCauses,
-          controls: formData.selectedControls,
+          controls: formData.selectedControls.map(controlId => ({
+            controlId,
+            controlStrengthId: controlAssessments[controlId]?.controlStrengthId || null,
+            justification: controlAssessments[controlId]?.justification || null,
+          })),
           actor: "System",
         }),
       });
@@ -943,40 +1000,111 @@ export default function EditRiskPage() {
                 </div>
 
                 {formData.selectedControls.length > 0 ? (
-                  <div className="border border-slate-200 rounded-lg overflow-hidden overflow-x-auto">
-                    <table className="w-full min-w-[500px]">
-                      <thead className="bg-slate-50">
-                        <tr className="h-12">
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("controlCode")}</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("name")}</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("domain")}</th>
-                          <th className="text-right px-4 text-sm font-medium text-slate-700">{t("action")}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {formData.selectedControls.map((controlId) => {
-                          const control = controls.find(c => c.id === controlId);
-                          if (!control) return null;
-                          return (
-                            <tr key={controlId} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-4 py-3 text-sm font-medium text-primary-600">{control.controlCode}</td>
-                              <td className="px-4 py-3 text-sm text-slate-600">{control.name}</td>
-                              <td className="px-4 py-3 text-sm text-slate-600">{control.domain?.name || "-"}</td>
-                              <td className="px-4 py-3 text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeFromSelection("selectedControls", controlId)}
-                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                  <div className="space-y-4">
+                    {formData.selectedControls.map((controlId) => {
+                      const control = controls.find(c => c.id === controlId);
+                      if (!control) return null;
+                      const assessment = controlAssessments[controlId] || { controlId, controlStrengthId: "", justification: "" };
+                      return (
+                        <div key={controlId} className="border border-slate-200 rounded-lg p-4 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-primary-600">
+                                {control.controlCode} : {control.name}
+                              </p>
+                              {control.description && (
+                                <p className="text-sm text-slate-500 mt-1">{control.description}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                removeFromSelection("selectedControls", controlId);
+                                setControlAssessments(prev => {
+                                  const updated = { ...prev };
+                                  delete updated[controlId];
+                                  return updated;
+                                });
+                              }}
+                              className="text-red-600 hover:text-red-700 shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          {/* Control Strength Selection */}
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">{t("controlStrength")} *</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {controlStrengths.map((strength) => (
+                                <button
+                                  key={strength.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setControlAssessments(prev => ({
+                                      ...prev,
+                                      [controlId]: {
+                                        ...assessment,
+                                        controlId,
+                                        controlStrengthId: strength.id,
+                                      },
+                                    }));
+                                    setValidationErrors(prev => {
+                                      const updated = { ...prev };
+                                      delete updated[`strength_${controlId}`];
+                                      return updated;
+                                    });
+                                  }}
+                                  className={cn(
+                                    "px-3 py-1.5 text-sm rounded-md border transition-colors",
+                                    assessment.controlStrengthId === strength.id
+                                      ? "bg-primary-700 text-white border-primary-700"
+                                      : "bg-white text-slate-700 border-slate-300 hover:border-primary-400"
+                                  )}
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                  {strength.name}
+                                </button>
+                              ))}
+                            </div>
+                            {validationErrors[`strength_${controlId}`] && (
+                              <p className="text-xs text-red-500">{validationErrors[`strength_${controlId}`]}</p>
+                            )}
+                          </div>
+
+                          {/* Justification */}
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">{t("justification")} *</Label>
+                            <Textarea
+                              value={assessment.justification}
+                              onChange={(e) => {
+                                setControlAssessments(prev => ({
+                                  ...prev,
+                                  [controlId]: {
+                                    ...assessment,
+                                    controlId,
+                                    justification: e.target.value,
+                                  },
+                                }));
+                                if (e.target.value.trim()) {
+                                  setValidationErrors(prev => {
+                                    const updated = { ...prev };
+                                    delete updated[`justification_${controlId}`];
+                                    return updated;
+                                  });
+                                }
+                              }}
+                              placeholder={t("enterJustificationForControlAssessment")}
+                              rows={2}
+                              className="text-sm"
+                            />
+                            {validationErrors[`justification_${controlId}`] && (
+                              <p className="text-xs text-red-500">{validationErrors[`justification_${controlId}`]}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="border border-slate-200 rounded-lg">
@@ -1033,6 +1161,11 @@ export default function EditRiskPage() {
                                           addToSelection("selectedControls", control.id);
                                         } else {
                                           removeFromSelection("selectedControls", control.id);
+                                          setControlAssessments(prev => {
+                                            const updated = { ...prev };
+                                            delete updated[control.id];
+                                            return updated;
+                                          });
                                         }
                                       }}
                                     />

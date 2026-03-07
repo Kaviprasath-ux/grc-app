@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getAMEmail } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { saveUploadedFile } from '@/lib/file-upload';
 
@@ -11,7 +11,8 @@ export const GET = withAuth(
       const { searchParams } = new URL(req.url);
       const status = searchParams.get('status') || 'Pending';
 
-      const userEmail = session.email?.toLowerCase();
+      // Resolves SME → parent AM email
+      const userEmail = await getAMEmail(session);
       if (!userEmail) {
         return NextResponse.json({ data: [] });
       }

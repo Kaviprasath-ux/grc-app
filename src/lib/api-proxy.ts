@@ -1,4 +1,4 @@
-
+2
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from "@/config/external-apis";

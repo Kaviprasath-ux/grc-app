@@ -109,6 +109,7 @@ export const POST = withAuth(
           vrr: body.vrr,
           engagementId: body.engagementId,
           vendorCertification: body.vendorCertification,
+          vendorUrl: body.vendorUrl || null,
           businessJustification: body.businessJustification,
           accessToNetwork: body.accessToNetwork ?? false,
           cloud: body.cloud ?? false,

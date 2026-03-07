@@ -24,6 +24,9 @@ export const GET = withAuth(
           logs: { orderBy: { logDate: 'desc' }, take: 50 },
           responses: {
             orderBy: { questionNo: 'asc' },
+            include: {
+              delegatedTo: { select: { id: true, fullName: true } },
+            },
           },
         },
       });
