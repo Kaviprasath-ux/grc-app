@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
+import { withAuthOnly, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 
 // GET /api/tprm/remediation-comments?remediationId=xxx — Get comments for a remediation
-export const GET = withAuth(
+export const GET = withAuthOnly(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
@@ -38,11 +38,10 @@ export const GET = withAuth(
       return NextResponse.json({ error: 'Failed to fetch comments' }, { status: 500 });
     }
   },
-  { resource: 'tprm.am-follow-ups', action: 'view' }
 );
 
 // POST /api/tprm/remediation-comments — Add a comment
-export const POST = withAuth(
+export const POST = withAuthOnly(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
@@ -94,5 +93,4 @@ export const POST = withAuth(
       return NextResponse.json({ error: 'Failed to add comment' }, { status: 500 });
     }
   },
-  { resource: 'tprm.am-follow-ups', action: 'edit' }
 );

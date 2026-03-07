@@ -256,11 +256,6 @@ export default function AsrFollowUpsPage() {
     { accessorKey: "responseDate", header: t("Response Date"), cell: ({ row }) => formatDate(row.getValue("responseDate")) },
     { accessorKey: "dueDate", header: t("Due Date"), cell: ({ row }) => formatDate(row.getValue("dueDate")) },
     {
-      accessorKey: "reassignStatus",
-      header: t("Reassign Status"),
-      cell: ({ row }) => row.getValue("reassignStatus") || t("Not Assigned"),
-    },
-    {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
@@ -475,7 +470,7 @@ export default function AsrFollowUpsPage() {
                 <div>
                   <RemediationComments
                     remediationId={viewRemediation.id}
-                    readOnly={viewRemediation.status !== "Received"}
+                    readOnly
                   />
                 </div>
               </div>

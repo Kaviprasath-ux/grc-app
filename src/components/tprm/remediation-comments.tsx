@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,11 +31,19 @@ interface RemediationCommentsProps {
 
 export function RemediationComments({ remediationId, readOnly = false }: RemediationCommentsProps) {
   const { t } = useLanguage();
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // User can only comment if the last comment is NOT from them (one comment per turn)
+  const lastCommentIsFromMe = useMemo(() => {
+    if (!currentUserId || comments.length === 0) return false;
+    return comments[comments.length - 1].userId === currentUserId;
+  }, [comments, currentUserId]);
 
   useEffect(() => {
     if (!remediationId) return;
@@ -116,7 +125,7 @@ export function RemediationComments({ remediationId, readOnly = false }: Remedia
       </div>
 
       {/* Input area */}
-      {!readOnly && (
+      {!readOnly && !lastCommentIsFromMe && (
         <div className="border-t p-2 flex gap-2">
           <Textarea
             value={newMessage}
