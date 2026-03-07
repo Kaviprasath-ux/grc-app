@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Home, ChevronRight, Search, Plus, Minus, Download, MoreHorizontal,
   Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X, Check, Info, Play, AlertTriangle,
@@ -42,6 +43,7 @@ interface Vendor {
   accountManagerEmail: string | null;
   serviceCategory: string | null;
   serviceDescription: string | null;
+  vendorUrl: string | null;
   status: string;
   vrr: string | null;
   createdAt: string;
@@ -233,6 +235,8 @@ export default function RMInventoryPage() {
   const [vendorName, setVendorName] = useState("");
   const [serviceCategory, setServiceCategory] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
+  const [vendorUrl, setVendorUrl] = useState("");
+  const [performMonitoring, setPerformMonitoring] = useState(false);
   const [managers, setManagers] = useState<AccountManager[]>([{ ...emptyManager }]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [profileAnswers, setProfileAnswers] = useState<Record<string, string>>({});
@@ -299,6 +303,8 @@ export default function RMInventoryPage() {
     setVendorName("");
     setServiceCategory("");
     setServiceDescription("");
+    setVendorUrl("");
+    setPerformMonitoring(false);
     setManagers([{ ...emptyManager }]);
     setFormErrors({});
     setProfileAnswers({});
@@ -339,6 +345,7 @@ export default function RMInventoryPage() {
       contactPhone: phones.join("; ") || null,
       serviceCategory: serviceCategory || null,
       serviceDescription: serviceDescription || null,
+      vendorUrl: vendorUrl.trim() || null,
     };
   };
 
@@ -375,6 +382,14 @@ export default function RMInventoryPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ vrr: vrrLabel }),
         });
+        // Trigger monitoring assessment if toggle is on and vendor URL is provided
+        if (performMonitoring && vendorUrl.trim()) {
+          void fetch("/api/tprm/monitoring/scan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ vendorName: vendorName.trim(), vendorUrl: vendorUrl.trim() }),
+          });
+        }
         setCreatedVendorName(vendorName.trim());
         setCreatedVendorId(created.id);
         setShowCreateDialog(false);
@@ -455,6 +470,8 @@ export default function RMInventoryPage() {
     setVendorName(vendor.name);
     setServiceCategory(vendor.serviceCategory || "");
     setServiceDescription(vendor.serviceDescription || "");
+    setVendorUrl(vendor.vendorUrl || "");
+    setPerformMonitoring(false);
     setManagers(parseManagers(vendor));
     setFormErrors({});
     setProfileAnswers({});
@@ -713,6 +730,18 @@ export default function RMInventoryPage() {
           <Label>{t("Service Description")}</Label>
           <Textarea value={serviceDescription} onChange={(e) => setServiceDescription(e.target.value)} placeholder={t("Describe the services provided")} rows={3} />
         </div>
+
+        {/* Vendor URL */}
+        <div className="space-y-1.5">
+          <Label>{t("Vendor URL")}</Label>
+          <Input value={vendorUrl} onChange={(e) => setVendorUrl(e.target.value)} placeholder={t("e.g. https://vendor-website.com")} />
+        </div>
+
+        {/* Perform Monitoring Assessment Toggle */}
+        <div className="flex items-center gap-3 pt-2">
+          <Switch checked={performMonitoring} onCheckedChange={setPerformMonitoring} />
+          <Label className="text-sm">{t("Perform Monitoring Assessment")}</Label>
+        </div>
       </div>
 
       {/* ══ Section 2: Vendor Profile Fields (Added by Admin) ══ */}
@@ -925,6 +954,7 @@ export default function RMInventoryPage() {
                 <div><p className="text-xs text-muted-foreground">{t("Created At")}</p><p>{new Date(selectedVendor.createdAt).toLocaleDateString()}</p></div>
               </div>
               <div><p className="text-xs text-muted-foreground">{t("Service Description")}</p><p>{selectedVendor.serviceDescription || "-"}</p></div>
+              {selectedVendor.vendorUrl && <div><p className="text-xs text-muted-foreground">{t("Vendor URL")}</p><p>{selectedVendor.vendorUrl}</p></div>}
             </div>
           )}
           <DialogFooter><Button variant="outline" onClick={() => setShowViewDialog(false)}>{t("Close")}</Button></DialogFooter>

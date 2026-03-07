@@ -2383,6 +2383,7 @@ CREATE TABLE "TPRMVendor" (
     "pii" BOOLEAN NOT NULL DEFAULT false,
     "businessJustification" TEXT,
     "vendorCertification" TEXT,
+    "vendorUrl" TEXT,
     "onboardedDate" TIMESTAMP(3),
     "offboardedDate" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

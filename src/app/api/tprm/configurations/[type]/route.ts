@@ -155,7 +155,7 @@ export const GET = withAuth(
       return NextResponse.json({ error: 'Failed to fetch configuration data', detail: msg }, { status: 500 });
     }
   },
-  { resource: ['tprm.configurations', 'tprm.bo-inventory', 'tprm.rm-inventory'], action: 'view' }
+  { resource: ['tprm.configurations', 'tprm.bo-inventory', 'tprm.rm-inventory', 'tprm.asr-monitoring'], action: 'view' }
 );
 
 // ============ POST ============

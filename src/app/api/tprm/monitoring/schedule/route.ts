@@ -42,7 +42,7 @@ export const GET = withAuth(
       return NextResponse.json({ error: "Failed to fetch schedule" }, { status: 500 });
     }
   },
-  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "edit" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "edit" }
 );
 
 // PATCH update schedule config
@@ -89,5 +89,5 @@ export const PATCH = withAuth(
       return NextResponse.json({ error: "Failed to update schedule" }, { status: 500 });
     }
   },
-  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "edit" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "edit" }
 );

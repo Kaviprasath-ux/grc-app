@@ -170,7 +170,7 @@ export const GET = withAuth(
       return NextResponse.json({ error: "Failed to fetch monitoring data" }, { status: 500 });
     }
   },
-  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "view" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "view" }
 );
 
 // POST — ingest a full monitoring API response and persist it
@@ -449,7 +449,7 @@ export const POST = withAuth(
       return NextResponse.json({ error: "Failed to save monitoring data" }, { status: 500 });
     }
   },
-  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "create" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "create" }
 );
 
 // PATCH — link a monitoring vendor to a TPRM vendor
@@ -481,5 +481,5 @@ export const PATCH = withAuth(
       return NextResponse.json({ error: "Failed to update monitoring vendor" }, { status: 500 });
     }
   },
-  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "edit" }
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "edit" }
 );

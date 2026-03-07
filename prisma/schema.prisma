@@ -3321,6 +3321,7 @@ model TPRMVendor {
   pii                 Boolean         @default(false)
   businessJustification String?       @db.Text
   vendorCertification String?
+  vendorUrl           String?
   onboardedDate       DateTime?
   offboardedDate      DateTime?
   createdAt           DateTime        @default(now())

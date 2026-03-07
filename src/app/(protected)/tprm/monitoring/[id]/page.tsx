@@ -43,6 +43,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -391,6 +392,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
   const [vendorName, setVendorName] = useState("");
   const [serviceCategory, setServiceCategory] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
+  const [vendorUrl, setVendorUrl] = useState("");
   const [managers, setManagers] = useState<AccountManager[]>([{ ...emptyManager }]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [profileAnswers, setProfileAnswers] = useState<Record<string, string>>({});
@@ -478,6 +480,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
     setVendorName(vendor?.vendorName || "");
     setServiceCategory("");
     setServiceDescription("");
+    setVendorUrl(vendor?.vendorURL || "");
     setManagers([{ ...emptyManager }]);
     setFormErrors({});
     setProfileAnswers({});
@@ -547,6 +550,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
           contactPhone: phones.join("; ") || null,
           serviceCategory: serviceCategory || null,
           serviceDescription: serviceDescription || null,
+          vendorUrl: vendorUrl.trim() || null,
           status: "Onboarding",
         }),
       });
@@ -711,6 +715,12 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
       <div className="space-y-1.5">
         <Label>{t("Service Description")}</Label>
         <Textarea value={serviceDescription} onChange={(e) => setServiceDescription(e.target.value)} placeholder={t("Describe the services provided")} rows={3} />
+      </div>
+
+      {/* Vendor URL */}
+      <div className="space-y-1.5">
+        <Label>{t("Vendor URL")}</Label>
+        <Input value={vendorUrl} onChange={(e) => setVendorUrl(e.target.value)} placeholder={t("e.g. https://vendor-website.com")} />
       </div>
 
       {/* Custom Vendor Profile Fields */}
@@ -978,6 +988,7 @@ export default function MonitoringDetailPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const canAccessConfig = useHasPermission("tprm.configurations", "view");
+  const canOnboardVendor = useHasPermission("tprm.monitoring", "edit") || useHasPermission("tprm.bo-monitoring", "edit") || useHasPermission("tprm.rm-monitoring", "edit");
   const vendorId = params.id as string;
 
   const [vendor, setVendor] = useState<TPRMMonitoringVendor | null>(null);
@@ -985,6 +996,14 @@ export default function MonitoringDetailPage() {
   const [onboardDialogOpen, setOnboardDialogOpen] = useState(false);
   const [selectedKpi, setSelectedKpi] = useState<{ kpi: TPRMKPIDetail; isThreat: boolean } | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
+
+  // History: selected assessment (null = latest)
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
+
+  // Report Issue state
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [selectedFindings, setSelectedFindings] = useState<Set<string>>(new Set());
+  const [issueSaving, setIssueSaving] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -1041,8 +1060,14 @@ export default function MonitoringDetailPage() {
     }
   };
 
-  // Derived data from latest assessment
-  const assessment = vendor?.assessments[0] ?? null;
+  // Derived data from selected assessment (defaults to latest)
+  const assessment = useMemo(() => {
+    if (!vendor?.assessments.length) return null;
+    if (selectedAssessmentId) {
+      return vendor.assessments.find(a => a.id === selectedAssessmentId) ?? vendor.assessments[0];
+    }
+    return vendor.assessments[0];
+  }, [vendor, selectedAssessmentId]);
 
   const { spKpis, teKpis } = useMemo(() => {
     if (!assessment) return { spKpis: [], teKpis: [] };
@@ -1098,6 +1123,63 @@ export default function MonitoringDetailPage() {
     }
     return recs;
   }, [assessment]);
+
+  // Collect all key findings across KPIs for the report issue dialog
+  const allFindings = useMemo(() => {
+    if (!assessment) return [];
+    return assessment.kpiDetails.flatMap(kpi =>
+      kpi.keyFindings.map(f => ({
+        findingId: f.id,
+        statement: f.statement,
+        kpiName: kpi.kpiName,
+        severity: kpi.severity || null,
+        score: kpi.securityScore,
+        recommendation: kpi.recommendation || null,
+      }))
+    );
+  }, [assessment]);
+
+  const toggleFinding = (findingId: string) => {
+    setSelectedFindings(prev => {
+      const next = new Set(prev);
+      if (next.has(findingId)) next.delete(findingId);
+      else next.add(findingId);
+      return next;
+    });
+  };
+
+  const toggleAllFindings = () => {
+    if (selectedFindings.size === allFindings.length) {
+      setSelectedFindings(new Set());
+    } else {
+      setSelectedFindings(new Set(allFindings.map(f => f.findingId)));
+    }
+  };
+
+  const handleReportIssues = async () => {
+    if (selectedFindings.size === 0 || !vendor?.tprmVendorId) return;
+    setIssueSaving(true);
+    try {
+      const findings = allFindings.filter(f => selectedFindings.has(f.findingId));
+      const res = await fetch("/api/tprm/monitoring/report-issue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vendorId: vendor.tprmVendorId,
+          findings,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      toast({ title: t("Success"), description: `${data.count || findings.length} ${t("issue(s) reported successfully")}` });
+      setReportIssueOpen(false);
+      setSelectedFindings(new Set());
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to report issues"), variant: "destructive" });
+    } finally {
+      setIssueSaving(false);
+    }
+  };
 
   // History data for chart
   const historyData = useMemo(() => {
@@ -1169,6 +1251,19 @@ export default function MonitoringDetailPage() {
         <span className="font-semibold">{t("Detailed Vendor Page")}</span>
       </div>
 
+      {/* Historical assessment banner */}
+      {!assessment.isLatest && (
+        <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            <Info className="h-4 w-4" />
+            <span>{t("Viewing historical assessment from")} <strong>{fmtDate(assessment.lastScan || assessment.createdAt)}</strong></span>
+          </div>
+          <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setSelectedAssessmentId(null)}>
+            {t("View Latest")}
+          </Button>
+        </div>
+      )}
+
       {/* Header Card */}
       <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
         <div className="p-6">
@@ -1192,14 +1287,19 @@ export default function MonitoringDetailPage() {
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
               {vendor.vendorOnboarded ? (
-                <Badge className="bg-green-100 text-green-800">
-                  <CheckCircle2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Onboarded")}
-                </Badge>
-              ) : (
+                <>
+                  <Badge className="bg-green-100 text-green-800">
+                    <CheckCircle2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Onboarded")}
+                  </Badge>
+                  <Button size="sm" variant="destructive" onClick={() => setReportIssueOpen(true)}>
+                    <AlertTriangle className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Report Issue")}
+                  </Button>
+                </>
+              ) : canOnboardVendor ? (
                 <Button size="sm" onClick={() => setOnboardDialogOpen(true)}>
                   <UserPlus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Onboard Vendor")}
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -1403,84 +1503,7 @@ export default function MonitoringDetailPage() {
             <p className="text-sm text-muted-foreground text-center py-8">{t("No KPI data available")}</p>
           )}
 
-          {/* ── Section 5: Compliance & Legal ── */}
-          {assessment.complianceAndLegal && (
-            <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
-              <div className="px-5 py-3.5 bg-gradient-to-r from-indigo-50/60 to-white border-b flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
-                  <Scale className="h-3.5 w-3.5 text-indigo-600" />
-                </div>
-                <span className="font-semibold text-sm text-slate-800">{t("Compliance & Legal")}</span>
-              </div>
-              <div className="p-5 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Privacy Policy */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">
-                      <Eye className="h-4 w-4 text-slate-500" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-slate-500 mb-0.5">{t("Privacy Policy")}</p>
-                      {assessment.complianceAndLegal.privacyPolicyUrl ? (
-                        <a href={assessment.complianceAndLegal.privacyPolicyUrl} target="_blank" rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline break-all flex items-center gap-1">
-                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                          {assessment.complianceAndLegal.privacyPolicyUrl}
-                        </a>
-                      ) : (
-                        <span className="text-sm text-slate-400">{t("Not available")}</span>
-                      )}
-                    </div>
-                  </div>
-                  {/* DPA */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">
-                      <FileCheck className="h-4 w-4 text-slate-500" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-slate-500 mb-0.5">{t("Data Processing Agreement")}</p>
-                      {assessment.complianceAndLegal.dpaUrl ? (
-                        <a href={assessment.complianceAndLegal.dpaUrl} target="_blank" rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline break-all flex items-center gap-1">
-                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                          {assessment.complianceAndLegal.dpaUrl}
-                        </a>
-                      ) : (
-                        <span className="text-sm text-slate-400">{t("Not available")}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {/* Laws */}
-                {assessment.complianceAndLegal.laws.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t("Applicable Laws")}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {assessment.complianceAndLegal.laws.map((law) => (
-                        <Badge key={law.id} variant="outline" className="text-xs bg-indigo-50/50 text-indigo-700 border-indigo-200">
-                          {law.lawName}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {/* Certifications */}
-                {assessment.complianceAndLegal.certifications.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t("Certifications")}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {assessment.complianceAndLegal.certifications.map((cert) => (
-                        <Badge key={cert.id} variant="outline" className="text-xs bg-green-50/50 text-green-700 border-green-200">
-                          <CheckCircle2 className="h-3 w-3 ltr:mr-1 rtl:ml-1" />
-                          {cert.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {/* ── Section 5: Compliance & Legal (hidden for all roles) ── */}
 
           {/* KPI Detail Dialog */}
           <KpiDetailDialog
@@ -1663,28 +1686,39 @@ export default function MonitoringDetailPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b text-left bg-slate-50/50">
-                        <th className="px-5 py-3 font-semibold text-slate-700">{t("Date")}</th>
+                        <th className="px-5 py-3 font-semibold text-slate-700">{t("Scan Date")}</th>
                         <th className="px-5 py-3 font-semibold text-slate-700 text-center">{t("Score")}</th>
-                        <th className="px-5 py-3 font-semibold text-slate-700 text-center">{t("Active")}</th>
+                        <th className="px-5 py-3 font-semibold text-slate-700 text-center">{t("Status")}</th>
+                        <th className="px-5 py-3 font-semibold text-slate-700 text-center"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {vendor.assessments.map((a) => (
-                        <tr key={a.id} className="border-b last:border-b-0 hover:bg-slate-50/50">
-                          <td className="px-5 py-3 text-slate-700">{fmtDate(a.lastScan || a.createdAt)}</td>
-                          <td className="px-5 py-3 text-center">
-                            <span className={`font-bold tabular-nums ${scoreRating(a.calculatedOverallScore ?? a.overallScore).numColor}`}>
-                              {(a.calculatedOverallScore ?? a.overallScore) != null ? Math.round(a.calculatedOverallScore ?? a.overallScore ?? 0) : "\u2014"}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-center">
-                            {a.isLatest
-                              ? <Badge className="bg-green-50 text-green-700 border-green-200 text-xs">{t("Active")}</Badge>
-                              : <Badge variant="outline" className="text-xs text-slate-400">{t("Inactive")}</Badge>
-                            }
-                          </td>
-                        </tr>
-                      ))}
+                      {vendor.assessments.map((a) => {
+                        const isSelected = selectedAssessmentId ? a.id === selectedAssessmentId : a.isLatest;
+                        return (
+                          <tr
+                            key={a.id}
+                            className={`border-b last:border-b-0 cursor-pointer transition-colors ${isSelected ? "bg-blue-50/70 hover:bg-blue-50" : "hover:bg-slate-50/50"}`}
+                            onClick={() => { setSelectedAssessmentId(a.id); }}
+                          >
+                            <td className="px-5 py-3 text-slate-700">{fmtDate(a.lastScan || a.createdAt)}</td>
+                            <td className="px-5 py-3 text-center">
+                              <span className={`font-bold tabular-nums ${scoreRating(a.calculatedOverallScore ?? a.overallScore).numColor}`}>
+                                {(a.calculatedOverallScore ?? a.overallScore) != null ? Math.round(a.calculatedOverallScore ?? a.overallScore ?? 0) : "\u2014"}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              {a.isLatest
+                                ? <Badge className="bg-green-50 text-green-700 border-green-200 text-xs">{t("Latest")}</Badge>
+                                : <Badge variant="outline" className="text-xs text-slate-400">{fmtDate(a.createdAt)}</Badge>
+                              }
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              {isSelected && <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-xs">{t("Viewing")}</Badge>}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1707,13 +1741,13 @@ export default function MonitoringDetailPage() {
                 <span className="font-semibold text-sm text-slate-800">{t("Score Trend")}</span>
               </div>
               <div className="p-5">
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={historyData}>
+                <ResponsiveContainer width="100%" height={340}>
+                  <LineChart data={historyData} margin={{ bottom: 30 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} label={{ value: t("Date"), position: "insideBottom", offset: -5, fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 11 }} label={{ value: t("Score"), angle: -90, position: "insideLeft", fontSize: 12 }} />
                     <Tooltip />
-                    <Legend />
+                    <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: 20 }} />
                     <Line type="monotone" dataKey="overallScore" name={t("Overall Score")} stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} />
                     <Line type="monotone" dataKey="threatExposure" name={t("Threat Exposure Score")} stroke="#d97706" strokeWidth={2} dot={{ r: 4 }} />
                     <Line type="monotone" dataKey="securityPosture" name={t("Security Posture Score")} stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} />
@@ -1732,6 +1766,80 @@ export default function MonitoringDetailPage() {
         vendor={vendor}
         onSuccess={handleOnboardSuccess}
       />
+
+      {/* Report Issue Dialog — Key Findings */}
+      <Dialog open={reportIssueOpen} onOpenChange={(open) => { setReportIssueOpen(open); if (!open) setSelectedFindings(new Set()); }}>
+        <DialogContent className="!max-w-3xl w-[95vw] max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{t("Report Issue(s)")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("Select key findings to report as remediation issues.")}
+          </p>
+          {allFindings.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              {t("No key findings available in the current assessment.")}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 border-b pb-2">
+                <Checkbox
+                  checked={selectedFindings.size === allFindings.length}
+                  onCheckedChange={toggleAllFindings}
+                  id="select-all-findings"
+                />
+                <label htmlFor="select-all-findings" className="text-sm font-medium cursor-pointer">
+                  {t("Select All")} ({selectedFindings.size}/{allFindings.length})
+                </label>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2 min-h-0 pr-1">
+                {allFindings.map(f => (
+                  <div
+                    key={f.findingId}
+                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedFindings.has(f.findingId) ? "bg-primary/5 border-primary/30" : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => toggleFinding(f.findingId)}
+                  >
+                    <Checkbox
+                      checked={selectedFindings.has(f.findingId)}
+                      onCheckedChange={() => toggleFinding(f.findingId)}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge variant="outline" className="text-xs">{f.kpiName}</Badge>
+                        {f.severity && (
+                          <Badge className={`text-xs ${
+                            f.severity === "Critical" ? "bg-red-100 text-red-700" :
+                            f.severity === "High" ? "bg-orange-100 text-orange-700" :
+                            f.severity === "Medium" ? "bg-yellow-100 text-yellow-700" :
+                            "bg-green-100 text-green-700"
+                          }`}>{t(f.severity)}</Badge>
+                        )}
+                        {f.score != null && (
+                          <Badge variant="outline" className="text-xs">{t("Score")}: {f.score}</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm">{f.statement}</p>
+                      {f.recommendation && (
+                        <p className="text-xs text-muted-foreground mt-1">{t("Recommendation")}: {f.recommendation}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportIssueOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleReportIssues} disabled={issueSaving || selectedFindings.size === 0} variant="destructive">
+              {issueSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              {t("Report Issue(s)")} {selectedFindings.size > 0 && `(${selectedFindings.size})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
