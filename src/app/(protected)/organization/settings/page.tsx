@@ -127,9 +127,10 @@ export default function OrganizationSettingsPage() {
         const data = await res.json();
         setSettingsData((prev) => ({
           ...prev,
-          [categoryId]: data.map((item: { id: string; name: string }) => ({
+          [categoryId]: data.map((item: { id: string; name: string; description?: string }) => ({
             id: item.id,
             name: item.name,
+            description: item.description || "",
           })),
         }));
       }
@@ -220,13 +221,6 @@ export default function OrganizationSettingsPage() {
       ),
     },
     {
-      accessorKey: "description",
-      header: t("Description"),
-      cell: ({ row }) => (
-        <span className="text-slate-500">{row.getValue("description") || "—"}</span>
-      ),
-    },
-    {
       id: "actions",
       header: t("Actions"),
       size: 100,
@@ -276,7 +270,7 @@ export default function OrganizationSettingsPage() {
         const res = await fetch(apiEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: newItem.name }),
+          body: JSON.stringify({ name: newItem.name, description: newItem.description || null }),
         });
         if (res.ok) {
           const created = await res.json();
@@ -327,7 +321,7 @@ export default function OrganizationSettingsPage() {
         const res = await fetch(`${apiEndpoint}/${editingItem.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: editingItem.name }),
+          body: JSON.stringify({ name: editingItem.name, description: editingItem.description || null }),
         });
         if (res.ok) {
           if (currentModelName) {
@@ -465,17 +459,6 @@ export default function OrganizationSettingsPage() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">
-                    {t("Description")}
-                  </Label>
-                  <Input
-                    value={newItem.description}
-                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                    placeholder={t("Enter description")}
-                    className="mt-1.5 bg-white"
-                  />
-                </div>
               </div>
             </div>
 
@@ -519,16 +502,6 @@ export default function OrganizationSettingsPage() {
                         <p className="text-sm text-red-600">{editNameError}</p>
                       </div>
                     )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">
-                      {t("Description")}
-                    </Label>
-                    <Input
-                      value={editingItem.description || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                      className="mt-1.5 bg-white"
-                    />
                   </div>
                 </div>
               </div>

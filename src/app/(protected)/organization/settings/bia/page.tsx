@@ -774,19 +774,6 @@ export default function BIASettingsPage() {
                   </div>
                 )}
               </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                <Input
-                  value={editingCategory?.description || newCategory.description}
-                  onChange={(e) =>
-                    editingCategory
-                      ? setEditingCategory({ ...editingCategory, description: e.target.value })
-                      : setNewCategory({ ...newCategory, description: e.target.value })
-                  }
-                  placeholder={t("Enter description")}
-                  className="mt-1.5 bg-white"
-                />
-              </div>
             </div>
           </div>
 
@@ -1022,19 +1009,6 @@ export default function BIASettingsPage() {
                     <p className="text-sm text-red-600">{formErrors.bcpName}</p>
                   </div>
                 )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                <Input
-                  value={editingBcp?.description || newBcp.description}
-                  onChange={(e) =>
-                    editingBcp
-                      ? setEditingBcp({ ...editingBcp, description: e.target.value })
-                      : setNewBcp({ ...newBcp, description: e.target.value })
-                  }
-                  placeholder={t("Enter description")}
-                  className="mt-1.5 bg-white"
-                />
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>

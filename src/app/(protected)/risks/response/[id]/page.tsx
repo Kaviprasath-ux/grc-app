@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -62,7 +62,7 @@ interface Risk {
   assessmentStatus?: string;
   responseStatus?: string; // Separate status for Risk Response Strategy workflow
   activityLogs?: ActivityLog[];
-  controlRisks?: { control: { id: string; controlCode: string; name: string; description: string | null; relativeControlWeighting: number | null } }[];
+  controlRisks?: { control: { id: string; controlCode: string; name: string; description: string | null; relativeControlWeighting: number | null }; controlStrength: { id: string; name: string; score: number } | null }[];
 }
 
 interface Control {
@@ -106,11 +106,13 @@ export default function RiskViewPage() {
 
   // Approve state
   const [approving, setApproving] = useState(false);
+  const [controlStrengths, setControlStrengths] = useState<{ id: string; name: string; score: number }[]>([]);
 
   useEffect(() => {
     if (params.id) {
       fetchRisk(params.id as string);
       fetchPlannedControls(params.id as string);
+      fetch("/api/control-strengths").then(r => r.ok ? r.json() : []).then(setControlStrengths).catch(() => {});
     }
   }, [params.id]);
 
@@ -277,6 +279,40 @@ export default function RiskViewPage() {
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
     );
   };
+
+  // Control Rating calculation
+  const controlRatingResult = useMemo(() => {
+    const linkedControls = risk?.controlRisks || [];
+    const totalControlCount = linkedControls.length;
+    if (totalControlCount === 0) return { rating: 0, count: 0, hasControls: false };
+
+    const maxScore = controlStrengths.length > 0
+      ? Math.max(...controlStrengths.map(cs => cs.score))
+      : Math.max(...linkedControls.map(cr => cr.controlStrength?.score || 0), 0);
+
+    if (maxScore === 0) return { rating: 0, count: totalControlCount, hasControls: true };
+
+    let sumControlValues = 0;
+    for (const cr of linkedControls) {
+      const controlWeight = cr.controlStrength?.score || 0;
+      const controlValue = (controlWeight / maxScore) * 100;
+      sumControlValues += controlValue;
+    }
+
+    const rating = sumControlValues / totalControlCount;
+    return { rating: Math.round(rating * 100) / 100, count: totalControlCount, hasControls: true };
+  }, [risk?.controlRisks, controlStrengths]);
+
+  // Residual Risk = InherentRiskScore / TotalControlStrength (if TotalControlStrength != 0)
+  const totalControlStrength = useMemo(() => {
+    const linkedControls = risk?.controlRisks || [];
+    let total = 0;
+    for (const cr of linkedControls) {
+      const score = cr.controlStrength?.score || 0;
+      if (score !== 0) total += score;
+    }
+    return total;
+  }, [risk?.controlRisks]);
 
   // Calculate days remaining
   const getDaysRemaining = (dueDate: string | null) => {
@@ -593,7 +629,11 @@ export default function RiskViewPage() {
           </div>
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Control Rating")}</p>
-            <p className="font-medium text-slate-800">-</p>
+            {controlRatingResult.hasControls ? (
+              <p className="font-medium text-slate-800">{controlRatingResult.rating.toFixed(2)}%</p>
+            ) : (
+              <p className="font-medium text-slate-800">-</p>
+            )}
           </div>
         </div>
 

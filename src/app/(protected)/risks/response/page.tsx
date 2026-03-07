@@ -86,11 +86,12 @@ export default function RiskResponsePage() {
       const response = await fetch("/api/risks");
       if (response.ok) {
         const data = await response.json();
-        // Only show risks that have been assessed (have a response strategy or are in progress)
-        const assessedRisks = (data.data || []).filter((risk: Risk) =>
-          risk.responseStrategy || risk.assessmentStatus === "Completed" || risk.assessmentStatus === "In-Progress"
+        // Only show risks that have a response strategy assigned (Treat, Transfer, Accept, Avoid)
+        const allRisks = data.data || [];
+        const responseRisks = allRisks.filter((risk: Risk) =>
+          risk.responseStrategy && ["Treat", "Transfer", "Accept", "Avoid"].includes(risk.responseStrategy)
         );
-        setRisks(assessedRisks.length > 0 ? assessedRisks : data.data || []);
+        setRisks(responseRisks);
       }
     } catch (error) {
       console.error("Failed to fetch risks:", error);

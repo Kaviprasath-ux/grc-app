@@ -130,6 +130,7 @@ export const GET = withAuth(
                     status: true,
                   },
                 },
+                controlStrength: true,
               },
             },
             _count: {
@@ -264,9 +265,14 @@ export const POST = withAuth(
             })),
           },
           controlRisks: {
-            create: controls.map((controlId: string) => ({
-              controlId,
-            })),
+            create: controls.map((c: string | { controlId: string; controlStrengthId?: string; justification?: string }) => {
+              if (typeof c === "string") return { controlId: c };
+              return {
+                controlId: c.controlId,
+                controlStrengthId: c.controlStrengthId || null,
+                justification: c.justification || null,
+              };
+            }),
           },
           // Create activity log entry for risk creation
           activityLogs: {

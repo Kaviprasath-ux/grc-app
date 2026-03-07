@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,7 @@ interface Risk {
   assessmentStatus: string;
   threats?: { threat: { id: string; name: string } }[];
   vulnerabilities?: { vulnerability: { id: string; name: string } }[];
+  controlRisks?: { controlId: string; controlStrengthId: string | null; justification: string | null; control: { id: string; name: string }; controlStrength: { id: string; name: string; score: number } | null }[];
   riskSources?: string | null;
   assessmentFormData?: string | null;
 }
@@ -49,6 +50,7 @@ interface AssessmentFormData {
   threatLikelihoods: Record<string, number>;
   threatImpacts: Record<string, Record<string, number>>;
   vulnerabilityRatings: Record<string, number>;
+  lastStep?: number;
 }
 
 interface Threat {
@@ -136,6 +138,7 @@ export default function RiskAssessmentWizardPage() {
   const [vulnerabilityRatings, setVulnerabilityRatingsOptions] = useState<VulnerabilityRating[]>([]);
   const [riskRanges, setRiskRanges] = useState<RiskRange[]>([]);
   const [scoreConfig, setScoreConfig] = useState<RiskScoreConfig>({ useLikelihood: true, useImpact: true, useAssetScore: false, useVulnerabilityScore: false, riskTolerance: 10 });
+  const [controlStrengths, setControlStrengths] = useState<{ id: string; name: string; score: number }[]>([]);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -288,7 +291,7 @@ export default function RiskAssessmentWizardPage() {
     try {
       const [
         riskRes, threatsRes, vulnsRes,
-        likelihoodsRes, impactCatsRes, impactRatingsRes, vulnRatingsRes, riskRangesRes, scoreConfigRes
+        likelihoodsRes, impactCatsRes, impactRatingsRes, vulnRatingsRes, riskRangesRes, scoreConfigRes, controlStrengthsRes
       ] = await Promise.all([
         fetch(`/api/risks/${riskId}`),
         fetch("/api/risk-threats"),
@@ -299,6 +302,7 @@ export default function RiskAssessmentWizardPage() {
         fetch("/api/vulnerability-ratings"),
         fetch("/api/risk-ranges"),
         fetch("/api/risk-score-config"),
+        fetch("/api/control-strengths"),
       ]);
 
       if (riskRes.ok) {
@@ -317,6 +321,11 @@ export default function RiskAssessmentWizardPage() {
             }
             if (savedFormData.vulnerabilityRatings) {
               setVulnerabilityRatingsForm(savedFormData.vulnerabilityRatings);
+            }
+            // Resume from last saved step
+            const status = data.assessmentStatus || "Open";
+            if (savedFormData.lastStep && (status === "In-Progress" || status === "Draft")) {
+              setCurrentStep(savedFormData.lastStep);
             }
           } catch (e) {
             console.error("Failed to parse assessment form data:", e);
@@ -354,6 +363,10 @@ export default function RiskAssessmentWizardPage() {
       if (scoreConfigRes.ok) {
         const data = await scoreConfigRes.json();
         setScoreConfig(data);
+      }
+      if (controlStrengthsRes.ok) {
+        const data = await controlStrengthsRes.json();
+        setControlStrengths(data);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -617,6 +630,45 @@ export default function RiskAssessmentWizardPage() {
 
   const riskScore = calcLikelihood * calcImpact * (calcVulnerability || 1);
   const calculatedRating = getRiskRatingFromScore(riskScore);
+
+  // Control Rating calculation
+  const controlRatingResult = useMemo(() => {
+    const linkedControls = risk?.controlRisks || [];
+    const totalControlCount = linkedControls.length;
+    if (totalControlCount === 0) return { rating: 0, count: 0, hasControls: false };
+
+    const maxScore = controlStrengths.length > 0
+      ? Math.max(...controlStrengths.map(cs => cs.score))
+      : Math.max(...linkedControls.map(cr => cr.controlStrength?.score || 0), 0);
+
+    if (maxScore === 0) return { rating: 0, count: totalControlCount, hasControls: true };
+
+    let sumControlValues = 0;
+    for (const cr of linkedControls) {
+      const controlWeight = cr.controlStrength?.score || 0;
+      const controlValue = (controlWeight / maxScore) * 100;
+      sumControlValues += controlValue;
+    }
+
+    const rating = sumControlValues / totalControlCount;
+    return { rating: Math.round(rating * 100) / 100, count: totalControlCount, hasControls: true };
+  }, [risk?.controlRisks, controlStrengths]);
+
+  // Residual Risk = InherentRiskScore / TotalControlStrength (if TotalControlStrength != 0)
+  const totalControlStrength = useMemo(() => {
+    const linkedControls = risk?.controlRisks || [];
+    let total = 0;
+    for (const cr of linkedControls) {
+      const score = cr.controlStrength?.score || 0;
+      if (score !== 0) total += score;
+    }
+    return total;
+  }, [risk?.controlRisks]);
+
+  const residualRiskScore = totalControlStrength !== 0
+    ? Math.round((riskScore / totalControlStrength) * 100) / 100
+    : riskScore;
+  const residualRiskRating = getRiskRatingFromScore(residualRiskScore);
 
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
@@ -939,32 +991,56 @@ export default function RiskAssessmentWizardPage() {
               </div>
               <div className="p-3 sm:p-4 bg-muted rounded text-center">
                 <p className="text-sm text-muted-foreground">{t("Overall Control Rating")}</p>
-                <p className="font-medium mt-2">-</p>
+                {controlRatingResult.hasControls ? (
+                  <>
+                    <p className="font-medium mt-2">{controlRatingResult.rating.toFixed(2)}%</p>
+                    <p className="text-xs text-muted-foreground mt-1">{controlRatingResult.count} {t("controls linked")}</p>
+                  </>
+                ) : (
+                  <p className="font-medium mt-2">-</p>
+                )}
               </div>
               <div className="p-3 sm:p-4 bg-muted rounded text-center">
                 <p className="text-sm text-muted-foreground">{t("Residual Risk Rating")}</p>
                 <span className={cn(
                   "inline-block mt-2 px-3 py-1 rounded font-medium",
-                  calculatedRating === "Critical" && "bg-red-100 text-red-800",
-                  calculatedRating === "High" && "bg-orange-100 text-orange-800",
-                  calculatedRating === "Medium" && "bg-yellow-100 text-yellow-800",
-                  calculatedRating === "Low" && "bg-green-100 text-green-800"
+                  (residualRiskRating === "Critical" || residualRiskRating === "Catastrophic" || residualRiskRating === "CataStrophic") && "bg-red-100 text-red-800",
+                  residualRiskRating === "High" && "bg-orange-100 text-orange-800",
+                  residualRiskRating === "Medium" && "bg-yellow-100 text-yellow-800",
+                  (residualRiskRating === "Low" || residualRiskRating === "Low Risk") && "bg-green-100 text-green-800"
                 )}>
-                  {calculatedRating}
+                  {residualRiskRating}
                 </span>
-                <p className="text-sm text-muted-foreground mt-1">({riskScore.toFixed(2)})</p>
+                <p className="text-sm text-muted-foreground mt-1">({residualRiskScore.toFixed(2)})</p>
               </div>
             </div>
 
             <div>
               <h4 className="font-semibold mb-2">{t("Existing Controls")}</h4>
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                  <Link2 className="h-6 w-6 text-primary-400" />
+              {controlRatingResult.hasControls && risk?.controlRisks ? (
+                <div className="space-y-2">
+                  {risk.controlRisks.map((cr) => (
+                    <div key={cr.controlId} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">{cr.control?.name || cr.controlId}</p>
+                        {cr.justification && <p className="text-xs text-slate-500 mt-0.5">{cr.justification}</p>}
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-medium text-slate-700">{cr.controlStrength?.name || "-"}</span>
+                        {cr.controlStrength && <p className="text-xs text-slate-400">{t("Score")}: {cr.controlStrength.score}</p>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked to this risk")}</p>
-                <p className="text-xs text-slate-400">{t("Link controls from the risk register to see them here")}</p>
-              </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                    <Link2 className="h-6 w-6 text-primary-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked to this risk")}</p>
+                  <p className="text-xs text-slate-400">{t("Link controls from the risk register to see them here")}</p>
+                </div>
+              )}
             </div>
           </div>
         )}

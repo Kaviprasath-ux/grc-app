@@ -200,13 +200,25 @@ export default function RiskAssessmentPage() {
   const getActionButton = (risk: Risk) => {
     const status = risk.assessmentStatus || "Open";
     switch (status) {
-      case "Approved":
       case "Completed":
+        return canCreate ? (
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openAssessment(risk)}>
+            {t("Re-assess")}
+          </Button>
+        ) : null;
+      case "Approved":
       case "Submitted":
       case "Rejected":
         return canCreate ? (
           <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openAssessment(risk)}>
             {t("Re-assess")}
+          </Button>
+        ) : null;
+      case "Closed":
+        // Closed = awaiting Risk Response Strategy approval, show Resume
+        return canEdit ? (
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openAssessment(risk)}>
+            {t("Resume")}
           </Button>
         ) : null;
       case "Draft":
