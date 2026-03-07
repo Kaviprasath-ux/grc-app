@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +27,7 @@ import {
 import {
   Home, ArrowLeft, Send, Save, Flag, Upload, Download, MessageSquare,
   Loader2, FileText, AlertCircle, CheckCircle2, Filter, ChevronDown,
-  ChevronRight, Bot, RefreshCw, XCircle, ShieldCheck, ShieldAlert, ShieldOff,
+  ChevronRight, Bot, RefreshCw, XCircle, ShieldCheck, ShieldAlert, ShieldOff, UserPlus,
 } from "lucide-react";
 
 interface Question {
@@ -52,6 +53,8 @@ interface AssessmentResponse {
   artifactName: string | null;
   isFlagged: boolean;
   isDelegated: boolean;
+  delegatedToId?: string | null;
+  delegatedTo?: { id: string; fullName: string } | null;
   // AI evaluation fields
   poScore?: number | null;
   poStatus?: string | null;
@@ -61,6 +64,13 @@ interface AssessmentResponse {
   poRecommendation?: string | null;
   poSeverity?: string | null;
   aiEvaluatedAt?: string | null;
+}
+
+interface SME {
+  id: string;
+  fullName: string;
+  email: string;
+  tprmFunctionCategory: string | null;
 }
 
 interface Domain {
@@ -111,7 +121,11 @@ export default function AMResponseQuestionnairePage() {
   const { toast } = useToast();
   const router = useRouter();
   const params = useParams();
+  const { data: sessionData } = useSession();
   const assessmentId = params.id as string;
+
+  const isSME = sessionData?.user?.roles?.includes("TPRMSME") || false;
+  const currentUserId = sessionData?.user?.id;
 
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -126,6 +140,12 @@ export default function AMResponseQuestionnairePage() {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
+
+  // SME assignment state
+  const [smeList, setSmeList] = useState<SME[]>([]);
+  const [smeDialogOpen, setSmeDialogOpen] = useState(false);
+  const [smeQuestionId, setSmeQuestionId] = useState<string | null>(null);
+  const [selectedSmeId, setSelectedSmeId] = useState<string>("");
 
   // AI evaluation state
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
@@ -524,8 +544,61 @@ export default function AMResponseQuestionnairePage() {
     }
   };
 
+  // Fetch SMEs for assignment (AM only)
+  const fetchSMEs = useCallback(async () => {
+    if (isSME) return;
+    try {
+      const res = await fetch("/api/tprm/am-sme-management");
+      if (res.ok) {
+        const json = await res.json();
+        setSmeList((json.data || []).filter((s: SME & { isActive?: boolean }) => s.isActive !== false));
+      }
+    } catch { /* ignore */ }
+  }, [isSME]);
+
+  useEffect(() => { fetchSMEs(); }, [fetchSMEs]);
+
+  const handleAssignSME = async () => {
+    if (!smeQuestionId) return;
+    const smeId = selectedSmeId === "__unassign__" ? "" : selectedSmeId;
+    try {
+      const res = await fetch(`/api/tprm/am-assessments/${assessmentId}/responses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionId: smeQuestionId,
+          isDelegated: !!smeId,
+          delegatedToId: smeId || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const smeUser = smeList.find(s => s.id === smeId);
+      setResponses(prev => ({
+        ...prev,
+        [smeQuestionId]: {
+          ...prev[smeQuestionId],
+          questionId: smeQuestionId,
+          isDelegated: !!smeId,
+          delegatedToId: smeId || null,
+          delegatedTo: smeUser ? { id: smeId, fullName: smeUser.fullName } : null,
+        } as AssessmentResponse,
+      }));
+      setSmeDialogOpen(false);
+      setSmeQuestionId(null);
+      setSelectedSmeId("");
+      toast({ title: t("Success"), description: smeId ? t("SME assigned successfully") : t("SME unassigned") });
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to assign SME"), variant: "destructive" });
+    }
+  };
+
   // Filter questions by domain and mode
   const filteredQuestions = questions.filter(q => {
+    // SME users only see questions assigned to them
+    if (isSME && currentUserId) {
+      const resp = responses[q.id];
+      if (!resp?.isDelegated || resp?.delegatedToId !== currentUserId) return false;
+    }
     if (selectedDomain !== "all" && q.domainId !== selectedDomain) return false;
     if (filterMode === "mandatory-attachments" && !q.mandatoryAttachment) return false;
     if (filterMode === "flagged" && !responses[q.id]?.isFlagged) return false;
@@ -655,29 +728,31 @@ export default function AMResponseQuestionnairePage() {
             {answeredQuestions}/{totalQuestions} {t("answered")}
           </span>
 
-          {/* Export Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Export")}
-                <ChevronDown className="h-3 w-3 ltr:ml-1 rtl:mr-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport(false)}>
-                {t("Export All Questions")}
-              </DropdownMenuItem>
-              {selectedDomain !== "all" && (
-                <DropdownMenuItem onClick={() => handleExport(true)}>
-                  {t("Export")} {domains.find(d => d.id === selectedDomain)?.name}
+          {/* Export Dropdown - AM only */}
+          {!isSME && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Export")}
+                  <ChevronDown className="h-3 w-3 ltr:ml-1 rtl:mr-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport(false)}>
+                  {t("Export All Questions")}
                 </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {selectedDomain !== "all" && (
+                  <DropdownMenuItem onClick={() => handleExport(true)}>
+                    {t("Export")} {domains.find(d => d.id === selectedDomain)?.name}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
-          {/* Import Button */}
-          {!isReadOnly && (
+          {/* Import Button - AM only */}
+          {!isReadOnly && !isSME && (
             <>
               <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -699,7 +774,7 @@ export default function AMResponseQuestionnairePage() {
               {t("Save")}
             </Button>
           )}
-          {!isReadOnly && (
+          {!isReadOnly && !isSME && (
             <Button onClick={() => setShowSubmitConfirm(true)} disabled={submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
               {t("Submit Assessment")}
@@ -746,7 +821,7 @@ export default function AMResponseQuestionnairePage() {
         {filteredQuestions.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center text-muted-foreground">
-              {t("No questions match the selected filters")}
+              {isSME ? t("No questions have been assigned to you yet") : t("No questions match the selected filters")}
             </CardContent>
           </Card>
         ) : (
@@ -772,6 +847,11 @@ export default function AMResponseQuestionnairePage() {
                         {q.validateThroughAI && (
                           <Badge className="bg-purple-100 text-purple-700 text-xs gap-1">
                             <Bot className="h-3 w-3" />{t("AI Validated")}
+                          </Badge>
+                        )}
+                        {resp?.isDelegated && resp?.delegatedTo && (
+                          <Badge className="bg-green-100 text-green-700 text-xs gap-1">
+                            <UserPlus className="h-3 w-3" />{resp.delegatedTo.fullName}
                           </Badge>
                         )}
                       </div>
@@ -802,6 +882,21 @@ export default function AMResponseQuestionnairePage() {
                         >
                           <MessageSquare className="h-4 w-4" />
                         </Button>
+                        {!isSME && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={resp?.isDelegated ? "text-green-600" : "text-muted-foreground"}
+                            onClick={() => {
+                              setSmeQuestionId(q.id);
+                              setSelectedSmeId(resp?.delegatedToId || "");
+                              setSmeDialogOpen(true);
+                            }}
+                            title={resp?.isDelegated ? `${t("Assigned to")} ${resp?.delegatedTo?.fullName || t("SME")}` : t("Assign SME")}
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -950,6 +1045,41 @@ export default function AMResponseQuestionnairePage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCommentDialogOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleCommentSave}>{t("Save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign SME Dialog */}
+      <Dialog open={smeDialogOpen} onOpenChange={(open) => { setSmeDialogOpen(open); if (!open) { setSmeQuestionId(null); setSelectedSmeId(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Assign SME")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-sm">{t("Select a Subject Matter Expert")}</Label>
+            {smeList.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("No SMEs available. Create SMEs in SME Management first.")}</p>
+            ) : (
+              <Select value={selectedSmeId} onValueChange={setSelectedSmeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("Choose SME...")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__unassign__">{t("-- Unassign --")}</SelectItem>
+                  {smeList.map(sme => (
+                    <SelectItem key={sme.id} value={sme.id}>
+                      {sme.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSmeDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleAssignSME} disabled={smeList.length === 0}>
+              {t("Assign")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
