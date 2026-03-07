@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Home, ChevronRight, Download, Upload, Paperclip, FileBarChart, Check, ArrowRight, ArrowLeft, X, FileDown, Loader2 } from "lucide-react";
+import { Home, ChevronRight, Download, Upload, Paperclip, FileBarChart, Check, ArrowRight, ArrowLeft, X, FileDown, Loader2, History, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,11 +94,40 @@ export default function AsrAssessmentFactoryPage() {
   const artifactInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [jobStatus, setJobStatus] = useState("");
 
   // Report state
   const [reports, setReports] = useState<AssessmentReport[]>([]);
   const [activeReport, setActiveReport] = useState<AssessmentReport | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Load saved reports from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("assessment-factory-reports");
+      if (saved) {
+        const parsed = JSON.parse(saved) as AssessmentReport[];
+        if (Array.isArray(parsed) && parsed.length) setReports(parsed);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Persist reports to localStorage whenever they change
+  useEffect(() => {
+    if (reports.length > 0) {
+      localStorage.setItem("assessment-factory-reports", JSON.stringify(reports));
+    }
+  }, [reports]);
+
+  const deleteReport = (id: string) => {
+    setReports(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      if (!updated.length) localStorage.removeItem("assessment-factory-reports");
+      return updated;
+    });
+    if (activeReport?.id === id) setActiveReport(null);
+  };
 
   const openImportDialog = () => {
     setImportStep(1);
@@ -121,25 +150,97 @@ export default function AsrAssessmentFactoryPage() {
   const handleGenerateReport = async () => {
     if (!templateFile) return;
     setGenerating(true);
+    setJobStatus(t("Parsing template..."));
     try {
-      const rows = await parseXlsRows(templateFile);
-      if (!rows.length) {
+      // Step 1: Parse the template locally to get question rows
+      const parsedRows = await parseXlsRows(templateFile);
+      if (!parsedRows.length) {
         toast({ title: t("Error"), description: t("No data found in the uploaded file"), variant: "destructive" });
         return;
       }
+
+      // Step 2: Ingest files into AI backend
+      setJobStatus(t("Uploading files to AI..."));
+      const assessmentId = crypto.randomUUID();
+      const formData = new FormData();
+      formData.append("assessment_id", assessmentId);
+      formData.append("files", templateFile);
+      for (const af of artifactFiles) {
+        formData.append("files", af);
+      }
+
+      const ingestRes = await fetch("/api/tprm/assessment-factory", { method: "POST", body: formData });
+      const ingestData = await ingestRes.json();
+      if (!ingestRes.ok) {
+        throw new Error(ingestData.error || "Failed to ingest files");
+      }
+      console.log("[Assessment Factory] Ingest response:", ingestData);
+
+      // Step 3: Query each question against the AI
+      const rows: AssessmentRow[] = [];
+      const questionsWithContent = parsedRows.filter(r => r.question?.trim());
+
+      for (let i = 0; i < questionsWithContent.length; i++) {
+        const row = questionsWithContent[i];
+        setJobStatus(`${t("Processing question")} ${i + 1}/${questionsWithContent.length}...`);
+
+        try {
+          const queryRes = await fetch("/api/tprm/assessment-factory/query", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              question: row.question,
+              assessment_id: assessmentId,
+            }),
+          });
+
+          if (queryRes.ok) {
+            const ai = await queryRes.json();
+            const irr = ai.issue_risk_recommendation || {};
+            rows.push({
+              sequenceNumber: row.sequenceNumber,
+              domainName: row.domainName,
+              question: ai.question || row.question,
+              response: row.response,
+              comments: row.comments,
+              complianceStatus: ai.status ? ai.status.charAt(0).toUpperCase() + ai.status.slice(1) : "",
+              verifAISummary: ai.answer || "",
+              confidenceScore: ai.score != null ? Number(ai.score) * 100 : null,
+              verifAIPrompt: row.verifAIPrompt,
+              issue: irr.issue || "",
+              risk: irr.risk || "",
+              recommendation: irr.recommendation || "",
+            });
+          } else {
+            // If a single question fails, keep the original row without AI data
+            console.warn(`[Assessment Factory] Query failed for Q${i + 1}:`, await queryRes.text());
+            rows.push({ ...row, complianceStatus: "", verifAISummary: "", confidenceScore: null });
+          }
+        } catch (qErr) {
+          console.warn(`[Assessment Factory] Query error for Q${i + 1}:`, qErr);
+          rows.push({ ...row, complianceStatus: "", verifAISummary: "", confidenceScore: null });
+        }
+      }
+
+      // Add back any rows without questions (headers/empty rows)
+      const emptyRows = parsedRows.filter(r => !r.question?.trim());
+      const allRows = [...rows, ...emptyRows].sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+
       const report: AssessmentReport = {
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
-        rows,
+        rows: allRows,
       };
       setReports(prev => [report, ...prev]);
       setActiveReport(report);
       setImportOpen(false);
       toast({ title: t("Success"), description: `${rows.length} ${t("questions processed")}` });
-    } catch {
-      toast({ title: t("Error"), description: t("Failed to parse the uploaded file"), variant: "destructive" });
+    } catch (err) {
+      console.error("[Assessment Factory] Error:", err);
+      toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to generate report"), variant: "destructive" });
     } finally {
       setGenerating(false);
+      setJobStatus("");
     }
   };
 
@@ -149,9 +250,10 @@ export default function AsrAssessmentFactoryPage() {
       "Sequence Number": r.sequenceNumber,
       "Domain Name": r.domainName,
       "Questions": r.question,
-      "Response": r.response,
       "Comments": r.comments,
-      "Compliance Status": r.complianceStatus,
+      "Compliance Status": r.complianceStatus
+        ? r.complianceStatus.charAt(0).toUpperCase() + r.complianceStatus.slice(1)
+        : "",
       "VerifAI Summary": r.verifAISummary,
       "Confidence Score": r.confidenceScore,
       "VerifAI Prompt": r.verifAIPrompt,
@@ -444,7 +546,7 @@ export default function AsrAssessmentFactoryPage() {
           </Button>
           <Button onClick={handleGenerateReport} disabled={generating}>
             {generating && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
-            {t("Generate Report")}
+            {generating && jobStatus ? jobStatus : t("Generate Report")}
           </Button>
         </div>
       </div>
@@ -464,16 +566,14 @@ export default function AsrAssessmentFactoryPage() {
         <span className="text-primary-700 font-medium">{t("Assessment Factory")}</span>
       </nav>
 
-      <h1 className="text-2xl font-bold text-center">{t("Assessment Factory")}</h1>
-
-      {/* Previous assessments link */}
-      {reports.length > 0 && (
-        <div className="flex justify-end">
-          <Button variant="link" size="sm" onClick={() => setActiveReport(reports[0])}>
-            {t("Previous assessments")} ({reports.length})
-          </Button>
-        </div>
-      )}
+      <div className="flex items-center justify-between">
+        <div />
+        <h1 className="text-2xl font-bold">{t("Assessment Factory")}</h1>
+        <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)} disabled={!reports.length}>
+          <History className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
+          {t("Previous Assessments")} {reports.length > 0 && `(${reports.length})`}
+        </Button>
+      </div>
 
       {/* 4-step workflow */}
       <div className="flex flex-wrap items-start justify-center gap-4 mt-8">
@@ -533,6 +633,49 @@ export default function AsrAssessmentFactoryPage() {
           </p>
         </div>
       </div>
+
+      {/* Previous Assessments Dialog */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="!max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Previous Assessments")}</DialogTitle>
+          </DialogHeader>
+          {reports.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">{t("No previous assessments found.")}</p>
+          ) : (
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {reports.map((r, i) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between border rounded-lg px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors"
+                  onClick={() => { setActiveReport(r); setHistoryOpen(false); }}
+                >
+                  <div>
+                    <p className="text-sm font-medium">
+                      {t("Assessment")} {reports.length - i}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString()} — {r.rows.length} {t("questions")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {r.rows.filter(row => row.complianceStatus?.toLowerCase().includes("satisfactory") && !row.complianceStatus?.toLowerCase().includes("unsatisfactory")).length}/{r.rows.length} {t("Satisfactory")}
+                    </Badge>
+                    <button
+                      className="text-muted-foreground hover:text-destructive p-1"
+                      onClick={(e) => { e.stopPropagation(); deleteReport(r.id); }}
+                      title={t("Delete")}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Import Template Dialog */}
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
