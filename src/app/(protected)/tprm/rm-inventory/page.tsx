@@ -46,9 +46,16 @@ interface Vendor {
   vendorUrl: string | null;
   status: string;
   vrr: string | null;
+  engagementId: string | null;
   createdAt: string;
   department: { id: string; name: string } | null;
   _count?: { assessments: number };
+}
+
+interface VendorGroup {
+  name: string;
+  vrr: string | null;
+  vendors: Vendor[];
 }
 
 interface AccountManager {
@@ -115,21 +122,24 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
   Onboarded: "bg-green-100 text-green-800",
   Offboarding: "bg-yellow-100 text-yellow-800",
   Offboarded: "bg-slate-100 text-slate-600",
+  Inactive: "bg-gray-100 text-gray-600",
 };
 
 // ── Vendor Accordion Item ───────────────────────────────────────────────────
 function VendorAccordionItem({
-  vendor, isExpanded, onToggle, onExport, onInitiateAssessment, onReportIssue, t,
+  group, isExpanded, onToggle, onExport, onInitiateAssessment, onReportIssue, onRowClick, t,
 }: {
-  vendor: Vendor; isExpanded: boolean; onToggle: () => void;
+  group: VendorGroup; isExpanded: boolean; onToggle: () => void;
   onExport: (v: Vendor) => void; onInitiateAssessment: (v: Vendor) => void;
-  onReportIssue: () => void; t: (s: string) => string;
+  onReportIssue: () => void; onRowClick: (v: Vendor) => void; t: (s: string) => string;
 }) {
+  // Use the highest VRR across all engagements for the group header
+  const headerVrr = group.vrr;
   return (
     <div className="border border-slate-200 rounded-md bg-white overflow-hidden">
       {/* Accordion Header */}
       <button onClick={onToggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left">
-        <span className="font-medium text-sm text-slate-800">{vendor.name}{vendor.vrr ? ` - ${vendor.vrr}` : ""}</span>
+        <span className="font-medium text-sm text-slate-800">{group.name}{headerVrr ? ` - ${headerVrr}` : ""}</span>
         <span className="text-slate-500 flex-shrink-0">{isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span>
       </button>
 
@@ -138,14 +148,9 @@ function VendorAccordionItem({
         <div className="border-t border-slate-200">
           {/* Action buttons */}
           <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-wrap">
-            <Button size="sm" variant="default" onClick={() => onExport(vendor)}>
+            <Button size="sm" variant="default" onClick={() => onExport(group.vendors[0])}>
               <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />{t("Export")}
             </Button>
-            {vendor.vrr && vendor.vrr !== "Nominal" && (
-              <Button size="sm" variant="outline" onClick={() => onInitiateAssessment(vendor)}>
-                <Play className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />{t("Initiate Assessment")}
-              </Button>
-            )}
             <Button size="sm" variant="outline" onClick={onReportIssue}>
               <AlertTriangle className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />{t("Report Issue")}
             </Button>
@@ -157,34 +162,45 @@ function VendorAccordionItem({
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-left">
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Vendor Name")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Engagement ID")}</th>
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Department")}</th>
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Service Category")}</th>
-                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Account Manager")}</th>
-                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Contact Number")}</th>
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Status")}</th>
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("VRR")}</th>
+                  <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Action")}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-slate-100 hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-medium text-primary">{vendor.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{vendor.department?.name || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{vendor.serviceCategory || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{vendor.accountManagerName || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{vendor.contactPhone || "—"}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE_COLORS[vendor.status] || "bg-slate-100 text-slate-600"}`}>
-                      {t(vendor.status)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {vendor.vrr
-                      ? <span className="text-xs px-2 py-0.5 rounded font-medium text-white" style={{ backgroundColor: VRR_COLORS[vendor.vrr] || "#94a3b8" }}>{t(vendor.vrr)}</span>
-                      : <span className="text-slate-400">—</span>}
-                  </td>
-                </tr>
+                {group.vendors.map((vendor) => (
+                  <tr key={vendor.id} className="border-b border-slate-100 hover:bg-slate-50/50 cursor-pointer" onClick={() => onRowClick(vendor)}>
+                    <td className="px-4 py-3 font-medium text-primary">{vendor.name}</td>
+                    <td className="px-4 py-3 text-slate-600">{vendor.engagementId || vendor.vendorCode || "—"}</td>
+                    <td className="px-4 py-3 text-slate-600">{vendor.department?.name || "—"}</td>
+                    <td className="px-4 py-3 text-slate-600">{vendor.serviceCategory || "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE_COLORS[vendor.status] || "bg-slate-100 text-slate-600"}`}>
+                        {t(vendor.status)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {vendor.vrr
+                        ? <span className="text-xs px-2 py-0.5 rounded font-medium text-white" style={{ backgroundColor: VRR_COLORS[vendor.vrr] || "#94a3b8" }}>{t(vendor.vrr)}</span>
+                        : <span className="text-slate-400">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {vendor.vrr && vendor.vrr !== "Nominal" && (
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); onInitiateAssessment(vendor); }}>
+                          <Play className="h-4 w-4 text-primary" />
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+          </div>
+          <div className="px-4 py-2 text-xs text-slate-400 border-t border-slate-100">
+            {t("Showing")} 1–{group.vendors.length} {t("of")} {group.vendors.length}
           </div>
         </div>
       )}
@@ -242,6 +258,15 @@ export default function RMInventoryPage() {
   const [profileAnswers, setProfileAnswers] = useState<Record<string, string>>({});
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
 
+  // ── Existing vendor / engagement selection state ──
+  const [vendorSuggestions, setVendorSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isExistingVendor, setIsExistingVendor] = useState(false);
+  const [existingEngagements, setExistingEngagements] = useState<Vendor[]>([]);
+  const [selectedEngagementId, setSelectedEngagementId] = useState<string>("");
+  const [engagementSearchText, setEngagementSearchText] = useState("");
+  const [showEngagementSuggestions, setShowEngagementSuggestions] = useState(false);
+
   // ── Data fetching ──────────────────────────────────
   const fetchVendors = useCallback(async () => {
     try {
@@ -298,6 +323,90 @@ export default function RMInventoryPage() {
   useEffect(() => { fetchVendors(); }, [fetchVendors]);
   useEffect(() => { fetchConfigurations(); }, [fetchConfigurations]);
 
+  // ── Vendor name autocomplete ──────────────────────
+  const handleVendorNameChange = useCallback(async (value: string) => {
+    setVendorName(value);
+    setIsExistingVendor(false);
+    setExistingEngagements([]);
+    setSelectedEngagementId("");
+    setEngagementSearchText("");
+    if (value.trim().length >= 2) {
+      try {
+        const res = await fetch(`/api/tprm/vendors?mode=suggest&search=${encodeURIComponent(value.trim())}`);
+        if (res.ok) {
+          const names: string[] = await res.json();
+          setVendorSuggestions(names);
+          setShowSuggestions(names.length > 0);
+        }
+      } catch { /* ignore */ }
+    } else {
+      setVendorSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, []);
+
+  const selectExistingVendor = useCallback(async (name: string) => {
+    setVendorName(name);
+    setShowSuggestions(false);
+    setIsExistingVendor(true);
+    try {
+      const res = await fetch(`/api/tprm/vendors?mode=engagements&search=${encodeURIComponent(name)}`);
+      if (res.ok) {
+        const engagements: Vendor[] = await res.json();
+        setExistingEngagements(engagements);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const selectEngagement = useCallback((engagementVendorId: string) => {
+    const eng = existingEngagements.find((e) => e.id === engagementVendorId);
+    if (!eng) return;
+    setSelectedEngagementId(engagementVendorId);
+    setEngagementSearchText(eng.engagementId || eng.vendorCode || "");
+    setShowEngagementSuggestions(false);
+    // Auto-fill form fields from selected engagement
+    const names = (eng.accountManagerName || "").split("; ").filter(Boolean);
+    const emails = (eng.accountManagerEmail || "").split("; ").filter(Boolean);
+    const phones = (eng.contactPhone || "").split("; ").filter(Boolean);
+    const count = Math.max(names.length, emails.length, phones.length, 1);
+    setManagers(Array.from({ length: count }, (_, i) => ({
+      name: names[i] || "",
+      email: emails[i] || "",
+      contactNo: phones[i] || "",
+    })));
+    setServiceCategory(eng.serviceCategory || "");
+    setServiceDescription(eng.serviceDescription || "");
+  }, [existingEngagements]);
+
+  const filteredEngagements = useMemo(() => {
+    if (!engagementSearchText) return existingEngagements;
+    const q = engagementSearchText.toLowerCase();
+    return existingEngagements.filter((e) =>
+      (e.engagementId || e.vendorCode || "").toLowerCase().includes(q) ||
+      (e.serviceCategory || "").toLowerCase().includes(q)
+    );
+  }, [existingEngagements, engagementSearchText]);
+
+  // ── Group vendors by name for accordion display ──
+  const vendorGroups = useMemo((): VendorGroup[] => {
+    const groupMap = new Map<string, Vendor[]>();
+    for (const v of vendors) {
+      const key = v.name.toLowerCase();
+      if (!groupMap.has(key)) groupMap.set(key, []);
+      groupMap.get(key)!.push(v);
+    }
+    const VRR_PRIORITY: Record<string, number> = { Critical: 5, High: 4, Moderate: 3, Low: 2, Nominal: 1 };
+    return Array.from(groupMap.entries()).map(([, vendorList]) => {
+      // Pick the highest VRR among all engagements
+      const highestVrr = vendorList.reduce<string | null>((best, v) => {
+        if (!v.vrr) return best;
+        if (!best) return v.vrr;
+        return (VRR_PRIORITY[v.vrr] || 0) > (VRR_PRIORITY[best] || 0) ? v.vrr : best;
+      }, null);
+      return { name: vendorList[0].name, vrr: highestVrr, vendors: vendorList };
+    });
+  }, [vendors]);
+
   // ── Form helpers ───────────────────────────────────
   const resetForm = () => {
     setVendorName("");
@@ -309,6 +418,13 @@ export default function RMInventoryPage() {
     setFormErrors({});
     setProfileAnswers({});
     setQuestionAnswers({});
+    setVendorSuggestions([]);
+    setShowSuggestions(false);
+    setIsExistingVendor(false);
+    setExistingEngagements([]);
+    setSelectedEngagementId("");
+    setEngagementSearchText("");
+    setShowEngagementSuggestions(false);
   };
 
   const validateForm = () => {
@@ -366,10 +482,15 @@ export default function RMInventoryPage() {
     if (!validateForm()) return;
     setSaving(true);
     try {
+      // Calculate VRR from onboarding answers before sending
+      const vrrScore = calculateVrrScore();
+      const vrrLabel = getVrrLevel(vrrScore).name;
+      // Set status: Nominal → Inactive, else → Onboarding
+      const status = vrrLabel === "Nominal" ? "Inactive" : "Onboarding";
       const res = await fetch("/api/tprm/vendors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify({ ...buildPayload(), vrr: vrrLabel, status }),
       });
       if (res.ok) {
         const created = await res.json();
@@ -661,6 +782,7 @@ export default function RMInventoryPage() {
       Onboarded: "bg-green-100 text-green-800",
       Offboarding: "bg-yellow-100 text-yellow-800",
       Offboarded: "bg-slate-100 text-slate-600",
+      Inactive: "bg-gray-100 text-gray-600",
     };
     return <Badge className={colors[status] || "bg-slate-100 text-slate-600"}>{t(status)}</Badge>;
   };
@@ -678,12 +800,66 @@ export default function RMInventoryPage() {
       {/* ══ Section 1: Vendor Profile Fields (System Generated) ══ */}
       <div className="space-y-4">
 
-        {/* Vendor Name */}
-        <div className="space-y-1.5">
+        {/* Vendor Name with autocomplete */}
+        <div className="space-y-1.5 relative">
           <Label>{t("Vendor Name")} *</Label>
-          <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder={t("Enter vendor name")} />
+          <Input
+            value={vendorName}
+            onChange={(e) => handleVendorNameChange(e.target.value)}
+            onFocus={() => { if (vendorSuggestions.length > 0) setShowSuggestions(true); }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            placeholder={t("Enter vendor name")}
+          />
           {formErrors.vendorName && <p className="text-xs text-red-500">{formErrors.vendorName}</p>}
+          {/* Vendor name suggestions dropdown */}
+          {showSuggestions && vendorSuggestions.length > 0 && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
+              {vendorSuggestions.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 hover:text-primary-700 transition-colors"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => selectExistingVendor(name)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Engagement selector — shown only when existing vendor is selected */}
+        {isExistingVendor && existingEngagements.length > 0 && (
+          <div className="space-y-1.5 relative">
+            <Label>{t("Select Engagement")}</Label>
+            <Input
+              value={engagementSearchText}
+              onChange={(e) => { setEngagementSearchText(e.target.value); setShowEngagementSuggestions(true); setSelectedEngagementId(""); }}
+              onFocus={() => setShowEngagementSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowEngagementSuggestions(false), 200)}
+              placeholder={t("Search engagements...")}
+            />
+            {showEngagementSuggestions && filteredEngagements.length > 0 && (
+              <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                {filteredEngagements.map((eng) => (
+                  <button
+                    key={eng.id}
+                    type="button"
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-50 transition-colors ${selectedEngagementId === eng.id ? "bg-primary-50 text-primary-700 font-medium" : ""}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectEngagement(eng.id)}
+                  >
+                    {eng.engagementId || eng.vendorCode} - {eng.serviceCategory || t("No Category")}
+                  </button>
+                ))}
+              </div>
+            )}
+            {selectedEngagementId && (
+              <p className="text-xs text-green-600">{t("Fields auto-filled from selected engagement")}</p>
+            )}
+          </div>
+        )}
 
         {/* Account Managers */}
         {managers.map((manager, index) => (
@@ -862,15 +1038,15 @@ export default function RMInventoryPage() {
           </div>
         ) : (
           <div className="px-4 py-3 space-y-2">
-            {vendors.map((vendor) => (
+            {vendorGroups.map((group) => (
               <VendorAccordionItem
-                key={vendor.id}
-                vendor={vendor}
-                isExpanded={expandedVendor === vendor.id}
-                onToggle={() => setExpandedVendor(expandedVendor === vendor.id ? null : vendor.id)}
+                key={group.name}
+                group={group}
+                isExpanded={expandedVendor === group.name}
+                onToggle={() => setExpandedVendor(expandedVendor === group.name ? null : group.name)}
                 onExport={(v) => {
-                  const headers = ["Vendor Code", "Vendor Name", "Status", "Service Category", "Account Manager", "Account Manager Email", "Contact Phone", "Created At"];
-                  const rows = [[v.vendorCode, v.name, v.status, v.serviceCategory || "", v.accountManagerName || "", v.accountManagerEmail || "", v.contactPhone || "", new Date(v.createdAt).toLocaleDateString()]];
+                  const headers = ["Vendor Code", "Vendor Name", "Engagement ID", "Status", "Service Category", "Account Manager", "Account Manager Email", "Contact Phone", "Created At"];
+                  const rows = group.vendors.map((gv) => [gv.vendorCode, gv.name, gv.engagementId || gv.vendorCode, gv.status, gv.serviceCategory || "", gv.accountManagerName || "", gv.accountManagerEmail || "", gv.contactPhone || "", new Date(gv.createdAt).toLocaleDateString()]);
                   const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
                   const blob = new Blob([csv], { type: "text/csv" });
                   const url = URL.createObjectURL(blob);
@@ -880,6 +1056,7 @@ export default function RMInventoryPage() {
                 }}
                 onInitiateAssessment={openAssessmentForVendor}
                 onReportIssue={() => router.push("/tprm/rm-issues")}
+                onRowClick={(v) => router.push(`/tprm/rm-inventory/${v.id}`)}
                 t={t}
               />
             ))}
@@ -914,7 +1091,7 @@ export default function RMInventoryPage() {
           {formFields}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>{t("Cancel")}</Button>
-            <Button onClick={handleCreate} disabled={saving}>{saving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />} {t("Create")}</Button>
+            <Button onClick={handleCreate} disabled={saving}>{saving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />} {t("Next")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1019,7 +1196,7 @@ export default function RMInventoryPage() {
 
       {/* Risk Rating Dialog */}
       <Dialog open={showRiskRatingDialog} onOpenChange={setShowRiskRatingDialog}>
-        <DialogContent className="max-w-5xl p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[90vw] lg:max-w-6xl p-0 gap-0 overflow-hidden">
           <div className="border-b border-slate-100 px-6 py-5">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">

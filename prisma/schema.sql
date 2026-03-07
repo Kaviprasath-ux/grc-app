@@ -2388,10 +2388,25 @@ CREATE TABLE "TPRMVendor" (
     "vendorUrl" TEXT,
     "onboardedDate" TIMESTAMP(3),
     "offboardedDate" TIMESTAMP(3),
+    "contractDocumentName" TEXT,
+    "contractDocumentPath" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "TPRMVendor_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMVendorDocument" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "vendorId" TEXT NOT NULL,
+    "docType" TEXT NOT NULL DEFAULT 'document',
+    "fileName" TEXT NOT NULL,
+    "filePath" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMVendorDocument_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -3725,6 +3740,9 @@ CREATE INDEX "TPRMVendor_customerAccountId_status_idx" ON "TPRMVendor"("customer
 CREATE UNIQUE INDEX "TPRMVendor_customerAccountId_vendorCode_key" ON "TPRMVendor"("customerAccountId", "vendorCode");
 
 -- CreateIndex
+CREATE INDEX "TPRMVendorDocument_customerAccountId_vendorId_idx" ON "TPRMVendorDocument"("customerAccountId", "vendorId");
+
+-- CreateIndex
 CREATE INDEX "TPRMAssessment_customerAccountId_idx" ON "TPRMAssessment"("customerAccountId");
 
 -- CreateIndex
@@ -4719,6 +4737,12 @@ ALTER TABLE "TPRMVendor" ADD CONSTRAINT "TPRMVendor_customerAccountId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "TPRMVendor" ADD CONSTRAINT "TPRMVendor_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendorDocument" ADD CONSTRAINT "TPRMVendorDocument_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendorDocument" ADD CONSTRAINT "TPRMVendorDocument_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "TPRMVendor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

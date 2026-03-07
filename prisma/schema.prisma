@@ -125,6 +125,7 @@ model CustomerAccount {
   tprmAssessmentLogs         TPRMAssessmentLog[]
   tprmConfiguration          TPRMConfiguration?
   tprmVendorProfileFields    TPRMVendorProfileField[]
+  tprmVendorDocuments        TPRMVendorDocument[]
   tprmOnboardingQuestions    TPRMOnboardingQuestion[]
   tprmServiceCategories      TPRMServiceCategory[]
   tprmDisciplines            TPRMDiscipline[]
@@ -3328,15 +3329,33 @@ model TPRMVendor {
   vendorUrl           String?
   onboardedDate       DateTime?
   offboardedDate      DateTime?
+  contractDocumentName String?
+  contractDocumentPath String?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
   assessments         TPRMAssessment[]
   monitoringVendor    TPRMMonitoringVendor? @relation("MonitoringToVendor")
   vendorIssues        TPRMVendorIssue[]
+  vendorDocuments     TPRMVendorDocument[]
 
   @@unique([customerAccountId, vendorCode])
   @@index([customerAccountId])
   @@index([customerAccountId, status])
+}
+
+// TPRMVendorDocument — Documents attached to a vendor (legal, report, general)
+model TPRMVendorDocument {
+  id                String      @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  vendorId          String
+  vendor            TPRMVendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  docType           String      @default("document") // "legal", "report", "document", "contract"
+  fileName          String
+  filePath          String
+  createdAt         DateTime    @default(now())
+
+  @@index([customerAccountId, vendorId])
 }
 
 // TPRMAssessment — Vendor risk assessments

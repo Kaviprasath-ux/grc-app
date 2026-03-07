@@ -24,7 +24,7 @@ export const POST = withAuth(
 
       const assessment = await prisma.tPRMAssessment.findFirst({
         where: { id, customerAccountId },
-        select: { id: true, assessmentCode: true, vendorId: true, status: true, initiatedById: true, assessorId: true },
+        select: { id: true, assessmentCode: true, vendorId: true, status: true, initiatedById: true, assessorId: true, questionnaireTemplate: true },
       });
       if (!assessment) {
         console.warn(`[ASR] POST /asr-assessments/${id}/complete — 404 not found`);

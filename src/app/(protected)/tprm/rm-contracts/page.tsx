@@ -12,7 +12,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Home, ChevronRight, Loader2, Search, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Home, ChevronRight, Loader2, Search, Eye, LogOut, RefreshCw, Upload, Download, FileText } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
 interface Vendor {
@@ -26,6 +27,9 @@ interface Vendor {
   contactEmail: string | null;
   contactPhone: string | null;
   accountManagerName: string | null;
+  assessments?: { id: string; status: string }[];
+  contractDocumentName?: string | null;
+  contractDocumentPath?: string | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -47,6 +51,37 @@ function isExpired(dateStr: string | null): boolean {
   return new Date(dateStr) < new Date();
 }
 
+// Assessment statuses where "Renew Contract" button is visible
+const RENEW_STATUSES = [
+  "Approved", "Initiated", "In_Progress", "In Progress", "In-Progress",
+  "Awaiting_Response", "Awaiting Response", "Submitted",
+  "Completed", "Reviewed",
+  "In_Progress_approver", "In-Progress(approver)",
+  "Under Review", "Draft", "Returned",
+];
+
+// Assessment statuses where "Offboard Request Submitted" text is shown
+const OFFBOARD_STATUSES = [
+  "Offboard_In_Progress", "Offboard_Completed", "Offboard_Awaiting_Response",
+  "Offboard_Awaiting_Respose",
+  "Offboard_Approve_Assessor", "Offboard_Approve_RM", "Offboard_Approve_BO",
+  "Offboarding", "Offboarded",
+];
+
+function getLatestAssessmentStatus(vendor: Vendor): string | null {
+  return vendor.assessments?.[0]?.status || null;
+}
+
+function isOffboardStatus(status: string | null): boolean {
+  if (!status) return false;
+  return OFFBOARD_STATUSES.includes(status);
+}
+
+function isRenewStatus(status: string | null): boolean {
+  if (!status) return true; // No assessment → show renew
+  return RENEW_STATUSES.includes(status);
+}
+
 // ── Main Component ──────────────────────────────────────
 export default function RMContractsPage() {
   const { t } = useLanguage();
@@ -57,6 +92,12 @@ export default function RMContractsPage() {
   const [tab, setTab] = useState<"expiring" | "all">("expiring");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [renewDialogOpen, setRenewDialogOpen] = useState(false);
+  const [renewVendor, setRenewVendor] = useState<Vendor | null>(null);
+  const [renewStart, setRenewStart] = useState("");
+  const [renewEnd, setRenewEnd] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const fetchVendors = useCallback(async () => {
     setLoading(true);
@@ -74,6 +115,98 @@ export default function RMContractsPage() {
   }, [toast, t]);
 
   useEffect(() => { fetchVendors(); }, [fetchVendors]);
+
+  const handleStartOffboarding = useCallback(async (vendor: Vendor) => {
+    setActionLoading(vendor.id);
+    try {
+      const res = await fetch(`/api/tprm/vendors/${vendor.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Offboarding" }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Offboarding initiated for") + " " + vendor.name });
+        fetchVendors();
+      } else {
+        toast({ title: t("Error"), description: t("Failed to start offboarding"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to start offboarding"), variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  }, [fetchVendors, toast, t]);
+
+  const handleRenewContract = useCallback(async () => {
+    if (!renewVendor || !renewStart || !renewEnd) return;
+    setActionLoading(renewVendor.id);
+    try {
+      const res = await fetch(`/api/tprm/vendors/${renewVendor.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractStartDate: renewStart,
+          contractEndDate: renewEnd,
+          status: "Active",
+        }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Contract renewed for") + " " + renewVendor.name });
+        setRenewDialogOpen(false);
+        setRenewVendor(null);
+        setRenewStart("");
+        setRenewEnd("");
+        fetchVendors();
+      } else {
+        toast({ title: t("Error"), description: t("Failed to renew contract"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to renew contract"), variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  }, [renewVendor, renewStart, renewEnd, fetchVendors, toast, t]);
+
+  const handleUploadContract = useCallback(async (vendorId: string, file: File) => {
+    setUploadingId(vendorId);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/tprm/vendors/${vendorId}/contract`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Contract document uploaded") });
+        fetchVendors();
+      } else {
+        toast({ title: t("Error"), description: t("Failed to upload document"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to upload document"), variant: "destructive" });
+    } finally {
+      setUploadingId(null);
+    }
+  }, [fetchVendors, toast, t]);
+
+  const handleDownloadContract = useCallback(async (vendor: Vendor) => {
+    try {
+      const res = await fetch(`/api/tprm/vendors/${vendor.id}/contract`);
+      if (!res.ok) {
+        toast({ title: t("Error"), description: t("Failed to download document"), variant: "destructive" });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = vendor.contractDocumentName || "contract";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to download document"), variant: "destructive" });
+    }
+  }, [toast, t]);
 
   const filtered = useMemo(() => {
     let data = vendors;
@@ -158,7 +291,11 @@ export default function RMContractsPage() {
                   <TableHead className="text-xs font-medium text-slate-500 uppercase">{t("Vendor Name")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase">{t("Contract Start")}</TableHead>
                   <TableHead className="text-xs font-medium text-slate-500 uppercase">{t("Expiring On")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase">{t("Action")}</TableHead>
+                  {tab === "expiring" ? (
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase">{t("Action")}</TableHead>
+                  ) : (
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase">{t("Contract")}</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -179,16 +316,116 @@ export default function RMContractsPage() {
                           {formatDate(v.contractEndDate)}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setSelectedVendor(v); setDialogOpen(true); }}
-                        >
-                          <Eye className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                          {t("View")}
-                        </Button>
-                      </TableCell>
+                      {tab === "expiring" ? (
+                        <TableCell>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {(() => {
+                              const aStatus = getLatestAssessmentStatus(v);
+                              if (isOffboardStatus(aStatus) || v.status === "Offboarding" || v.status === "Offboarded") {
+                                return (
+                                  <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs whitespace-nowrap">
+                                    {t("Offboard Request Submitted")}
+                                  </Badge>
+                                );
+                              }
+                              return (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-7 px-2"
+                                    disabled={actionLoading === v.id}
+                                    onClick={() => handleStartOffboarding(v)}
+                                  >
+                                    <LogOut className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                                    {t("Start Offboarding")}
+                                  </Button>
+                                  {isRenewStatus(aStatus) && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-xs h-7 px-2 border-green-300 text-green-700 hover:bg-green-50"
+                                      disabled={actionLoading === v.id}
+                                      onClick={() => {
+                                        setRenewVendor(v);
+                                        setRenewStart("");
+                                        setRenewEnd("");
+                                        setRenewDialogOpen(true);
+                                      }}
+                                    >
+                                      <RefreshCw className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                                      {t("Renew Contract")}
+                                    </Button>
+                                  )}
+                                </>
+                              );
+                            })()}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              onClick={() => { setSelectedVendor(v); setDialogOpen(true); }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      ) : (
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {v.contractDocumentName ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs h-7 px-2"
+                                  onClick={() => handleDownloadContract(v)}
+                                >
+                                  <Download className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                                  <FileText className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                                  <span className="max-w-[150px] truncate">{v.contractDocumentName}</span>
+                                </Button>
+                                <label className="cursor-pointer">
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleUploadContract(v.id, file);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                  <span className="inline-flex items-center justify-center h-7 px-2 rounded-md border text-xs text-muted-foreground hover:bg-muted transition-colors">
+                                    <Upload className="h-3.5 w-3.5" />
+                                  </span>
+                                </label>
+                              </>
+                            ) : (
+                              <label className="cursor-pointer">
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleUploadContract(v.id, file);
+                                    e.target.value = "";
+                                  }}
+                                />
+                                <span className="inline-flex items-center gap-1 h-7 px-2 rounded-md border text-xs text-muted-foreground hover:bg-muted transition-colors">
+                                  {uploadingId === v.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Upload className="h-3.5 w-3.5" />
+                                  )}
+                                  {t("Upload")}
+                                </span>
+                              </label>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}
@@ -242,6 +479,45 @@ export default function RMContractsPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Renew Contract Dialog */}
+      <Dialog open={renewDialogOpen} onOpenChange={setRenewDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Renew Contract")} - {renewVendor?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium">{t("New Contract Start Date")}</label>
+              <Input
+                type="date"
+                value={renewStart}
+                onChange={(e) => setRenewStart(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{t("New Contract End Date")}</label>
+              <Input
+                type="date"
+                value={renewEnd}
+                onChange={(e) => setRenewEnd(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setRenewDialogOpen(false)}>{t("Cancel")}</Button>
+              <Button
+                onClick={handleRenewContract}
+                disabled={!renewStart || !renewEnd || actionLoading !== null}
+              >
+                {actionLoading ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
+                {t("Renew Contract")}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

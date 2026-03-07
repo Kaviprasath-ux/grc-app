@@ -12,8 +12,30 @@ export const GET = withAuth(
       const status = searchParams.get("status");
       const limit = parseInt(searchParams.get("limit") || "50");
       const offset = parseInt(searchParams.get("offset") || "0");
+      const mode = searchParams.get("mode"); // "suggest" for vendor name autocomplete, "engagements" for listing engagements by name
 
       const tenantFilter = getTenantFilter(session);
+
+      // Mode: suggest — return distinct vendor names matching search
+      if (mode === "suggest" && search) {
+        const vendors = await prisma.tPRMVendor.findMany({
+          where: { ...tenantFilter, name: { contains: search, mode: "insensitive" } },
+          select: { name: true },
+          distinct: ["name"],
+          take: 10,
+        });
+        return NextResponse.json(vendors.map((v) => v.name));
+      }
+
+      // Mode: engagements — return all engagements (vendor rows) for a given vendor name
+      if (mode === "engagements" && search) {
+        const engagements = await prisma.tPRMVendor.findMany({
+          where: { ...tenantFilter, name: { equals: search, mode: "insensitive" } },
+          include: { department: { select: { id: true, name: true } } },
+          orderBy: { createdAt: "asc" },
+        });
+        return NextResponse.json(engagements);
+      }
 
       const where: Record<string, unknown> = { ...tenantFilter };
 
@@ -33,6 +55,11 @@ export const GET = withAuth(
           include: {
             department: { select: { id: true, name: true } },
             _count: { select: { assessments: true } },
+            assessments: {
+              select: { id: true, status: true },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+            },
             monitoringVendor: {
               select: {
                 id: true,
@@ -87,16 +114,57 @@ export const POST = withAuth(
       const body = await req.json();
       const customerAccountId = getCustomerAccountId(session);
 
-      // Generate vendor code
-      const count = await prisma.tPRMVendor.count({
-        where: { customerAccountId },
+      // Generate vendor code - reuse existing code for same vendor name, or create new
+      let vendorCode: string;
+      const existingWithSameName = await prisma.tPRMVendor.findFirst({
+        where: { customerAccountId, name: { equals: body.name, mode: "insensitive" } },
+        select: { vendorCode: true },
+        orderBy: { createdAt: "asc" },
       });
-      const vendorCode = `VEN${String(count + 1).padStart(3, "0")}`;
+
+      if (existingWithSameName) {
+        // Reuse the base vendor code (e.g. VEN001) from existing vendor with same name
+        vendorCode = existingWithSameName.vendorCode.split(".")[0];
+      } else {
+        // Find the highest existing vendor code number to avoid duplicates after deletions
+        const allVendors = await prisma.tPRMVendor.findMany({
+          where: { customerAccountId },
+          select: { vendorCode: true },
+        });
+        let maxCodeNum = 0;
+        for (const v of allVendors) {
+          const base = v.vendorCode.split(".")[0];
+          const match = base.match(/^VEN(\d+)$/);
+          if (match) {
+            const num = parseInt(match[1]);
+            if (num > maxCodeNum) maxCodeNum = num;
+          }
+        }
+        vendorCode = `VEN${String(maxCodeNum + 1).padStart(3, "0")}`;
+      }
+
+      // Generate engagement ID: vendorCode.N (e.g. VEN001.1, VEN001.2)
+      const sameBaseVendors = await prisma.tPRMVendor.findMany({
+        where: { customerAccountId, vendorCode: { startsWith: vendorCode } },
+        select: { vendorCode: true, engagementId: true },
+      });
+
+      // Find the highest engagement number
+      let maxEngNum = 0;
+      for (const v of sameBaseVendors) {
+        const eid = v.engagementId || v.vendorCode;
+        const parts = eid.split(".");
+        const num = parts.length > 1 ? parseInt(parts[parts.length - 1]) : 0;
+        if (!isNaN(num) && num > maxEngNum) maxEngNum = num;
+      }
+      const engagementNumber = maxEngNum + 1;
+      const fullVendorCode = `${vendorCode}.${engagementNumber}`;
+      const engagementId = body.engagementId || fullVendorCode;
 
       const vendor = await prisma.tPRMVendor.create({
         data: {
           customerAccountId,
-          vendorCode,
+          vendorCode: fullVendorCode,
           name: body.name,
           contactEmail: body.contactEmail,
           contactPhone: body.contactPhone,
@@ -107,7 +175,7 @@ export const POST = withAuth(
           departmentId: body.departmentId,
           status: body.status || "Onboarding",
           vrr: body.vrr,
-          engagementId: body.engagementId,
+          engagementId,
           vendorCertification: body.vendorCertification,
           vendorUrl: body.vendorUrl || null,
           businessJustification: body.businessJustification,

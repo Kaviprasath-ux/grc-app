@@ -240,7 +240,12 @@ export default function RMIssuesPage() {
         e.vendorName.toLowerCase().includes(remSearch.toLowerCase()) ||
         e.vendorCode.toLowerCase().includes(remSearch.toLowerCase());
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
-      const matchesSubTab = e.status === remSubTab;
+      const matchesSubTab =
+        remSubTab === "Open"
+          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response"].includes(e.status)
+          : remSubTab === "Closed"
+          ? ["Closed", "Resolved"].includes(e.status)
+          : e.status === remSubTab;
       return matchesSearch && matchesSeverity && matchesSubTab;
     });
   }, [remediationEntries, remSearch, remSeverityFilter, remSubTab]);
@@ -310,7 +315,12 @@ export default function RMIssuesPage() {
   const filteredVendorIssues = useMemo(() => {
     return vendorIssueEntries.filter((e) => {
       const matchesSeverity = viSeverityFilter === "all" || e.severity === viSeverityFilter;
-      const matchesSubTab = e.status === viSubTab;
+      const matchesSubTab =
+        viSubTab === "Open"
+          ? ["Open", "Pending", "In-Progress", "In Progress"].includes(e.status)
+          : viSubTab === "Closed"
+          ? ["Closed", "Resolved"].includes(e.status)
+          : e.status === viSubTab;
       return matchesSeverity && matchesSubTab;
     });
   }, [vendorIssueEntries, viSeverityFilter, viSubTab]);
