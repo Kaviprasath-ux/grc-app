@@ -1,26 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircleQuestion, Send, Trash2, X } from "lucide-react";
+import { MessageCircleQuestion, Send, Trash2, X, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHelpChatbot } from "@/hooks/useHelpChatbot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ChatMessage } from "./chat-message";
 import { ModuleCards, ModuleArticleList } from "./suggested-questions";
 import { helpModules as allModules } from "@/data/help-knowledge-base";
@@ -73,138 +59,144 @@ export function HelpChatbot() {
   return (
     <>
       {/* Floating Trigger Button */}
-      {!isOpen && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={toggleOpen}
-                className={cn(
-                  "fixed bottom-6 z-50 flex items-center justify-center",
-                  "w-14 h-14 rounded-full shadow-lg",
-                  "bg-primary-500 hover:bg-primary-600 text-white",
-                  "transition-all duration-200 hover:scale-105",
-                  "ltr:right-6 rtl:left-6"
-                )}
-                aria-label={t("Help Assistant")}
-              >
-                <MessageCircleQuestion className="w-6 h-6" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side={isRTL ? "right" : "left"}>
-              <p>
-                {t("Need help?")} <kbd className="text-[10px] ml-1 opacity-60">F1</kbd>
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
+      <button
+        onClick={toggleOpen}
+        className={cn(
+          "fixed bottom-6 z-50 flex items-center justify-center",
+          "w-14 h-14 rounded-full shadow-lg",
+          "transition-all duration-300",
+          isOpen
+            ? "bg-slate-600 hover:bg-slate-700 scale-90"
+            : "bg-primary-500 hover:bg-primary-600 hover:scale-105",
+          "text-white",
+          "ltr:right-6 rtl:left-6"
+        )}
+        aria-label={t("Help Assistant")}
+      >
+        {isOpen ? (
+          <X className="w-5 h-5" />
+        ) : (
+          <MessageCircleQuestion className="w-6 h-6" />
+        )}
+      </button>
 
-      {/* Chat Sheet Panel */}
-      <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
-        <SheetContent
-          side={isRTL ? "left" : "right"}
-          className="w-[400px] sm:max-w-[400px] p-0 flex flex-col gap-0 [&>button:last-child]:hidden"
-        >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white p-4 flex items-center justify-between flex-shrink-0">
-            <SheetHeader className="p-0 gap-0">
-              <SheetTitle className="text-white text-base font-semibold flex items-center gap-2">
-                <MessageCircleQuestion className="w-5 h-5" />
+      {/* Floating Chat Window */}
+      <div
+        className={cn(
+          "fixed z-50 flex flex-col",
+          "ltr:right-6 rtl:left-6 bottom-24",
+          "w-[380px] max-h-[560px]",
+          "bg-white rounded-2xl shadow-2xl border border-slate-200",
+          "transition-all duration-300 origin-bottom-right",
+          isOpen
+            ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 scale-95 translate-y-4 pointer-events-none"
+        )}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-4 py-3.5 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+              <MessageCircleQuestion className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold leading-tight">
                 {t("Help Assistant")}
-              </SheetTitle>
-              <SheetDescription className="text-primary-100 text-xs">
+              </h3>
+              <p className="text-[11px] text-primary-100 leading-tight">
                 {t("Ask anything about the application")}
-              </SheetDescription>
-            </SheetHeader>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={clearChat}
-                className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
-                title={t("Clear chat")}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={close}
-                className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              </p>
             </div>
           </div>
-
-          {/* Messages Area */}
-          <ScrollArea className="flex-1 min-h-0">
-            <div ref={scrollRef} className="p-4 space-y-1">
-              {/* Chat messages */}
-              {messages.map((msg) => (
-                <ChatMessage
-                  key={msg.id}
-                  role={msg.role}
-                  content={msg.content}
-                  article={msg.article}
-                  results={msg.results}
-                  onSelectArticle={selectArticle}
-                />
-              ))}
-
-              {/* Module browsing or suggestions (shown after welcome) */}
-              {messages.length <= 1 && !activeModule && (
-                <ModuleCards
-                  modules={modulesWithCounts}
-                  onSelectModule={browseModule}
-                  pageSuggestions={pageSuggestions}
-                  onSelectArticle={(article) => {
-                    handleQuickQuestion(article.question);
-                  }}
-                />
-              )}
-
-              {/* Module article list when browsing a category */}
-              {activeModule && (
-                <ModuleArticleList
-                  moduleName={activeModuleName}
-                  articles={moduleArticles}
-                  onSelectArticle={(article) => {
-                    selectArticle(article);
-                  }}
-                  onBack={backToModules}
-                />
-              )}
-            </div>
-          </ScrollArea>
-
-          {/* Input Area */}
-          <div className="border-t border-slate-200 p-3 flex-shrink-0">
-            <form onSubmit={handleSubmit} className="flex items-center gap-2">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={t("Type your question...")}
-                className="flex-1 text-sm h-10"
-                autoFocus
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={!inputValue.trim()}
-                className="h-10 w-10 bg-primary-500 hover:bg-primary-600 flex-shrink-0"
-              >
-                <Send className={cn("w-4 h-4", isRTL && "rotate-180")} />
-              </Button>
-            </form>
-            <p className="text-[10px] text-slate-400 mt-1.5 text-center">
-              {t("Press")} <kbd className="font-mono text-[10px]">F1</kbd>{" "}
-              {t("to toggle help")}
-            </p>
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={clearChat}
+              className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10 rounded-full"
+              title={t("Clear chat")}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={close}
+              className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10 rounded-full"
+              title={t("Minimize")}
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </Button>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+
+        {/* Messages Area */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto min-h-0 p-4 space-y-1"
+          style={{ maxHeight: "400px" }}
+        >
+          {/* Chat messages */}
+          {messages.map((msg) => (
+            <ChatMessage
+              key={msg.id}
+              role={msg.role}
+              content={msg.content}
+              article={msg.article}
+              results={msg.results}
+              onSelectArticle={selectArticle}
+            />
+          ))}
+
+          {/* Module browsing or suggestions (shown after welcome) */}
+          {messages.length <= 1 && !activeModule && (
+            <ModuleCards
+              modules={modulesWithCounts}
+              onSelectModule={browseModule}
+              pageSuggestions={pageSuggestions}
+              onSelectArticle={(article) => {
+                handleQuickQuestion(article.question);
+              }}
+            />
+          )}
+
+          {/* Module article list when browsing a category */}
+          {activeModule && (
+            <ModuleArticleList
+              moduleName={activeModuleName}
+              articles={moduleArticles}
+              onSelectArticle={(article) => {
+                selectArticle(article);
+              }}
+              onBack={backToModules}
+            />
+          )}
+        </div>
+
+        {/* Input Area */}
+        <div className="border-t border-slate-200 p-3 flex-shrink-0 rounded-b-2xl">
+          <form onSubmit={handleSubmit} className="flex items-center gap-2">
+            <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={t("Type your question...")}
+              className="flex-1 text-sm h-9 rounded-full px-4 bg-slate-50 border-slate-200 focus-visible:ring-primary-500/20"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!inputValue.trim()}
+              className="h-9 w-9 rounded-full bg-primary-500 hover:bg-primary-600 flex-shrink-0"
+            >
+              <Send className={cn("w-4 h-4", isRTL && "rotate-180")} />
+            </Button>
+          </form>
+          <p className="text-[10px] text-slate-400 mt-1.5 text-center">
+            <kbd className="font-mono text-[10px]">F1</kbd>{" "}
+            {t("to toggle help")}
+          </p>
+        </div>
+      </div>
     </>
   );
 }
