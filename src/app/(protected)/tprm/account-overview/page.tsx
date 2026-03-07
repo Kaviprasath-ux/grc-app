@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { PageHeader } from "@/components/shared/page-header";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -47,7 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Pencil, Trash2, FileText } from "lucide-react";
+import { Loader2, Pencil, Trash2, Home, ChevronRight, Plus, Search, Users } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 // Restricted to English and Arabic only per UAT
@@ -1363,20 +1362,20 @@ function CustomerAccountsTab() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button variant="default" size="icon" className="h-8 w-8" onClick={() => {
+        <div className="flex items-center gap-0.5">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             const uid = row.original.userId;
             if (!uid) return;
             setEditUserId(uid);
             setEditOpen(true);
-          }}>
+          }} title={t("Edit")}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setDeleteAccountId(row.original.id);
             setDeleteAccountName(row.original.companyName);
             setDeleteConfirmOpen(true);
-          }}>
+          }} title={t("Delete")}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -1387,24 +1386,24 @@ function CustomerAccountsTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <p className="text-sm text-slate-500">{t("Loading...")}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setCreateOpen(true)}>{t("Create New Customer")}</Button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h3 className="text-base font-semibold text-slate-700">{t("Customer Accounts")}</h3>
+        <Button onClick={() => setCreateOpen(true)} size="sm" className="w-full sm:w-auto">
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Create New Customer")}
+        </Button>
       </div>
-      <div className="border rounded-lg">
-        <div className="bg-primary/5 px-4 py-3 border-b">
-          <h4 className="font-semibold">{t("Customer Accounts")}</h4>
-        </div>
-        <div className="p-4">
-          <DataGrid columns={columns} data={data} searchPlaceholder={t("Search")} searchColumn="companyName" />
-        </div>
-      </div>
+      <DataGrid columns={columns} data={data} searchPlaceholder={t("Search customers...")} searchColumn="companyName" />
       <CreateAccountDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
@@ -1455,7 +1454,6 @@ function VendorAccountsTab() {
   const [search, setSearch] = useState("");
   const [vendorUsers, setVendorUsers] = useState<Record<string, VendorUser[]>>({});
   const [loadingVendor, setLoadingVendor] = useState<string | null>(null);
-  const [vendorSearch, setVendorSearch] = useState<Record<string, string>>({});
   const [hasMore, setHasMore] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
@@ -1557,12 +1555,12 @@ function VendorAccountsTab() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button variant="default" size="icon" className="h-8 w-8" onClick={() => {
+        <div className="flex items-center gap-0.5">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setEditUserId(row.original.id);
             setEditVendorId(row.original.id);
             setEditOpen(true);
-          }}>
+          }} title={t("Edit")}>
             <Pencil className="h-4 w-4" />
           </Button>
         </div>
@@ -1573,57 +1571,65 @@ function VendorAccountsTab() {
   if (loading && vendors.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <p className="text-sm text-slate-500">{t("Loading...")}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="max-w-sm">
-        <Input
-          placeholder={t("Search")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h3 className="text-base font-semibold text-slate-700">{t("Vendor Accounts")}</h3>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder={t("Search vendors...")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="ltr:pl-9 rtl:pr-9 h-9"
+          />
+        </div>
       </div>
-      <Accordion type="multiple" onValueChange={handleAccordionChange}>
-        {vendors.map((vendor) => (
-          <AccordionItem key={vendor.id} value={vendor.id} className="border rounded-lg mb-3 px-4">
-            <AccordionTrigger className="text-base font-semibold text-primary hover:no-underline">
-              {vendor.label}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-3 pt-2">
-                <div className="max-w-sm">
-                  <Input
-                    placeholder={t("Search")}
-                    value={vendorSearch[vendor.id] || ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setVendorSearch((prev) => ({ ...prev, [vendor.id]: val }));
-                      fetchVendorUsers(vendor.id, val);
-                    }}
-                  />
+
+      {vendors.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 py-16 text-center">
+          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+            <Users className="h-6 w-6 text-primary-400" />
+          </div>
+          <p className="text-sm font-medium text-slate-600 mb-1">{t("No vendors found")}</p>
+          <p className="text-xs text-slate-400">{t("Try adjusting your search")}</p>
+        </div>
+      ) : (
+        <Accordion type="multiple" onValueChange={handleAccordionChange}>
+          {vendors.map((vendor) => (
+            <AccordionItem key={vendor.id} value={vendor.id} className="bg-white rounded-xl border border-slate-200 mb-3 px-4">
+              <AccordionTrigger className="text-sm font-semibold text-slate-800 hover:no-underline">
+                {vendor.label}
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pt-2">
+                  {loadingVendor === vendor.id ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
+                    </div>
+                  ) : vendorUsers[vendor.id]?.length ? (
+                    <DataGrid columns={vendorUserColumns} data={vendorUsers[vendor.id]} searchPlaceholder={t("Search users...")} searchColumn="fullName" pageSize={5} />
+                  ) : (
+                    <p className="text-sm text-slate-500 py-4 text-center">{t("No data available")}</p>
+                  )}
                 </div>
-                {loadingVendor === vendor.id ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : vendorUsers[vendor.id]?.length ? (
-                  <DataGrid columns={vendorUserColumns} data={vendorUsers[vendor.id]} hideSearch pageSize={5} />
-                ) : (
-                  <p className="text-sm text-muted-foreground py-4 text-center">{t("No data available")}</p>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
       {hasMore && (
         <button
           onClick={() => fetchVendors(false)}
-          className="w-full py-3 text-sm text-primary hover:bg-muted/50 border rounded-lg"
+          className="w-full py-3 text-sm text-primary-600 hover:bg-primary-50 border border-slate-200 rounded-xl transition-colors"
         >
           {t("Load more")}...
         </button>
@@ -1636,7 +1642,7 @@ function VendorAccountsTab() {
         showIsGrcAdded={false}
         onSuccess={() => {
           // Refresh vendor users for all expanded vendors
-          Object.keys(vendorUsers).forEach((vid) => fetchVendorUsers(vid, vendorSearch[vid]));
+          Object.keys(vendorUsers).forEach((vid) => fetchVendorUsers(vid));
         }}
       />
     </div>
@@ -1731,20 +1737,20 @@ function AssessmentFactoryTab() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button variant="default" size="icon" className="h-8 w-8" onClick={() => {
+        <div className="flex items-center gap-0.5">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             const uid = row.original.userId;
             if (!uid) return;
             setEditUserId(uid);
             setEditOpen(true);
-          }}>
+          }} title={t("Edit")}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setDeleteAccountId(row.original.id);
             setDeleteAccountName(row.original.companyName);
             setDeleteConfirmOpen(true);
-          }}>
+          }} title={t("Delete")}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -1755,24 +1761,24 @@ function AssessmentFactoryTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <p className="text-sm text-slate-500">{t("Loading...")}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setCreateOpen(true)}>{t("Create Factory Admin")}</Button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h3 className="text-base font-semibold text-slate-700">{t("Assessment Factory")}</h3>
+        <Button onClick={() => setCreateOpen(true)} size="sm" className="w-full sm:w-auto">
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Create Factory Admin")}
+        </Button>
       </div>
-      <div className="border rounded-lg">
-        <div className="bg-primary/5 px-4 py-3 border-b">
-          <h4 className="font-semibold">{t("Assessment Factory")}</h4>
-        </div>
-        <div className="p-4">
-          <DataGrid columns={columns} data={data} searchPlaceholder={t("Search")} searchColumn="companyName" />
-        </div>
-      </div>
+      <DataGrid columns={columns} data={data} searchPlaceholder={t("Search factory accounts...")} searchColumn="companyName" />
       <CreateAccountDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
@@ -1908,18 +1914,18 @@ function SuperAdminTab() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button variant="default" size="icon" className="h-8 w-8" onClick={() => {
+        <div className="flex items-center gap-0.5">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setEditUserId(row.original.id);
             setEditOpen(true);
-          }}>
+          }} title={t("Edit")}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setDeleteUserId(row.original.id);
             setDeleteUserName(row.original.fullName);
             setDeleteConfirmOpen(true);
-          }}>
+          }} title={t("Delete")}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -1930,17 +1936,24 @@ function SuperAdminTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <p className="text-sm text-slate-500">{t("Loading...")}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setCreateOpen(true)}>{t("Create New SuperAdmin")}</Button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h3 className="text-base font-semibold text-slate-700">{t("Super Admin")}</h3>
+        <Button onClick={() => setCreateOpen(true)} size="sm" className="w-full sm:w-auto">
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Create New SuperAdmin")}
+        </Button>
       </div>
-      <DataGrid columns={columns} data={data} searchPlaceholder={t("Search")} searchColumn="fullName" />
+      <DataGrid columns={columns} data={data} searchPlaceholder={t("Search super admins...")} searchColumn="fullName" />
       <CreateAccountDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
@@ -1988,8 +2001,18 @@ export default function AccountOverviewPage() {
   const { t } = useLanguage();
 
   return (
-    <div className="space-y-6 p-6">
-      <PageHeader title={t("Account Overview")} />
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Account Overview")}</span>
+      </nav>
+
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Account Overview")}</h1>
 
       <Tabs defaultValue="customers">
         <TabsList>
@@ -1999,19 +2022,19 @@ export default function AccountOverviewPage() {
           <TabsTrigger value="superadmin">{t("Super Admin")}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="customers" className="mt-4">
+        <TabsContent value="customers" className="mt-6">
           <CustomerAccountsTab />
         </TabsContent>
 
-        <TabsContent value="vendors" className="mt-4">
+        <TabsContent value="vendors" className="mt-6">
           <VendorAccountsTab />
         </TabsContent>
 
-        <TabsContent value="factory" className="mt-4">
+        <TabsContent value="factory" className="mt-6">
           <AssessmentFactoryTab />
         </TabsContent>
 
-        <TabsContent value="superadmin" className="mt-4">
+        <TabsContent value="superadmin" className="mt-6">
           <SuperAdminTab />
         </TabsContent>
       </Tabs>

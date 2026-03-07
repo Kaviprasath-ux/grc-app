@@ -37,9 +37,14 @@ const WELCOME_MESSAGE: ChatMessage = {
   timestamp: Date.now(),
 };
 
-export function useHelpChatbot() {
-  const [isOpen, setIsOpen] = useState(false);
+interface UseHelpChatbotOptions {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
+  const [isTyping, setIsTyping] = useState(false);
   const [activeModule, setActiveModule] = useState<HelpModule | null>(null);
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -85,12 +90,12 @@ export function useHelpChatbot() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "F1") {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        onOpenChange(!isOpen);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isOpen, onOpenChange]);
 
   // ─── Derived data (all filtered by product scope + role) ─────────
 
@@ -115,11 +120,11 @@ export function useHelpChatbot() {
   // ─── Actions ─────────────────────────────────────────────────────
 
   const toggleOpen = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
+    onOpenChange(!isOpen);
+  }, [isOpen, onOpenChange]);
 
-  const open = useCallback(() => setIsOpen(true), []);
-  const close = useCallback(() => setIsOpen(false), []);
+  const open = useCallback(() => onOpenChange(true), [onOpenChange]);
+  const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   /**
    * Send a user message and search the knowledge base.
@@ -140,55 +145,76 @@ export function useHelpChatbot() {
         timestamp: Date.now(),
       };
 
-      const results = searchKnowledgeBase(trimmed, helpArticles, {
-        roleFilter: userRoles,
-        productFlags,
-      });
+      // Show user message + typing indicator
+      setMessages((prev) => [...prev, userMsg]);
+      setIsTyping(true);
 
-      let botMsg: ChatMessage;
+      // Simulate a brief thinking delay, then show bot response
+      setTimeout(() => {
+        const results = searchKnowledgeBase(trimmed, helpArticles, {
+          roleFilter: userRoles,
+          productFlags,
+        });
 
-      if (results.length === 0) {
-        botMsg = {
-          id: `bot-${Date.now()}`,
-          role: "bot",
-          content:
-            "This information is not available in the current User Manual. Please contact the administrator.",
-          timestamp: Date.now(),
-        };
-      } else if (results.length === 1 || results[0].score >= 80) {
-        botMsg = {
-          id: `bot-${Date.now()}`,
-          role: "bot",
-          content: results[0].article.answer,
-          article: results[0].article,
-          timestamp: Date.now(),
-        };
-      } else {
-        botMsg = {
-          id: `bot-${Date.now()}`,
-          role: "bot",
-          content: results[0].article.answer,
-          article: results[0].article,
-          results,
-          timestamp: Date.now(),
-        };
-      }
+        let botMsg: ChatMessage;
 
-      setMessages((prev) => [...prev, userMsg, botMsg]);
+        if (results.length === 0) {
+          botMsg = {
+            id: `bot-${Date.now()}`,
+            role: "bot",
+            content:
+              "This information is not available in the current User Manual. Please contact the administrator.",
+            timestamp: Date.now(),
+          };
+        } else if (results.length === 1 || results[0].score >= 80) {
+          botMsg = {
+            id: `bot-${Date.now()}`,
+            role: "bot",
+            content: results[0].article.answer,
+            article: results[0].article,
+            timestamp: Date.now(),
+          };
+        } else {
+          botMsg = {
+            id: `bot-${Date.now()}`,
+            role: "bot",
+            content: results[0].article.answer,
+            article: results[0].article,
+            results,
+            timestamp: Date.now(),
+          };
+        }
+
+        setIsTyping(false);
+        setMessages((prev) => [...prev, botMsg]);
+      }, 800);
     },
     [userRoles, productFlags]
   );
 
   /** Select a specific article to display. */
   const selectArticle = useCallback((article: HelpArticle) => {
-    const botMsg: ChatMessage = {
-      id: `bot-${Date.now()}`,
-      role: "bot",
-      content: article.answer,
-      article,
+    setActiveModule(null);
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: article.question,
       timestamp: Date.now(),
     };
-    setMessages((prev) => [...prev, botMsg]);
+    setMessages((prev) => [...prev, userMsg]);
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const botMsg: ChatMessage = {
+        id: `bot-${Date.now()}`,
+        role: "bot",
+        content: article.answer,
+        article,
+        timestamp: Date.now(),
+      };
+      setIsTyping(false);
+      setMessages((prev) => [...prev, botMsg]);
+    }, 600);
   }, []);
 
   /** Browse a module category. */
@@ -209,6 +235,7 @@ export function useHelpChatbot() {
 
   return {
     isOpen,
+    isTyping,
     toggleOpen,
     open,
     close,

@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Eye, Download, RefreshCw } from "lucide-react";
+import { Loader2, Eye, Download, RefreshCw, Home, ChevronRight } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface Assessment {
@@ -238,15 +238,41 @@ export default function AssessmentWorkspacePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="p-4 lg:p-6 space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>{t("TPRM")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Assessment Workspace")}</span>
+        </nav>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <PageHeader title={t("Assessment Workspace")} />
+    <div className="p-4 lg:p-6 space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Assessment Workspace")}</span>
+      </nav>
+
+      <PageHeader title={t("Assessment Workspace")} description={t("View and manage all TPRM assessments")} />
 
       <Tabs defaultValue="overview">
         <TabsList>

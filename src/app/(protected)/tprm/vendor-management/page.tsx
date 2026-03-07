@@ -443,9 +443,9 @@ export default function VendorManagementPage() {
   };
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 lg:p-6 space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
@@ -454,16 +454,19 @@ export default function VendorManagementPage() {
         <span className="text-primary-700 font-medium">{t("Vendor Inventory")}</span>
       </nav>
 
-      {/* Page header — mirrors Mendix: title left, buttons right */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("Vendor Inventory")}</h1>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Vendor Inventory")}</h1>
+          <p className="text-sm text-slate-500">{t("Manage and monitor your vendor portfolio")}</p>
+        </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleExport()}>
-            <Download className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
+          <Button variant="outline" className="gap-2" onClick={() => handleExport()}>
+            <Download className="h-4 w-4" />
             {t("Bulk Export")}
           </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
+          <Button className="gap-2" onClick={openCreate}>
+            <Plus className="h-4 w-4" />
             {t("Onboard New Vendor")}
           </Button>
         </div>
@@ -535,10 +538,15 @@ export default function VendorManagementPage() {
 
       {/* ── Add / Edit Vendor Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editItem ? t("Edit Vendor") : t("Onboard New Vendor")}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{editItem ? t("Edit Vendor") : t("Onboard New Vendor")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><Label>{t("Vendor Name")} *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("Enter vendor name")} /></div>
             <div>
@@ -595,7 +603,9 @@ export default function VendorManagementPage() {
               <div className="flex items-center gap-2"><Switch checked={form.pii} onCheckedChange={(v) => setForm({ ...form, pii: v })} /><Label className="text-sm">{t("PII")}</Label></div>
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-4 border-t">
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleSave} disabled={!form.name.trim()}>{t("Save")}</Button>
           </div>

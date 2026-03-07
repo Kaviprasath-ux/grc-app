@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, RotateCcw, UserPlus } from "lucide-react";
+import { Loader2, Eye, RotateCcw, UserPlus, Home, ChevronRight } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface TaskQueueItem {
@@ -297,8 +297,18 @@ export default function TaskQueuePage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <PageHeader title={t("Task Queue")} />
+    <div className="p-4 lg:p-6 space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Task Queue")}</span>
+      </nav>
+
+      <PageHeader title={t("Task Queue")} description={t("Manage assessment assignments and workflow")} />
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>

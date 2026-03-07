@@ -110,10 +110,19 @@ export default function MasterDataManagementPage() {
   // ==================== LANDING PAGE ====================
   if (!activeCard) {
     return (
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t("Master Data Management")}</h1>
-          <p className="text-muted-foreground mt-1">
+      <div className="p-4 lg:p-6 space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>{t("TPRM")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Master Data")}</span>
+        </nav>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Master Data Management")}</h1>
+          <p className="text-sm text-slate-500">
             {t("Manage master data for third-party risk management")}
           </p>
         </div>
@@ -154,19 +163,23 @@ export default function MasterDataManagementPage() {
   const cardTitle = masterDataCards.find((c) => c.id === activeCard)?.title || "";
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 lg:p-6 space-y-6">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <button
           onClick={() => setActiveCard(null)}
-          className="flex items-center gap-1 hover:text-primary transition-colors"
+          className="text-slate-500 hover:text-primary transition-colors"
         >
-          <Home className="h-3.5 w-3.5" />
-          <span>{t("Master Data Management")}</span>
+          {t("Master Data")}
         </button>
-        <ChevronRight className={`h-3 w-3 ${isRTL ? "rotate-180" : ""}`} />
-        <span className="text-foreground font-medium">{t(cardTitle)}</span>
-      </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t(cardTitle)}</span>
+      </nav>
 
       {/* Back button + Title */}
       <div className="flex items-center gap-3">

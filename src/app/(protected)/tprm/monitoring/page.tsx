@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   Loader2,
   Radar,
+  Home,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -255,25 +257,35 @@ export default function MonitoringPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="p-4 lg:p-6 space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Continuous Monitoring")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <Radar className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">{t("Continuous Monitoring")}</h1>
-            <p className="text-sm text-muted-foreground">{t("Track and monitor vendor security posture in real-time")}</p>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Continuous Monitoring")}</h1>
+            <p className="text-sm text-slate-500">{t("Track and monitor vendor security posture in real-time")}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ltr:mr-1 rtl:ml-1 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="outline" className="gap-2" onClick={loadData} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {t("Refresh")}
           </Button>
-          <Button variant="outline" size="sm">
-            <FileBarChart className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          <Button variant="outline" className="gap-2">
+            <FileBarChart className="h-4 w-4" />
             {t("Vendor Reports")}
           </Button>
         </div>

@@ -153,3 +153,25 @@ function formatBold(text: string): string {
     '<strong class="font-semibold text-slate-900">$1</strong>'
   );
 }
+
+/**
+ * Animated typing indicator with bouncing dots
+ */
+export function TypingIndicator() {
+  return (
+    <div className="flex justify-start mb-3">
+      <div className="flex items-start gap-2">
+        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-500 flex items-center justify-center">
+          <Bot className="w-3.5 h-3.5 text-white" />
+        </div>
+        <div className="rounded-2xl rounded-bl-sm bg-slate-50 border border-slate-200 px-4 py-3">
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:0ms]" />
+            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]" />
+            <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

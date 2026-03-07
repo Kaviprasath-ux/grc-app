@@ -50,6 +50,9 @@ import {
   Search,
   Pencil,
   Trash2,
+  Home,
+  ChevronRight,
+  Users,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -638,115 +641,138 @@ export default function UserManagementPage() {
 
   // ==================== RENDER ====================
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{t("User Management")}</h1>
+    <div className="p-4 lg:p-6 space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("TPRM")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("User Management")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("User Management")}</h1>
+          <p className="text-sm text-slate-500">{t("Manage TPRM users and their roles")}</p>
+        </div>
         {canCreate && (
           <Button
+            className="gap-2"
             onClick={() => {
               setFormData(emptyForm);
               setFormErrors({});
               setShowCreateDialog(true);
             }}
           >
+            <Users className="h-4 w-4" />
             {t("Add")}
           </Button>
         )}
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t("Search by Name")}
-                className="ltr:pl-9 rtl:pr-9"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder={t("All Roles")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("All Roles")}</SelectItem>
-                {ALL_ROLES.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {t(role)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder={t("Search by Name")}
+            className="ltr:pl-9 rtl:pr-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={t("All Roles")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("All Roles")}</SelectItem>
+            {ALL_ROLES.map((role) => (
+              <SelectItem key={role} value={role}>
+                {t(role)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Users Table */}
-      <Card>
-        <CardContent className="pt-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      {loading ? (
+        <div className="flex items-center justify-center h-[40vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {t("No users found")}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Name")}</TableHead>
-                    <TableHead>{t("Email")}</TableHead>
-                    <TableHead>{t("Role")}</TableHead>
-                    <TableHead className="text-right">{t("Action")}</TableHead>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
+          </div>
+        </div>
+      ) : users.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 py-16 text-center">
+          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
+            <Users className="h-6 w-6 text-primary-400" />
+          </div>
+          <p className="text-sm font-medium text-slate-600 mb-1">{t("No users found")}</p>
+          <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider ps-5">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Email")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Role")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider text-right pe-5">{t("Action")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                    <TableCell className="ps-5 py-3 font-medium text-primary">
+                      {user.fullName}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-slate-600">{user.email}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-600">{user.tprmRole ? t(user.tprmRole) : "-"}</TableCell>
+                    <TableCell className="pe-5 py-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        {canEdit && (
+                          <Button
+                            variant="default"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openEditDialog(user)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDeleteUser(user) && (
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openDeleteDialog(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium text-primary">
-                        {user.fullName}
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.tprmRole ? t(user.tprmRole) : "-"}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {canEdit && (
-                            <Button
-                              variant="default"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openEditDialog(user)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canDeleteUser(user) && (
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openDeleteDialog(user)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {/* Pagination Footer */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+            <span className="text-xs text-slate-500">{users.length} {t("of")} {total} {t("users")}</span>
+          </div>
+        </div>
+      )}
 
       {/* Create User Dialog — matches Organization Users layout */}
       <Dialog open={showCreateDialog} onOpenChange={(open) => {

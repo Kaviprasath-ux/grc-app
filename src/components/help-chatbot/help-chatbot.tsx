@@ -1,26 +1,29 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircleQuestion, Send, Trash2, X, Minimize2 } from "lucide-react";
+import { MessageCircleQuestion, Send, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHelpChatbot } from "@/hooks/useHelpChatbot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChatMessage } from "./chat-message";
+import { ChatMessage, TypingIndicator } from "./chat-message";
 import { ModuleCards, ModuleArticleList } from "./suggested-questions";
 import { helpModules as allModules } from "@/data/help-knowledge-base";
 
-export function HelpChatbot() {
+interface HelpChatbotProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
   const { t, isRTL } = useLanguage();
   const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const {
-    isOpen,
-    toggleOpen,
-    close,
     messages,
+    isTyping,
     sendMessage,
     selectArticle,
     clearChat,
@@ -30,24 +33,32 @@ export function HelpChatbot() {
     moduleArticles,
     modulesWithCounts,
     pageSuggestions,
-  } = useHelpChatbot();
+  } = useHelpChatbot({ isOpen, onOpenChange });
 
-  // Auto-scroll to bottom when messages change
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change or typing starts
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isTyping]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [isOpen, onOpenChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
     sendMessage(inputValue);
     setInputValue("");
-  };
-
-  const handleQuickQuestion = (question: string) => {
-    sendMessage(question);
   };
 
   // Find module name for active module
@@ -58,39 +69,18 @@ export function HelpChatbot() {
 
   return (
     <>
-      {/* Floating Trigger Button */}
-      <button
-        onClick={toggleOpen}
-        className={cn(
-          "fixed bottom-6 z-50 flex items-center justify-center",
-          "w-14 h-14 rounded-full shadow-lg",
-          "transition-all duration-300",
-          isOpen
-            ? "bg-slate-600 hover:bg-slate-700 scale-90"
-            : "bg-primary-500 hover:bg-primary-600 hover:scale-105",
-          "text-white",
-          "ltr:right-6 rtl:left-6"
-        )}
-        aria-label={t("Help Assistant")}
-      >
-        {isOpen ? (
-          <X className="w-5 h-5" />
-        ) : (
-          <MessageCircleQuestion className="w-6 h-6" />
-        )}
-      </button>
-
-      {/* Floating Chat Window */}
+      {/* Chat Window — anchored below header */}
       <div
+        ref={panelRef}
         className={cn(
-          "fixed z-50 flex flex-col",
-          "ltr:right-6 rtl:left-6 bottom-24",
-          "w-[380px] max-h-[560px]",
+          "fixed z-40 flex flex-col",
+          "ltr:right-4 rtl:left-4 top-[72px]",
+          "w-[380px] max-h-[calc(100vh-88px)]",
           "bg-white rounded-2xl shadow-2xl border border-slate-200",
-          "transition-all duration-300 origin-bottom-right",
+          "transition-all duration-300 origin-top-right",
           isOpen
             ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 scale-95 translate-y-4 pointer-events-none"
+            : "opacity-0 scale-95 -translate-y-4 pointer-events-none"
         )}
       >
         {/* Header */}
@@ -121,11 +111,11 @@ export function HelpChatbot() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={close}
+              onClick={() => onOpenChange(false)}
               className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10 rounded-full"
-              title={t("Minimize")}
+              title={t("Close")}
             >
-              <Minimize2 className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
@@ -134,7 +124,6 @@ export function HelpChatbot() {
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto min-h-0 p-4 space-y-1"
-          style={{ maxHeight: "400px" }}
         >
           {/* Chat messages */}
           {messages.map((msg) => (
@@ -148,15 +137,16 @@ export function HelpChatbot() {
             />
           ))}
 
+          {/* Typing indicator */}
+          {isTyping && <TypingIndicator />}
+
           {/* Module browsing or suggestions (shown after welcome) */}
           {messages.length <= 1 && !activeModule && (
             <ModuleCards
               modules={modulesWithCounts}
               onSelectModule={browseModule}
               pageSuggestions={pageSuggestions}
-              onSelectArticle={(article) => {
-                handleQuickQuestion(article.question);
-              }}
+              onSelectArticle={selectArticle}
             />
           )}
 
@@ -185,7 +175,7 @@ export function HelpChatbot() {
             <Button
               type="submit"
               size="icon"
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || isTyping}
               className="h-9 w-9 rounded-full bg-primary-500 hover:bg-primary-600 flex-shrink-0"
             >
               <Send className={cn("w-4 h-4", isRTL && "rotate-180")} />

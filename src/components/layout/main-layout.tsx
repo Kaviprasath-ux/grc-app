@@ -15,6 +15,7 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const { isRTL } = useLanguage();
 
   // Load sidebar preference from localStorage
@@ -68,12 +69,14 @@ export function MainLayout({ children }: MainLayoutProps) {
           onMenuClick={() => setMobileMenuOpen(true)}
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={toggleSidebar}
+          helpOpen={helpOpen}
+          onHelpToggle={() => setHelpOpen((p) => !p)}
         />
         <main className="flex-1 p-4 lg:p-6 min-w-0">{children}</main>
       </div>
 
-      {/* Help Chatbot — floating button + side sheet */}
-      <HelpChatbot />
+      {/* Help Chatbot — triggered from header */}
+      <HelpChatbot isOpen={helpOpen} onOpenChange={setHelpOpen} />
     </div>
   );
 }

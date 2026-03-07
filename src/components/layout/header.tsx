@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw, PanelLeftClose, PanelLeftOpen, MessageCircleQuestion } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -39,6 +39,8 @@ interface HeaderProps {
   onMenuClick?: () => void;
   sidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
+  helpOpen?: boolean;
+  onHelpToggle?: () => void;
 }
 
 // Helper function to get icon component based on notification type
@@ -65,7 +67,7 @@ function NotificationIcon({ type }: { type: string }) {
   }
 }
 
-export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: HeaderProps) {
+export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpen, onHelpToggle }: HeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const { locale, setLocale, t, locales, localeNames, localeFlags } = useLanguage();
@@ -232,6 +234,23 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar }: Heade
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Help Assistant */}
+        {onHelpToggle && (
+          <Button
+            variant="ghost"
+            onClick={onHelpToggle}
+            className={`relative flex items-center gap-1.5 px-2.5 h-9 rounded-full transition-all ${
+              helpOpen
+                ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-sm"
+                : "bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 hover:from-primary-100 hover:to-primary-200 border border-primary-200"
+            }`}
+            title={`${t("Help Assistant")} (F1)`}
+          >
+            <MessageCircleQuestion className="h-4 w-4" />
+            <span className="text-xs font-semibold hidden sm:inline">{t("Help")}</span>
+          </Button>
+        )}
 
         {/* Notifications */}
         <DropdownMenu>
