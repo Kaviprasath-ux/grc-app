@@ -14,7 +14,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import * as XLSX from "xlsx";
+import { useSession } from "next-auth/react";
+import * as XLSX from "xlsx-js-style";
 
 // ── Types ──────────────────────────────────────────
 interface AssessmentRow {
@@ -83,6 +84,9 @@ function parseXlsRows(file: File): Promise<AssessmentRow[]> {
 
 export default function AsrAssessmentFactoryPage() {
   const { t } = useLanguage();
+  const { data: session } = useSession();
+  const storageKey = `assessment-factory-reports-${session?.user?.customerAccountId || session?.user?.id || "default"}`;
+  const isFactoryRole = session?.user?.roles?.some((r: string) => r === "FactoryAdmin" || r === "FactoryAssessor");
   const { toast } = useToast();
 
   // Import dialog state
@@ -102,28 +106,54 @@ export default function AsrAssessmentFactoryPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  // Load saved reports from localStorage on mount
+  // Load saved reports from localStorage when session is available
+  // Migrate ALL old user-scoped keys to the tenant-scoped key
   useEffect(() => {
+    if (!session?.user) return;
     try {
-      const saved = localStorage.getItem("assessment-factory-reports");
+      // Find and merge all old user-scoped keys into the tenant key
+      const prefix = "assessment-factory-reports-";
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(prefix) && key !== storageKey) {
+          const oldData = localStorage.getItem(key);
+          if (!oldData) continue;
+          const existingData = localStorage.getItem(storageKey);
+          if (!existingData) {
+            localStorage.setItem(storageKey, oldData);
+          } else {
+            try {
+              const oldParsed = JSON.parse(oldData) as AssessmentReport[];
+              const existParsed = JSON.parse(existingData) as AssessmentReport[];
+              const ids = new Set(existParsed.map(r => r.id));
+              const merged = [...existParsed, ...oldParsed.filter(r => !ids.has(r.id))];
+              localStorage.setItem(storageKey, JSON.stringify(merged));
+            } catch { /* ignore */ }
+          }
+          localStorage.removeItem(key);
+        }
+      }
+
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved) as AssessmentReport[];
         if (Array.isArray(parsed) && parsed.length) setReports(parsed);
       }
     } catch { /* ignore */ }
-  }, []);
+  }, [storageKey, session?.user]);
 
   // Persist reports to localStorage whenever they change
   useEffect(() => {
+    if (!session?.user) return;
     if (reports.length > 0) {
-      localStorage.setItem("assessment-factory-reports", JSON.stringify(reports));
+      localStorage.setItem(storageKey, JSON.stringify(reports));
     }
-  }, [reports]);
+  }, [reports, storageKey, session?.user]);
 
   const deleteReport = (id: string) => {
     setReports(prev => {
       const updated = prev.filter(r => r.id !== id);
-      if (!updated.length) localStorage.removeItem("assessment-factory-reports");
+      if (!updated.length) localStorage.removeItem(storageKey);
       return updated;
     });
     if (activeReport?.id === id) setActiveReport(null);
@@ -272,8 +302,15 @@ export default function AsrAssessmentFactoryPage() {
       const emptyRows = parsedRows.filter(r => !r.question?.trim());
       const allRows = [...rows, ...emptyRows].sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 
+      // Generate sequential ID like AS-0001
+      const nextNum = reports.reduce((max, r) => {
+        const m = r.id.match(/^AS-(\d+)$/);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 0) + 1;
+      const reportId = `AS-${String(nextNum).padStart(4, "0")}`;
+
       const report: AssessmentReport = {
-        id: crypto.randomUUID(),
+        id: reportId,
         createdAt: new Date().toISOString(),
         rows: allRows,
       };
@@ -309,6 +346,31 @@ export default function AsrAssessmentFactoryPage() {
     }));
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(wsData);
+
+    // Auto-fit column widths
+    const colKeys = Object.keys(wsData[0] || {});
+    ws["!cols"] = colKeys.map((key) => {
+      let maxLen = key.length;
+      for (const row of wsData) {
+        const val = String((row as Record<string, unknown>)[key] ?? "");
+        maxLen = Math.max(maxLen, val.length);
+      }
+      return { wch: Math.min(maxLen + 2, 60) };
+    });
+
+    // Style all cells: wrap text + vertical top, bold headers
+    const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (!ws[addr]) continue;
+        ws[addr].s = {
+          alignment: { wrapText: true, vertical: "top" },
+          ...(r === 0 ? { font: { bold: true }, fill: { fgColor: { rgb: "E2E8F0" } } } : {}),
+        };
+      }
+    }
+
     XLSX.utils.book_append_sheet(wb, ws, "Assessment Factory Report");
     XLSX.writeFile(wb, "Assessment_Factory_Report.xlsx");
   };
@@ -615,10 +677,13 @@ export default function AsrAssessmentFactoryPage() {
       <div className="flex items-center justify-between">
         <div />
         <h1 className="text-2xl font-bold">{t("Assessment Factory")}</h1>
-        <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)} disabled={!reports.length}>
-          <History className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
-          {t("Previous Assessments")} {reports.length > 0 && `(${reports.length})`}
-        </Button>
+        {!isFactoryRole && (
+          <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)} disabled={!reports.length}>
+            <History className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
+            {t("Previous Assessments")} {reports.length > 0 && `(${reports.length})`}
+          </Button>
+        )}
+        {isFactoryRole && <div />}
       </div>
 
       {/* 4-step workflow */}

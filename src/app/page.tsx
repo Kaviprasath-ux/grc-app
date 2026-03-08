@@ -24,6 +24,11 @@ export default async function Home() {
     redirect("/internal-audit/fieldwork");
   }
 
+  // Redirect FactoryAdmin and FactoryAssessor to Assessment Factory page
+  if (session?.user?.roles?.includes("FactoryAdmin") || session?.user?.roles?.includes("FactoryAssessor")) {
+    redirect("/tprm/asr-assessment-factory");
+  }
+
   // Redirect AccountManager and SME users to AM Assessments page
   if (session?.user?.roles?.includes("AccountManager") || session?.user?.roles?.includes("TPRMSME")) {
     redirect("/tprm/am-assessments");

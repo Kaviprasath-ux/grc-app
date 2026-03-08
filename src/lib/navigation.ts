@@ -244,7 +244,9 @@ export const navigation: NavItem[] = [
       { name: "Assessment Factory", href: "/tprm/asr-assessment-factory", icon: Factory, permission: "tprm.asr-assessment-factory:view" },
       { name: "Template", href: "/tprm/asr-template", icon: FileText, permission: "tprm.asr-template:view" },
       { name: "Support", href: "/tprm/asr-support", icon: HelpCircle, permission: "tprm.asr-support:view" },
-      { name: "Assessment Factory Reports", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
+      { name: "Assessment History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
+      // ---- Factory Admin / Factory Assessor menu items ----
+      { name: "User Management", href: "/tprm/factory-user-management", icon: Users, permission: "tprm.factory-user-management:view" },
     ],
   },
   // ==================== End TPRM Section ====================
@@ -389,6 +391,7 @@ const ROLE_PATH_MAP: Record<string, string> = {
   "DepartmentContributor": "department-contributor",
   "TPRMCustomerAdmin": "tprm-customer-admin",
   "FactoryAdmin": "factory-admin",
+  "FactoryAssessor": "factory-assessor",
   "TPRMAdmin": "tprm-admin",
   "BusinessOwner": "business-owner",
   "RelationshipManager": "relationship-manager",
@@ -478,6 +481,7 @@ function getPrimaryRole(roles: string[]): string {
     "DepartmentContributor",
     "TPRMCustomerAdmin",
     "FactoryAdmin",
+    "FactoryAssessor",
     "TPRMAdmin",
     "BusinessOwner",
     "RelationshipManager",
@@ -544,13 +548,18 @@ export function filterNavigationByPermissionsAndRole(
 
   // System roles ignore module flags
   const isSystemRole = userRoles.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor'
   );
 
   let navItems = items;
 
+  // Factory roles always get flattened TPRM nav (their items should be top-level)
+  const isFactoryRole = userRoles.some(r => r === 'FactoryAdmin' || r === 'FactoryAssessor');
+  if (isFactoryRole) {
+    navItems = flattenTprmNavigation(items);
+  }
   // For non-system roles with ONLY TPRM (no GRC), flatten TPRM children to top-level
-  if (!isSystemRole && moduleFlags?.isTprmAdded && !moduleFlags?.isGrcAdded) {
+  else if (!isSystemRole && moduleFlags?.isTprmAdded && !moduleFlags?.isGrcAdded) {
     navItems = flattenTprmNavigation(items);
   }
 

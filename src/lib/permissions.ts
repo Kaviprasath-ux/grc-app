@@ -142,6 +142,7 @@ export const RESOURCES = {
   'tprm.asr-template': '/tprm/asr-template',
   'tprm.asr-support': '/tprm/asr-support',
   'tprm.asr-factory-reports': '/tprm/asr-factory-reports',
+  'tprm.factory-user-management': '/tprm/factory-user-management',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -205,7 +206,11 @@ export const ROLES = {
   },
   FactoryAdmin: {
     name: 'FactoryAdmin',
-    description: 'Assessment Factory administrator, manages factory assessments',
+    description: 'Assessment Factory administrator, manages factory users and assessments',
+  },
+  FactoryAssessor: {
+    name: 'FactoryAssessor',
+    description: 'Assessment Factory assessor, performs factory assessments',
   },
   TPRMAdmin: {
     name: 'TPRMAdmin',
@@ -543,9 +548,17 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.support', actions: ['view'], scope: 'all' },
   ],
 
-  // Factory Admin - TPRM access for assessment factory management
+  // Factory Admin - Assessment Factory + user management (can create FactoryAssessor users)
   FactoryAdmin: [
-    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.factory-user-management', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-assessment-factory', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-factory-reports', actions: ['*'], scope: 'all' },
+  ],
+
+  // Factory Assessor - Assessment Factory + reports (no user management)
+  FactoryAssessor: [
+    { resource: 'tprm.asr-assessment-factory', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-factory-reports', actions: ['view'], scope: 'all' },
   ],
 
   // TPRM Admin - Super admin level, only admin-level pages (not customer admin pages)
@@ -740,7 +753,7 @@ export function expandRolePermissions(
 
   // System-level roles are not filtered by module flags
   const isSystemRole = roleNames.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor' || r === 'AccountManager' || r === 'TPRMSME'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor' || r === 'AccountManager' || r === 'TPRMSME'
   );
 
   for (const roleName of roleNames) {

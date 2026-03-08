@@ -89,7 +89,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: ['tprm.user-management', 'tprm.bo-user-management'], action: 'view' }
+  { resource: ['tprm.user-management', 'tprm.bo-user-management', 'tprm.factory-user-management'], action: 'view' }
 );
 
 // POST /api/tprm/user-management — Create a new TPRM user
@@ -170,6 +170,7 @@ export const POST = withAuth(
         'Approver': 'TPRMApprover',
         'Auditor': 'TPRMAuditor',
         'Account Manager': 'AccountManager',
+        'Factory Assessor': 'FactoryAssessor',
       };
       const systemRoleName = tprmRoleToSystemRole[tprmRole];
       if (systemRoleName) {
@@ -228,7 +229,7 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: ['tprm.user-management', 'tprm.bo-user-management'], action: 'create' }
+  { resource: ['tprm.user-management', 'tprm.bo-user-management', 'tprm.factory-user-management'], action: 'create' }
 );
 
 // PATCH /api/tprm/user-management — Update a TPRM user
@@ -304,6 +305,7 @@ export const PATCH = withAuth(
           'Assessor': 'TPRMAssessor',
           'Approver': 'TPRMApprover',
           'Auditor': 'TPRMAuditor',
+          'Factory Assessor': 'FactoryAssessor',
         };
 
         // Remove old TPRM-related system roles
@@ -340,7 +342,7 @@ export const PATCH = withAuth(
       );
     }
   },
-  { resource: ['tprm.user-management', 'tprm.bo-user-management'], action: 'edit' }
+  { resource: ['tprm.user-management', 'tprm.bo-user-management', 'tprm.factory-user-management'], action: 'edit' }
 );
 
 // DELETE /api/tprm/user-management — Delete a TPRM user
@@ -385,5 +387,5 @@ export const DELETE = withAuth(
       );
     }
   },
-  { resource: ['tprm.user-management', 'tprm.bo-user-management'], action: 'delete' }
+  { resource: ['tprm.user-management', 'tprm.bo-user-management', 'tprm.factory-user-management'], action: 'delete' }
 );
