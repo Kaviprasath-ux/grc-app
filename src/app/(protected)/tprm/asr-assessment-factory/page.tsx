@@ -154,6 +154,7 @@ export default function AsrAssessmentFactoryPage() {
     try {
       // Step 1: Parse the template locally to get question rows
       const parsedRows = await parseXlsRows(templateFile);
+      console.log("[Assessment Factory] Parsed rows:", parsedRows.length, "First row:", parsedRows[0]);
       if (!parsedRows.length) {
         toast({ title: t("Error"), description: t("No data found in the uploaded file"), variant: "destructive" });
         return;
@@ -176,7 +177,52 @@ export default function AsrAssessmentFactoryPage() {
       }
       console.log("[Assessment Factory] Ingest response:", ingestData);
 
-      // Step 3: Query each question against the AI
+      // Step 3: Wait for ingestion to complete (poll status)
+      const jobId = ingestData.job_id || ingestData.id || ingestData.jobId;
+      if (jobId) {
+        setJobStatus(t("Waiting for AI to process documents..."));
+        let ingested = false;
+        for (let attempt = 0; attempt < 120; attempt++) {
+          await new Promise(r => setTimeout(r, 5000));
+          try {
+            const statusRes = await fetch(`/api/tprm/assessment-factory/status/${encodeURIComponent(jobId)}`);
+            const statusData = await statusRes.json();
+            console.log(`[Assessment Factory] Status poll #${attempt + 1}:`, statusData);
+            const status = (statusData.status || "").toUpperCase();
+            if (status === "COMPLETED" || status === "DONE" || status === "SUCCESS" || status === "READY") {
+              ingested = true;
+              break;
+            }
+            if (status === "FAILED" || status === "ERROR") {
+              throw new Error(statusData.error || statusData.message || "Document ingestion failed");
+            }
+            setJobStatus(`${t("Waiting for AI to process documents...")} (${(attempt + 1) * 5}s)`);
+          } catch (pollErr) {
+            if (pollErr instanceof Error && (pollErr.message.includes("failed") || pollErr.message.includes("Failed"))) throw pollErr;
+            console.warn("[Assessment Factory] Status poll error:", pollErr);
+          }
+        }
+        if (!ingested) {
+          throw new Error("Document ingestion timed out");
+        }
+
+        // Verify the ingest result to check if files were actually processed
+        try {
+          const resultRes = await fetch(`/api/tprm/assessment-factory/result/${encodeURIComponent(jobId)}`);
+          const resultData = await resultRes.json();
+          console.log("[Assessment Factory] Ingest result:", resultData);
+          if (resultData.result?.messages) {
+            resultData.result.messages.forEach((msg: string) => console.log("[Assessment Factory]", msg));
+          }
+        } catch { /* non-critical */ }
+        console.log("[Assessment Factory] Documents ingested successfully");
+      } else {
+        // No job_id returned — give the backend some time to index
+        setJobStatus(t("Waiting for AI to index documents..."));
+        await new Promise(r => setTimeout(r, 10000));
+      }
+
+      // Step 4: Query each question against the AI
       const rows: AssessmentRow[] = [];
       const questionsWithContent = parsedRows.filter(r => r.question?.trim());
 

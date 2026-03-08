@@ -23,11 +23,13 @@ export const POST = withAuth(
       formData.append('customer_id', customerAccountId);
       formData.append('assessment_id', incoming.get('assessment_id') as string || crypto.randomUUID());
 
-      // Forward all files
+      // Forward all files — read as buffer and re-create to ensure filename is preserved
       const files = incoming.getAll('files');
       for (const file of files) {
         if (file instanceof File) {
-          formData.append('files', file);
+          const buffer = await file.arrayBuffer();
+          const blob = new Blob([buffer], { type: file.type || 'application/octet-stream' });
+          formData.append('files', blob, file.name);
         }
       }
 
