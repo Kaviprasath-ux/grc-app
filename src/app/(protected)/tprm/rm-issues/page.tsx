@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Send, Loader2,
-  Eye, MessageSquare, Plus, FileSpreadsheet, FileDown,
+  Eye, FileText, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DataGrid } from "@/components/shared";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -24,10 +25,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { RemediationComments } from "@/components/tprm/remediation-comments";
 
 // ==================== TYPES ====================
 
@@ -120,9 +123,18 @@ const STATUS_COLORS: Record<string, string> = {
 
 const SEVERITIES = ["High", "Medium", "Low"];
 
-function formatDate(dateStr: string | null): string {
+function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function getSeverityVariant(severity: string | null): "default" | "secondary" | "destructive" | "outline" {
+  switch (severity) {
+    case "High": return "destructive";
+    case "Medium": return "secondary";
+    case "Low": return "default";
+    default: return "outline";
+  }
 }
 
 // ==================== MAIN COMPONENT ====================
@@ -154,15 +166,9 @@ export default function RMIssuesPage() {
   const [remSubTab, setRemSubTab] = useState("Open");
   const [remResponseDateFilter, setRemResponseDateFilter] = useState("");
 
-  // Remediation assign to BO/IT
-  const [assigningId, setAssigningId] = useState<string | null>(null);
-
   // Remediation detail modal
-  const [selectedRemediation, setSelectedRemediation] = useState<IssueRemediationEntry | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [submittingComment, setSubmittingComment] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [viewRemediation, setViewRemediation] = useState<IssueRemediationEntry | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Vendor Issues filters
   const [viSeverityFilter, setViSeverityFilter] = useState("all");
@@ -199,7 +205,7 @@ export default function RMIssuesPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleAssign = useCallback(async (remediationId: string, assignTo: string) => {
-    setAssigningId(remediationId);
+    setActionLoading(true);
     try {
       const res = await fetch("/api/tprm/rm-issues", {
         method: "PATCH",
@@ -207,7 +213,8 @@ export default function RMIssuesPage() {
         body: JSON.stringify({ id: remediationId, status: assignTo }),
       });
       if (res.ok) {
-        toast({ title: t("Success"), description: t(`Issue assigned successfully`) });
+        toast({ title: t("Success"), description: t("Issue assigned successfully") });
+        setViewRemediation(null);
         loadData();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -216,50 +223,9 @@ export default function RMIssuesPage() {
     } catch {
       toast({ title: t("Error"), description: t("Failed to assign issue"), variant: "destructive" });
     } finally {
-      setAssigningId(null);
+      setActionLoading(false);
     }
   }, [toast, t, loadData]);
-
-  const handleAddComment = useCallback(async () => {
-    if (!selectedRemediation || !newComment.trim()) return;
-    setSubmittingComment(true);
-    try {
-      const res = await fetch("/api/tprm/rm-issues", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: selectedRemediation.id,
-          addComment: newComment.trim(),
-        }),
-      });
-      if (res.ok) {
-        toast({ title: t("Success"), description: t("Comment added") });
-        setNewComment("");
-        // Reload data and refresh dialog
-        const remRes = await fetch("/api/tprm/rm-issues?tab=remediation");
-        if (remRes.ok) {
-          const remData = await remRes.json();
-          const entries = remData.data || [];
-          setRemediationEntries(entries);
-          const updated = entries.find((e: IssueRemediationEntry) => e.id === selectedRemediation.id);
-          if (updated) setSelectedRemediation(updated);
-        }
-      } else {
-        toast({ title: t("Error"), description: t("Failed to add comment"), variant: "destructive" });
-      }
-    } catch {
-      toast({ title: t("Error"), description: t("Failed to add comment"), variant: "destructive" });
-    } finally {
-      setSubmittingComment(false);
-    }
-  }, [selectedRemediation, newComment, toast, t]);
-
-  const openRemediationDetail = (entry: IssueRemediationEntry) => {
-    setSelectedRemediation(entry);
-    setDetailOpen(true);
-    setShowComments(false);
-    setNewComment("");
-  };
 
   // ==================== ISSUE REGISTER ====================
 
@@ -412,32 +378,11 @@ export default function RMIssuesPage() {
       cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span>,
     },
     {
-      id: "commentsCol",
-      header: t("Comments"),
-      cell: ({ row }) => {
-        const count = row.original.comments?.length || 0;
-        return (
-          <button
-            className="flex items-center gap-1 text-muted-foreground hover:text-primary"
-            onClick={() => openRemediationDetail(row.original)}
-          >
-            <MessageSquare className="h-4 w-4" />
-            {count > 0 && <span className="text-xs">{count}</span>}
-          </button>
-        );
-      },
-    },
-    {
-      id: "action",
+      id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <Button
-          variant="default"
-          size="icon"
-          className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90"
-          onClick={() => openRemediationDetail(row.original)}
-        >
-          <Eye className="h-4 w-4" />
+        <Button variant="ghost" size="sm" onClick={() => setViewRemediation(row.original)}>
+          <Eye className="h-4 w-4 text-primary" />
         </Button>
       ),
     },
@@ -678,182 +623,138 @@ export default function RMIssuesPage() {
         </TabsContent>
       </Tabs>
 
-      {/* ==================== REMEDIATION DETAIL DIALOG ==================== */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      {/* ==================== REMEDIATION DETAIL DIALOG (assessor style) ==================== */}
+      <Dialog open={!!viewRemediation} onOpenChange={(open) => { if (!open) setViewRemediation(null); }}>
+        <DialogContent className="!max-w-5xl w-[96vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold bg-primary/5 -mx-6 -mt-6 px-6 py-4 border-b">
-              {t("Remediation")}
-            </DialogTitle>
+            <DialogTitle>{t("Remediation")}</DialogTitle>
           </DialogHeader>
+          {viewRemediation && (
+            <div className="space-y-5">
+              {/* Question */}
+              <div>
+                <h5 className="font-semibold text-sm">{t("Question")} {viewRemediation.questionNo} —</h5>
+                <p className="text-sm text-muted-foreground mt-1">{viewRemediation.questionText || "-"}</p>
+              </div>
 
-          {selectedRemediation && (
-            <div className="space-y-5 pt-2">
-              {/* Question & Answer */}
-              {selectedRemediation.questionNo && (
+              {/* Selected Response */}
+              {viewRemediation.questionResponse && (
                 <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {t("Question")} {selectedRemediation.questionNo} {selectedRemediation.questionText ? `- ${selectedRemediation.questionText}` : ""}
-                  </p>
-                  {selectedRemediation.questionResponse && (
-                    <Badge
-                      className={`mt-2 ${
-                        selectedRemediation.questionResponse.toLowerCase() === "no"
-                          ? "bg-slate-800 text-white hover:bg-slate-700"
-                          : selectedRemediation.questionResponse.toLowerCase() === "yes"
-                          ? "bg-green-600 text-white hover:bg-green-500"
-                          : "bg-slate-500 text-white hover:bg-slate-400"
-                      }`}
-                    >
-                      {selectedRemediation.questionResponse}
-                    </Badge>
-                  )}
+                  <Badge variant="outline" className={`text-sm ${
+                    viewRemediation.questionResponse === "Yes" ? "bg-green-50 text-green-700 border-green-300" :
+                    viewRemediation.questionResponse === "No" ? "bg-red-50 text-red-700 border-red-300" :
+                    "bg-gray-50 text-gray-700 border-gray-300"
+                  }`}>{viewRemediation.questionResponse}</Badge>
+                </div>
+              )}
+
+              {/* Assessor reassign comment */}
+              {viewRemediation.reassignComment && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 border border-orange-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      {t("Assigned")}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t("Assessor comment")}</span>
+                  </div>
+                  <p className="text-sm text-orange-900">{viewRemediation.reassignComment}</p>
                 </div>
               )}
 
               {/* VerifAI Summary */}
-              {(selectedRemediation.issue || selectedRemediation.risk || selectedRemediation.recommendation) && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-3">{t("VerifAI Summary")}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Issue */}
+              <h5 className="font-semibold text-sm border-b pb-1">{t("VerifAI Summary")}</h5>
+              {!viewRemediation.risk && !viewRemediation.recommendation ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {viewRemediation.issue && (
                     <div>
-                      <label className="text-xs font-semibold text-foreground mb-1 block">{t("Issue")}</label>
-                      <div className="p-3 bg-muted/50 rounded-md border min-h-[80px] text-sm">
-                        {selectedRemediation.issue || "-"}
-                      </div>
-                    </div>
-                    {/* Risk */}
-                    <div>
-                      <label className="text-xs font-semibold text-foreground mb-1 block">{t("Risk")}</label>
-                      <div className="p-3 bg-muted/50 rounded-md border min-h-[80px] text-sm">
-                        {selectedRemediation.risk || "-"}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Recommendation */}
-                  <div className="mt-4">
-                    <label className="text-xs font-semibold text-foreground mb-1 block">{t("Recommendation")}</label>
-                    <div className="p-3 bg-muted/50 rounded-md border min-h-[80px] text-sm">
-                      {selectedRemediation.recommendation || "-"}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Severity & Comments side by side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Severity */}
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-1 block">{t("Severity")}</label>
-                  <Badge variant="outline" className={`${SEVERITY_COLORS[selectedRemediation.severity] || ""} text-xs font-medium`}>
-                    {t(selectedRemediation.severity)}
-                  </Badge>
-                </div>
-
-                {/* Comments section */}
-                <div>
-                  <button
-                    className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-                    onClick={() => setShowComments(!showComments)}
-                  >
-                    <span>{t("Comments")}</span>
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  {showComments && (
-                    <div className="mt-2 space-y-2">
-                      {selectedRemediation.comments.length > 0 ? (
-                        <div className="max-h-40 overflow-y-auto space-y-2">
-                          {selectedRemediation.comments.map((c) => (
-                            <div key={c.id} className="p-2 bg-muted/50 rounded text-xs border">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="font-medium">{c.userName}</span>
-                                <span className="text-muted-foreground">{formatDate(c.createdAt)}</span>
-                              </div>
-                              <p>{c.message}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">{t("No comments yet")}</p>
-                      )}
-                      <div className="flex gap-2">
-                        <Textarea
-                          placeholder={t("Add a comment...")}
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          className="text-xs min-h-[60px]"
-                        />
-                        <Button
-                          size="sm"
-                          className="h-auto self-end"
-                          onClick={handleAddComment}
-                          disabled={submittingComment || !newComment.trim()}
-                        >
-                          {submittingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        </Button>
-                      </div>
+                      <Label className="text-xs font-semibold">{t("Issue")}</Label>
+                      <Textarea value={viewRemediation.issue} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Supporting Artifacts */}
-              {selectedRemediation.artifactUrl && (
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-2 block">{t("Supporting Artifacts")}</label>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-md border">
-                    <FileSpreadsheet className="h-8 w-8 text-green-700 flex-shrink-0" />
-                    <span className="text-sm flex-1">{selectedRemediation.artifactName || t("Attachment")}</span>
-                    <a
-                      href={selectedRemediation.artifactUrl}
-                      download
-                      className="flex-shrink-0"
-                    >
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <FileDown className="h-4 w-4" />
-                      </Button>
-                    </a>
+                  <div>
+                    <RemediationComments remediationId={viewRemediation.id} readOnly={false} />
                   </div>
                 </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Issue")}</Label>
+                      <Textarea value={viewRemediation.issue || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Risk")}</Label>
+                      <Textarea value={viewRemediation.risk || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold">{t("Recommendation")}</Label>
+                      <Textarea value={viewRemediation.recommendation || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
+                    </div>
+                    <div>
+                      <RemediationComments remediationId={viewRemediation.id} readOnly={false} />
+                    </div>
+                  </div>
+                </>
               )}
-
-              {/* Action buttons */}
-              <div className="flex justify-end gap-2 pt-2 border-t">
-                {remSubTab === "Open" && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={assigningId === selectedRemediation.id}
-                      onClick={() => {
-                        handleAssign(selectedRemediation.id, "Assigned to IT");
-                        setDetailOpen(false);
-                      }}
-                    >
-                      <Send className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
-                      {t("Assign to IT")}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={assigningId === selectedRemediation.id}
-                      onClick={() => {
-                        handleAssign(selectedRemediation.id, "Assigned to BO");
-                        setDetailOpen(false);
-                      }}
-                    >
-                      <Send className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
-                      {t("Assign to BO")}
-                    </Button>
-                  </>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{t("Severity")}</Label>
+                  <div className="mt-1">
+                    {viewRemediation.severity ? (
+                      <Badge variant={getSeverityVariant(viewRemediation.severity)}>{t(viewRemediation.severity)}</Badge>
+                    ) : "-"}
+                  </div>
+                </div>
+                {viewRemediation.artifactName && (
+                  <div>
+                    <Label className="text-xs font-semibold">{t("Supporting Artifacts")}</Label>
+                    <div className="mt-2 space-y-1">
+                      {viewRemediation.artifactName.split(", ").map((name, idx) => {
+                        const urls = viewRemediation.artifactUrl?.split(", ") || [];
+                        const rawUrl = urls[idx];
+                        const url = rawUrl ? (rawUrl.startsWith("/uploads/") ? `/api${rawUrl}` : rawUrl) : null;
+                        return (
+                          <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-md px-3 py-2 text-sm">
+                            <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate flex-1">{name}</span>
+                            {url && (
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title={t("View")} onClick={() => window.open(url, "_blank")}>
+                                  <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                                <a href={url} download={name} title={t("Download")} className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent">
+                                  <Download className="h-3.5 w-3.5 text-primary" />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
-                <Button variant="outline" size="sm" onClick={() => setDetailOpen(false)}>
-                  {t("Cancel")}
-                </Button>
               </div>
             </div>
           )}
+          <DialogFooter className="flex-wrap gap-2">
+            {viewRemediation && ["Assigned to BO", "Assigned to IT", "Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Submitted"].includes(viewRemediation.status) && (
+              <>
+                <Button onClick={() => handleAssign(viewRemediation.id, "Assigned to IT")} disabled={actionLoading} variant="secondary">
+                  {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+                  <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Assign to IT")}
+                </Button>
+                <Button onClick={() => handleAssign(viewRemediation.id, "Assigned to BO")} disabled={actionLoading} variant="secondary">
+                  <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Assign to BO")}
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={() => setViewRemediation(null)}>{t("Cancel")}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
