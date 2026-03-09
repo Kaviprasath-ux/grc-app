@@ -115,11 +115,15 @@ export const POST = withAuth(
       let kpiCode = code;
       if (!kpiCode) {
         const lastKpi = await prisma.kPI.findFirst({
+          where: {
+            customerAccountId,
+            code: { startsWith: "KPI-" },
+          },
           orderBy: { createdAt: "desc" },
           select: { code: true },
         });
 
-        // Extract number from last code and increment
+        // Extract number from last KPI-xxx code and increment
         let nextNum = 1;
         if (lastKpi?.code) {
           const match = lastKpi.code.match(/(\d+)$/);

@@ -682,7 +682,7 @@ export default function KPIDetailPage({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("KPI Code")}</p>
-          <p className="text-sm font-semibold text-slate-800">{kpi.evidence?.evidenceCode || kpi.code}</p>
+          <p className="text-sm font-semibold text-slate-800">{kpi.code}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Status")}</p>

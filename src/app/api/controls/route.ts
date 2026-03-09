@@ -4,6 +4,31 @@ import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth"
 import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 import { translateRecord } from '@/lib/translation-service';
 
+// Helper function to generate control code (format: CTRL-001, CTRL-002, etc.)
+// Scoped to customer account
+async function generateControlCode(customerAccountId: string): Promise<string> {
+  const lastControl = await prisma.control.findFirst({
+    where: { customerAccountId },
+    orderBy: { createdAt: "desc" },
+    select: { controlCode: true },
+  });
+
+  if (!lastControl) {
+    return "CTRL-001";
+  }
+
+  // Extract the number from the last control code (e.g., "CTRL-042" -> 42)
+  const match = lastControl.controlCode.match(/CTRL-(\d+)/);
+  if (match) {
+    const nextNum = parseInt(match[1], 10) + 1;
+    return `CTRL-${String(nextNum).padStart(3, "0")}`;
+  }
+
+  // Fallback: count-based within customer account
+  const count = await prisma.control.count({ where: { customerAccountId } });
+  return `CTRL-${String(count + 1).padStart(3, "0")}`;
+}
+
 // GET all controls with filters - filtered by customer account
 export const GET = withAuth(
   async (req, context, session) => {
@@ -136,7 +161,7 @@ export const POST = withAuth(
       const customerAccountId = getCustomerAccountId(session);
 
       // Generate control code if not provided
-      const code = controlCode || `CTRL-${Date.now()}`;
+      const code = controlCode || await generateControlCode(customerAccountId);
 
       const control = await prisma.control.create({
         data: {

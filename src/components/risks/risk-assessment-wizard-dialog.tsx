@@ -318,8 +318,12 @@ export function RiskAssessmentWizardDialog({
         const data = await riskRes.json();
         setRisk(data);
 
-        // Load saved assessment form data if it exists
-        if (data.assessmentFormData) {
+        // Load saved assessment form data only for Resume (In-Progress/Draft/Closed)
+        // For Re-assess (Completed/Approved/Submitted/Rejected) or Initiate (Open), start fresh
+        const status = data.assessmentStatus || "Open";
+        const isResume = ["In-Progress", "Draft", "Closed"].includes(status);
+
+        if (isResume && data.assessmentFormData) {
           try {
             const savedFormData: AssessmentFormData = JSON.parse(data.assessmentFormData);
             if (savedFormData.threatLikelihoods) {
@@ -331,9 +335,8 @@ export function RiskAssessmentWizardDialog({
             if (savedFormData.vulnerabilityRatings) {
               setVulnerabilityRatingsForm(savedFormData.vulnerabilityRatings);
             }
-            // Resume from last saved step (for In-Progress assessments)
-            const status = data.assessmentStatus || "Open";
-            if (savedFormData.lastStep && (status === "In-Progress" || status === "Draft")) {
+            // Resume from last saved step
+            if (savedFormData.lastStep) {
               setCurrentStep(savedFormData.lastStep);
             }
           } catch (e) {

@@ -165,6 +165,7 @@ function ControlListPageContent() {
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [functionalGroupingFilter, setFunctionalGroupingFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Column visibility
   const [visibleColumns, setVisibleColumns] = useState({
@@ -356,8 +357,12 @@ function ControlListPageContent() {
       if (functionalGroupingFilter && functionalGroupingFilter !== "all") {
         params.set("functionalGrouping", functionalGroupingFilter);
       }
+      if (statusFilter && statusFilter !== "all") {
+        params.set("status", statusFilter);
+      } else if (selectedStatus) {
+        params.set("status", selectedStatus);
+      }
       if (search) params.set("search", search);
-      if (selectedStatus) params.set("status", selectedStatus);
 
       const response = await fetch(`/api/controls?${params.toString()}`);
       if (response.ok) {
@@ -370,7 +375,7 @@ function ControlListPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, integratedFrameworkFilter, departmentFilter, assigneeFilter, domainFilter, functionalGroupingFilter, search, selectedStatus]);
+  }, [currentPage, integratedFrameworkFilter, departmentFilter, assigneeFilter, domainFilter, functionalGroupingFilter, statusFilter, search, selectedStatus]);
 
   useEffect(() => {
     fetchControls();
@@ -1057,6 +1062,17 @@ function ControlListPageContent() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); if (val !== "all") setSelectedStatus(null); }}>
+                  <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+                    <SelectValue placeholder={t("Status")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                    <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
+                    <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
+                    <SelectItem value="Not Applicable">{t("Not Applicable")}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
         <div className="overflow-x-auto">
@@ -1125,12 +1141,12 @@ function ControlListPageContent() {
                     <FileText className="h-6 w-6 text-primary-400" />
                   </div>
                   <p className="text-sm font-medium text-slate-600 mb-1">
-                    {search || integratedFrameworkFilter !== "all" || departmentFilter !== "all" || assigneeFilter !== "all"
+                    {search || integratedFrameworkFilter !== "all" || departmentFilter !== "all" || assigneeFilter !== "all" || statusFilter !== "all"
                       ? t("No controls match your filters")
                       : t("No controls found")}
                   </p>
                   <p className="text-xs text-slate-400">
-                    {search || integratedFrameworkFilter !== "all" || departmentFilter !== "all" || assigneeFilter !== "all"
+                    {search || integratedFrameworkFilter !== "all" || departmentFilter !== "all" || assigneeFilter !== "all" || statusFilter !== "all"
                       ? t("Try adjusting your search or filters")
                       : t("Create a new control to get started")}
                   </p>

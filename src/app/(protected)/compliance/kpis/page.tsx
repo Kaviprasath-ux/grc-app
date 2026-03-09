@@ -123,8 +123,7 @@ export default function KPIsPage() {
       !searchTerm ||
       kpi.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       kpi.objective?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      kpi.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      kpi.evidence?.evidenceCode?.toLowerCase().includes(searchTerm.toLowerCase());
+      kpi.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || kpi.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -449,7 +448,7 @@ export default function KPIsPage() {
               </TableRow>
             ) : (
               paginatedKpis.map((kpi) => {
-                const displayCode = kpi.evidence?.evidenceCode || kpi.code;
+                const displayCode = kpi.code;
                 const deptId = kpi.department?.id || kpi.evidence?.department?.id;
                 const rawDeptName = kpi.department?.name || kpi.evidence?.department?.name || "-";
                 const displayDepartment = tDept(deptId, rawDeptName);

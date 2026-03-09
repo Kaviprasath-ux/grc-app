@@ -89,7 +89,11 @@ export const POST = withAuth(
         const frameworkId = frameworkName ? frameworkMap.get(frameworkName.toLowerCase()) : null;
 
         // Generate evidence code if not provided
-        const newEvidenceCode = evidenceCode || `EVD-${Date.now()}-${i}`;
+        let newEvidenceCode = evidenceCode;
+        if (!newEvidenceCode) {
+          const count = await prisma.evidence.count({ where: { customerAccountId } });
+          newEvidenceCode = `EVD-${String(count + 1).padStart(3, "0")}`;
+        }
 
         // Create evidence with tenant isolation
         await prisma.evidence.create({

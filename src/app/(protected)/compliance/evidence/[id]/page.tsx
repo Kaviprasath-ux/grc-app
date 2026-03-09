@@ -896,14 +896,11 @@ export default function EvidenceDetailPage() {
           body: JSON.stringify(kpiData),
         });
       } else {
-        // Create new KPI - use evidence code as the KPI code
+        // Create new KPI - use evidence code as KPI code
         kpiResponse = await fetch("/api/kpis", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...kpiData,
-            code: evidence?.evidenceCode || undefined, // Use evidence code as KPI code
-          }),
+          body: JSON.stringify({ ...kpiData, code: evidence?.evidenceCode }),
         });
       }
 

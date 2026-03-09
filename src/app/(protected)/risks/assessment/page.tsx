@@ -481,7 +481,10 @@ export default function RiskAssessmentPage() {
       {/* Assessment Wizard Modal */}
       <RiskAssessmentWizardDialog
         open={assessmentDialogOpen}
-        onOpenChange={setAssessmentDialogOpen}
+        onOpenChange={(isOpen) => {
+          setAssessmentDialogOpen(isOpen);
+          if (!isOpen) fetchData();
+        }}
         riskId={selectedRiskId}
         onAssessmentComplete={handleAssessmentComplete}
       />

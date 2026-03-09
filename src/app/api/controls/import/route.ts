@@ -94,9 +94,13 @@ export const POST = withAuth(
         const domainId = domainName ? domainMap.get(domainName.toLowerCase()) : null;
 
         // Use provided code if unique, otherwise generate a new one
-        const newControlCode = (controlCode && !existingCodes.has(controlCode))
+        let newControlCode = (controlCode && !existingCodes.has(controlCode))
           ? controlCode
-          : `CTRL-${Date.now()}-${i}`;
+          : null;
+        if (!newControlCode) {
+          const count = await prisma.control.count({ where: { customerAccountId } });
+          newControlCode = `CTRL-${String(count + 1).padStart(3, "0")}`;
+        }
 
         // Create control with tenant isolation
         const control = await prisma.control.create({
