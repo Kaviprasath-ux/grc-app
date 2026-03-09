@@ -107,25 +107,48 @@ export const GET = withAuth(
               },
             },
             assignedToUser: { select: { fullName: true } },
+            comments: {
+              include: { user: { select: { fullName: true } } },
+              orderBy: { createdAt: "asc" },
+            },
           },
           orderBy: { createdAt: "desc" },
         });
 
         const data = remediations.map((rem) => ({
           id: rem.id,
+          issueCode: rem.issueCode || null,
           vendorName: rem.assessment?.vendor?.name || "Unknown",
           vendorCode: rem.assessment?.vendor?.vendorCode || "",
           domain: rem.domainName || null,
           severity: rem.severity || "Medium",
           description: rem.description || rem.issue || null,
+          issue: rem.issue || null,
+          risk: rem.risk || null,
+          recommendation: rem.recommendation || null,
+          questionNo: rem.questionNo || null,
+          questionText: rem.questionText || null,
+          questionResponse: rem.questionResponse || null,
           reassignComment: rem.reassignComment || null,
           amResponse: rem.amResponse || null,
+          amComment: rem.amComment || null,
+          assessorComment: rem.assessorComment || null,
+          artifactUrl: rem.artifactUrl || null,
+          artifactName: rem.artifactName || null,
           assignedTo: rem.assignedToUser?.fullName || null,
           assignedAt: rem.assignedAt?.toISOString() || null,
           requestedDate: rem.requestedDate?.toISOString() || null,
+          responseDate: rem.responseDate?.toISOString() || null,
           dueDate: rem.dueDate?.toISOString() || null,
           status: rem.status,
           createdAt: rem.createdAt.toISOString(),
+          comments: rem.comments.map((c) => ({
+            id: c.id,
+            message: c.message,
+            userRole: c.userRole || null,
+            userName: c.user?.fullName || "Unknown",
+            createdAt: c.createdAt.toISOString(),
+          })),
         }));
 
         return NextResponse.json({ data, total: data.length });
@@ -239,4 +262,58 @@ export const POST = withAuth(
     }
   },
   { resource: "tprm.rm-issues", action: "create" }
+);
+
+// PATCH /api/tprm/rm-issues — Update issue remediation status or add comment
+export const PATCH = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const body = await req.json();
+      const { id, status, addComment } = body;
+
+      if (!id) {
+        return NextResponse.json({ error: "ID is required" }, { status: 400 });
+      }
+
+      const remediation = await prisma.tPRMIssueRemediation.findFirst({
+        where: { id, customerAccountId },
+      });
+
+      if (!remediation) {
+        return NextResponse.json({ error: "Issue remediation not found" }, { status: 404 });
+      }
+
+      // Add comment if provided
+      if (addComment && typeof addComment === "string" && addComment.trim()) {
+        await prisma.tPRMRemediationComment.create({
+          data: {
+            remediationId: id,
+            userId: session.id,
+            userRole: (session.roles && session.roles[0]) || null,
+            message: addComment.trim(),
+          },
+        });
+
+        if (!status) {
+          return NextResponse.json({ success: true });
+        }
+      }
+
+      // Update status if provided
+      if (status) {
+        const updated = await prisma.tPRMIssueRemediation.update({
+          where: { id },
+          data: { status },
+        });
+        return NextResponse.json(updated);
+      }
+
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error("RM Issues PATCH error:", error);
+      return NextResponse.json({ error: "Failed to update issue remediation" }, { status: 500 });
+    }
+  },
+  { resource: "tprm.rm-issues", action: "edit" }
 );
