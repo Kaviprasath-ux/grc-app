@@ -159,8 +159,9 @@ export default function AsrFollowUpsPage() {
     }
     setRmLoading(true);
     try {
-      const res = await fetch("/api/tprm/asr-follow-ups/rm-users");
-      if (!res.ok) throw new Error("Failed to fetch RM users");
+      const roleQuery = reassignAction === "reassign-to-it" ? "?role=it" : "";
+      const res = await fetch(`/api/tprm/asr-follow-ups/rm-users${roleQuery}`);
+      if (!res.ok) throw new Error("Failed to fetch users");
       const json = await res.json();
       setRmUsers(json.data || []);
       setSelectedRmId("");
@@ -679,12 +680,18 @@ export default function AsrFollowUpsPage() {
       <Dialog open={reassignStep === 2} onOpenChange={(open) => { if (!open) { setReassignStep(0); setAssigningRemediationId(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("Assign to Relationship Manager")}</DialogTitle>
+            <DialogTitle>
+              {reassignAction === "reassign-to-it" ? t("Assign to IT Team") : t("Assign to Relationship Manager")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Label className="text-sm">{t("Select an RM to assign this issue")}</Label>
+            <Label className="text-sm">
+              {reassignAction === "reassign-to-it" ? t("Select an IT user to assign this issue") : t("Select an RM to assign this issue")}
+            </Label>
             {rmUsers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("No Relationship Managers found for this account")}</p>
+              <p className="text-sm text-muted-foreground">
+                {reassignAction === "reassign-to-it" ? t("No IT Team users found for this account") : t("No Relationship Managers found for this account")}
+              </p>
             ) : (
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {rmUsers.map(rm => (
