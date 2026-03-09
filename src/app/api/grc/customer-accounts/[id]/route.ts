@@ -71,7 +71,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { customerName, email, userName, password, blocked, active, language, timeZone, isGrcAdded, isTprmAdded } = body;
+    const { customerName, email, userName, password, blocked, active, language, timeZone, isGrcAdded, isTprmAdded, isQpostComplianceEnabled } = body;
 
     // Validate required fields
     if (!customerName || !email || !userName) {
@@ -142,12 +142,13 @@ export async function PUT(
       },
     });
 
-    // Update isGrcAdded/isTprmAdded on the CustomerAccount if provided
-    if (existingUser.customerAccountId && (isGrcAdded !== undefined || isTprmAdded !== undefined)) {
+    // Update isGrcAdded/isTprmAdded/isQpostComplianceEnabled on the CustomerAccount if provided
+    if (existingUser.customerAccountId && (isGrcAdded !== undefined || isTprmAdded !== undefined || isQpostComplianceEnabled !== undefined)) {
       await prisma.$executeRawUnsafe(
-        `UPDATE "CustomerAccount" SET "isGrcAdded" = COALESCE($1, "isGrcAdded"), "isTprmAdded" = COALESCE($2, "isTprmAdded") WHERE id = $3`,
+        `UPDATE "CustomerAccount" SET "isGrcAdded" = COALESCE($1, "isGrcAdded"), "isTprmAdded" = COALESCE($2, "isTprmAdded"), "isQpostComplianceEnabled" = COALESCE($3, "isQpostComplianceEnabled") WHERE id = $4`,
         isGrcAdded !== undefined ? isGrcAdded === true : null,
         isTprmAdded !== undefined ? isTprmAdded === true : null,
+        isQpostComplianceEnabled !== undefined ? isQpostComplianceEnabled === true : null,
         existingUser.customerAccountId
       );
     }

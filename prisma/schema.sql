@@ -7,6 +7,7 @@ CREATE TABLE "CustomerAccount" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isGrcAdded" BOOLEAN NOT NULL DEFAULT true,
     "isTprmAdded" BOOLEAN NOT NULL DEFAULT false,
+    "isQpostComplianceEnabled" BOOLEAN NOT NULL DEFAULT false,
     "emailNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -3035,6 +3036,452 @@ CREATE TABLE "DynamicTranslation" (
 );
 
 -- CreateTable
+CREATE TABLE "QPostFramework" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "code" TEXT,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "version" TEXT,
+    "type" TEXT NOT NULL DEFAULT 'Framework',
+    "status" TEXT NOT NULL DEFAULT 'Subscribed',
+    "country" TEXT,
+    "industry" TEXT,
+    "isCustom" BOOLEAN NOT NULL DEFAULT false,
+    "isMasterTemplate" BOOLEAN NOT NULL DEFAULT false,
+    "sourceFrameworkId" TEXT,
+    "logo" TEXT,
+    "supportDocumentUrl" TEXT,
+    "compliancePercentage" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "policyPercentage" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "evidencePercentage" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostFramework_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostRequirementCategory" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "code" TEXT,
+    "description" TEXT,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "frameworkId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostRequirementCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostRequirement" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "requirementType" TEXT NOT NULL DEFAULT 'Mandatory',
+    "chapterType" TEXT NOT NULL DEFAULT 'Domain',
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "level" INTEGER NOT NULL DEFAULT 1,
+    "parentId" TEXT,
+    "frameworkId" TEXT NOT NULL,
+    "categoryId" TEXT,
+    "applicability" TEXT,
+    "justification" TEXT,
+    "implementationStatus" TEXT,
+    "controlCompliance" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostRequirement_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostRequirementException" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "category" TEXT NOT NULL DEFAULT 'Compliance',
+    "requirementId" TEXT NOT NULL,
+    "departmentId" TEXT,
+    "requesterId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Pending',
+    "endDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostRequirementException_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostPolicy" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "version" TEXT NOT NULL DEFAULT '1.0',
+    "documentType" TEXT NOT NULL DEFAULT 'Policy',
+    "recurrence" TEXT,
+    "departmentId" TEXT,
+    "assigneeId" TEXT,
+    "approverId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Not Uploaded',
+    "effectiveDate" TIMESTAMP(3),
+    "reviewDate" TIMESTAMP(3),
+    "content" TEXT,
+    "aiIngestStatus" TEXT,
+    "aiIngestedAt" TIMESTAMP(3),
+    "aiIngestJobId" TEXT,
+    "aiReviewStatus" TEXT DEFAULT 'Pending',
+    "aiReviewScore" DOUBLE PRECISION DEFAULT 0,
+    "aiReviewJustification" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostPolicy_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidence" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "evidenceCode" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "domain" TEXT,
+    "frameworkId" TEXT,
+    "departmentId" TEXT,
+    "assigneeId" TEXT,
+    "dueDate" TIMESTAMP(3),
+    "reviewDate" TIMESTAMP(3),
+    "recurrence" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Not Uploaded',
+    "publishedAt" TIMESTAMP(3),
+    "kpiRequired" BOOLEAN NOT NULL DEFAULT false,
+    "kpiObjective" TEXT,
+    "kpiDataSource" TEXT,
+    "kpiExpectedScore" DOUBLE PRECISION,
+    "kpiDescription" TEXT,
+    "kpiCalculationFormula" TEXT,
+    "aiIngestStatus" TEXT,
+    "aiIngestedAt" TIMESTAMP(3),
+    "aiReviewStatus" TEXT,
+    "aiReviewedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostEvidence_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidenceCycleComment" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "cyclePeriod" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "comment" TEXT NOT NULL,
+    "userId" TEXT,
+    "userName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostEvidenceCycleComment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostArtifact" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "artifactCode" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "filePath" TEXT NOT NULL,
+    "uploadedBy" TEXT,
+    "uploadedById" TEXT,
+    "aiReviewStatus" TEXT,
+    "aiReviewScore" DOUBLE PRECISION,
+    "aiReviewNotes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostArtifact_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidenceArtifact" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "artifactId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostEvidenceArtifact_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostException" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "exceptionCode" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "category" TEXT NOT NULL,
+    "departmentId" TEXT,
+    "policyId" TEXT,
+    "riskId" TEXT,
+    "frameworkId" TEXT,
+    "requirementId" TEXT,
+    "requesterId" TEXT,
+    "approverId" TEXT,
+    "approvedBy" TEXT,
+    "approvedDate" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'Pending',
+    "startDate" TIMESTAMP(3),
+    "endDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostException_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostExceptionComment" (
+    "id" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "exceptionId" TEXT NOT NULL,
+    "userId" TEXT,
+    "userName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostExceptionComment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostKPI" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "objective" TEXT,
+    "description" TEXT,
+    "dataSource" TEXT,
+    "calculationFormula" TEXT,
+    "expectedScore" DOUBLE PRECISION,
+    "actualScore" DOUBLE PRECISION,
+    "reviewDate" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'Scheduled',
+    "departmentId" TEXT,
+    "evidenceId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostKPI_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostKPIReview" (
+    "id" TEXT NOT NULL,
+    "reviewDate" TIMESTAMP(3) NOT NULL,
+    "actualScore" DOUBLE PRECISION,
+    "status" TEXT NOT NULL DEFAULT 'Scheduled',
+    "documentPath" TEXT,
+    "documentName" TEXT,
+    "kpiId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostKPIReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostKPIActionPlan" (
+    "id" TEXT NOT NULL,
+    "plannedAction" TEXT NOT NULL,
+    "description" TEXT,
+    "percentageCompleted" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "startDate" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'In-Progress',
+    "kpiReviewId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostKPIActionPlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostPolicyAttachment" (
+    "id" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "filePath" TEXT NOT NULL,
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "policyId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostPolicyAttachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostGovernanceVaultDocument" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "documentCode" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "filePath" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'Active',
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostGovernanceVaultDocument_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostGovernanceVaultDocumentLink" (
+    "id" TEXT NOT NULL,
+    "documentId" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "linkedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostGovernanceVaultDocumentLink_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidenceAttachment" (
+    "id" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "filePath" TEXT NOT NULL,
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "evidenceId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostEvidenceAttachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostPolicyException" (
+    "id" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "exceptionId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostPolicyException_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidenceAIReview" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "artifactId" TEXT,
+    "ingestJobId" TEXT,
+    "evidenceDocumentId" TEXT,
+    "artifactDocumentId" TEXT,
+    "runpodDocumentRef" TEXT,
+    "documentId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "critique" TEXT,
+    "complianceSummary" TEXT,
+    "complianceScore" DOUBLE PRECISION,
+    "gaps" TEXT,
+    "suggestions" TEXT,
+    "similarityScore" DOUBLE PRECISION,
+    "recommendations" TEXT,
+    "sources" TEXT,
+    "rawResponse" TEXT,
+    "aiOperationId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostEvidenceAIReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidenceAIIngestJob" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "attachmentId" TEXT,
+    "runpodJobId" TEXT NOT NULL,
+    "sentDocumentId" TEXT,
+    "returnedDocumentId" TEXT,
+    "ingestedFileName" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'queued',
+    "error" TEXT,
+    "result" TEXT,
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostEvidenceAIIngestJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidenceAIIngestResult" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "jobId" TEXT NOT NULL,
+    "extractedText" TEXT,
+    "embeddings" TEXT,
+    "metadata" TEXT,
+    "indexingStatus" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostEvidenceAIIngestResult_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostPolicyAIReview" (
+    "id" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "documentId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'ingested',
+    "complianceSummary" TEXT,
+    "riskScore" DOUBLE PRECISION,
+    "matchedControls" TEXT,
+    "gaps" TEXT,
+    "recommendations" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "aiOperationId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostPolicyAIReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostRequirementEvidence" (
+    "id" TEXT NOT NULL,
+    "requirementId" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostRequirementEvidence_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostRequirementPolicy" (
+    "id" TEXT NOT NULL,
+    "requirementId" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostRequirementPolicy_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_EngagementTeamMembers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
@@ -3927,6 +4374,120 @@ CREATE INDEX "DynamicTranslation_isStale_idx" ON "DynamicTranslation"("isStale")
 
 -- CreateIndex
 CREATE UNIQUE INDEX "DynamicTranslation_customerAccountId_modelName_recordId_fie_key" ON "DynamicTranslation"("customerAccountId", "modelName", "recordId", "fieldName", "locale");
+
+-- CreateIndex
+CREATE INDEX "QPostFramework_customerAccountId_idx" ON "QPostFramework"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "QPostFramework_sourceFrameworkId_idx" ON "QPostFramework"("sourceFrameworkId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostFramework_customerAccountId_name_key" ON "QPostFramework"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "QPostRequirementCategory_customerAccountId_idx" ON "QPostRequirementCategory"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostRequirementCategory_frameworkId_name_key" ON "QPostRequirementCategory"("frameworkId", "name");
+
+-- CreateIndex
+CREATE INDEX "QPostRequirement_customerAccountId_idx" ON "QPostRequirement"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostRequirement_frameworkId_code_key" ON "QPostRequirement"("frameworkId", "code");
+
+-- CreateIndex
+CREATE INDEX "QPostRequirementException_customerAccountId_idx" ON "QPostRequirementException"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostRequirementException_customerAccountId_code_key" ON "QPostRequirementException"("customerAccountId", "code");
+
+-- CreateIndex
+CREATE INDEX "QPostPolicy_customerAccountId_idx" ON "QPostPolicy"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostPolicy_customerAccountId_code_key" ON "QPostPolicy"("customerAccountId", "code");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidence_customerAccountId_idx" ON "QPostEvidence"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostEvidence_customerAccountId_evidenceCode_key" ON "QPostEvidence"("customerAccountId", "evidenceCode");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceCycleComment_evidenceId_cyclePeriod_idx" ON "QPostEvidenceCycleComment"("evidenceId", "cyclePeriod");
+
+-- CreateIndex
+CREATE INDEX "QPostArtifact_customerAccountId_idx" ON "QPostArtifact"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostArtifact_customerAccountId_artifactCode_key" ON "QPostArtifact"("customerAccountId", "artifactCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostEvidenceArtifact_evidenceId_artifactId_key" ON "QPostEvidenceArtifact"("evidenceId", "artifactId");
+
+-- CreateIndex
+CREATE INDEX "QPostException_customerAccountId_idx" ON "QPostException"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostException_customerAccountId_exceptionCode_key" ON "QPostException"("customerAccountId", "exceptionCode");
+
+-- CreateIndex
+CREATE INDEX "QPostKPI_customerAccountId_idx" ON "QPostKPI"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostKPI_customerAccountId_code_key" ON "QPostKPI"("customerAccountId", "code");
+
+-- CreateIndex
+CREATE INDEX "QPostGovernanceVaultDocument_customerAccountId_idx" ON "QPostGovernanceVaultDocument"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostGovernanceVaultDocument_customerAccountId_documentCode_key" ON "QPostGovernanceVaultDocument"("customerAccountId", "documentCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostGovernanceVaultDocumentLink_documentId_policyId_key" ON "QPostGovernanceVaultDocumentLink"("documentId", "policyId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostPolicyException_policyId_exceptionId_key" ON "QPostPolicyException"("policyId", "exceptionId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceAIReview_evidenceId_idx" ON "QPostEvidenceAIReview"("evidenceId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceAIReview_artifactId_idx" ON "QPostEvidenceAIReview"("artifactId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceAIReview_ingestJobId_idx" ON "QPostEvidenceAIReview"("ingestJobId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostEvidenceAIIngestJob_runpodJobId_key" ON "QPostEvidenceAIIngestJob"("runpodJobId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceAIIngestJob_evidenceId_idx" ON "QPostEvidenceAIIngestJob"("evidenceId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceAIIngestJob_runpodJobId_idx" ON "QPostEvidenceAIIngestJob"("runpodJobId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceAIIngestJob_sentDocumentId_idx" ON "QPostEvidenceAIIngestJob"("sentDocumentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostEvidenceAIIngestResult_jobId_key" ON "QPostEvidenceAIIngestResult"("jobId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceAIIngestResult_evidenceId_idx" ON "QPostEvidenceAIIngestResult"("evidenceId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceAIIngestResult_jobId_idx" ON "QPostEvidenceAIIngestResult"("jobId");
+
+-- CreateIndex
+CREATE INDEX "QPostPolicyAIReview_policyId_idx" ON "QPostPolicyAIReview"("policyId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostRequirementEvidence_requirementId_evidenceId_key" ON "QPostRequirementEvidence"("requirementId", "evidenceId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QPostRequirementPolicy_requirementId_policyId_key" ON "QPostRequirementPolicy"("requirementId", "policyId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
@@ -4938,6 +5499,174 @@ ALTER TABLE "SuggestedRegulation" ADD CONSTRAINT "SuggestedRegulation_regulatory
 
 -- AddForeignKey
 ALTER TABLE "DynamicTranslation" ADD CONSTRAINT "DynamicTranslation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostFramework" ADD CONSTRAINT "QPostFramework_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostFramework" ADD CONSTRAINT "QPostFramework_sourceFrameworkId_fkey" FOREIGN KEY ("sourceFrameworkId") REFERENCES "QPostFramework"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementCategory" ADD CONSTRAINT "QPostRequirementCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementCategory" ADD CONSTRAINT "QPostRequirementCategory_frameworkId_fkey" FOREIGN KEY ("frameworkId") REFERENCES "QPostFramework"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirement" ADD CONSTRAINT "QPostRequirement_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirement" ADD CONSTRAINT "QPostRequirement_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "QPostRequirement"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirement" ADD CONSTRAINT "QPostRequirement_frameworkId_fkey" FOREIGN KEY ("frameworkId") REFERENCES "QPostFramework"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirement" ADD CONSTRAINT "QPostRequirement_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "QPostRequirementCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementException" ADD CONSTRAINT "QPostRequirementException_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementException" ADD CONSTRAINT "QPostRequirementException_requirementId_fkey" FOREIGN KEY ("requirementId") REFERENCES "QPostRequirement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementException" ADD CONSTRAINT "QPostRequirementException_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicy" ADD CONSTRAINT "QPostPolicy_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicy" ADD CONSTRAINT "QPostPolicy_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicy" ADD CONSTRAINT "QPostPolicy_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicy" ADD CONSTRAINT "QPostPolicy_approverId_fkey" FOREIGN KEY ("approverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidence" ADD CONSTRAINT "QPostEvidence_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidence" ADD CONSTRAINT "QPostEvidence_frameworkId_fkey" FOREIGN KEY ("frameworkId") REFERENCES "QPostFramework"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidence" ADD CONSTRAINT "QPostEvidence_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidence" ADD CONSTRAINT "QPostEvidence_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceCycleComment" ADD CONSTRAINT "QPostEvidenceCycleComment_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostArtifact" ADD CONSTRAINT "QPostArtifact_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostArtifact" ADD CONSTRAINT "QPostArtifact_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceArtifact" ADD CONSTRAINT "QPostEvidenceArtifact_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceArtifact" ADD CONSTRAINT "QPostEvidenceArtifact_artifactId_fkey" FOREIGN KEY ("artifactId") REFERENCES "QPostArtifact"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostException" ADD CONSTRAINT "QPostException_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostException" ADD CONSTRAINT "QPostException_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostException" ADD CONSTRAINT "QPostException_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostException" ADD CONSTRAINT "QPostException_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostException" ADD CONSTRAINT "QPostException_frameworkId_fkey" FOREIGN KEY ("frameworkId") REFERENCES "QPostFramework"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostException" ADD CONSTRAINT "QPostException_requirementId_fkey" FOREIGN KEY ("requirementId") REFERENCES "QPostRequirement"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostException" ADD CONSTRAINT "QPostException_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostException" ADD CONSTRAINT "QPostException_approverId_fkey" FOREIGN KEY ("approverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostExceptionComment" ADD CONSTRAINT "QPostExceptionComment_exceptionId_fkey" FOREIGN KEY ("exceptionId") REFERENCES "QPostException"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostKPI" ADD CONSTRAINT "QPostKPI_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostKPI" ADD CONSTRAINT "QPostKPI_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostKPI" ADD CONSTRAINT "QPostKPI_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostKPIReview" ADD CONSTRAINT "QPostKPIReview_kpiId_fkey" FOREIGN KEY ("kpiId") REFERENCES "QPostKPI"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostKPIActionPlan" ADD CONSTRAINT "QPostKPIActionPlan_kpiReviewId_fkey" FOREIGN KEY ("kpiReviewId") REFERENCES "QPostKPIReview"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicyAttachment" ADD CONSTRAINT "QPostPolicyAttachment_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostGovernanceVaultDocument" ADD CONSTRAINT "QPostGovernanceVaultDocument_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostGovernanceVaultDocumentLink" ADD CONSTRAINT "QPostGovernanceVaultDocumentLink_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "QPostGovernanceVaultDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostGovernanceVaultDocumentLink" ADD CONSTRAINT "QPostGovernanceVaultDocumentLink_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceAttachment" ADD CONSTRAINT "QPostEvidenceAttachment_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicyException" ADD CONSTRAINT "QPostPolicyException_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicyException" ADD CONSTRAINT "QPostPolicyException_exceptionId_fkey" FOREIGN KEY ("exceptionId") REFERENCES "QPostException"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceAIReview" ADD CONSTRAINT "QPostEvidenceAIReview_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceAIReview" ADD CONSTRAINT "QPostEvidenceAIReview_artifactId_fkey" FOREIGN KEY ("artifactId") REFERENCES "QPostArtifact"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceAIReview" ADD CONSTRAINT "QPostEvidenceAIReview_aiOperationId_fkey" FOREIGN KEY ("aiOperationId") REFERENCES "AIOperation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceAIIngestJob" ADD CONSTRAINT "QPostEvidenceAIIngestJob_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceAIIngestResult" ADD CONSTRAINT "QPostEvidenceAIIngestResult_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicyAIReview" ADD CONSTRAINT "QPostPolicyAIReview_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicyAIReview" ADD CONSTRAINT "QPostPolicyAIReview_aiOperationId_fkey" FOREIGN KEY ("aiOperationId") REFERENCES "AIOperation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementEvidence" ADD CONSTRAINT "QPostRequirementEvidence_requirementId_fkey" FOREIGN KEY ("requirementId") REFERENCES "QPostRequirement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementEvidence" ADD CONSTRAINT "QPostRequirementEvidence_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementPolicy" ADD CONSTRAINT "QPostRequirementPolicy_requirementId_fkey" FOREIGN KEY ("requirementId") REFERENCES "QPostRequirement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostRequirementPolicy" ADD CONSTRAINT "QPostRequirementPolicy_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -138,6 +138,26 @@ export const navigation: NavItem[] = [
   },
   // ==================== End Compliance Section ====================
 
+  // ==================== QPost Compliance Section ====================
+  {
+    name: "QPost Compliance",
+    icon: Shield,
+    children: [
+      { name: "Regulatory Intelligence Hub", href: "/qpost-compliance/regulatory-intelligence", icon: Radar, permission: "qpost-compliance.regulatory-intelligence:view" },
+      { name: "Frameworks", href: "/qpost-compliance/framework", icon: Layers, permission: "qpost-compliance.framework:view" },
+      { name: "Requirements", href: "/qpost-compliance/requirements", icon: Link, permission: "qpost-compliance.controls:view" },
+      { name: "Governance", href: "/qpost-compliance/governance", icon: FileCheck, permission: "qpost-compliance.governance:view" },
+      { name: "Evidence", href: "/qpost-compliance/evidence", icon: ClipboardList, permission: "qpost-compliance.evidence:view" },
+
+      // Below items are for CustomerAdministrator and other roles, not GRCAdministrator
+      { name: "Exception Management", href: "/qpost-compliance/exceptions", icon: AlertTriangle, permission: "qpost-compliance.exceptions:view" },
+      { name: "KPI", href: "/qpost-compliance/kpis", icon: BarChart3, permission: "qpost-compliance.kpi:view" },
+      { name: "Reports", href: "/qpost-compliance/reports", icon: FileText, permission: "qpost-compliance.dashboard:view" },
+      { name: "Compliance settings", href: "/qpost-compliance/master-data", icon: Settings2, permission: "qpost-compliance.settings:view" },
+    ],
+  },
+  // ==================== End QPost Compliance Section ====================
+
   // ==================== Asset Management Section ====================
   {
     name: "Asset Management",
@@ -529,6 +549,7 @@ function transformNavItemsForRole(items: NavItem[], userRole: string): NavItem[]
 interface NavModuleFlags {
   isGrcAdded?: boolean;
   isTprmAdded?: boolean;
+  isQpostComplianceEnabled?: boolean;
 }
 
 /**
@@ -568,10 +589,17 @@ export function filterNavigationByPermissionsAndRole(
     navItems = flattenTprmNavigation(items);
   }
 
-  // GRCAdministrator sees Compliance nested under GRC, so hide the standalone Compliance group
+  // Toggle between Compliance and QPost Compliance based on module flag
+  if (!isSystemRole && moduleFlags?.isQpostComplianceEnabled) {
+    navItems = navItems.filter(item => item.name !== 'Compliance');
+  } else {
+    navItems = navItems.filter(item => item.name !== 'QPost Compliance');
+  }
+
+  // GRCAdministrator sees Compliance nested under GRC, so hide the standalone Compliance group and QPost Compliance
   const isGrcAdmin = userRoles.includes('GRCAdministrator');
   if (isGrcAdmin) {
-    navItems = navItems.filter(item => item.name !== 'Compliance');
+    navItems = navItems.filter(item => item.name !== 'Compliance' && item.name !== 'QPost Compliance');
   }
 
   // First filter by permissions

@@ -19,6 +19,7 @@ declare module "next-auth" {
       // Module flags from CustomerAccount
       isGrcAdded: boolean;
       isTprmAdded: boolean;
+      isQpostComplianceEnabled: boolean;
       roles: string[];
       permissions: UserPermission[];
     } & DefaultSession["user"];
@@ -38,6 +39,7 @@ declare module "next-auth" {
     // Module flags from CustomerAccount
     isGrcAdded: boolean;
     isTprmAdded: boolean;
+    isQpostComplianceEnabled: boolean;
     roles: string[];
     permissions: UserPermission[];
   }
@@ -58,6 +60,7 @@ declare module "next-auth/jwt" {
     // Module flags from CustomerAccount
     isGrcAdded: boolean;
     isTprmAdded: boolean;
+    isQpostComplianceEnabled: boolean;
     roles: string[];
     permissions: UserPermission[];
   }

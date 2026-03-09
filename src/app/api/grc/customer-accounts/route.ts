@@ -74,16 +74,16 @@ export async function GET(req: NextRequest) {
       .map((u) => u.customerAccountId)
       .filter((id): id is string => !!id);
 
-    let accountFlagsMap = new Map<string, { isGrcAdded: boolean; isTprmAdded: boolean }>();
+    let accountFlagsMap = new Map<string, { isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean }>();
     if (accountIds.length > 0) {
       try {
         const flags = await prisma.$queryRawUnsafe<
-          Array<{ id: string; isGrcAdded: boolean; isTprmAdded: boolean }>
+          Array<{ id: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean }>
         >(
-          `SELECT id, "isGrcAdded", "isTprmAdded" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
+          `SELECT id, "isGrcAdded", "isTprmAdded", "isQpostComplianceEnabled" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
           ...accountIds
         );
-        accountFlagsMap = new Map(flags.map((f) => [f.id, { isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded }]));
+        accountFlagsMap = new Map(flags.map((f) => [f.id, { isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded, isQpostComplianceEnabled: f.isQpostComplianceEnabled }]));
       } catch {
         // If raw query fails (e.g., columns don't exist yet), default to false
       }
@@ -118,6 +118,7 @@ export async function GET(req: NextRequest) {
         timeZone: user.timezone || "Asia/Qatar",
         isTprmAdded: flags?.isTprmAdded || false,
         isGrcAdded: flags?.isGrcAdded || false,
+        isQpostComplianceEnabled: flags?.isQpostComplianceEnabled || false,
       };
     });
 

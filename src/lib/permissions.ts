@@ -59,6 +59,19 @@ export const RESOURCES = {
   'compliance.risk-matrix': '/compliance/risk-matrix',
   'compliance.settings': '/compliance/settings',
 
+  // QPost Compliance Module
+  'qpost-compliance.dashboard': '/qpost-compliance',
+  'qpost-compliance.framework': '/qpost-compliance/framework',
+  'qpost-compliance.controls': '/qpost-compliance/requirements',
+  'qpost-compliance.governance': '/qpost-compliance/governance',
+  'qpost-compliance.evidence': '/qpost-compliance/evidence',
+  'qpost-compliance.artifacts': '/qpost-compliance/artifacts',
+  'qpost-compliance.exceptions': '/qpost-compliance/exceptions',
+  'qpost-compliance.kpi': '/qpost-compliance/kpi',
+  'qpost-compliance.risk-matrix': '/qpost-compliance/risk-matrix',
+  'qpost-compliance.settings': '/qpost-compliance/settings',
+  'qpost-compliance.regulatory-intelligence': '/qpost-compliance/regulatory-intelligence',
+
   // Asset Management Module
   'asset.dashboard': '/asset-management',
   'asset.inventory': '/asset-management/inventory',
@@ -294,6 +307,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   CustomerAdministrator: [
     { resource: 'organization.*', actions: ['*'], scope: 'all' },
     { resource: 'compliance.*', actions: ['*'], scope: 'all' },
+    { resource: 'qpost-compliance.*', actions: ['*'], scope: 'all' },
     // Asset Management - explicit resources (excluding asset.my-inventory)
     { resource: 'asset.dashboard', actions: ['*'], scope: 'all' },
     { resource: 'asset.inventory', actions: ['*'], scope: 'all' },
@@ -411,6 +425,16 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.exceptions', actions: ['view'], scope: 'all' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'all' },
     { resource: 'compliance.risk-matrix', actions: ['view'], scope: 'all' },
+    // QPost Compliance - view only
+    { resource: 'qpost-compliance.dashboard', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.framework', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.controls', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.governance', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.evidence', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.artifacts', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.exceptions', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.kpi', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.risk-matrix', actions: ['view'], scope: 'all' },
     // compliance.settings (Master Data) - EXCLUDED
     // Asset Management - view only (NO settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
@@ -442,6 +466,16 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'compliance.kpi', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'compliance.risk-matrix', actions: ['view'], scope: 'all' },
+    // QPost Compliance - create/edit
+    { resource: 'qpost-compliance.dashboard', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.framework', actions: ['view'], scope: 'all' },
+    { resource: 'qpost-compliance.controls', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'qpost-compliance.governance', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'qpost-compliance.evidence', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'qpost-compliance.artifacts', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'qpost-compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'qpost-compliance.kpi', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'qpost-compliance.risk-matrix', actions: ['view'], scope: 'all' },
     { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'risk.register', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'all' },
@@ -728,6 +762,7 @@ function resourceMatches(pattern: string, resource: string): boolean {
 interface ModuleFlags {
   isGrcAdded?: boolean;
   isTprmAdded?: boolean;
+  isQpostComplianceEnabled?: boolean;
 }
 
 /**
@@ -745,6 +780,7 @@ function isGrcModuleResource(resource: string): boolean {
   return (
     resource.startsWith('organization.') ||
     resource.startsWith('compliance.') ||
+    resource.startsWith('qpost-compliance.') ||
     resource.startsWith('asset.') ||
     resource.startsWith('risk.') ||
     resource.startsWith('audit.')
@@ -787,6 +823,8 @@ export function expandRolePermissions(
         if (!isSystemRole && moduleFlags) {
           if (!moduleFlags.isTprmAdded && isTprmResource(resource)) continue;
           if (!moduleFlags.isGrcAdded && isGrcModuleResource(resource)) continue;
+          if (!moduleFlags.isQpostComplianceEnabled && resource.startsWith('qpost-compliance.')) continue;
+          if (moduleFlags.isQpostComplianceEnabled && resource.startsWith('compliance.')) continue;
         }
 
         for (const action of actions) {

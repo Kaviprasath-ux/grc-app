@@ -32,6 +32,7 @@ const userSelect = {
       name: true,
       isGrcAdded: true,
       isTprmAdded: true,
+      isQpostComplianceEnabled: true,
     },
   },
   auditHead: { select: { id: true, fullName: true } },
@@ -91,7 +92,7 @@ function buildAuthUser(dbUser: {
   departmentId: string | null;
   department: { id: string; name: string } | null;
   customerAccountId: string | null;
-  customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean } | null;
+  customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean } | null;
   auditHeadId: string | null;
   userRoles: { role: { id: string; name: string } }[];
 }, extraRoles?: string[]) {
@@ -117,6 +118,7 @@ function buildAuthUser(dbUser: {
       ? true
       : (dbUser.customerAccount?.isGrcAdded ?? true),
     isTprmAdded: dbUser.customerAccount?.isTprmAdded ?? false,
+    isQpostComplianceEnabled: dbUser.customerAccount?.isQpostComplianceEnabled ?? false,
     roles: effectiveRoles,
     permissions: [] as UserPermission[],
   };
@@ -315,6 +317,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.auditHeadId = user.auditHeadId;
           token.isGrcAdded = user.isGrcAdded;
           token.isTprmAdded = user.isTprmAdded;
+          token.isQpostComplianceEnabled = user.isQpostComplianceEnabled;
           token.roles = user.roles;
         } else {
           // OAuth flow: user object only has OAuth profile data
@@ -351,6 +354,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               token.auditHeadId = authUser.auditHeadId;
               token.isGrcAdded = authUser.isGrcAdded;
               token.isTprmAdded = authUser.isTprmAdded;
+              token.isQpostComplianceEnabled = authUser.isQpostComplianceEnabled;
               token.roles = authUser.roles;
             }
           }
@@ -373,13 +377,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.auditHeadId = token.auditHeadId as string | null;
         session.user.isGrcAdded = (token.isGrcAdded as boolean) ?? false;
         session.user.isTprmAdded = (token.isTprmAdded as boolean) ?? false;
+        session.user.isQpostComplianceEnabled = (token.isQpostComplianceEnabled as boolean) ?? false;
         session.user.roles = (token.roles as string[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)
         // Filter permissions based on module flags (isGrcAdded / isTprmAdded)
         session.user.permissions = expandRolePermissions(
           session.user.roles,
-          { isGrcAdded: session.user.isGrcAdded, isTprmAdded: session.user.isTprmAdded }
+          { isGrcAdded: session.user.isGrcAdded, isTprmAdded: session.user.isTprmAdded, isQpostComplianceEnabled: session.user.isQpostComplianceEnabled }
         );
       }
       return session;

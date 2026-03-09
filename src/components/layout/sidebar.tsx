@@ -233,9 +233,10 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
       {
         isGrcAdded: session.user.isGrcAdded ?? false,
         isTprmAdded: session.user.isTprmAdded ?? false,
+        isQpostComplianceEnabled: session.user.isQpostComplianceEnabled ?? false,
       }
     );
-  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded]);
+  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded, session?.user?.isQpostComplianceEnabled]);
 
   return (
     <aside

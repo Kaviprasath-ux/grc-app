@@ -55,6 +55,7 @@ interface CustomerAccount {
   logoUrl?: string;
   isTprmAdded?: boolean;
   isGrcAdded?: boolean;
+  isQpostComplianceEnabled?: boolean;
 }
 
 interface SubscriptionPlan {
@@ -211,6 +212,7 @@ export default function CustomerAccountsPage() {
     active: true,
     isGrcAdded: true, // Always true when creating from GRC; loaded from customer data when editing
     isTprmAdded: false,
+    isQpostComplianceEnabled: false,
     language: "en-US",
     timeZone: "Asia/Qatar",
     logoFile: null as File | null,
@@ -285,6 +287,7 @@ export default function CustomerAccountsPage() {
       active: true,
       isGrcAdded: true,
       isTprmAdded: false,
+      isQpostComplianceEnabled: false,
       language: "en-US",
       timeZone: "Asia/Qatar",
       logoFile: null,
@@ -429,6 +432,7 @@ export default function CustomerAccountsPage() {
           active: formData.active,
           isGrcAdded: formData.isGrcAdded,
           isTprmAdded: formData.isTprmAdded,
+          isQpostComplianceEnabled: formData.isQpostComplianceEnabled,
           language: formData.language,
           timeZone: formData.timeZone,
           role: "CustomerAdministrator",
@@ -519,6 +523,7 @@ export default function CustomerAccountsPage() {
           active: formData.active,
           isGrcAdded: formData.isGrcAdded,
           isTprmAdded: formData.isTprmAdded,
+          isQpostComplianceEnabled: formData.isQpostComplianceEnabled,
           language: formData.language,
           timeZone: formData.timeZone,
         }),
@@ -999,6 +1004,7 @@ export default function CustomerAccountsPage() {
       active: customer.active,
       isGrcAdded: customer.isGrcAdded !== false, // Default to true if not set
       isTprmAdded: customer.isTprmAdded || false,
+      isQpostComplianceEnabled: customer.isQpostComplianceEnabled || false,
       language: customer.language || "en-US",
       timeZone: customer.timeZone || "Asia/Qatar",
       logoFile: null,
@@ -1460,6 +1466,30 @@ export default function CustomerAccountsPage() {
                       </label>
                     </div>
                   </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("QPost Compliance")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isQpostComplianceEnabledNew"
+                          checked={!formData.isQpostComplianceEnabled}
+                          onChange={() => setFormData({ ...formData, isQpostComplianceEnabled: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isQpostComplianceEnabledNew"
+                          checked={formData.isQpostComplianceEnabled}
+                          onChange={() => setFormData({ ...formData, isQpostComplianceEnabled: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1788,6 +1818,30 @@ export default function CustomerAccountsPage() {
                           name="isTprmAddedEdit"
                           checked={formData.isTprmAdded}
                           onChange={() => setFormData({ ...formData, isTprmAdded: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("QPost Compliance")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isQpostComplianceEnabledEdit"
+                          checked={!formData.isQpostComplianceEnabled}
+                          onChange={() => setFormData({ ...formData, isQpostComplianceEnabled: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isQpostComplianceEnabledEdit"
+                          checked={formData.isQpostComplianceEnabled}
+                          onChange={() => setFormData({ ...formData, isQpostComplianceEnabled: true })}
                           className="accent-primary"
                         /> {t("Yes")}
                       </label>

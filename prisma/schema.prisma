@@ -23,6 +23,7 @@ model CustomerAccount {
   isActive               Boolean                  @default(true)
   isGrcAdded             Boolean                  @default(true) // Whether this account has GRC module access (default true for legacy accounts)
   isTprmAdded            Boolean                  @default(false) // Whether this account was onboarded via TPRM
+  isQpostComplianceEnabled Boolean                @default(false) // Whether this account uses QPost Compliance module
   emailNotificationsEnabled Boolean               @default(true) // Toggle for non-mandatory email notifications
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
@@ -144,6 +145,17 @@ model CustomerAccount {
   tprmIssueRemediations      TPRMIssueRemediation[]
   tprmVendorIssues           TPRMVendorIssue[]
   tprmInternalComments       TPRMInternalComment[]
+  // QPost Compliance relations (independent module)
+  qpostFrameworks            QPostFramework[]
+  qpostRequirementCategories QPostRequirementCategory[]
+  qpostRequirements          QPostRequirement[]
+  qpostRequirementExceptions QPostRequirementException[]
+  qpostPolicies              QPostPolicy[]
+  qpostEvidences             QPostEvidence[]
+  qpostArtifacts             QPostArtifact[]
+  qpostExceptions            QPostException[]
+  qpostKpis                  QPostKPI[]
+  qpostGovernanceVaultDocuments QPostGovernanceVaultDocument[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -314,6 +326,12 @@ model Department {
   auditEngagements      AuditEngagement[]
   internalAuditFindings InternalAuditFinding[]
   tprmVendors           TPRMVendor[]           @relation("TPRMVendorDepartment")
+  // QPost Compliance relations
+  qpostPolicies              QPostPolicy[]
+  qpostEvidences             QPostEvidence[]
+  qpostExceptions            QPostException[]
+  qpostRequirementExceptions QPostRequirementException[]
+  qpostKpis                  QPostKPI[]
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
@@ -373,6 +391,13 @@ model User {
   requestedExceptions Exception[] @relation("ExceptionRequester")
   approverExceptions  Exception[] @relation("ExceptionApprover")
   uploadedArtifacts   Artifact[]  @relation("ArtifactUploader")
+  // QPost Compliance relations
+  qpostAssignedPolicies    QPostPolicy[]    @relation("QPostPolicyAssignee")
+  qpostApprovedPolicies    QPostPolicy[]    @relation("QPostPolicyApprover")
+  qpostAssignedEvidences   QPostEvidence[]  @relation("QPostEvidenceAssignee")
+  qpostUploadedArtifacts   QPostArtifact[]  @relation("QPostArtifactUploader")
+  qpostRequestedExceptions QPostException[] @relation("QPostExceptionRequester")
+  qpostApproverExceptions  QPostException[] @relation("QPostExceptionApprover")
   // RBAC relations
   userRoles           UserRole[]
   // Internal Audit relations
@@ -1863,6 +1888,8 @@ model Risk {
   activityLogs        RiskActivityLog[]
   controlRisks        ControlRisk[]
   exceptions          Exception[]     @relation("RiskExceptions")
+  // QPost Compliance relations
+  qpostExceptions     QPostException[] @relation("QPostRiskExceptions")
   // Risk Control Matrix entries (independent, deleting entry doesn't delete this risk)
   riskControlMatrixEntries RiskControlMatrixEntry[]
 
@@ -3064,6 +3091,9 @@ model AIOperation {
   user              User?            @relation(fields: [userId], references: [id])
   evidenceAIReviews EvidenceAIReview[]
   policyAIReviews   PolicyAIReview[]
+  // QPost Compliance AI relations
+  qpostEvidenceAIReviews QPostEvidenceAIReview[]
+  qpostPolicyAIReviews   QPostPolicyAIReview[]
   createdAt         DateTime         @default(now())
 
   @@index([userId])
@@ -4126,3 +4156,528 @@ model DynamicTranslation {
   @@index([customerAccountId, modelName, locale])
   @@index([isStale])
 }
+
+// ============================================================
+// QPOST COMPLIANCE MODULE - START
+// All models below are independent and belong to QPost module.
+// Safe to delete this entire block to remove QPost module.
+// ============================================================
+
+model QPostFramework {
+  id                    String                     @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount            @relation(fields: [customerAccountId], references: [id])
+  code                  String?
+  name                  String
+  description           String?
+  version               String?
+  type                  String                     @default("Framework")
+  status                String                     @default("Subscribed")
+  country               String?
+  industry              String?
+  isCustom              Boolean                    @default(false)
+  isMasterTemplate      Boolean                    @default(false)
+  sourceFrameworkId     String?
+  sourceFramework       QPostFramework?            @relation("QPostFrameworkSubscriptions", fields: [sourceFrameworkId], references: [id], onDelete: SetNull)
+  subscribedCopies      QPostFramework[]           @relation("QPostFrameworkSubscriptions")
+  logo                  String?
+  supportDocumentUrl    String?
+  compliancePercentage  Float                      @default(0)
+  policyPercentage      Float                      @default(0)
+  evidencePercentage    Float                      @default(0)
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  evidences             QPostEvidence[]
+  requirements          QPostRequirement[]
+  requirementCategories QPostRequirementCategory[]
+  exceptions            QPostException[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
+  @@index([sourceFrameworkId])
+}
+
+model QPostRequirementCategory {
+  id                String               @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount      @relation(fields: [customerAccountId], references: [id])
+  name              String
+  code              String?
+  description       String?
+  sortOrder         Int                  @default(0)
+  frameworkId       String
+  framework         QPostFramework       @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  requirements      QPostRequirement[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@unique([frameworkId, name])
+  @@index([customerAccountId])
+}
+
+model QPostRequirement {
+  id                   String                      @id @default(cuid())
+  customerAccountId    String
+  customerAccount      CustomerAccount             @relation(fields: [customerAccountId], references: [id])
+  code                 String
+  name                 String
+  description          String?
+  requirementType      String                      @default("Mandatory")
+  chapterType          String                      @default("Domain")
+  sortOrder            Int                         @default(0)
+  level                Int                         @default(1)
+  parentId             String?
+  parent               QPostRequirement?           @relation("QPostRequirementHierarchy", fields: [parentId], references: [id])
+  children             QPostRequirement[]          @relation("QPostRequirementHierarchy")
+  frameworkId          String
+  framework            QPostFramework              @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  categoryId           String?
+  category             QPostRequirementCategory?   @relation(fields: [categoryId], references: [id])
+  applicability        String?
+  justification        String?
+  implementationStatus String?
+  controlCompliance    String?
+  evidences            QPostRequirementEvidence[]
+  policies             QPostRequirementPolicy[]
+  exceptions           QPostRequirementException[]
+  complianceExceptions QPostException[]
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+
+  @@unique([frameworkId, code])
+  @@index([customerAccountId])
+}
+
+model QPostRequirementException {
+  id                String           @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount  @relation(fields: [customerAccountId], references: [id])
+  code              String
+  name              String
+  description       String?
+  category          String           @default("Compliance")
+  requirementId     String
+  requirement       QPostRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  departmentId      String?
+  department        Department?      @relation(fields: [departmentId], references: [id])
+  requesterId       String?
+  status            String           @default("Pending")
+  endDate           DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, code])
+  @@index([customerAccountId])
+}
+
+model QPostPolicy {
+  id                    String                          @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount                 @relation(fields: [customerAccountId], references: [id])
+  code                  String
+  name                  String
+  version               String                          @default("1.0")
+  documentType          String                          @default("Policy")
+  recurrence            String?
+  departmentId          String?
+  department            Department?                     @relation(fields: [departmentId], references: [id])
+  assigneeId            String?
+  assignee              User?                           @relation("QPostPolicyAssignee", fields: [assigneeId], references: [id])
+  approverId            String?
+  approver              User?                           @relation("QPostPolicyApprover", fields: [approverId], references: [id])
+  status                String                          @default("Not Uploaded")
+  effectiveDate         DateTime?
+  reviewDate            DateTime?
+  content               String?
+  aiIngestStatus        String?
+  aiIngestedAt          DateTime?
+  aiIngestJobId         String?
+  aiReviewStatus        String?                         @default("Pending")
+  aiReviewScore         Float?                          @default(0)
+  aiReviewJustification String?
+  createdAt             DateTime                        @default(now())
+  updatedAt             DateTime                        @updatedAt
+  attachments           QPostPolicyAttachment[]
+  requirements          QPostRequirementPolicy[]
+  policyAIReviews       QPostPolicyAIReview[]
+  policyExceptions      QPostPolicyException[]
+  exceptions            QPostException[]                @relation("QPostPolicyExceptions")
+  vaultDocumentLinks    QPostGovernanceVaultDocumentLink[]
+
+  @@unique([customerAccountId, code])
+  @@index([customerAccountId])
+}
+
+model QPostEvidence {
+  id                    String                       @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount              @relation(fields: [customerAccountId], references: [id])
+  evidenceCode          String
+  name                  String
+  description           String?
+  domain                String?
+  frameworkId           String?
+  framework             QPostFramework?              @relation(fields: [frameworkId], references: [id])
+  departmentId          String?
+  department            Department?                  @relation(fields: [departmentId], references: [id])
+  assigneeId            String?
+  assignee              User?                        @relation("QPostEvidenceAssignee", fields: [assigneeId], references: [id])
+  dueDate               DateTime?
+  reviewDate            DateTime?
+  recurrence            String?
+  status                String                       @default("Not Uploaded")
+  publishedAt           DateTime?
+  kpiRequired           Boolean                      @default(false)
+  kpiObjective          String?
+  kpiDataSource         String?
+  kpiExpectedScore      Float?
+  kpiDescription        String?
+  kpiCalculationFormula String?
+  aiIngestStatus        String?
+  aiIngestedAt          DateTime?
+  aiReviewStatus        String?
+  aiReviewedAt          DateTime?
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  attachments           QPostEvidenceAttachment[]
+  kpis                  QPostKPI[]
+  requirements          QPostRequirementEvidence[]
+  linkedArtifacts       QPostEvidenceArtifact[]
+  evidenceAIReviews     QPostEvidenceAIReview[]
+  evidenceAIIngestJobs  QPostEvidenceAIIngestJob[]
+  evidenceAIIngestResults QPostEvidenceAIIngestResult[]
+  cycleComments         QPostEvidenceCycleComment[]
+
+  @@unique([customerAccountId, evidenceCode])
+  @@index([customerAccountId])
+}
+
+model QPostEvidenceCycleComment {
+  id          String        @id @default(cuid())
+  evidenceId  String
+  evidence    QPostEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  cyclePeriod String
+  action      String
+  comment     String
+  userId      String?
+  userName    String?
+  createdAt   DateTime      @default(now())
+
+  @@index([evidenceId, cyclePeriod])
+}
+
+model QPostArtifact {
+  id                String                  @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount         @relation(fields: [customerAccountId], references: [id])
+  artifactCode      String
+  name              String
+  fileName          String
+  fileType          String?
+  fileSize          Int?
+  filePath          String
+  uploadedBy        String?
+  uploadedById      String?
+  uploader          User?                   @relation("QPostArtifactUploader", fields: [uploadedById], references: [id])
+  aiReviewStatus    String?
+  aiReviewScore     Float?
+  aiReviewNotes     String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  linkedEvidences   QPostEvidenceArtifact[]
+  evidenceAIReviews QPostEvidenceAIReview[]
+
+  @@unique([customerAccountId, artifactCode])
+  @@index([customerAccountId])
+}
+
+model QPostEvidenceArtifact {
+  id         String        @id @default(cuid())
+  evidenceId String
+  evidence   QPostEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  artifactId String
+  artifact   QPostArtifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
+
+  @@unique([evidenceId, artifactId])
+}
+
+model QPostException {
+  id                String                  @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount         @relation(fields: [customerAccountId], references: [id])
+  exceptionCode     String
+  name              String
+  description       String?
+  category          String
+  departmentId      String?
+  department        Department?             @relation(fields: [departmentId], references: [id])
+  policyId          String?
+  policy            QPostPolicy?            @relation("QPostPolicyExceptions", fields: [policyId], references: [id])
+  riskId            String?
+  risk              Risk?                   @relation("QPostRiskExceptions", fields: [riskId], references: [id])
+  frameworkId       String?
+  framework         QPostFramework?         @relation(fields: [frameworkId], references: [id])
+  requirementId     String?
+  requirement       QPostRequirement?       @relation(fields: [requirementId], references: [id])
+  requesterId       String?
+  requester         User?                   @relation("QPostExceptionRequester", fields: [requesterId], references: [id])
+  approverId        String?
+  approver          User?                   @relation("QPostExceptionApprover", fields: [approverId], references: [id])
+  approvedBy        String?
+  approvedDate      DateTime?
+  status            String                  @default("Pending")
+  startDate         DateTime?
+  endDate           DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  comments          QPostExceptionComment[]
+  policyExceptions  QPostPolicyException[]
+
+  @@unique([customerAccountId, exceptionCode])
+  @@index([customerAccountId])
+}
+
+model QPostExceptionComment {
+  id          String         @id @default(cuid())
+  content     String
+  exceptionId String
+  exception   QPostException @relation(fields: [exceptionId], references: [id], onDelete: Cascade)
+  userId      String?
+  userName    String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model QPostKPI {
+  id                 String          @id @default(cuid())
+  customerAccountId  String
+  customerAccount    CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  code               String
+  objective          String?
+  description        String?
+  dataSource         String?
+  calculationFormula String?
+  expectedScore      Float?
+  actualScore        Float?
+  reviewDate         DateTime?
+  status             String          @default("Scheduled")
+  departmentId       String?
+  department         Department?     @relation(fields: [departmentId], references: [id])
+  evidenceId         String?
+  evidence           QPostEvidence?  @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  reviews            QPostKPIReview[]
+
+  @@unique([customerAccountId, code])
+  @@index([customerAccountId])
+}
+
+model QPostKPIReview {
+  id           String              @id @default(cuid())
+  reviewDate   DateTime
+  actualScore  Float?
+  status       String              @default("Scheduled")
+  documentPath String?
+  documentName String?
+  kpiId        String
+  kpi          QPostKPI            @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  actionPlans  QPostKPIActionPlan[]
+}
+
+model QPostKPIActionPlan {
+  id                  String         @id @default(cuid())
+  plannedAction       String
+  description         String?
+  percentageCompleted Float          @default(0)
+  startDate           DateTime?
+  status              String         @default("In-Progress")
+  kpiReviewId         String
+  kpiReview           QPostKPIReview @relation(fields: [kpiReviewId], references: [id], onDelete: Cascade)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+}
+
+model QPostPolicyAttachment {
+  id         String      @id @default(cuid())
+  fileName   String
+  fileType   String?
+  fileSize   Int?
+  filePath   String
+  uploadedAt DateTime    @default(now())
+  policyId   String
+  policy     QPostPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model QPostGovernanceVaultDocument {
+  id                String                            @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount                   @relation(fields: [customerAccountId], references: [id])
+  documentCode      String
+  fileName          String
+  fileType          String?
+  fileSize          Int?
+  filePath          String
+  status            String                            @default("Active")
+  uploadedAt        DateTime                          @default(now())
+  createdAt         DateTime                          @default(now())
+  updatedAt         DateTime                          @updatedAt
+  linkedPolicies    QPostGovernanceVaultDocumentLink[]
+
+  @@unique([customerAccountId, documentCode])
+  @@index([customerAccountId])
+}
+
+model QPostGovernanceVaultDocumentLink {
+  id         String                      @id @default(cuid())
+  documentId String
+  document   QPostGovernanceVaultDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  policyId   String
+  policy     QPostPolicy                 @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  linkedAt   DateTime                    @default(now())
+
+  @@unique([documentId, policyId])
+}
+
+model QPostEvidenceAttachment {
+  id         String        @id @default(cuid())
+  fileName   String
+  fileType   String?
+  fileSize   Int?
+  filePath   String
+  uploadedAt DateTime      @default(now())
+  evidenceId String
+  evidence   QPostEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model QPostPolicyException {
+  id          String         @id @default(cuid())
+  policyId    String
+  policy      QPostPolicy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  exceptionId String
+  exception   QPostException @relation(fields: [exceptionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+
+  @@unique([policyId, exceptionId])
+}
+
+model QPostEvidenceAIReview {
+  id                   String         @id @default(cuid())
+  evidenceId           String
+  evidence             QPostEvidence  @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  artifactId           String?
+  artifact             QPostArtifact? @relation(fields: [artifactId], references: [id], onDelete: SetNull)
+  ingestJobId          String?
+  evidenceDocumentId   String?
+  artifactDocumentId   String?
+  runpodDocumentRef    String?
+  documentId           String?
+  status               String         @default("pending")
+  critique             String?        @db.Text
+  complianceSummary    String?        @db.Text
+  complianceScore      Float?
+  gaps                 String?        @db.Text
+  suggestions          String?        @db.Text
+  similarityScore      Float?
+  recommendations      String?        @db.Text
+  sources              String?        @db.Text
+  rawResponse          String?        @db.Text
+  aiOperationId        String?
+  aiOperation          AIOperation?   @relation(fields: [aiOperationId], references: [id])
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@index([evidenceId])
+  @@index([artifactId])
+  @@index([ingestJobId])
+}
+
+model QPostEvidenceAIIngestJob {
+  id                 String        @id @default(cuid())
+  evidenceId         String
+  evidence           QPostEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  attachmentId       String?
+  runpodJobId        String        @unique
+  sentDocumentId     String?
+  returnedDocumentId String?
+  ingestedFileName   String?
+  status             String        @default("queued")
+  error              String?       @db.Text
+  result             String?       @db.Text
+  completedAt        DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @default(now()) @updatedAt
+
+  @@index([evidenceId])
+  @@index([runpodJobId])
+  @@index([sentDocumentId])
+}
+
+model QPostEvidenceAIIngestResult {
+  id              String        @id @default(cuid())
+  evidenceId      String
+  evidence        QPostEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  jobId           String        @unique
+  extractedText   String?       @db.Text
+  embeddings      String?       @db.Text
+  metadata        String?       @db.Text
+  indexingStatus  String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now()) @updatedAt
+
+  @@index([evidenceId])
+  @@index([jobId])
+}
+
+model QPostPolicyAIReview {
+  id                String       @id @default(cuid())
+  policyId          String
+  policy            QPostPolicy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  documentId        String?
+  status            String       @default("ingested")
+  complianceSummary String?      @db.Text
+  riskScore         Float?
+  matchedControls   String?      @db.Text
+  gaps              String?      @db.Text
+  recommendations   String?      @db.Text
+  reviewedAt        DateTime?
+  aiOperationId     String?
+  aiOperation       AIOperation? @relation(fields: [aiOperationId], references: [id])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([policyId])
+}
+
+model QPostRequirementEvidence {
+  id            String           @id @default(cuid())
+  requirementId String
+  requirement   QPostRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  evidenceId    String
+  evidence      QPostEvidence    @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+
+  @@unique([requirementId, evidenceId])
+}
+
+model QPostRequirementPolicy {
+  id            String           @id @default(cuid())
+  requirementId String
+  requirement   QPostRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  policyId      String
+  policy        QPostPolicy      @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+
+  @@unique([requirementId, policyId])
+}
+
+// ============================================================
+// QPOST COMPLIANCE MODULE - END
+// ============================================================

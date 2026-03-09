@@ -1,0 +1,145 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { saveUploadedFile } from "@/lib/file-upload";
+
+/**
+ * GET /api/governance-templates
+ * Fetch governance templates for the current user's customer account
+ * Query params: governanceType (optional) - "Policy", "Standard", "Procedure"
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const governanceType = searchParams.get("governanceType");
+
+    // Build where clause with multi-tenant filter
+    const where: Record<string, unknown> = {};
+
+    // Filter by customer account (or show global templates where customerAccountId is null)
+    if (session.user.customerAccountId) {
+      where.OR = [
+        { customerAccountId: session.user.customerAccountId },
+        { customerAccountId: null }, // Global templates
+      ];
+    }
+
+    // Filter by governance type if provided
+    if (governanceType) {
+      where.governanceType = governanceType;
+    }
+
+    // Only show .docx templates (required for AI generation)
+    where.fileType = "docx";
+
+    const templates = await prisma.governanceTemplate.findMany({
+      where,
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(templates);
+  } catch (error) {
+    console.error("Error fetching governance templates:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch templates" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/governance-templates
+ * Upload a new governance template (.docx only for AI generation)
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
+    const name = formData.get("name") as string | null;
+    const governanceType = (formData.get("governanceType") as string) || "Policy";
+
+    if (!file) {
+      return NextResponse.json({ error: "File is required" }, { status: 400 });
+    }
+
+    // Validate file type - only .docx allowed for AI generation
+    const originalFileName = file.name;
+    const fileExtension = originalFileName.split(".").pop()?.toLowerCase();
+
+    if (fileExtension !== "docx") {
+      return NextResponse.json(
+        { error: "Only .docx files are supported for AI policy generation" },
+        { status: 400 }
+      );
+    }
+
+    // Use provided name or original filename
+    const templateName = name || originalFileName.replace(/\.[^/.]+$/, "");
+
+    // Save file to disk (uses /tmp on Vercel, local uploads/ dir otherwise)
+    const { urlPath, fileName, buffer } = await saveUploadedFile(file, "governance-templates");
+
+    // Store file path - on Vercel use the download API, locally use the file path
+    const filePath = process.env.VERCEL
+      ? `/api/governance-templates/download` // Will be updated with ID after creation
+      : urlPath;
+
+    // Create database record with file data stored in DB for cloud persistence
+    const template = await prisma.governanceTemplate.create({
+      data: {
+        name: templateName,
+        governanceType,
+        fileName,
+        fileType: fileExtension,
+        fileSize: buffer.length,
+        filePath,
+        fileData: buffer, // Store file content in DB for Vercel
+        uploadedById: session.user.id,
+        customerAccountId: session.user.customerAccountId || null,
+      },
+      include: {
+        uploadedBy: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
+    });
+
+    // Update filePath to include the template ID for download endpoint
+    if (process.env.VERCEL) {
+      await prisma.governanceTemplate.update({
+        where: { id: template.id },
+        data: { filePath: `/api/governance-templates/${template.id}/download` },
+      });
+      template.filePath = `/api/governance-templates/${template.id}/download`;
+    }
+
+    return NextResponse.json(template, { status: 201 });
+  } catch (error) {
+    console.error("Error uploading governance template:", error);
+    return NextResponse.json(
+      { error: "Failed to upload template" },
+      { status: 500 }
+    );
+  }
+}
