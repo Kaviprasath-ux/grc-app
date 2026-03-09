@@ -41,7 +41,10 @@ interface IssueRemediationEntry {
   domain: string | null;
   severity: string;
   description: string | null;
+  reassignComment: string | null;
   amResponse: string | null;
+  assignedTo: string | null;
+  assignedAt: string | null;
   requestedDate: string | null;
   dueDate: string | null;
   status: string;
@@ -79,6 +82,9 @@ const STATUS_COLORS: Record<string, string> = {
   "Awaiting Response": "border-purple-300 bg-purple-50 text-purple-700",
   Rejected: "border-red-300 bg-red-50 text-red-700",
   Pending: "border-yellow-300 bg-yellow-50 text-yellow-700",
+  "Assigned to BO": "border-blue-300 bg-blue-50 text-blue-700",
+  "Assigned to IT": "border-indigo-300 bg-indigo-50 text-indigo-700",
+  Submitted: "border-orange-300 bg-orange-50 text-orange-700",
 };
 
 const SEVERITIES = ["High", "Medium", "Low"];
@@ -243,19 +249,22 @@ export default function RMIssuesPage() {
   // ==================== ISSUE REMEDIATION ====================
 
   const filteredRemediation = useMemo(() => {
-    return remediationEntries.filter((e) => {
+    const filtered = remediationEntries.filter((e) => {
       const matchesSearch = remSearch === "" ||
         e.vendorName.toLowerCase().includes(remSearch.toLowerCase()) ||
         e.vendorCode.toLowerCase().includes(remSearch.toLowerCase());
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab =
         remSubTab === "Open"
-          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response"].includes(e.status)
+          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Assigned to BO", "Submitted"].includes(e.status)
           : remSubTab === "Closed"
           ? ["Closed", "Resolved"].includes(e.status)
           : e.status === remSubTab;
       return matchesSearch && matchesSeverity && matchesSubTab;
     });
+    // Sort descending by createdAt (newest first)
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return filtered;
   }, [remediationEntries, remSearch, remSeverityFilter, remSubTab]);
 
   const remediationColumns: ColumnDef<IssueRemediationEntry>[] = [
@@ -301,10 +310,17 @@ export default function RMIssuesPage() {
       cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span>,
     },
     {
-      accessorKey: "amResponse",
-      header: t("AM Response"),
+      accessorKey: "reassignComment",
+      header: t("Assessor Comment"),
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground line-clamp-2">{row.original.amResponse || "-"}</span>
+        <span className="text-sm text-muted-foreground line-clamp-2">{row.original.reassignComment || "-"}</span>
+      ),
+    },
+    {
+      accessorKey: "assignedTo",
+      header: t("Assigned To"),
+      cell: ({ row }) => (
+        <span className="text-sm">{row.original.assignedTo || "-"}</span>
       ),
     },
     {

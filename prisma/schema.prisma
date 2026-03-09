@@ -435,6 +435,7 @@ model User {
   tprmResponsesOverridden    TPRMAssessmentResponse[] @relation("TPRMResponseAssessorOverride")
   tprmInternalComments       TPRMInternalComment[]    @relation("TPRMInternalCommentAuthor")
   tprmRemediationComments    TPRMRemediationComment[] @relation("TPRMRemediationComments")
+  tprmRemediationAssignments TPRMIssueRemediation[]  @relation("TPRMRemediationAssignee")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -3965,6 +3966,10 @@ model TPRMIssueRemediation {
   dueDate           DateTime?
   responseDate      DateTime?
   returnedAt        DateTime?                    // Set when assessor sends back as unsatisfied
+  reassignComment   String?         @db.Text     // Assessor comment when sending to business/RM
+  assignedToUserId  String?                      // RM user assigned for remediation
+  assignedToUser    User?           @relation("TPRMRemediationAssignee", fields: [assignedToUserId], references: [id])
+  assignedAt        DateTime?                    // When the issue was assigned to RM
   status            String          @default("Pending") // Pending, Submitted, Closed, Assigned to BO, Assigned to IT
   comments          TPRMRemediationComment[]
   createdAt         DateTime        @default(now())
@@ -3972,6 +3977,7 @@ model TPRMIssueRemediation {
 
   @@index([customerAccountId])
   @@index([assessmentId])
+  @@index([assignedToUserId])
 }
 
 // TPRMRemediationComment — Chat-style comments on issue remediations

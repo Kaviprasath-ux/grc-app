@@ -2920,6 +2920,9 @@ CREATE TABLE "TPRMIssueRemediation" (
     "dueDate" TIMESTAMP(3),
     "responseDate" TIMESTAMP(3),
     "returnedAt" TIMESTAMP(3),
+    "reassignComment" TEXT,
+    "assignedToUserId" TEXT,
+    "assignedAt" TIMESTAMP(3),
     "status" TEXT NOT NULL DEFAULT 'Pending',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -3882,6 +3885,9 @@ CREATE INDEX "TPRMIssueRemediation_customerAccountId_idx" ON "TPRMIssueRemediati
 
 -- CreateIndex
 CREATE INDEX "TPRMIssueRemediation_assessmentId_idx" ON "TPRMIssueRemediation"("assessmentId");
+
+-- CreateIndex
+CREATE INDEX "TPRMIssueRemediation_assignedToUserId_idx" ON "TPRMIssueRemediation"("assignedToUserId");
 
 -- CreateIndex
 CREATE INDEX "TPRMRemediationComment_remediationId_idx" ON "TPRMRemediationComment"("remediationId");
@@ -4893,6 +4899,9 @@ ALTER TABLE "TPRMIssueRemediation" ADD CONSTRAINT "TPRMIssueRemediation_customer
 
 -- AddForeignKey
 ALTER TABLE "TPRMIssueRemediation" ADD CONSTRAINT "TPRMIssueRemediation_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMIssueRemediation" ADD CONSTRAINT "TPRMIssueRemediation_assignedToUserId_fkey" FOREIGN KEY ("assignedToUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TPRMRemediationComment" ADD CONSTRAINT "TPRMRemediationComment_remediationId_fkey" FOREIGN KEY ("remediationId") REFERENCES "TPRMIssueRemediation"("id") ON DELETE CASCADE ON UPDATE CASCADE;

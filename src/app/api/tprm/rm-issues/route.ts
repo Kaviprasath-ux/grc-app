@@ -94,14 +94,19 @@ export const GET = withAuth(
 
       // ==================== TAB 2: ISSUE REMEDIATION ====================
       if (tab === "remediation") {
+        // Only show remediations assigned to this RM by the assessor
         const remediations = await prisma.tPRMIssueRemediation.findMany({
-          where: { customerAccountId },
+          where: {
+            customerAccountId,
+            assignedToUserId: session.id,
+          },
           include: {
             assessment: {
               include: {
                 vendor: { select: { name: true, vendorCode: true } },
               },
             },
+            assignedToUser: { select: { fullName: true } },
           },
           orderBy: { createdAt: "desc" },
         });
@@ -112,8 +117,11 @@ export const GET = withAuth(
           vendorCode: rem.assessment?.vendor?.vendorCode || "",
           domain: rem.domainName || null,
           severity: rem.severity || "Medium",
-          description: rem.description || null,
+          description: rem.description || rem.issue || null,
+          reassignComment: rem.reassignComment || null,
           amResponse: rem.amResponse || null,
+          assignedTo: rem.assignedToUser?.fullName || null,
+          assignedAt: rem.assignedAt?.toISOString() || null,
           requestedDate: rem.requestedDate?.toISOString() || null,
           dueDate: rem.dueDate?.toISOString() || null,
           status: rem.status,

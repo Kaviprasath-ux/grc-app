@@ -97,6 +97,12 @@ export default function AsrFollowUpsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showUnsatisfiedComment, setShowUnsatisfiedComment] = useState(false);
   const [unsatisfiedComment, setUnsatisfiedComment] = useState("");
+  // Send to Business flow: step 1 = reassign comment, step 2 = select RM
+  const [sendToBusinessStep, setSendToBusinessStep] = useState<0 | 1 | 2>(0);
+  const [reassignComment, setReassignComment] = useState("");
+  const [rmUsers, setRmUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
+  const [selectedRmId, setSelectedRmId] = useState("");
+  const [rmLoading, setRmLoading] = useState(false);
 
   const handleRemediationAction = async (action: string, label: string) => {
     if (!viewRemediation) return;
@@ -106,6 +112,12 @@ export default function AsrFollowUpsPage() {
     }
     if (action === "unsatisfied" && !unsatisfiedComment.trim()) {
       toast({ title: t("Required"), description: t("Please add a remediation comment"), variant: "destructive" });
+      return;
+    }
+    // "Send to Business" triggers the multi-step dialog instead
+    if (action === "send-to-business") {
+      setSendToBusinessStep(1);
+      setReassignComment("");
       return;
     }
     setActionLoading(true);
@@ -127,6 +139,59 @@ export default function AsrFollowUpsPage() {
       fetchData();
     } catch {
       toast({ title: t("Error"), description: t("Failed to update remediation"), variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Step 1 → Step 2: save comment, fetch RM users, show RM picker
+  const handleReassignCommentSave = async () => {
+    if (!reassignComment.trim()) {
+      toast({ title: t("Required"), description: t("Please add a reassign comment"), variant: "destructive" });
+      return;
+    }
+    setRmLoading(true);
+    try {
+      const res = await fetch("/api/tprm/asr-follow-ups/rm-users");
+      if (!res.ok) throw new Error("Failed to fetch RM users");
+      const json = await res.json();
+      setRmUsers(json.data || []);
+      setSelectedRmId("");
+      setSendToBusinessStep(2);
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to load RM users"), variant: "destructive" });
+    } finally {
+      setRmLoading(false);
+    }
+  };
+
+  // Step 2: assign to selected RM
+  const handleAssignToRM = async () => {
+    if (!viewRemediation || !selectedRmId) {
+      toast({ title: t("Required"), description: t("Please select an RM user"), variant: "destructive" });
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/tprm/asr-follow-ups", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: viewRemediation.id,
+          action: "send-to-business",
+          comment: reassignComment,
+          assignedToUserId: selectedRmId,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast({ title: t("Success"), description: t("Issue assigned to RM successfully") });
+      setSendToBusinessStep(0);
+      setReassignComment("");
+      setSelectedRmId("");
+      setViewRemediation(null);
+      fetchData();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to assign to RM"), variant: "destructive" });
     } finally {
       setActionLoading(false);
     }
@@ -569,6 +634,83 @@ export default function AsrFollowUpsPage() {
               </>
             )}
             <Button variant="outline" onClick={() => { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); }}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send to Business — Step 1: Reassign Comment */}
+      <Dialog open={sendToBusinessStep === 1} onOpenChange={(open) => { if (!open) setSendToBusinessStep(0); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Reassign Comment")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-sm">{t("Add a comment for this reassignment")}</Label>
+            <Textarea
+              value={reassignComment}
+              onChange={e => setReassignComment(e.target.value)}
+              rows={4}
+              placeholder={t("Enter reassignment comment...")}
+              className="text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendToBusinessStep(0)}>{t("Cancel")}</Button>
+            <Button onClick={handleReassignCommentSave} disabled={rmLoading}>
+              {rmLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send to Business — Step 2: Select RM */}
+      <Dialog open={sendToBusinessStep === 2} onOpenChange={(open) => { if (!open) setSendToBusinessStep(0); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Assign to Relationship Manager")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-sm">{t("Select an RM to assign this issue")}</Label>
+            {rmUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("No Relationship Managers found for this account")}</p>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {rmUsers.map(rm => (
+                  <div
+                    key={rm.id}
+                    onClick={() => setSelectedRmId(rm.id)}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedRmId === rm.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                      {rm.fullName?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{rm.fullName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{rm.email}</p>
+                    </div>
+                    {selectedRmId === rm.id && (
+                      <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendToBusinessStep(1)}>{t("Back")}</Button>
+            <Button onClick={handleAssignToRM} disabled={actionLoading || !selectedRmId}>
+              {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Assign")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

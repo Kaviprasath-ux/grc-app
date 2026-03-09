@@ -313,7 +313,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.monitoring', actions: ['*'], scope: 'all' },
     { resource: 'tprm.configurations', actions: ['*'], scope: 'all' },
     { resource: 'tprm.master-data', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.settings', actions: ['*'], scope: 'all' },
     { resource: 'tprm.support', actions: ['view'], scope: 'all' },
   ],

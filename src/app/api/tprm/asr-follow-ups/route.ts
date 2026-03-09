@@ -99,7 +99,7 @@ export const PATCH = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { id, action, comment } = body;
+      const { id, action, comment, assignedToUserId } = body;
 
       if (!id || !action) {
         return NextResponse.json({ error: "ID and action are required" }, { status: 400 });
@@ -130,7 +130,15 @@ export const PATCH = withAuth(
           };
           break;
         case "send-to-business":
-          updateData = { status: "Assigned to BO" };
+          if (!assignedToUserId) {
+            return NextResponse.json({ error: "Assigned RM user is required" }, { status: 400 });
+          }
+          updateData = {
+            status: "Assigned to BO",
+            reassignComment: comment || null,
+            assignedToUserId,
+            assignedAt: new Date(),
+          };
           break;
         case "reassign-to-it":
           updateData = { status: "Assigned to IT" };
