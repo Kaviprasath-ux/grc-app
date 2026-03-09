@@ -649,7 +649,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.asr-assessment-factory', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-template', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-support', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.asr-factory-reports', actions: ['*'], scope: 'all' },
   ],
 
   // TPRM Approver - Same workspace as Assessor (no task-queue/assessments workspace)
@@ -663,7 +662,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.asr-assessment-factory', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-template', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-support', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.asr-factory-reports', actions: ['*'], scope: 'all' },
   ],
 
   // TPRM Auditor - Assessment Workspace + Task Queue (audit)
