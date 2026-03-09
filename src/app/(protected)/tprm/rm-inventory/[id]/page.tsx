@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Home, ChevronRight, ArrowLeft, Download, Loader2, Upload, FileText, Trash2,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Home, ChevronRight, ArrowLeft, Download, Loader2, Upload, FileText, Trash2, Plus, X,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
@@ -169,6 +174,98 @@ export default function VendorDetailPage() {
     }
   }, [vendorId, fetchDocuments, toast, t]);
 
+  // ── Add Contract dialog state ─────────────────────
+  const [showAddContractDialog, setShowAddContractDialog] = useState(false);
+  const [contractStartDate, setContractStartDate] = useState("");
+  const [contractEndDate, setContractEndDate] = useState("");
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [savingContract, setSavingContract] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [contractErrors, setContractErrors] = useState<Record<string, string>>({});
+
+  const openAddContractDialog = () => {
+    setContractStartDate("");
+    setContractEndDate("");
+    setContractFile(null);
+    setContractErrors({});
+    setShowAddContractDialog(true);
+  };
+
+  const handleContractFileDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setContractFile(file);
+      setContractErrors((prev) => { const { file: _, ...rest } = prev; return rest; });
+    }
+  }, []);
+
+  const handleSaveContract = useCallback(async () => {
+    if (!vendor) return;
+    const errors: Record<string, string> = {};
+    if (!contractStartDate) errors.startDate = t("Contract start date is required");
+    if (!contractEndDate) errors.endDate = t("Contract end date is required");
+    if (!contractFile) errors.file = t("Contract file is required");
+    if (contractStartDate && contractEndDate && contractStartDate > contractEndDate) {
+      errors.endDate = t("End date must be after start date");
+    }
+    setContractErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+    const fileToUpload = contractFile!;
+    setSavingContract(true);
+    try {
+      // 1. Upload contract file
+      const formData = new FormData();
+      formData.append("file", fileToUpload);
+      const uploadRes = await fetch(`/api/tprm/vendors/${vendor.id}/contract`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!uploadRes.ok) {
+        toast({ title: t("Error"), description: t("Failed to upload contract"), variant: "destructive" });
+        return;
+      }
+
+      // 2. Update vendor: contract dates + status → Active
+      const patchRes = await fetch(`/api/tprm/vendors/${vendor.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractStartDate,
+          contractEndDate,
+          status: "Active",
+        }),
+      });
+      if (patchRes.ok) {
+        toast({ title: t("Success"), description: t("Contract saved successfully") });
+        setShowAddContractDialog(false);
+        fetchVendor();
+      } else {
+        toast({ title: t("Error"), description: t("Failed to update vendor"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to save contract"), variant: "destructive" });
+    } finally {
+      setSavingContract(false);
+    }
+  }, [vendor, contractFile, contractStartDate, contractEndDate, fetchVendor, toast, t]);
+
+  const handleDeleteContract = useCallback(async () => {
+    if (!vendor) return;
+    try {
+      const res = await fetch(`/api/tprm/vendors/${vendor.id}/contract`, { method: "DELETE" });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Contract deleted") });
+        fetchVendor();
+      } else {
+        toast({ title: t("Error"), description: t("Failed to delete"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to delete"), variant: "destructive" });
+    }
+  }, [vendor, fetchVendor, toast, t]);
+
   const handleExport = useCallback(() => {
     if (!vendor) return;
     const lines = [
@@ -326,10 +423,20 @@ export default function VendorDetailPage() {
           }
         }}
         onDelete={(doc) => {
-          if (doc.id !== "contract") handleDeleteDocument(doc.id);
+          if (doc.id === "contract") {
+            handleDeleteContract();
+          } else {
+            handleDeleteDocument(doc.id);
+          }
         }}
         uploading={uploadingDoc}
         t={t}
+        extraAction={vendor.status === "Inactive" ? (
+          <Button size="sm" onClick={openAddContractDialog}>
+            <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+            {t("Add Contract")}
+          </Button>
+        ) : undefined}
       />
 
       {/* Report Library */}
@@ -353,6 +460,120 @@ export default function VendorDetailPage() {
         uploading={uploadingDoc}
         t={t}
       />
+
+      {/* Add Contract Dialog */}
+      <Dialog open={showAddContractDialog} onOpenChange={setShowAddContractDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Add Contract")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Contract Start Date */}
+            <div className="space-y-1.5">
+              <Label>{t("Contract Start Date")} <span className="text-red-500">*</span></Label>
+              <Input
+                type="date"
+                value={contractStartDate}
+                onChange={(e) => { setContractStartDate(e.target.value); setContractErrors((prev) => { const { startDate, ...rest } = prev; return rest; }); }}
+                className={contractErrors.startDate ? "border-red-500" : ""}
+              />
+              {contractErrors.startDate && <p className="text-xs text-red-500">{contractErrors.startDate}</p>}
+            </div>
+
+            {/* Contract End Date */}
+            <div className="space-y-1.5">
+              <Label>{t("Contract End Date")} <span className="text-red-500">*</span></Label>
+              <Input
+                type="date"
+                value={contractEndDate}
+                onChange={(e) => { setContractEndDate(e.target.value); setContractErrors((prev) => { const { endDate, ...rest } = prev; return rest; }); }}
+                className={contractErrors.endDate ? "border-red-500" : ""}
+              />
+              {contractErrors.endDate && <p className="text-xs text-red-500">{contractErrors.endDate}</p>}
+            </div>
+
+            {/* File Drop Zone */}
+            {!contractFile ? (
+              <div>
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  contractErrors.file ? "border-red-400" : dragging ? "border-primary bg-primary/5" : "border-slate-300 hover:border-slate-400"
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleContractFileDrop}
+              >
+                <Upload className="h-8 w-8 text-slate-400 mx-auto mb-3" />
+                <p className="text-sm text-slate-600 mb-1">{t("Drag and drop your contract file here")}</p>
+                <p className="text-xs text-slate-400 mb-3">{t("or")}</p>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setContractFile(file);
+                        setContractErrors((prev) => { const { file: _, ...rest } = prev; return rest; });
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                    <Upload className="h-4 w-4" />
+                    {t("Browse Files")}
+                  </span>
+                </label>
+              </div>
+              {contractErrors.file && <p className="text-xs text-red-500 mt-1.5">{contractErrors.file}</p>}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-3 border rounded-md bg-slate-50">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-4 w-4 text-slate-500 flex-shrink-0" />
+                  <span className="text-sm truncate">{contractFile.name}</span>
+                  <span className="text-xs text-slate-400 flex-shrink-0">
+                    ({(contractFile.size / 1024).toFixed(1)} KB)
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={() => {
+                      const url = URL.createObjectURL(contractFile);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = contractFile.name;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-red-500 hover:text-red-700"
+                    onClick={() => setContractFile(null)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddContractDialog(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleSaveContract} disabled={savingContract}>
+              {savingContract && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              {t("Save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -380,7 +601,7 @@ function ProfileRow({ label, value }: { label: string; value: boolean }) {
 }
 
 function DocumentSection({
-  title, docs, onUpload, onDownload, onDelete, uploading, t,
+  title, docs, onUpload, onDownload, onDelete, uploading, t, extraAction,
 }: {
   title: string;
   docs: DocFile[];
@@ -389,11 +610,13 @@ function DocumentSection({
   onDelete: (doc: DocFile) => void;
   uploading: boolean;
   t: (s: string) => string;
+  extraAction?: React.ReactNode;
 }) {
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-base">{title}</CardTitle>
+        {extraAction}
       </CardHeader>
       <CardContent className="pt-0">
         {docs.length > 0 ? (
@@ -408,11 +631,9 @@ function DocumentSection({
                   <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => onDownload(doc)}>
                     <Download className="h-3.5 w-3.5" />
                   </Button>
-                  {doc.id !== "contract" && (
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-red-500 hover:text-red-700" onClick={() => onDelete(doc)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-red-500 hover:text-red-700" onClick={() => onDelete(doc)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             ))}

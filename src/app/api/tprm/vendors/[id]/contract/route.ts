@@ -74,6 +74,49 @@ export const POST = withAuth<RouteContext>(
   { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
 );
 
+// DELETE /api/tprm/vendors/[id]/contract — Delete contract document
+export const DELETE = withAuth<RouteContext>(
+  async (req: NextRequest, context, session) => {
+    try {
+      const { id } = await context.params;
+      const tenantFilter = getTenantFilter(session);
+
+      const vendor = await prisma.tPRMVendor.findFirst({
+        where: { id, ...tenantFilter },
+        select: { id: true, contractDocumentPath: true },
+      });
+
+      if (!vendor) {
+        return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+      }
+
+      // Delete file from disk
+      if (vendor.contractDocumentPath) {
+        try {
+          await unlink(vendor.contractDocumentPath);
+        } catch {
+          // File may not exist, ignore
+        }
+      }
+
+      // Clear contract fields on vendor
+      await prisma.tPRMVendor.update({
+        where: { id },
+        data: {
+          contractDocumentName: null,
+          contractDocumentPath: null,
+        },
+      });
+
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting contract document:", error);
+      return NextResponse.json({ error: "Failed to delete contract" }, { status: 500 });
+    }
+  },
+  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "delete" }
+);
+
 // GET /api/tprm/vendors/[id]/contract — Download contract document
 export const GET = withAuth<RouteContext>(
   async (req: NextRequest, context, session) => {

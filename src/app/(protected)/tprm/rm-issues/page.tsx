@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Download, Search, X, AlertTriangle, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,7 +93,14 @@ function formatDate(dateStr: string | null): string {
 export default function RMIssuesPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
+
+  // Read initial tab/subtab from URL query params
+  const initialTab = searchParams.get("tab") || "register";
+  const initialViSubTab = searchParams.get("subtab") || "Open";
+
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Data from API
   const [registerEntries, setRegisterEntries] = useState<IssueRegisterEntry[]>([]);
@@ -110,7 +118,7 @@ export default function RMIssuesPage() {
 
   // Vendor Issues filters
   const [viSeverityFilter, setViSeverityFilter] = useState("all");
-  const [viSubTab, setViSubTab] = useState("Open");
+  const [viSubTab, setViSubTab] = useState(initialViSubTab);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -390,7 +398,7 @@ export default function RMIssuesPage() {
       </nav>
       <h1 className="text-2xl font-bold">{t("Issue Management")}</h1>
 
-      <Tabs defaultValue="register">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="register">{t("Issue Register")}</TabsTrigger>
           <TabsTrigger value="remediation">{t("Issue Remediation")}</TabsTrigger>

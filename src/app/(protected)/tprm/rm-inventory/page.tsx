@@ -131,7 +131,7 @@ function VendorAccordionItem({
 }: {
   group: VendorGroup; isExpanded: boolean; onToggle: () => void;
   onExport: (v: Vendor) => void; onInitiateAssessment: (v: Vendor) => void;
-  onReportIssue: () => void; onRowClick: (v: Vendor) => void; t: (s: string) => string;
+  onReportIssue: (group: VendorGroup) => void; onRowClick: (v: Vendor) => void; t: (s: string) => string;
 }) {
   // Use the highest VRR across all engagements for the group header
   const headerVrr = group.vrr;
@@ -151,7 +151,7 @@ function VendorAccordionItem({
             <Button size="sm" variant="default" onClick={() => onExport(group.vendors[0])}>
               <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />{t("Export")}
             </Button>
-            <Button size="sm" variant="outline" onClick={onReportIssue}>
+            <Button size="sm" variant="outline" onClick={() => onReportIssue(group)}>
               <AlertTriangle className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />{t("Report Issue")}
             </Button>
           </div>
@@ -240,6 +240,15 @@ export default function RMInventoryPage() {
   const [questionnaireTemplates, setQuestionnaireTemplates] = useState<QuestionnaireTemplate[]>([]);
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
   const [initiatingAssessment, setInitiatingAssessment] = useState(false);
+
+  // ── Report Issue dialog state ───────────────────
+  const [showReportIssueDialog, setShowReportIssueDialog] = useState(false);
+  const [reportIssueGroup, setReportIssueGroup] = useState<VendorGroup | null>(null);
+  const [reportIssueTitle, setReportIssueTitle] = useState("");
+  const [reportIssueDescription, setReportIssueDescription] = useState("");
+  const [reportIssueSeverity, setReportIssueSeverity] = useState("");
+  const [reportIssueDueDate, setReportIssueDueDate] = useState("");
+  const [reportIssueSaving, setReportIssueSaving] = useState(false);
 
   // ── Config data ────────────────────────────────────
   const [serviceCategories, setServiceCategories] = useState<string[]>(DEFAULT_SERVICE_CATEGORIES);
@@ -713,6 +722,50 @@ export default function RMInventoryPage() {
     );
   };
 
+  // ── Report Issue handlers ─────────────────────────
+  const openReportIssue = (group: VendorGroup) => {
+    setReportIssueGroup(group);
+    setReportIssueTitle("");
+    setReportIssueDescription("");
+    setReportIssueSeverity("");
+    setReportIssueDueDate("");
+    setShowReportIssueDialog(true);
+  };
+
+  const handleReportIssueSubmit = async () => {
+    if (!reportIssueGroup || reportIssueGroup.vendors.length === 0) return;
+    if (!reportIssueTitle.trim()) {
+      toast({ title: t("Error"), description: t("Please enter an issue title"), variant: "destructive" });
+      return;
+    }
+    setReportIssueSaving(true);
+    try {
+      const vendorId = reportIssueGroup.vendors[0].id;
+      const res = await fetch("/api/tprm/rm-issues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vendorId,
+          title: reportIssueTitle.trim(),
+          description: reportIssueDescription.trim() || null,
+          severity: reportIssueSeverity || null,
+          dueDate: reportIssueDueDate || null,
+        }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Issue reported successfully") });
+        setShowReportIssueDialog(false);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: data.error || t("Failed to report issue"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to report issue"), variant: "destructive" });
+    } finally {
+      setReportIssueSaving(false);
+    }
+  };
+
   const openAssessmentForVendor = async (vendor: Vendor) => {
     setCreatedVendorId(vendor.id);
     setCreatedVendorName(vendor.name);
@@ -1055,7 +1108,7 @@ export default function RMInventoryPage() {
                   URL.revokeObjectURL(url);
                 }}
                 onInitiateAssessment={openAssessmentForVendor}
-                onReportIssue={() => router.push("/tprm/rm-issues")}
+                onReportIssue={openReportIssue}
                 onRowClick={(v) => router.push(`/tprm/rm-inventory/${v.id}`)}
                 t={t}
               />
@@ -1381,6 +1434,68 @@ export default function RMInventoryPage() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Issue Dialog */}
+      <Dialog open={showReportIssueDialog} onOpenChange={setShowReportIssueDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Report Issue")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {/* Issue Title */}
+            <div className="space-y-1.5">
+              <Label>{t("Issue Title")} <span className="text-red-500">*</span></Label>
+              <Input
+                value={reportIssueTitle}
+                onChange={(e) => setReportIssueTitle(e.target.value)}
+                placeholder={t("Enter issue title")}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label>{t("Description")}</Label>
+              <Textarea
+                value={reportIssueDescription}
+                onChange={(e) => setReportIssueDescription(e.target.value)}
+                placeholder={t("Describe the issue in detail")}
+                rows={4}
+              />
+            </div>
+
+            {/* Severity */}
+            <div className="space-y-1.5">
+              <Label>{t("Severity")}</Label>
+              <Select value={reportIssueSeverity} onValueChange={setReportIssueSeverity}>
+                <SelectTrigger><SelectValue placeholder={t("Select Severity")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Critical">{t("Critical")}</SelectItem>
+                  <SelectItem value="High">{t("High")}</SelectItem>
+                  <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                  <SelectItem value="Low">{t("Low")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Due Date */}
+            <div className="space-y-1.5">
+              <Label>{t("Due Date")}</Label>
+              <Input
+                type="date"
+                value={reportIssueDueDate}
+                onChange={(e) => setReportIssueDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReportIssueDialog(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleReportIssueSubmit} disabled={reportIssueSaving}>
+              {reportIssueSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              {t("Submit")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

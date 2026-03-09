@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from "@/lib/notification-service";
 
 /**
  * GET /api/tprm/rm-issues — Issue Register for RM
@@ -157,4 +158,77 @@ export const GET = withAuth(
     }
   },
   { resource: "tprm.rm-issues", action: "view" }
+);
+
+// POST /api/tprm/rm-issues — Create a new vendor issue from RM Inventory
+export const POST = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const body = await req.json();
+      const { vendorId, title, description, severity, dueDate } = body;
+
+      if (!vendorId || !title?.trim()) {
+        return NextResponse.json({ error: "Vendor ID and title are required" }, { status: 400 });
+      }
+
+      // Verify vendor belongs to this tenant
+      const vendor = await prisma.tPRMVendor.findFirst({
+        where: { id: vendorId, customerAccountId },
+        select: { id: true, name: true },
+      });
+
+      if (!vendor) {
+        return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+      }
+
+      const issue = await prisma.tPRMVendorIssue.create({
+        data: {
+          customerAccountId,
+          vendorId,
+          title,
+          description: description || null,
+          severity: severity || null,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          status: "Awaiting Response",
+          reportedById: session.id,
+        },
+        include: {
+          vendor: { select: { name: true, vendorCode: true } },
+          reportedBy: { select: { id: true, fullName: true } },
+        },
+      });
+
+      // Notify admins/BO about the new vendor issue
+      const admins = await prisma.user.findMany({
+        where: {
+          customerAccountId,
+          isActive: true,
+          OR: [
+            { role: { in: ["GRCAdministrator", "CustomerAdministrator"] } },
+            { tprmRole: "Business Owner" },
+          ],
+        },
+        select: { id: true },
+        take: 10,
+      });
+
+      if (admins.length > 0 && notificationService.notifyTPRMVendorIssueCreated) {
+        void notificationService.notifyTPRMVendorIssueCreated({
+          customerAccountId,
+          actorId: session.id,
+          recipientIds: admins.map((a) => a.id),
+          issueId: issue.id,
+          issueTitle: title,
+          vendorName: vendor.name,
+        });
+      }
+
+      return NextResponse.json(issue, { status: 201 });
+    } catch (error) {
+      console.error("RM Issues POST error:", error);
+      return NextResponse.json({ error: "Failed to create vendor issue" }, { status: 500 });
+    }
+  },
+  { resource: "tprm.rm-issues", action: "create" }
 );
