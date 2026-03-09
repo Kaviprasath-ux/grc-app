@@ -245,6 +245,8 @@ export const navigation: NavItem[] = [
       { name: "Template", href: "/tprm/asr-template", icon: FileText, permission: "tprm.asr-template:view" },
       { name: "Support", href: "/tprm/asr-support", icon: HelpCircle, permission: "tprm.asr-support:view" },
       { name: "Assessment History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
+      // ---- Internal IT Team menu items ----
+      { name: "Issue Management", href: "/tprm/it-issues", icon: AlertTriangle, permission: "tprm.it-issues:view" },
       // ---- Factory Admin / Factory Assessor menu items ----
       { name: "User Management", href: "/tprm/factory-user-management", icon: Users, permission: "tprm.factory-user-management:view" },
     ],
@@ -395,6 +397,7 @@ const ROLE_PATH_MAP: Record<string, string> = {
   "TPRMAdmin": "tprm-admin",
   "BusinessOwner": "business-owner",
   "RelationshipManager": "relationship-manager",
+  "InternalITTeam": "internal-it-team",
   "AccountManager": "account-manager",
 };
 
@@ -485,6 +488,7 @@ function getPrimaryRole(roles: string[]): string {
     "TPRMAdmin",
     "BusinessOwner",
     "RelationshipManager",
+    "InternalITTeam",
     "AccountManager",
   ];
 
@@ -548,14 +552,15 @@ export function filterNavigationByPermissionsAndRole(
 
   // System roles ignore module flags
   const isSystemRole = userRoles.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'InternalITTeam'
   );
 
   let navItems = items;
 
-  // Factory roles always get flattened TPRM nav (their items should be top-level)
+  // Factory roles and IT roles always get flattened TPRM nav (their items should be top-level)
   const isFactoryRole = userRoles.some(r => r === 'FactoryAdmin' || r === 'FactoryAssessor');
-  if (isFactoryRole) {
+  const isITRole = userRoles.some(r => r === 'InternalITTeam');
+  if (isFactoryRole || isITRole) {
     navItems = flattenTprmNavigation(items);
   }
   // For non-system roles with ONLY TPRM (no GRC), flatten TPRM children to top-level

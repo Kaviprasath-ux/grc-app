@@ -89,6 +89,9 @@ export const RESOURCES = {
   'audit.settings': '/internal-audit/settings',
   'audit.risk-universe': '/internal-audit/risk-universe',
 
+  // TPRM Internal IT Team resources
+  'tprm.it-issues': '/tprm/it-issues',
+
   // TPRM Module (Third-Party Risk Management)
   'tprm.account-overview': '/tprm/account-overview',
   'tprm.assessments': '/tprm/assessments',
@@ -235,6 +238,10 @@ export const ROLES = {
   TPRMAuditor: {
     name: 'TPRMAuditor',
     description: 'Auditor role in TPRM, audits vendor assessments and compliance',
+  },
+  InternalITTeam: {
+    name: 'InternalITTeam',
+    description: 'Internal IT Team role in TPRM, manages IT-assigned issue remediations',
   },
   AccountManager: {
     name: 'AccountManager',
@@ -631,6 +638,11 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
   ],
 
+  // Internal IT Team - IT-assigned issue management
+  InternalITTeam: [
+    { resource: 'tprm.it-issues', actions: ['*'], scope: 'all' },
+  ],
+
   // Account Manager - Vendor-side role with 4 dedicated pages
   AccountManager: [
     { resource: 'tprm.am-assessments', actions: ['*'], scope: 'all' },
@@ -752,7 +764,7 @@ export function expandRolePermissions(
 
   // System-level roles are not filtered by module flags
   const isSystemRole = roleNames.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor' || r === 'AccountManager' || r === 'TPRMSME'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'BusinessOwner' || r === 'RelationshipManager' || r === 'TPRMAssessor' || r === 'TPRMApprover' || r === 'TPRMAuditor' || r === 'AccountManager' || r === 'TPRMSME' || r === 'InternalITTeam'
   );
 
   for (const roleName of roleNames) {

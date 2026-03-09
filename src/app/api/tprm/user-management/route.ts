@@ -171,6 +171,7 @@ export const POST = withAuth(
         'Auditor': 'TPRMAuditor',
         'Account Manager': 'AccountManager',
         'Factory Assessor': 'FactoryAssessor',
+        'Internal IT Team': 'InternalITTeam',
       };
       const systemRoleName = tprmRoleToSystemRole[tprmRole];
       if (systemRoleName) {
@@ -306,6 +307,7 @@ export const PATCH = withAuth(
           'Approver': 'TPRMApprover',
           'Auditor': 'TPRMAuditor',
           'Factory Assessor': 'FactoryAssessor',
+          'Internal IT Team': 'InternalITTeam',
         };
 
         // Remove old TPRM-related system roles

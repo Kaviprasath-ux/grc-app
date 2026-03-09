@@ -29,6 +29,11 @@ export default async function Home() {
     redirect("/tprm/asr-assessment-factory");
   }
 
+  // Redirect InternalITTeam users to IT Issues page
+  if (session?.user?.roles?.includes("InternalITTeam")) {
+    redirect("/tprm/it-issues");
+  }
+
   // Redirect AccountManager and SME users to AM Assessments page
   if (session?.user?.roles?.includes("AccountManager") || session?.user?.roles?.includes("TPRMSME")) {
     redirect("/tprm/am-assessments");
