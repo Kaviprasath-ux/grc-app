@@ -357,7 +357,7 @@ export default function RMIssuesPage() {
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab =
         remSubTab === "Open"
-          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Submitted"].includes(e.status)
+          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Submitted", "Assigned to BO", "Assigned to IT"].includes(e.status)
           : remSubTab === "Assigned to IT"
           ? e.status === "Assigned to IT"
           : remSubTab === "Assigned to BO"
