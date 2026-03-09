@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Send, Loader2,
-  Eye, FileText, ExternalLink,
+  Eye, FileText, ExternalLink, Upload, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +66,8 @@ interface IssueRemediationEntry {
   assessorComment: string | null;
   artifactUrl: string | null;
   artifactName: string | null;
+  itArtifactUrl: string | null;
+  itArtifactName: string | null;
   assignedTo: string | null;
   assignedAt: string | null;
   requestedDate: string | null;
@@ -81,9 +83,9 @@ const STATUS_COLORS: Record<string, string> = {
   Open: "border-blue-300 bg-blue-50 text-blue-700",
   Closed: "border-slate-300 bg-slate-50 text-slate-700",
   "Assigned to IT": "border-indigo-300 bg-indigo-50 text-indigo-700",
-  Submitted: "border-orange-300 bg-orange-50 text-orange-700",
-  Approved: "border-green-300 bg-green-50 text-green-700",
-  Rejected: "border-red-300 bg-red-50 text-red-700",
+  "IT Submitted": "border-orange-300 bg-orange-50 text-orange-700",
+  "IT Approved": "border-green-300 bg-green-50 text-green-700",
+  "Returned to IT": "border-red-300 bg-red-50 text-red-700",
 };
 
 const SEVERITIES = ["High", "Medium", "Low"];
@@ -128,6 +130,11 @@ export default function ITIssuesPage() {
   const [viewRemediation, setViewRemediation] = useState<IssueRemediationEntry | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Submit form state
+  const [submitComment, setSubmitComment] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -157,17 +164,25 @@ export default function ITIssuesPage() {
     if (!viewRemediation) return;
     setActionLoading(true);
     try {
+      const formData = new FormData();
+      formData.append("id", viewRemediation.id);
+      formData.append("action", "submit");
+      if (submitComment.trim()) {
+        formData.append("comment", submitComment.trim());
+      }
+      for (const file of selectedFiles) {
+        formData.append("files", file);
+      }
+
       const res = await fetch("/api/tprm/it-issues", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: viewRemediation.id,
-          action: "submit",
-        }),
+        body: formData,
       });
       if (res.ok) {
         toast({ title: t("Success"), description: t("Response submitted successfully") });
         setViewRemediation(null);
+        setSubmitComment("");
+        setSelectedFiles([]);
         loadData();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -178,7 +193,43 @@ export default function ITIssuesPage() {
     } finally {
       setActionLoading(false);
     }
-  }, [toast, t, loadData, viewRemediation]);
+  }, [toast, t, loadData, viewRemediation, submitComment, selectedFiles]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles(prev => [...prev, ...files]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteITArtifact = useCallback(async (artifactIndex: number) => {
+    if (!viewRemediation) return;
+    try {
+      const res = await fetch(`/api/tprm/it-issues?id=${viewRemediation.id}&artifactIndex=${artifactIndex}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Attachment deleted") });
+        const names = viewRemediation.itArtifactName?.split(", ") || [];
+        const urls = viewRemediation.itArtifactUrl?.split(", ") || [];
+        names.splice(artifactIndex, 1);
+        urls.splice(artifactIndex, 1);
+        setViewRemediation({
+          ...viewRemediation,
+          itArtifactName: names.length > 0 ? names.join(", ") : null,
+          itArtifactUrl: urls.length > 0 ? urls.join(", ") : null,
+        });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: data.error || t("Failed to delete attachment"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to delete attachment"), variant: "destructive" });
+    }
+  }, [viewRemediation, toast, t]);
 
   // ==================== ISSUE REGISTER ====================
 
@@ -277,10 +328,10 @@ export default function ITIssuesPage() {
       const matchesSubTab =
         remSubTab === "Open"
           ? e.status === "Assigned to IT"
+          : remSubTab === "Returned"
+          ? e.status === "Returned to IT"
           : remSubTab === "Approved"
-          ? ["Submitted", "Closed"].includes(e.status)
-          : remSubTab === "Rejected"
-          ? e.status === "Rejected"
+          ? ["IT Submitted", "IT Approved"].includes(e.status)
           : true;
       const matchesDate = !remDateFilter ||
         (e.responseDate && e.responseDate.startsWith(remDateFilter));
@@ -315,6 +366,15 @@ export default function ITIssuesPage() {
       },
     },
     {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => (
+        <Badge variant="outline" className={`${STATUS_COLORS[row.original.status] || ""} text-xs`}>
+          {row.original.status === "Returned to IT" ? t("Returned") : row.original.status === "IT Approved" ? t("Approved") : row.original.status === "IT Submitted" ? t("Submitted") : t(row.original.status)}
+        </Badge>
+      ),
+    },
+    {
       accessorKey: "responseDate",
       header: t("Response Date"),
       cell: ({ row }) => <span className="text-sm">{formatDate(row.original.responseDate || row.original.requestedDate)}</span>,
@@ -328,7 +388,7 @@ export default function ITIssuesPage() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => setViewRemediation(row.original)}>
+        <Button variant="ghost" size="sm" onClick={() => { setViewRemediation(row.original); setSubmitComment(""); setSelectedFiles([]); }}>
           <Eye className="h-4 w-4 text-primary" />
         </Button>
       ),
@@ -337,9 +397,12 @@ export default function ITIssuesPage() {
 
   const remSubTabs = [
     { value: "Open", label: t("Open Issues") },
+    { value: "Returned", label: t("Returned Issues") },
     { value: "Approved", label: t("Approved Issues") },
-    { value: "Rejected", label: t("Rejected Issues") },
   ];
+
+  // Can IT submit on this item?
+  const canSubmit = viewRemediation && (viewRemediation.status === "Assigned to IT" || viewRemediation.status === "Returned to IT");
 
   // ==================== RENDER ====================
 
@@ -479,8 +542,8 @@ export default function ITIssuesPage() {
         </TabsContent>
       </Tabs>
 
-      {/* ==================== REMEDIATION DETAIL DIALOG (same as assessor) ==================== */}
-      <Dialog open={!!viewRemediation} onOpenChange={(open) => { if (!open) setViewRemediation(null); }}>
+      {/* ==================== REMEDIATION DETAIL DIALOG ==================== */}
+      <Dialog open={!!viewRemediation} onOpenChange={(open) => { if (!open) { setViewRemediation(null); setSubmitComment(""); setSelectedFiles([]); } }}>
         <DialogContent className="!max-w-5xl w-[96vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("Remediation")}</DialogTitle>
@@ -518,6 +581,20 @@ export default function ITIssuesPage() {
                 </div>
               )}
 
+              {/* Returned comment (when assessor sends back) */}
+              {viewRemediation.status === "Returned to IT" && viewRemediation.assessorComment && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 border border-red-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      {t("Returned")}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t("Assessor sent this back")}</span>
+                  </div>
+                  <p className="text-sm text-red-900">{viewRemediation.assessorComment}</p>
+                </div>
+              )}
+
               {/* VerifAI Summary */}
               <h5 className="font-semibold text-sm border-b pb-1">{t("VerifAI Summary")}</h5>
               {!viewRemediation.risk && !viewRemediation.recommendation ? (
@@ -529,7 +606,7 @@ export default function ITIssuesPage() {
                     </div>
                   )}
                   <div>
-                    <RemediationComments remediationId={viewRemediation.id} readOnly />
+                    <RemediationComments remediationId={viewRemediation.id} readOnly={!canSubmit} />
                   </div>
                 </div>
               ) : (
@@ -550,7 +627,7 @@ export default function ITIssuesPage() {
                       <Textarea value={viewRemediation.recommendation || ""} readOnly rows={4} className="mt-1 bg-muted/50 text-sm" />
                     </div>
                     <div>
-                      <RemediationComments remediationId={viewRemediation.id} readOnly />
+                      <RemediationComments remediationId={viewRemediation.id} readOnly={!canSubmit} />
                     </div>
                   </div>
                 </>
@@ -564,10 +641,10 @@ export default function ITIssuesPage() {
                     ) : "-"}
                   </div>
                 </div>
-                {/* Supporting Artifacts */}
+                {/* AM Artifacts (read-only) */}
                 {viewRemediation.artifactName && (
                   <div>
-                    <Label className="text-xs font-semibold">{t("Supporting Artifacts")}</Label>
+                    <Label className="text-xs font-semibold">{t("AM Artifacts")}</Label>
                     <div className="mt-2 space-y-1">
                       {viewRemediation.artifactName.split(", ").map((name, idx) => {
                         const urls = viewRemediation.artifactUrl?.split(", ") || [];
@@ -594,17 +671,98 @@ export default function ITIssuesPage() {
                   </div>
                 )}
               </div>
+              {/* IT Artifacts (with delete when submittable) */}
+              {viewRemediation.itArtifactName && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("IT Attachments")}</Label>
+                  <div className="mt-2 space-y-1">
+                    {viewRemediation.itArtifactName.split(", ").map((name, idx) => {
+                      const urls = viewRemediation.itArtifactUrl?.split(", ") || [];
+                      const rawUrl = urls[idx];
+                      const url = rawUrl ? (rawUrl.startsWith("/uploads/") ? `/api${rawUrl}` : rawUrl) : null;
+                      return (
+                        <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-md px-3 py-2 text-sm">
+                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate flex-1">{name}</span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {url && (
+                              <>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title={t("View")} onClick={() => window.open(url, "_blank")}>
+                                  <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                                <a href={url} download={name} title={t("Download")} className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent">
+                                  <Download className="h-3.5 w-3.5 text-primary" />
+                                </a>
+                              </>
+                            )}
+                            {canSubmit && (
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title={t("Delete")} onClick={() => handleDeleteITArtifact(idx)}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* IT Submit section: comment + file upload */}
+              {canSubmit && (
+                <div className="space-y-4 border-t pt-4">
+                  <h5 className="font-semibold text-sm">{t("IT Response")}</h5>
+                  <div>
+                    <Label className="text-xs font-semibold">{t("Comment")}</Label>
+                    <Textarea
+                      value={submitComment}
+                      onChange={(e) => setSubmitComment(e.target.value)}
+                      rows={3}
+                      placeholder={t("Add your response or comment...")}
+                      className="mt-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold">{t("Attachments")}</Label>
+                    <div className="mt-2 space-y-2">
+                      {selectedFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-md px-3 py-2 text-sm">
+                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate flex-1">{file.name}</span>
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
+                            {(file.size / 1024).toFixed(0)} KB
+                          </span>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => removeSelectedFile(idx)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={handleFileSelect}
+                      />
+                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                        {t("Add File")}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter className="flex-wrap gap-2">
-            {viewRemediation?.status === "Assigned to IT" && (
+            {canSubmit && (
               <Button onClick={handleSubmitResponse} disabled={actionLoading} className="bg-green-600 hover:bg-green-700">
                 {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
                 <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Submit Response")}
               </Button>
             )}
-            <Button variant="outline" onClick={() => setViewRemediation(null)}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => { setViewRemediation(null); setSubmitComment(""); setSelectedFiles([]); }}>{t("Cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

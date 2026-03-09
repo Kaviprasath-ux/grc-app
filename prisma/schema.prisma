@@ -3992,6 +3992,8 @@ model TPRMIssueRemediation {
   assessorComment   String?         @db.Text    // Assessor comment when marking unsatisfied
   artifactUrl       String?
   artifactName      String?
+  itArtifactUrl     String?              // Artifacts uploaded by IT Team (separate from AM artifacts)
+  itArtifactName    String?
   requestedDate     DateTime?
   dueDate           DateTime?
   responseDate      DateTime?

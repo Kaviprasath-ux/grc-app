@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { saveUploadedFile } from "@/lib/file-upload";
 
 /**
  * GET /api/tprm/it-issues — Issue data for Internal IT Team
  *
  * Tab 1 (register): Same issue register as RM (vendor-level counts)
- * Tab 2 (remediation): Only issues with status "Assigned to IT"
+ * Tab 2 (remediation): Issues assigned to IT across all statuses
  */
 export const GET = withAuth(
   async (req, context, session) => {
@@ -84,11 +85,10 @@ export const GET = withAuth(
 
       // ==================== TAB 2: ISSUE REMEDIATION ====================
       if (tab === "remediation") {
-        // IT team sees issues assigned to IT status
         const remediations = await prisma.tPRMIssueRemediation.findMany({
           where: {
             customerAccountId,
-            status: { in: ["Assigned to IT", "Submitted", "Closed", "Rejected"] },
+            status: { in: ["Assigned to IT", "IT Submitted", "Returned to IT", "IT Approved"] },
           },
           include: {
             assessment: {
@@ -125,6 +125,8 @@ export const GET = withAuth(
           assessorComment: rem.assessorComment || null,
           artifactUrl: rem.artifactUrl || null,
           artifactName: rem.artifactName || null,
+          itArtifactUrl: rem.itArtifactUrl || null,
+          itArtifactName: rem.itArtifactName || null,
           assignedTo: rem.assignedToUser?.fullName || null,
           assignedAt: rem.assignedAt?.toISOString() || null,
           requestedDate: rem.requestedDate?.toISOString() || null,
@@ -153,13 +155,15 @@ export const GET = withAuth(
   { resource: "tprm.it-issues", action: "view" }
 );
 
-// PATCH /api/tprm/it-issues — IT team actions on remediations (submit response, add comment)
+// PATCH /api/tprm/it-issues — IT team actions (submit response with comment + attachments)
 export const PATCH = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
-      const body = await req.json();
-      const { id, action, comment, amResponse, artifactUrl, artifactName } = body;
+      const formData = await req.formData();
+      const id = formData.get("id") as string;
+      const action = formData.get("action") as string;
+      const comment = formData.get("comment") as string;
 
       if (!id) {
         return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -174,7 +178,7 @@ export const PATCH = withAuth(
       }
 
       // Add comment if provided
-      if (comment && typeof comment === "string" && comment.trim()) {
+      if (comment && comment.trim()) {
         await prisma.tPRMRemediationComment.create({
           data: {
             remediationId: id,
@@ -186,15 +190,34 @@ export const PATCH = withAuth(
       }
 
       if (action === "submit") {
-        // IT submits their response back to assessor
+        // Handle file uploads — IT artifacts stored separately
+        const files = formData.getAll("files");
+        let itArtifactUrl: string | null = remediation.itArtifactUrl;
+        let itArtifactName: string | null = remediation.itArtifactName;
+
+        if (files && files.length > 0) {
+          const existingNames = itArtifactName ? itArtifactName.split(", ") : [];
+          const existingUrls = itArtifactUrl ? itArtifactUrl.split(", ") : [];
+          for (const file of files) {
+            if (file instanceof File) {
+              const subDir = `tprm/remediations/${id}`;
+              const { urlPath } = await saveUploadedFile(file, subDir);
+              existingNames.push(file.name);
+              existingUrls.push(urlPath);
+            }
+          }
+          itArtifactName = existingNames.join(", ");
+          itArtifactUrl = existingUrls.join(", ");
+        }
+
         const updated = await prisma.tPRMIssueRemediation.update({
           where: { id },
           data: {
-            status: "Submitted",
-            amResponse: amResponse || null,
+            status: "IT Submitted",
             responseDate: new Date(),
-            ...(artifactUrl ? { artifactUrl, artifactName: artifactName || null } : {}),
             ...(comment ? { amComment: comment } : {}),
+            ...(itArtifactName !== null ? { itArtifactName } : {}),
+            ...(itArtifactUrl !== null ? { itArtifactUrl } : {}),
           },
         });
         return NextResponse.json(updated);
@@ -205,6 +228,59 @@ export const PATCH = withAuth(
     } catch (error) {
       console.error("IT Issues PATCH error:", error);
       return NextResponse.json({ error: "Failed to update remediation" }, { status: 500 });
+    }
+  },
+  { resource: "tprm.it-issues", action: "edit" }
+);
+
+// DELETE /api/tprm/it-issues?id=xxx&artifactIndex=0 — Remove an artifact (only when Returned to IT)
+export const DELETE = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const { searchParams } = new URL(req.url);
+      const id = searchParams.get("id");
+      const artifactIndex = parseInt(searchParams.get("artifactIndex") || "-1");
+
+      if (!id || artifactIndex < 0) {
+        return NextResponse.json({ error: "ID and artifactIndex are required" }, { status: 400 });
+      }
+
+      const remediation = await prisma.tPRMIssueRemediation.findFirst({
+        where: { id, customerAccountId },
+      });
+
+      if (!remediation) {
+        return NextResponse.json({ error: "Remediation not found" }, { status: 404 });
+      }
+
+      if (remediation.status !== "Returned to IT" && remediation.status !== "Assigned to IT") {
+        return NextResponse.json({ error: "Can only delete artifacts on returned or assigned issues" }, { status: 400 });
+      }
+
+      // Only delete from IT-uploaded artifacts, not AM artifacts
+      const names = remediation.itArtifactName?.split(", ") || [];
+      const urls = remediation.itArtifactUrl?.split(", ") || [];
+
+      if (artifactIndex >= names.length) {
+        return NextResponse.json({ error: "Artifact index out of range" }, { status: 400 });
+      }
+
+      names.splice(artifactIndex, 1);
+      urls.splice(artifactIndex, 1);
+
+      const updated = await prisma.tPRMIssueRemediation.update({
+        where: { id },
+        data: {
+          itArtifactName: names.length > 0 ? names.join(", ") : null,
+          itArtifactUrl: urls.length > 0 ? urls.join(", ") : null,
+        },
+      });
+
+      return NextResponse.json(updated);
+    } catch (error) {
+      console.error("IT Issues DELETE error:", error);
+      return NextResponse.json({ error: "Failed to delete artifact" }, { status: 500 });
     }
   },
   { resource: "tprm.it-issues", action: "edit" }

@@ -74,10 +74,12 @@ export const GET = withAuth(
           assessorComment: r.assessorComment || null,
           artifactUrl: r.artifactUrl || null,
           artifactName: r.artifactName || null,
+          itArtifactUrl: r.itArtifactUrl || null,
+          itArtifactName: r.itArtifactName || null,
           returnedAt: r.returnedAt?.toISOString() || null,
           responseDate: r.responseDate?.toISOString() || r.requestedDate?.toISOString() || null,
           dueDate: r.dueDate?.toISOString() || null,
-          reassignStatus: r.status === "Assigned to BO" ? "Assigned to BO" : r.status === "Assigned to IT" ? "Assigned to IT" : "Not Assigned",
+          reassignStatus: r.status === "Assigned to BO" ? "Assigned to BO" : (r.status === "Assigned to IT" || r.status === "IT Submitted") ? "Assigned to IT" : "Not Assigned",
           status: r.status === "Submitted" ? "Received" : r.status || "Pending",
         }));
 
@@ -151,6 +153,18 @@ export const PATCH = withAuth(
             assignedAt: new Date(),
           };
           break;
+        case "approve-it":
+          // Assessor approves IT submission
+          updateData = { status: "IT Approved" };
+          break;
+        case "return-to-it":
+          // Assessor sends back to IT with comment
+          updateData = {
+            status: "Returned to IT",
+            returnedAt: new Date(),
+            ...(comment ? { assessorComment: comment } : {}),
+          };
+          break;
         default:
           return NextResponse.json({ error: "Invalid action" }, { status: 400 });
       }
@@ -160,8 +174,8 @@ export const PATCH = withAuth(
         data: updateData,
       });
 
-      // Also save the unsatisfied comment as a chat-style remediation comment
-      if (action === "unsatisfied" && comment?.trim()) {
+      // Also save the unsatisfied / return-to-it comment as a chat-style remediation comment
+      if ((action === "unsatisfied" || action === "return-to-it") && comment?.trim()) {
         const roles = session.roles || [];
         let userRole = "Assessor";
         if (roles.some((r: string) => r.includes("Approver"))) userRole = "Approver";

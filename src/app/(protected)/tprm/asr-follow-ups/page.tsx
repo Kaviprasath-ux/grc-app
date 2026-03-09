@@ -53,6 +53,8 @@ interface RemediationItem {
   assessorComment: string | null;
   artifactUrl: string | null;
   artifactName: string | null;
+  itArtifactUrl: string | null;
+  itArtifactName: string | null;
   returnedAt: string | null;
   responseDate: string | null;
   dueDate: string | null;
@@ -97,6 +99,9 @@ export default function AsrFollowUpsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showUnsatisfiedComment, setShowUnsatisfiedComment] = useState(false);
   const [unsatisfiedComment, setUnsatisfiedComment] = useState("");
+  // Send back to IT flow
+  const [showReturnToITComment, setShowReturnToITComment] = useState(false);
+  const [returnToITComment, setReturnToITComment] = useState("");
   // Reassign flow (Send to Business / Reassign to IT): step 1 = comment, step 2 = select RM
   const [reassignStep, setReassignStep] = useState<0 | 1 | 2>(0);
   const [reassignAction, setReassignAction] = useState<"send-to-business" | "reassign-to-it">("send-to-business");
@@ -117,6 +122,15 @@ export default function AsrFollowUpsPage() {
       toast({ title: t("Required"), description: t("Please add a remediation comment"), variant: "destructive" });
       return;
     }
+    // Return to IT requires a comment
+    if (action === "return-to-it" && !showReturnToITComment) {
+      setShowReturnToITComment(true);
+      return;
+    }
+    if (action === "return-to-it" && !returnToITComment.trim()) {
+      toast({ title: t("Required"), description: t("Please add a comment for sending back"), variant: "destructive" });
+      return;
+    }
     // "Send to Business" and "Reassign to IT" trigger the multi-step dialog
     // Close main dialog first to avoid overlapping Radix dialogs
     if (action === "send-to-business" || action === "reassign-to-it") {
@@ -133,6 +147,9 @@ export default function AsrFollowUpsPage() {
       if (action === "unsatisfied" && unsatisfiedComment.trim()) {
         body.comment = unsatisfiedComment;
       }
+      if (action === "return-to-it" && returnToITComment.trim()) {
+        body.comment = returnToITComment;
+      }
       const res = await fetch("/api/tprm/asr-follow-ups", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -143,6 +160,8 @@ export default function AsrFollowUpsPage() {
       setViewRemediation(null);
       setShowUnsatisfiedComment(false);
       setUnsatisfiedComment("");
+      setShowReturnToITComment(false);
+      setReturnToITComment("");
       fetchData();
     } catch {
       toast({ title: t("Error"), description: t("Failed to update remediation"), variant: "destructive" });
@@ -257,7 +276,7 @@ export default function AsrFollowUpsPage() {
     let data = remediations;
     if (remSubTab === "received") data = data.filter((r) => r.status === "Received");
     else if (remSubTab === "business") data = data.filter((r) => r.status === "Assigned to BO");
-    else if (remSubTab === "it") data = data.filter((r) => r.status === "Assigned to IT");
+    else if (remSubTab === "it") data = data.filter((r) => r.status === "Assigned to IT" || r.status === "IT Submitted");
     else if (remSubTab === "awaiting") data = data.filter((r) => r.status === "Pending");
     else if (remSubTab === "vendor-issues") data = data.filter((r) => r.status === "Vendor Issue");
     else if (remSubTab === "closed") data = data.filter((r) => r.status === "Closed");
@@ -487,7 +506,7 @@ export default function AsrFollowUpsPage() {
       </Tabs>
 
       {/* Remediation View Dialog */}
-      <Dialog open={!!viewRemediation} onOpenChange={(open) => { if (!open) { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); } }}>
+      <Dialog open={!!viewRemediation} onOpenChange={(open) => { if (!open) { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); setShowReturnToITComment(false); setReturnToITComment(""); } }}>
         <DialogContent className="!max-w-5xl w-[96vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("Remediation")}</DialogTitle>
@@ -609,6 +628,35 @@ export default function AsrFollowUpsPage() {
                   </div>
                 )}
               </div>
+              {/* IT Attachments */}
+              {viewRemediation.itArtifactName && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("IT Attachments")}</Label>
+                  <div className="mt-2 space-y-1">
+                    {viewRemediation.itArtifactName.split(", ").map((name, idx) => {
+                      const urls = viewRemediation.itArtifactUrl?.split(", ") || [];
+                      const rawUrl = urls[idx];
+                      const url = rawUrl ? (rawUrl.startsWith("/uploads/") ? `/api${rawUrl}` : rawUrl) : null;
+                      return (
+                        <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-md px-3 py-2 text-sm">
+                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate flex-1">{name}</span>
+                          {url && (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title={t("View")} onClick={() => window.open(url, "_blank")}>
+                                <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                              </Button>
+                              <a href={url} download={name} title={t("Download")} className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent">
+                                <Download className="h-3.5 w-3.5 text-primary" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {/* Unsatisfied comment box */}
@@ -620,6 +668,19 @@ export default function AsrFollowUpsPage() {
                 onChange={e => setUnsatisfiedComment(e.target.value)}
                 rows={3}
                 placeholder={t("Explain why the response is unsatisfactory...")}
+                className="text-sm"
+              />
+            </div>
+          )}
+          {/* Return to IT comment box */}
+          {showReturnToITComment && (
+            <div className="w-full space-y-2 border-t pt-4">
+              <Label className="text-sm font-semibold">{t("Send Back Comment")}</Label>
+              <Textarea
+                value={returnToITComment}
+                onChange={e => setReturnToITComment(e.target.value)}
+                rows={3}
+                placeholder={t("Explain why this is being sent back to IT...")}
                 className="text-sm"
               />
             </div>
@@ -643,7 +704,20 @@ export default function AsrFollowUpsPage() {
                 </Button>
               </>
             )}
-            <Button variant="outline" onClick={() => { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); }}>{t("Cancel")}</Button>
+            {/* IT Submitted items: Approve / Send Back */}
+            {viewRemediation?.status === "IT Submitted" && (
+              <>
+                <Button onClick={() => handleRemediationAction("approve-it", t("Approved"))} disabled={actionLoading} className="bg-green-600 hover:bg-green-700">
+                  {actionLoading && !showReturnToITComment && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+                  {t("Approve")}
+                </Button>
+                <Button onClick={() => handleRemediationAction("return-to-it", t("Returned to IT"))} disabled={actionLoading} variant="destructive">
+                  {actionLoading && showReturnToITComment && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+                  {showReturnToITComment ? t("Confirm Send Back") : t("Send Back")}
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={() => { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); setShowReturnToITComment(false); setReturnToITComment(""); }}>{t("Cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

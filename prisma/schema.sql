@@ -2917,6 +2917,8 @@ CREATE TABLE "TPRMIssueRemediation" (
     "assessorComment" TEXT,
     "artifactUrl" TEXT,
     "artifactName" TEXT,
+    "itArtifactUrl" TEXT,
+    "itArtifactName" TEXT,
     "requestedDate" TIMESTAMP(3),
     "dueDate" TIMESTAMP(3),
     "responseDate" TIMESTAMP(3),
