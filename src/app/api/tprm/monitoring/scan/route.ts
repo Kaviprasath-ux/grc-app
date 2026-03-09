@@ -20,7 +20,7 @@ async function saveResponseJson(vendorName: string, data: unknown) {
 }
 
 const SCANNING_API_URL =
-  process.env.SCANNING_API_URL ||
+  process.env.SCORECARD_API_URL ||
   "https://a4t2jogsl4815o-7000.proxy.runpod.net";
 
 // ==================== TYPES ====================
