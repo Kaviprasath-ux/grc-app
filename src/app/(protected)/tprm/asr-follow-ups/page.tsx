@@ -97,8 +97,9 @@ export default function AsrFollowUpsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showUnsatisfiedComment, setShowUnsatisfiedComment] = useState(false);
   const [unsatisfiedComment, setUnsatisfiedComment] = useState("");
-  // Send to Business flow: step 1 = reassign comment, step 2 = select RM
-  const [sendToBusinessStep, setSendToBusinessStep] = useState<0 | 1 | 2>(0);
+  // Reassign flow (Send to Business / Reassign to IT): step 1 = comment, step 2 = select RM
+  const [reassignStep, setReassignStep] = useState<0 | 1 | 2>(0);
+  const [reassignAction, setReassignAction] = useState<"send-to-business" | "reassign-to-it">("send-to-business");
   const [reassignComment, setReassignComment] = useState("");
   const [rmUsers, setRmUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
   const [selectedRmId, setSelectedRmId] = useState("");
@@ -114,9 +115,10 @@ export default function AsrFollowUpsPage() {
       toast({ title: t("Required"), description: t("Please add a remediation comment"), variant: "destructive" });
       return;
     }
-    // "Send to Business" triggers the multi-step dialog instead
-    if (action === "send-to-business") {
-      setSendToBusinessStep(1);
+    // "Send to Business" and "Reassign to IT" trigger the multi-step dialog
+    if (action === "send-to-business" || action === "reassign-to-it") {
+      setReassignAction(action as "send-to-business" | "reassign-to-it");
+      setReassignStep(1);
       setReassignComment("");
       return;
     }
@@ -157,7 +159,7 @@ export default function AsrFollowUpsPage() {
       const json = await res.json();
       setRmUsers(json.data || []);
       setSelectedRmId("");
-      setSendToBusinessStep(2);
+      setReassignStep(2);
     } catch {
       toast({ title: t("Error"), description: t("Failed to load RM users"), variant: "destructive" });
     } finally {
@@ -178,14 +180,15 @@ export default function AsrFollowUpsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: viewRemediation.id,
-          action: "send-to-business",
+          action: reassignAction,
           comment: reassignComment,
           assignedToUserId: selectedRmId,
         }),
       });
       if (!res.ok) throw new Error("Failed");
-      toast({ title: t("Success"), description: t("Issue assigned to RM successfully") });
-      setSendToBusinessStep(0);
+      const label = reassignAction === "send-to-business" ? t("Business") : t("IT");
+      toast({ title: t("Success"), description: `${t("Issue assigned to RM for")} ${label}` });
+      setReassignStep(0);
       setReassignComment("");
       setSelectedRmId("");
       setViewRemediation(null);
@@ -638,11 +641,13 @@ export default function AsrFollowUpsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Send to Business — Step 1: Reassign Comment */}
-      <Dialog open={sendToBusinessStep === 1} onOpenChange={(open) => { if (!open) setSendToBusinessStep(0); }}>
+      {/* Reassign — Step 1: Comment */}
+      <Dialog open={reassignStep === 1} onOpenChange={(open) => { if (!open) setReassignStep(0); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("Reassign Comment")}</DialogTitle>
+            <DialogTitle>
+              {reassignAction === "send-to-business" ? t("Send to Business") : t("Reassign to IT")} — {t("Comment")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Label className="text-sm">{t("Add a comment for this reassignment")}</Label>
@@ -655,7 +660,7 @@ export default function AsrFollowUpsPage() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSendToBusinessStep(0)}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => setReassignStep(0)}>{t("Cancel")}</Button>
             <Button onClick={handleReassignCommentSave} disabled={rmLoading}>
               {rmLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
               {t("Save")}
@@ -664,8 +669,8 @@ export default function AsrFollowUpsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Send to Business — Step 2: Select RM */}
-      <Dialog open={sendToBusinessStep === 2} onOpenChange={(open) => { if (!open) setSendToBusinessStep(0); }}>
+      {/* Reassign — Step 2: Select RM */}
+      <Dialog open={reassignStep === 2} onOpenChange={(open) => { if (!open) setReassignStep(0); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Assign to Relationship Manager")}</DialogTitle>
@@ -706,7 +711,7 @@ export default function AsrFollowUpsPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSendToBusinessStep(1)}>{t("Back")}</Button>
+            <Button variant="outline" onClick={() => setReassignStep(1)}>{t("Back")}</Button>
             <Button onClick={handleAssignToRM} disabled={actionLoading || !selectedRmId}>
               {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
               {t("Assign")}

@@ -141,7 +141,15 @@ export const PATCH = withAuth(
           };
           break;
         case "reassign-to-it":
-          updateData = { status: "Assigned to IT" };
+          if (!assignedToUserId) {
+            return NextResponse.json({ error: "Assigned RM user is required" }, { status: 400 });
+          }
+          updateData = {
+            status: "Assigned to IT",
+            reassignComment: comment || null,
+            assignedToUserId,
+            assignedAt: new Date(),
+          };
           break;
         default:
           return NextResponse.json({ error: "Invalid action" }, { status: 400 });
