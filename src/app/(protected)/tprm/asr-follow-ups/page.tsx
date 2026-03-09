@@ -104,6 +104,8 @@ export default function AsrFollowUpsPage() {
   const [rmUsers, setRmUsers] = useState<{ id: string; fullName: string; email: string }[]>([]);
   const [selectedRmId, setSelectedRmId] = useState("");
   const [rmLoading, setRmLoading] = useState(false);
+  // Keep remediation ID when main dialog closes for send-to-business flow
+  const [assigningRemediationId, setAssigningRemediationId] = useState<string | null>(null);
 
   const handleRemediationAction = async (action: string, label: string) => {
     if (!viewRemediation) return;
@@ -116,7 +118,10 @@ export default function AsrFollowUpsPage() {
       return;
     }
     // "Send to Business" and "Reassign to IT" trigger the multi-step dialog
+    // Close main dialog first to avoid overlapping Radix dialogs
     if (action === "send-to-business" || action === "reassign-to-it") {
+      setAssigningRemediationId(viewRemediation.id);
+      setViewRemediation(null);
       setReassignAction(action as "send-to-business" | "reassign-to-it");
       setReassignStep(1);
       setReassignComment("");
@@ -169,7 +174,7 @@ export default function AsrFollowUpsPage() {
 
   // Step 2: assign to selected RM
   const handleAssignToRM = async () => {
-    if (!viewRemediation || !selectedRmId) {
+    if (!assigningRemediationId || !selectedRmId) {
       toast({ title: t("Required"), description: t("Please select an RM user"), variant: "destructive" });
       return;
     }
@@ -179,7 +184,7 @@ export default function AsrFollowUpsPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: viewRemediation.id,
+          id: assigningRemediationId,
           action: reassignAction,
           comment: reassignComment,
           assignedToUserId: selectedRmId,
@@ -191,6 +196,7 @@ export default function AsrFollowUpsPage() {
       setReassignStep(0);
       setReassignComment("");
       setSelectedRmId("");
+      setAssigningRemediationId(null);
       setViewRemediation(null);
       fetchData();
     } catch {
@@ -642,7 +648,7 @@ export default function AsrFollowUpsPage() {
       </Dialog>
 
       {/* Reassign — Step 1: Comment */}
-      <Dialog open={reassignStep === 1} onOpenChange={(open) => { if (!open) setReassignStep(0); }}>
+      <Dialog open={reassignStep === 1} onOpenChange={(open) => { if (!open) { setReassignStep(0); setAssigningRemediationId(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
@@ -660,7 +666,7 @@ export default function AsrFollowUpsPage() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReassignStep(0)}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => { setReassignStep(0); setAssigningRemediationId(null); }}>{t("Cancel")}</Button>
             <Button onClick={handleReassignCommentSave} disabled={rmLoading}>
               {rmLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
               {t("Save")}
@@ -670,7 +676,7 @@ export default function AsrFollowUpsPage() {
       </Dialog>
 
       {/* Reassign — Step 2: Select RM */}
-      <Dialog open={reassignStep === 2} onOpenChange={(open) => { if (!open) setReassignStep(0); }}>
+      <Dialog open={reassignStep === 2} onOpenChange={(open) => { if (!open) { setReassignStep(0); setAssigningRemediationId(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Assign to Relationship Manager")}</DialogTitle>

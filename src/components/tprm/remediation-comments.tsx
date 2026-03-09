@@ -105,11 +105,11 @@ export function RemediationComments({ remediationId, readOnly = false }: Remedia
           comments.map(c => (
             <div key={c.id} className="flex gap-2">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
-                {c.user.fullName?.charAt(0)?.toUpperCase() || "?"}
+                {c.user?.fullName?.charAt(0)?.toUpperCase() || "?"}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium">{c.user.fullName}</span>
+                  <span className="text-sm font-medium">{c.user?.fullName || "Unknown"}</span>
                   {c.userRole && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${ROLE_COLORS[c.userRole] || ROLE_COLORS["User"]}`}>
                       {c.userRole}
