@@ -197,7 +197,6 @@ export const POST = withAuth(
         },
         include: {
           department: true,
-          control: true,
           policy: true,
           risk: true,
           framework: true,

@@ -157,6 +157,17 @@ export const POST = withAuth(
           });
 
         if (issueData.length > 0) {
+          // Remove duplicates: skip if remediation already exists for this assessment+questionNo
+          const existingRems = await prisma.tPRMIssueRemediation.findMany({
+            where: { customerAccountId, assessmentId: id },
+            select: { questionNo: true },
+          });
+          const existingQNos = new Set(existingRems.map(r => r.questionNo));
+          const newIssueData = issueData.filter(d => !existingQNos.has(d.questionNo));
+
+          if (newIssueData.length === 0) {
+            console.log(`[ASR] All ${issueData.length} remediations already exist for assessment ${id}, skipping`);
+          } else {
           // Get the last issue code number for this customer
           const lastIssue = await prisma.tPRMIssueRemediation.findFirst({
             where: { customerAccountId },
@@ -168,12 +179,13 @@ export const POST = withAuth(
             const match = lastIssue.issueCode.match(/ISS-(\d+)/);
             if (match) nextNum = parseInt(match[1]) + 1;
           }
-          for (const data of issueData) {
+          for (const data of newIssueData) {
             const issueCode = `ISS-${String(nextNum).padStart(3, '0')}`;
             await prisma.tPRMIssueRemediation.create({ data: { ...data, issueCode } });
             nextNum++;
           }
-          console.log(`[ASR] Created ${issueData.length} issue remediations for assessment ${id}`);
+          console.log(`[ASR] Created ${newIssueData.length} issue remediations for assessment ${id}`);
+          }
         }
       }
 

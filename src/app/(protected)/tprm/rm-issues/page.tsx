@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Send, Loader2,
-  Eye, FileText, ExternalLink,
+  Eye, FileText, ExternalLink, ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,21 @@ interface IssueRegisterEntry {
   low: number;
   total: number;
   status: string;
+}
+
+interface VendorRiskIssue {
+  id: string;
+  remediationId: string | null;
+  domain: string | null;
+  severity: string;
+  issue: string | null;
+  risk: string | null;
+  recommendation: string | null;
+  assessmentCode: string | null;
+  dueDate: string | null;
+  status: string;
+  issueCode: string;
+  questionNo: string | null;
 }
 
 interface RemediationComment {
@@ -118,7 +133,11 @@ const STATUS_COLORS: Record<string, string> = {
   Pending: "border-yellow-300 bg-yellow-50 text-yellow-700",
   "Assigned to BO": "border-blue-300 bg-blue-50 text-blue-700",
   "Assigned to IT": "border-indigo-300 bg-indigo-50 text-indigo-700",
+  "IT Submitted": "border-teal-300 bg-teal-50 text-teal-700",
+  "IT Approved": "border-emerald-300 bg-emerald-50 text-emerald-700",
+  "Returned to IT": "border-rose-300 bg-rose-50 text-rose-700",
   Submitted: "border-orange-300 bg-orange-50 text-orange-700",
+  Overdue: "border-red-300 bg-red-50 text-red-700",
 };
 
 const SEVERITIES = ["High", "Medium", "Low"];
@@ -159,6 +178,13 @@ export default function RMIssuesPage() {
   // Issue Register filters
   const [regVendorSearch, setRegVendorSearch] = useState("");
   const [regStatusFilter, setRegStatusFilter] = useState("all");
+
+  // Vendor risk register drill-down
+  const [selectedVendor, setSelectedVendor] = useState<{ id: string; name: string } | null>(null);
+  const [vendorRiskIssues, setVendorRiskIssues] = useState<VendorRiskIssue[]>([]);
+  const [vendorRiskLoading, setVendorRiskLoading] = useState(false);
+  const [riskDomainSearch, setRiskDomainSearch] = useState("");
+  const [viewIssueDetail, setViewIssueDetail] = useState<VendorRiskIssue | null>(null);
 
   // Issue Remediation filters
   const [remSearch, setRemSearch] = useState("");
@@ -204,6 +230,23 @@ export default function RMIssuesPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const loadVendorRiskIssues = useCallback(async (vendorId: string, vendorName: string) => {
+    setSelectedVendor({ id: vendorId, name: vendorName });
+    setVendorRiskLoading(true);
+    setRiskDomainSearch("");
+    try {
+      const res = await fetch(`/api/tprm/rm-issues?tab=register-detail&vendorId=${vendorId}`);
+      if (res.ok) {
+        const json = await res.json();
+        setVendorRiskIssues(json.data || []);
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to load vendor issues"), variant: "destructive" });
+    } finally {
+      setVendorRiskLoading(false);
+    }
+  }, [toast, t]);
+
   const handleAssign = useCallback(async (remediationId: string, assignTo: string) => {
     setActionLoading(true);
     try {
@@ -247,7 +290,14 @@ export default function RMIssuesPage() {
     {
       accessorKey: "vendorName",
       header: t("Vendor Name"),
-      cell: ({ row }) => <span className="font-medium text-sm">{row.original.vendorName}</span>,
+      cell: ({ row }) => (
+        <button
+          className="font-medium text-sm text-primary hover:underline cursor-pointer"
+          onClick={() => loadVendorRiskIssues(row.original.id, row.original.vendorName)}
+        >
+          {row.original.vendorName}
+        </button>
+      ),
     },
     {
       accessorKey: "vendorCode",
@@ -472,46 +522,141 @@ export default function RMIssuesPage() {
 
         {/* ==================== TAB 1: ISSUE REGISTER ==================== */}
         <TabsContent value="register" className="space-y-4 mt-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t("Search")}
-                value={regVendorSearch}
-                onChange={(e) => setRegVendorSearch(e.target.value)}
-                className="pl-9"
-              />
-              {regVendorSearch && (
-                <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRegVendorSearch("")}>
-                  <X className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
-              )}
-            </div>
-            <Select value={regStatusFilter} onValueChange={setRegStatusFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder={t("Status")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("All Statuses")}</SelectItem>
-                {["Open", "Closed"].map((s) => (
-                  <SelectItem key={s} value={s}>{t(s)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="ltr:ml-auto rtl:mr-auto">
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
-              </Button>
-            </div>
-          </div>
+          {selectedVendor ? (
+            /* ---- Vendor Risk Register Drill-down ---- */
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <Button variant="outline" size="sm" onClick={() => { setSelectedVendor(null); setVendorRiskIssues([]); }}>
+                  <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                  {t("Back")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const headers = ["Domain", "Severity", "Issue", "Risk", "Assessment ID", "Due Date", "Status"];
+                  const rows = vendorRiskIssues.map((i) => [
+                    i.domain || "", i.severity, (i.issue || "").replace(/,/g, ";"), (i.risk || "").replace(/,/g, ";"),
+                    i.assessmentCode || "", i.dueDate ? new Date(i.dueDate).toLocaleDateString() : "", i.status,
+                  ]);
+                  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a"); a.href = url; a.download = `risk-register-${selectedVendor.name}.csv`; a.click();
+                  URL.revokeObjectURL(url);
+                }}>
+                  <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
+                </Button>
+              </div>
 
-          {filteredRegister.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-40" />
-              <p>{t("No issues found")}</p>
-            </div>
+              <h2 className="text-xl font-bold">{t("Risk Register For")} {selectedVendor.name}</h2>
+
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t("Search Domain")}
+                  value={riskDomainSearch}
+                  onChange={(e) => setRiskDomainSearch(e.target.value)}
+                  className="pl-9"
+                />
+                {riskDomainSearch && (
+                  <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRiskDomainSearch("")}>
+                    <X className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                )}
+              </div>
+
+              {vendorRiskLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (() => {
+                const filteredRisk = vendorRiskIssues.filter((i) =>
+                  !riskDomainSearch || (i.domain && i.domain.toLowerCase().includes(riskDomainSearch.toLowerCase()))
+                );
+                return filteredRisk.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                    <p>{t("No issues found")}</p>
+                  </div>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-[1fr_100px_1.5fr_1.5fr_120px_100px_100px] bg-muted/50 border-b px-4 py-2.5 text-xs font-semibold text-muted-foreground">
+                      <span>{t("Domain")}</span>
+                      <span>{t("Severity")}</span>
+                      <span>{t("Issue")}</span>
+                      <span>{t("Risk")}</span>
+                      <span>{t("Assessment ID")}</span>
+                      <span>{t("Due Date")}</span>
+                      <span>{t("Status")}</span>
+                    </div>
+                    <div className="divide-y">
+                      {filteredRisk.map((issue) => (
+                        <div key={issue.id} className="grid grid-cols-[1fr_100px_1.5fr_1.5fr_120px_100px_100px] px-4 py-3 text-sm items-start gap-y-1">
+                          <span className="text-primary font-medium">{issue.domain || "-"}</span>
+                          <span>
+                            <Badge variant={getSeverityVariant(issue.severity)} className="text-xs">{t(issue.severity)}</Badge>
+                          </span>
+                          <span className="text-muted-foreground line-clamp-2">{issue.issue || "-"}</span>
+                          <span className="text-muted-foreground line-clamp-2">{issue.risk || "-"}</span>
+                          <span className="font-mono text-xs">{issue.assessmentCode || "-"}</span>
+                          <span>{formatDate(issue.dueDate)}</span>
+                          <span>
+                            <button onClick={() => setViewIssueDetail(issue)}>
+                              <Badge variant="outline" className={`${STATUS_COLORS[issue.status] || ""} text-xs font-medium cursor-pointer hover:opacity-80`}>
+                                {t(issue.status)}
+                              </Badge>
+                            </button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
           ) : (
-            <DataGrid columns={registerColumns} data={filteredRegister} hideSearch />
+            /* ---- Main Issue Register Table ---- */
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={t("Search")}
+                    value={regVendorSearch}
+                    onChange={(e) => setRegVendorSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                  {regVendorSearch && (
+                    <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRegVendorSearch("")}>
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                <Select value={regStatusFilter} onValueChange={setRegStatusFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder={t("Status")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                    {["Open", "Overdue", "Closed"].map((s) => (
+                      <SelectItem key={s} value={s}>{t(s)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="ltr:ml-auto rtl:mr-auto">
+                  <Button variant="outline" size="sm" onClick={handleExport}>
+                    <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
+                  </Button>
+                </div>
+              </div>
+
+              {filteredRegister.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p>{t("No issues found")}</p>
+                </div>
+              ) : (
+                <DataGrid columns={registerColumns} data={filteredRegister} hideSearch />
+              )}
+            </>
           )}
         </TabsContent>
 
@@ -754,6 +899,60 @@ export default function RMIssuesPage() {
               </>
             )}
             <Button variant="outline" onClick={() => setViewRemediation(null)}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== ISSUE REGISTER DETAILS DIALOG ==================== */}
+      <Dialog open={!!viewIssueDetail} onOpenChange={(open) => { if (!open) setViewIssueDetail(null); }}>
+        <DialogContent className="!max-w-3xl w-[90vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Issue Register Details")}</DialogTitle>
+          </DialogHeader>
+          {viewIssueDetail && (
+            <div className="space-y-5">
+              {/* Header: Issue code, Due Date, Status */}
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <h5 className="font-semibold text-sm">{t("Issue")} : {viewIssueDetail.issueCode}</h5>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="font-semibold">{t("Due Date")}: {formatDate(viewIssueDetail.dueDate)}</span>
+                  <span className="font-semibold">{t("Current Status")}</span>
+                </div>
+              </div>
+
+              {/* Issue textarea */}
+              <div>
+                <Textarea value={viewIssueDetail.issue || ""} readOnly rows={5} className="bg-muted/50 text-sm" />
+              </div>
+
+              {/* Risk */}
+              <div>
+                <h5 className="font-semibold text-sm mb-2">{t("Risk")}</h5>
+                <Textarea value={viewIssueDetail.risk || ""} readOnly rows={4} className="bg-muted/50 text-sm" />
+              </div>
+
+              {/* Recommendation */}
+              <div>
+                <h5 className="font-semibold text-sm mb-2">{t("Recommendation")}</h5>
+                <Textarea value={viewIssueDetail.recommendation || ""} readOnly rows={4} className="bg-muted/50 text-sm" />
+              </div>
+
+              {/* Severity + Comments */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="font-semibold text-sm mb-2">{t("Severity")}</h5>
+                  <Badge variant={getSeverityVariant(viewIssueDetail.severity)} className="text-sm">
+                    {t(viewIssueDetail.severity)}
+                  </Badge>
+                </div>
+                {viewIssueDetail.remediationId && (
+                  <RemediationComments remediationId={viewIssueDetail.remediationId} readOnly />
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewIssueDetail(null)}>{t("Cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
