@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Minus, Pencil, Trash2, Search, X, Info,
-  Download, Upload, Building2, Shield, Activity, AlertTriangle,
+  Download, Building2, Shield, Activity, AlertTriangle, Loader2,Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 import { Home, ChevronRight } from "lucide-react";
 
 // ==================== TYPES ====================
@@ -122,7 +124,7 @@ function VendorAccordionItem({
       {/* ── Accordion Header ── */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
       >
         <span className="font-medium text-sm text-slate-800">
           {vendor.name}{vendor.vrr ? ` - ${vendor.vrr}` : ""}
@@ -141,7 +143,7 @@ function VendorAccordionItem({
           {/* Action buttons — mirrors Mendix Export + Report Issue */}
           <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
             <Button size="sm" variant="default" onClick={() => onExport(vendor)}>
-              <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+              <Upload className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
               {t("Export")}
             </Button>
             <Button size="sm" variant="outline" onClick={() => onEdit(vendor)}>
@@ -169,7 +171,7 @@ function VendorAccordionItem({
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-slate-100 hover:bg-slate-50/50">
+                <tr className="border-b border-slate-100">
                   <td className="px-4 py-3 font-medium text-primary">{vendor.name}</td>
                   <td className="px-4 py-3 text-slate-600">{vendor.vendorCode}</td>
                   <td className="px-4 py-3 text-slate-600">{vendor.department?.name || "—"}</td>
@@ -455,7 +457,7 @@ export default function VendorManagementPage() {
   };
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -467,25 +469,22 @@ export default function VendorManagementPage() {
       </nav>
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Vendor Inventory")}</h1>
-          <p className="text-sm text-slate-500">{t("Manage and monitor your vendor portfolio")}</p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Vendor Inventory")}</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => handleExport()}>
-            <Download className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => handleExport()}>
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Bulk Export")}
           </Button>
-          <Button className="gap-2" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Onboard New Vendor")}
           </Button>
         </div>
       </div>
 
       {/* ── Outer Group Box — mirrors Mendix "Vendors" groupbox ── */}
-      <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
 
         {/* Group Box Header — light blue, matches Mendix */}
         <div className="bg-primary-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between">
@@ -514,7 +513,7 @@ export default function VendorManagementPage() {
         {/* Vendor accordion list */}
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : filteredVendors.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -550,7 +549,7 @@ export default function VendorManagementPage() {
 
       {/* ── Add / Edit Vendor Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
@@ -558,70 +557,158 @@ export default function VendorManagementPage() {
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><Label>{t("Vendor Name")} *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("Enter vendor name")} /></div>
-            <div>
-              <Label>{t("Service Category")}</Label>
-              <Select value={form.serviceCategory || "none"} onValueChange={(v) => setForm({ ...form, serviceCategory: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder={t("Select category")} /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t("None")}</SelectItem>
-                  {serviceCategories.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+            {/* Vendor Information */}
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Vendor Information")}</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Vendor Name")} *</Label>
+                  <Input className="mt-1.5 bg-white" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("Enter vendor name")} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Engagement ID")}</Label>
+                  <Input className="mt-1.5 bg-white" value={form.engagementId} onChange={(e) => setForm({ ...form, engagementId: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Service Category")}</Label>
+                  <Select value={form.serviceCategory || "none"} onValueChange={(v) => setForm({ ...form, serviceCategory: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select category")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("None")}</SelectItem>
+                      {serviceCategories.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
+                  <Select value={form.departmentId || "none"} onValueChange={(v) => setForm({ ...form, departmentId: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select department")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("None")}</SelectItem>
+                      {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-sm font-medium text-slate-700">{t("Service Description")}</Label>
+                  <Textarea className="mt-1.5 bg-white" value={form.serviceDescription} onChange={(e) => setForm({ ...form, serviceDescription: e.target.value })} rows={2} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-sm font-medium text-slate-700">{t("Vendor URL")}</Label>
+                  <Input className="mt-1.5 bg-white" value={form.vendorUrl} onChange={(e) => setForm({ ...form, vendorUrl: e.target.value })} placeholder={t("e.g. https://vendor-website.com")} />
+                </div>
+              </div>
             </div>
-            <div><Label>{t("Account Manager Name")}</Label><Input value={form.accountManagerName} onChange={(e) => setForm({ ...form, accountManagerName: e.target.value })} /></div>
-            <div><Label>{t("Account Manager Email")}</Label><Input type="email" value={form.accountManagerEmail} onChange={(e) => setForm({ ...form, accountManagerEmail: e.target.value })} /></div>
-            <div><Label>{t("Contact Email")}</Label><Input type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} /></div>
-            <div><Label>{t("Contact Number")}</Label><Input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} /></div>
-            <div>
-              <Label>{t("Department")}</Label>
-              <Select value={form.departmentId || "none"} onValueChange={(v) => setForm({ ...form, departmentId: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder={t("Select department")} /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t("None")}</SelectItem>
-                  {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+
+            {/* Contact Details */}
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Contact Details")}</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Account Manager Name")}</Label>
+                  <Input className="mt-1.5 bg-white" value={form.accountManagerName} onChange={(e) => setForm({ ...form, accountManagerName: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Account Manager Email")}</Label>
+                  <Input className="mt-1.5 bg-white" type="email" value={form.accountManagerEmail} onChange={(e) => setForm({ ...form, accountManagerEmail: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Contact Email")}</Label>
+                  <Input className="mt-1.5 bg-white" type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Contact Number")}</Label>
+                  <Input className="mt-1.5 bg-white" value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label>{t("Status")}</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{["Onboarding", "Onboarded", "Offboarding", "Offboarded"].map((s) => <SelectItem key={s} value={s}>{t(s)}</SelectItem>)}</SelectContent>
-              </Select>
+
+            {/* Contract & Classification */}
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Contract & Classification")}</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                    <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["Onboarding", "Onboarded", "Offboarding", "Offboarded"].map((s) => <SelectItem key={s} value={s}>{t(s)}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Vendor Risk Rating")}</Label>
+                  <Select value={form.vrr || "none"} onValueChange={(v) => setForm({ ...form, vrr: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select rating")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("None")}</SelectItem>
+                      {["Critical", "High", "Moderate", "Low", "Nominal"].map((r) => <SelectItem key={r} value={r}>{t(r)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Contract Start Date")}</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={form.contractStartDate}
+                      onChange={(date) => setForm({ ...form, contractStartDate: date ? format(date, "yyyy-MM-dd") : "" })}
+                      placeholder={t("Select start date")}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Contract End Date")}</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={form.contractEndDate}
+                      onChange={(date) => setForm({ ...form, contractEndDate: date ? format(date, "yyyy-MM-dd") : "" })}
+                      placeholder={t("Select end date")}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Vendor Certification")}</Label>
+                  <Input className="mt-1.5 bg-white" value={form.vendorCertification} onChange={(e) => setForm({ ...form, vendorCertification: e.target.value })} />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label>{t("Vendor Risk Rating")}</Label>
-              <Select value={form.vrr || "none"} onValueChange={(v) => setForm({ ...form, vrr: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder={t("Select rating")} /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t("None")}</SelectItem>
-                  {["Critical", "High", "Moderate", "Low", "Nominal"].map((r) => <SelectItem key={r} value={r}>{t(r)}</SelectItem>)}
-                </SelectContent>
-              </Select>
+
+            {/* Risk Profile */}
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Vendor Risk Profile")}</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.accessToNetwork} onCheckedChange={(v) => setForm({ ...form, accessToNetwork: v })} />
+                  <Label className="text-sm font-normal">{t("Access to Network")}</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.cloud} onCheckedChange={(v) => setForm({ ...form, cloud: v })} />
+                  <Label className="text-sm font-normal">{t("Cloud")}</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.accessToData} onCheckedChange={(v) => setForm({ ...form, accessToData: v })} />
+                  <Label className="text-sm font-normal">{t("Access to Data")}</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.pii} onCheckedChange={(v) => setForm({ ...form, pii: v })} />
+                  <Label className="text-sm font-normal">{t("PII")}</Label>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Business Justification")}</Label>
+                <Textarea className="mt-1.5 bg-white" value={form.businessJustification} onChange={(e) => setForm({ ...form, businessJustification: e.target.value })} rows={2} />
+              </div>
             </div>
-            <div><Label>{t("Engagement ID")}</Label><Input value={form.engagementId} onChange={(e) => setForm({ ...form, engagementId: e.target.value })} /></div>
-            <div><Label>{t("Contract Start Date")}</Label><Input type="date" value={form.contractStartDate} onChange={(e) => setForm({ ...form, contractStartDate: e.target.value })} /></div>
-            <div><Label>{t("Contract End Date")}</Label><Input type="date" value={form.contractEndDate} onChange={(e) => setForm({ ...form, contractEndDate: e.target.value })} /></div>
-            <div className="col-span-full"><Label>{t("Service Description")}</Label><Textarea value={form.serviceDescription} onChange={(e) => setForm({ ...form, serviceDescription: e.target.value })} rows={2} /></div>
-            <div className="col-span-full"><Label>{t("Vendor URL")}</Label><Input value={form.vendorUrl} onChange={(e) => setForm({ ...form, vendorUrl: e.target.value })} placeholder={t("e.g. https://vendor-website.com")} /></div>
+
+            {/* Monitoring (create only) */}
             {!editItem && (
-              <div className="col-span-full flex items-center gap-3">
-                <Switch checked={performMonitoring} onCheckedChange={setPerformMonitoring} />
-                <Label className="text-sm">{t("Perform Monitoring Assessment")}</Label>
+              <div className="space-y-3 sm:space-y-4">
+                <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Monitoring")}</h4>
+                <div className="flex items-center gap-3">
+                  <Switch checked={performMonitoring} onCheckedChange={setPerformMonitoring} />
+                  <Label className="text-sm font-normal">{t("Perform Monitoring Assessment")}</Label>
+                </div>
               </div>
             )}
-            <div className="col-span-full"><Label>{t("Business Justification")}</Label><Textarea value={form.businessJustification} onChange={(e) => setForm({ ...form, businessJustification: e.target.value })} rows={2} /></div>
-            <div><Label>{t("Vendor Certification")}</Label><Input value={form.vendorCertification} onChange={(e) => setForm({ ...form, vendorCertification: e.target.value })} /></div>
-            <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t">
-              <div className="flex items-center gap-2"><Switch checked={form.accessToNetwork} onCheckedChange={(v) => setForm({ ...form, accessToNetwork: v })} /><Label className="text-sm">{t("Access to Network")}</Label></div>
-              <div className="flex items-center gap-2"><Switch checked={form.cloud} onCheckedChange={(v) => setForm({ ...form, cloud: v })} /><Label className="text-sm">{t("Cloud")}</Label></div>
-              <div className="flex items-center gap-2"><Switch checked={form.accessToData} onCheckedChange={(v) => setForm({ ...form, accessToData: v })} /><Label className="text-sm">{t("Access to Data")}</Label></div>
-              <div className="flex items-center gap-2"><Switch checked={form.pii} onCheckedChange={(v) => setForm({ ...form, pii: v })} /><Label className="text-sm">{t("PII")}</Label></div>
-            </div>
-          </div>
           </div>
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">

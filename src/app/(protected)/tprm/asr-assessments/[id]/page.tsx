@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -211,7 +211,10 @@ export default function ASRAssessmentDetailPage() {
   const { toast } = useToast();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const assessmentId = params.id as string;
+  const fromPage = searchParams.get("from");
+  const backUrl = fromPage === "task-queue" ? "/tprm/task-queue" : "/tprm/asr-assessments";
 
   // Data
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
@@ -518,7 +521,7 @@ export default function ASRAssessmentDetailPage() {
       }
       toast({ title: t("Success"), description: t("Assessment approved") });
       setReportOpen(false);
-      router.push("/tprm/asr-assessments");
+      router.push(backUrl);
     } catch (err) {
       toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to approve assessment"), variant: "destructive" });
     } finally {
@@ -541,7 +544,7 @@ export default function ASRAssessmentDetailPage() {
       setReturnOpen(false);
       setReturnComment("");
       setReportOpen(false);
-      router.push("/tprm/asr-assessments");
+      router.push(backUrl);
     } catch {
       toast({ title: t("Error"), description: t("Failed to return assessment"), variant: "destructive" });
     } finally {
@@ -598,7 +601,7 @@ export default function ASRAssessmentDetailPage() {
       const approverName = approvers.find(a => a.id === selectedApproverId)?.fullName || "";
       toast({ title: t("Success"), description: `${t("Assessment sent to approver")} ${approverName}` });
       setSendToApproverOpen(false);
-      router.push("/tprm/asr-assessments");
+      router.push(backUrl);
     } catch (err) {
       toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to send to approver"), variant: "destructive" });
     } finally {
@@ -823,7 +826,7 @@ export default function ASRAssessmentDetailPage() {
     return (
       <div className="p-6 text-center">
         <p className="text-muted-foreground">{t("Assessment not found")}</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push("/tprm/asr-assessments")}>
+        <Button variant="outline" className="mt-4" onClick={() => router.push(backUrl)}>
           <ArrowLeft className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Back")}
         </Button>
       </div>
@@ -840,7 +843,7 @@ export default function ASRAssessmentDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button size="sm" onClick={() => router.push("/tprm/asr-assessments")}>
+            <Button size="sm" onClick={() => router.push(backUrl)}>
               <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Back")}
             </Button>
             <h1 className="text-xl font-semibold">{t("Assessment Summary")}</h1>

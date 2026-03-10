@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Home, ChevronRight, Sliders } from "lucide-react";
+import { Home, ChevronRight, Shield, BarChart3, Loader2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DueDiligenceConfig {
@@ -32,13 +32,25 @@ const DD_FIELDS = [
   { key: "dueDateDays" as const, label: "Due Date (days)" },
 ];
 
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  Critical:  { bg: "bg-red-50",    text: "text-red-700",    dot: "bg-red-500" },
+  High:      { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
+  Moderate:  { bg: "bg-yellow-50", text: "text-yellow-700", dot: "bg-yellow-500" },
+  Low:       { bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-500" },
+  Nominal:   { bg: "bg-blue-50",   text: "text-blue-700",   dot: "bg-blue-500" },
+  Excellent: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
+  Good:      { bg: "bg-teal-50",   text: "text-teal-700",   dot: "bg-teal-500" },
+};
+
 export default function ControlCenterPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [dueDiligence, setDueDiligence] = useState<DueDiligenceConfig[]>([]);
   const [scorecard, setScorecard] = useState<ScorecardConfig[]>([]);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestDataRef = useRef<{ dueDiligence: DueDiligenceConfig[]; scorecard: ScorecardConfig[] } | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -88,7 +100,9 @@ export default function ControlCenterPage() {
   // Debounced auto-save
   const scheduleAutoSave = useCallback((dd: DueDiligenceConfig[], sc: ScorecardConfig[]) => {
     latestDataRef.current = { dueDiligence: dd, scorecard: sc };
+    setSaveStatus("saving");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
       const data = latestDataRef.current;
       if (!data) return;
@@ -105,6 +119,10 @@ export default function ControlCenterPage() {
             description: err.error || t("Failed to save configuration"),
             variant: "destructive",
           });
+          setSaveStatus("idle");
+        } else {
+          setSaveStatus("saved");
+          statusTimerRef.current = setTimeout(() => setSaveStatus("idle"), 2000);
         }
       } catch {
         toast({
@@ -112,14 +130,16 @@ export default function ControlCenterPage() {
           description: t("Failed to save configuration"),
           variant: "destructive",
         });
+        setSaveStatus("idle");
       }
     }, 800);
   }, [toast, t]);
 
-  // Cleanup timer on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     };
   }, []);
 
@@ -141,33 +161,10 @@ export default function ControlCenterPage() {
     scheduleAutoSave(dueDiligence, updated);
   };
 
-  if (loading) {
-    return (
-      <div className="p-4 lg:p-6 space-y-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-          <div className="flex items-center gap-1.5 text-slate-500">
-            <Home className="h-4 w-4" />
-            <span>{t("TPRM")}</span>
-          </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">{t("Control Center")}</span>
-        </nav>
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-            </div>
-            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const getCatStyle = (cat: string) => CATEGORY_COLORS[cat] || { bg: "bg-slate-50", text: "text-slate-700", dot: "bg-slate-500" };
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -178,122 +175,140 @@ export default function ControlCenterPage() {
         <span className="text-primary-700 font-medium">{t("Control Center")}</span>
       </nav>
 
-      {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Control Center")}</h1>
-        <p className="text-sm text-slate-500">
-          {t("Configure due diligence and scorecard thresholds")}
-        </p>
+        {/* Auto-save status */}
+        {saveStatus !== "idle" && (
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            {saveStatus === "saving" && (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>{t("Saving...")}</span>
+              </>
+            )}
+            {saveStatus === "saved" && (
+              <>
+                <Check className="h-3 w-3 text-emerald-500" />
+                <span className="text-emerald-600">{t("Saved")}</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Due Diligence Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-              <Sliders className="h-4 w-4 text-primary" />
-            </div>
-            {t("DueDiligence Configuration")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="h-11 border-b border-slate-100 bg-slate-50">
-                    <th className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
-                      {t("Category")}
-                    </th>
-                    {DD_CATEGORIES.map((cat) => (
-                      <th
-                        key={cat}
-                        className="text-center px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[100px]"
-                      >
-                        {t(cat)}
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <Tabs defaultValue="due-diligence">
+          <TabsList>
+            <TabsTrigger value="due-diligence" className="gap-1.5">
+              <Shield className="h-3.5 w-3.5" />
+              {t("Due Diligence")}
+            </TabsTrigger>
+            <TabsTrigger value="scorecard" className="gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5" />
+              {t("Scorecard")}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Due Diligence Tab */}
+          <TabsContent value="due-diligence" className="mt-6">
+            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50/80">
+                      <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[200px]">
+                        {t("Parameter")}
                       </th>
+                      {DD_CATEGORIES.map((cat) => {
+                        const style = getCatStyle(cat);
+                        return (
+                          <th key={cat} className="px-3 py-3.5 text-center min-w-[110px]">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${style.bg} ${style.text}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                              {t(cat)}
+                            </span>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {DD_FIELDS.map((field, fi) => (
+                      <tr key={field.key} className={`border-b border-slate-100 last:border-0 ${fi % 2 === 1 ? "bg-slate-50/40" : ""}`}>
+                        <td className="px-5 py-4 text-sm font-medium text-slate-700">{t(field.label)}</td>
+                        {DD_CATEGORIES.map((cat, catIndex) => (
+                          <td key={cat} className="px-3 py-3 text-center">
+                            <Input
+                              type="number"
+                              min={0}
+                              className="w-[72px] mx-auto text-center h-9 text-sm border-slate-200 focus-visible:ring-primary-500"
+                              value={dueDiligence[catIndex]?.[field.key] ?? 0}
+                              onChange={(e) =>
+                                handleDDChange(catIndex, field.key, e.target.value)
+                              }
+                            />
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {DD_FIELDS.map((field) => (
-                    <tr key={field.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                      <td className="px-5 py-3 text-sm font-medium text-slate-700">{t(field.label)}</td>
-                      {DD_CATEGORIES.map((cat, catIndex) => (
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Scorecard Tab */}
+          <TabsContent value="scorecard" className="mt-6">
+            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50/80">
+                      <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[200px]">
+                        {t("Parameter")}
+                      </th>
+                      {SC_CATEGORIES.map((cat) => {
+                        const style = getCatStyle(cat);
+                        return (
+                          <th key={cat} className="px-3 py-3.5 text-center min-w-[110px]">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${style.bg} ${style.text}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                              {t(cat)}
+                            </span>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-700">{t("Security Score")}</td>
+                      {SC_CATEGORIES.map((cat, catIndex) => (
                         <td key={cat} className="px-3 py-3 text-center">
                           <Input
                             type="number"
                             min={0}
-                            className="w-20 mx-auto text-center"
-                            value={dueDiligence[catIndex]?.[field.key] ?? 0}
+                            max={10}
+                            className="w-[72px] mx-auto text-center h-9 text-sm border-slate-200 focus-visible:ring-primary-500"
+                            value={scorecard[catIndex]?.securityScore ?? 0}
                             onChange={(e) =>
-                              handleDDChange(catIndex, field.key, e.target.value)
+                              handleSCChange(catIndex, e.target.value)
                             }
                           />
                         </td>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Scorecard Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-              <Sliders className="h-4 w-4 text-primary" />
-            </div>
-            {t("Scorecard Configuration")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="h-11 border-b border-slate-100 bg-slate-50">
-                    <th className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
-                      {t("Category")}
-                    </th>
-                    {SC_CATEGORIES.map((cat) => (
-                      <th
-                        key={cat}
-                        className="text-center px-3 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[100px]"
-                      >
-                        {t(cat)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <td className="px-5 py-3 text-sm font-medium text-slate-700">{t("Security Score")}</td>
-                    {SC_CATEGORIES.map((cat, catIndex) => (
-                      <td key={cat} className="px-3 py-3 text-center">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={10}
-                          className="w-20 mx-auto text-center"
-                          value={scorecard[catIndex]?.securityScore ?? 0}
-                          onChange={(e) =>
-                            handleSCChange(catIndex, e.target.value)
-                          }
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }

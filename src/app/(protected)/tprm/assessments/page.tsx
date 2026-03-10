@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { PageHeader } from "@/components/shared/page-header";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -13,8 +12,22 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2, Eye, Download, RefreshCw, Home, ChevronRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Loader2, Eye, Download, RefreshCw, Home, ChevronRight, ChevronLeft, Inbox } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface Assessment {
@@ -52,6 +65,11 @@ interface LogGroup {
   data: AssessmentLog[];
 }
 
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString();
+}
+
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "Completed":
@@ -83,10 +101,166 @@ function getResultVariant(result: string | null): "default" | "destructive" | "s
   }
 }
 
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString();
+// ==================== Log Detail Dialog ====================
+
+function LogDetailDialog({
+  open,
+  onOpenChange,
+  logGroup,
+  loading,
+  onExport,
+  onRefresh,
+  t,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  logGroup: LogGroup | null;
+  loading: boolean;
+  onExport: () => void;
+  onRefresh: () => void;
+  t: (key: string) => string;
+}) {
+  const { isRTL } = useLanguage();
+  const [logPage, setLogPage] = useState(0);
+  const LOGS_PER_PAGE = 10;
+
+  const paginatedLogs = useMemo(() => {
+    if (!logGroup?.data) return [];
+    return logGroup.data.slice(logPage * LOGS_PER_PAGE, (logPage + 1) * LOGS_PER_PAGE);
+  }, [logGroup, logPage]);
+
+  const totalLogPages = logGroup?.data ? Math.ceil(logGroup.data.length / LOGS_PER_PAGE) : 0;
+  const totalRows = logGroup?.data?.length || 0;
+  const startRow = logPage * LOGS_PER_PAGE + 1;
+  const endRow = Math.min((logPage + 1) * LOGS_PER_PAGE, totalRows);
+
+  useEffect(() => { setLogPage(0); }, [logGroup?.assessment?.id]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        {/* Fixed Header — Title (refresh icon) .............. [Export CSV] [X] */}
+        <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+          <DialogHeader>
+            <div className="flex items-center justify-between gap-3 ltr:pr-8 rtl:pl-8">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <DialogTitle className="text-lg font-semibold text-slate-800 truncate">
+                  {logGroup
+                    ? `${logGroup.assessment.assessmentCode} — ${logGroup.assessment.vendorName}`
+                    : t("Assessment Logs")}
+                </DialogTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-slate-400 hover:text-slate-600 shrink-0"
+                  onClick={onRefresh}
+                  title={t("Refresh")}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs shrink-0"
+                onClick={onExport}
+                disabled={!logGroup?.data?.length}
+              >
+                <Download className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+                {t("Export CSV")}
+              </Button>
+            </div>
+          </DialogHeader>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+                <p className="text-sm text-slate-500">{t("Loading logs...")}</p>
+              </div>
+            </div>
+          ) : logGroup?.data?.length ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 whitespace-nowrap">{t("Domain")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Question No")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Question Title")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Log Date")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Log Message")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 whitespace-nowrap">{t("Document")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedLogs.map((log) => (
+                    <TableRow key={log.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
+                      <TableCell className="py-3 text-sm text-slate-700 ps-5">{log.domainName || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 font-mono">{log.questionNo || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{log.questionTitle || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(log.logDate)}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{log.logMessage || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700 pe-5">{log.documentName || "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mb-3">
+                <Inbox className="h-6 w-6 text-primary-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("No logs found")}</p>
+              <p className="text-xs text-slate-400">{t("This assessment has no activity logs yet")}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Fixed Footer — pagination left, Close right */}
+        <div className={`flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-between ${isRTL ? "flex-row-reverse" : ""}`}>
+          {totalRows > LOGS_PER_PAGE ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">
+                {startRow} {t("to")} {endRow} {t("of")} {totalRows}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                  onClick={() => setLogPage((p) => Math.max(0, p - 1))}
+                  disabled={logPage === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                  onClick={() => setLogPage((p) => Math.min(totalLogPages - 1, p + 1))}
+                  disabled={logPage >= totalLogPages - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div />
+          )}
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            {t("Close")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
+
+// ==================== Main Page ====================
 
 export default function AssessmentWorkspacePage() {
   const { t } = useLanguage();
@@ -95,13 +269,11 @@ export default function AssessmentWorkspacePage() {
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Logs tab state
-  const [logAssessments, setLogAssessments] = useState<Assessment[]>([]);
+  // Logs state
   const [selectedLogAssessment, setSelectedLogAssessment] = useState<LogGroup | null>(null);
-  const [logSearch, setLogSearch] = useState("");
   const [logsLoading, setLogsLoading] = useState(false);
-  const [logListOffset, setLogListOffset] = useState(0);
-  const LOG_LIST_LIMIT = 20;
+  const [logDialogOpen, setLogDialogOpen] = useState(false);
+  const [logStatusFilter, setLogStatusFilter] = useState("all");
 
   const fetchAssessments = useCallback(async () => {
     try {
@@ -110,7 +282,6 @@ export default function AssessmentWorkspacePage() {
       if (res.ok) {
         const json = await res.json();
         setAssessments(json.data);
-        setLogAssessments(json.data);
       }
     } catch (error) {
       console.error("Error fetching assessments:", error);
@@ -128,9 +299,10 @@ export default function AssessmentWorkspacePage() {
     setDialogOpen(true);
   };
 
-  const handleSelectLogAssessment = async (assessment: Assessment) => {
+  const handleViewLogs = async (assessment: Assessment) => {
     try {
       setLogsLoading(true);
+      setLogDialogOpen(true);
       const res = await fetch(`/api/tprm/assessments/${assessment.id}/logs`);
       if (res.ok) {
         const json: LogGroup = await res.json();
@@ -140,6 +312,25 @@ export default function AssessmentWorkspacePage() {
       console.error("Error fetching logs:", error);
     } finally {
       setLogsLoading(false);
+    }
+  };
+
+  const handleRefreshLogs = async () => {
+    if (!selectedLogAssessment) return;
+    const a = assessments.find((x) => x.id === selectedLogAssessment.assessment.id);
+    if (a) {
+      try {
+        setLogsLoading(true);
+        const res = await fetch(`/api/tprm/assessments/${a.id}/logs`);
+        if (res.ok) {
+          const json: LogGroup = await res.json();
+          setSelectedLogAssessment(json);
+        }
+      } catch (error) {
+        console.error("Error refreshing logs:", error);
+      } finally {
+        setLogsLoading(false);
+      }
     }
   };
 
@@ -165,7 +356,19 @@ export default function AssessmentWorkspacePage() {
     URL.revokeObjectURL(url);
   };
 
-  // Assessment overview columns
+  // Unique statuses for filter
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set(assessments.map((a) => a.status));
+    return Array.from(statuses).sort();
+  }, [assessments]);
+
+  // Filtered assessments for logs tab
+  const filteredLogAssessments = useMemo(() => {
+    if (logStatusFilter === "all") return assessments;
+    return assessments.filter((a) => a.status === logStatusFilter);
+  }, [assessments, logStatusFilter]);
+
+  // Assessment overview columns — matching Customer Admin pattern
   const overviewColumns: ColumnDef<Assessment>[] = [
     {
       accessorKey: "assessmentCode",
@@ -208,7 +411,7 @@ export default function AssessmentWorkspacePage() {
         return result ? (
           <Badge variant={getResultVariant(result)}>{t(result)}</Badge>
         ) : (
-          "-"
+          <span className="text-slate-400">-</span>
         );
       },
     },
@@ -216,29 +419,89 @@ export default function AssessmentWorkspacePage() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => handleViewAssessment(row.original)}>
-          <Eye className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-          {t("View")}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+          onClick={() => handleViewAssessment(row.original)}
+          title={t("View")}
+        >
+          <Eye className="h-4 w-4" />
         </Button>
       ),
     },
   ];
 
-  // Filtered log assessments for left panel
-  const filteredLogAssessments = logAssessments.filter((a) => {
-    if (!logSearch) return true;
-    const s = logSearch.toLowerCase();
-    return (
-      a.assessmentCode.toLowerCase().includes(s) ||
-      a.vendor.name.toLowerCase().includes(s)
-    );
-  });
+  // Assessment logs columns
+  const logColumns: ColumnDef<Assessment>[] = [
+    {
+      accessorKey: "assessmentCode",
+      header: t("ID"),
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assessmentCode")}</span>,
+    },
+    {
+      accessorKey: "assessmentType",
+      header: t("Type"),
+    },
+    {
+      accessorKey: "vendor.name",
+      header: t("Vendor"),
+      cell: ({ row }) => row.original.vendor?.name || "-",
+    },
+    {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => (
+        <Badge variant={getStatusVariant(row.getValue("status"))}>
+          {t(row.getValue("status"))}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "assessor",
+      header: t("Assessor"),
+      cell: ({ row }) => row.original.assessor?.fullName || "-",
+    },
+    {
+      accessorKey: "completionDate",
+      header: t("Completion Date"),
+      cell: ({ row }) => formatDate(row.getValue("completionDate")),
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+          onClick={() => handleViewLogs(row.original)}
+          title={t("View Logs")}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
 
-  const visibleLogAssessments = filteredLogAssessments.slice(0, logListOffset + LOG_LIST_LIMIT);
+  // Status filter dropdown for logs tab toolbar (rendered on the right side of DataGrid toolbar)
+  const logToolbarExtra = (
+    <Select value={logStatusFilter} onValueChange={setLogStatusFilter}>
+      <SelectTrigger className="w-[160px] h-9 border-slate-200 text-sm">
+        <SelectValue placeholder={t("All Statuses")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{t("All Statuses")}</SelectItem>
+        {uniqueStatuses.map((status) => (
+          <SelectItem key={status} value={status}>{t(status)}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 space-y-6">
+      <div className="space-y-6">
         <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
@@ -247,13 +510,10 @@ export default function AssessmentWorkspacePage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-primary-700 font-medium">{t("Assessment Workspace")}</span>
         </nav>
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-            </div>
-            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
+        <div className="flex items-center justify-center min-h-[200px]">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+            <p className="text-sm text-slate-500">{t("Loading...")}</p>
           </div>
         </div>
       </div>
@@ -261,7 +521,7 @@ export default function AssessmentWorkspacePage() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -272,7 +532,7 @@ export default function AssessmentWorkspacePage() {
         <span className="text-primary-700 font-medium">{t("Assessment Workspace")}</span>
       </nav>
 
-      <PageHeader title={t("Assessment Workspace")} description={t("View and manage all TPRM assessments")} />
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Assessment Workspace")}</h1>
 
       <Tabs defaultValue="overview">
         <TabsList>
@@ -281,7 +541,7 @@ export default function AssessmentWorkspacePage() {
         </TabsList>
 
         {/* Assessment Overview Tab */}
-        <TabsContent value="overview" className="mt-4">
+        <TabsContent value="overview" className="mt-6">
           <DataGrid
             columns={overviewColumns}
             data={assessments}
@@ -291,219 +551,126 @@ export default function AssessmentWorkspacePage() {
         </TabsContent>
 
         {/* Assessment Logs Tab */}
-        <TabsContent value="logs" className="mt-4">
-          <div className="flex gap-4 h-[600px]">
-            {/* Left panel - Assessment list */}
-            <div className="w-1/3 border rounded-lg flex flex-col">
-              <div className="p-3 border-b">
-                <Input
-                  placeholder={t("Search assessments...")}
-                  value={logSearch}
-                  onChange={(e) => {
-                    setLogSearch(e.target.value);
-                    setLogListOffset(0);
-                  }}
-                />
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                {visibleLogAssessments.map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => handleSelectLogAssessment(a)}
-                    className={`w-full text-left p-3 border-b hover:bg-muted/50 transition-colors ${
-                      selectedLogAssessment?.assessment.id === a.id ? "bg-muted" : ""
-                    }`}
-                  >
-                    <div className="font-mono text-sm font-medium">{a.assessmentCode}</div>
-                    <div className="text-sm text-muted-foreground">{a.vendor.name}</div>
-                    <Badge variant={getStatusVariant(a.status)} className="mt-1">
-                      {t(a.status)}
-                    </Badge>
-                  </button>
-                ))}
-                {visibleLogAssessments.length < filteredLogAssessments.length && (
-                  <button
-                    onClick={() => setLogListOffset((prev) => prev + LOG_LIST_LIMIT)}
-                    className="w-full p-3 text-sm text-primary hover:bg-muted/50"
-                  >
-                    {t("Load more")}...
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Right panel - Log detail */}
-            <div className="flex-1 border rounded-lg flex flex-col">
-              <div className="p-3 border-b flex items-center justify-between">
-                <h3 className="font-semibold">
-                  {selectedLogAssessment
-                    ? `${selectedLogAssessment.assessment.assessmentCode} - ${selectedLogAssessment.assessment.vendorName}`
-                    : t("Select an assessment")}
-                </h3>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportLogs}
-                    disabled={!selectedLogAssessment?.data?.length}
-                  >
-                    <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {t("Export Excel")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (selectedLogAssessment) {
-                        const a = assessments.find((x) => x.id === selectedLogAssessment.assessment.id);
-                        if (a) handleSelectLogAssessment(a);
-                      }
-                    }}
-                  >
-                    <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {t("Refresh")}
-                  </Button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                {logsLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : selectedLogAssessment?.data?.length ? (
-                  <div className="space-y-3">
-                    {selectedLogAssessment.data.map((log) => (
-                      <div key={log.id} className="border rounded-lg p-3 space-y-2">
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">{t("Domain Name")}:</span>{" "}
-                            <span className="font-medium">{log.domainName || "-"}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">{t("Question No")}:</span>{" "}
-                            <span className="font-medium">{log.questionNo || "-"}</span>
-                          </div>
-                          <div className="col-span-2">
-                            <span className="text-muted-foreground">{t("Question Title")}:</span>{" "}
-                            <span className="font-medium">{log.questionTitle || "-"}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">{t("Log Date")}:</span>{" "}
-                            <span className="font-medium">{formatDate(log.logDate)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">{t("Document Name")}:</span>{" "}
-                            <span className="font-medium">{log.documentName || "-"}</span>
-                          </div>
-                          <div className="col-span-2">
-                            <span className="text-muted-foreground">{t("Log Message")}:</span>{" "}
-                            <span className="font-medium">{log.logMessage || "-"}</span>
-                          </div>
-                          {log.apiUrl && (
-                            <div className="col-span-2">
-                              <span className="text-muted-foreground">{t("API URL")}:</span>{" "}
-                              <span className="font-mono text-xs">{log.apiUrl}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    {selectedLogAssessment ? t("No logs found") : t("Select an assessment to view logs")}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+        <TabsContent value="logs" className="mt-6">
+          <DataGrid
+            columns={logColumns}
+            data={filteredLogAssessments}
+            searchPlaceholder={t("Search by ID or vendor...")}
+            searchColumn="assessmentCode"
+            toolbarExtra={logToolbarExtra}
+          />
         </TabsContent>
       </Tabs>
 
       {/* Assessment Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {t("Assessment Detail")} - {selectedAssessment?.assessmentCode}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {t("Assessment Detail")} — {selectedAssessment?.assessmentCode}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
           {selectedAssessment && (
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Assessment ID")}</label>
-                <p className="font-mono">{selectedAssessment.assessmentCode}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Assessment Type")}</label>
-                <p>{t(selectedAssessment.assessmentType)}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Vendor")}</label>
-                <p>{selectedAssessment.vendor.name}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Status")}</label>
-                <div>
-                  <Badge variant={getStatusVariant(selectedAssessment.status)}>
-                    {t(selectedAssessment.status)}
-                  </Badge>
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Assessment ID")}</label>
+                  <p className="font-mono text-sm text-slate-800">{selectedAssessment.assessmentCode}</p>
                 </div>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Assessment Result")}</label>
-                <div>
-                  {selectedAssessment.assessmentResult ? (
-                    <Badge variant={getResultVariant(selectedAssessment.assessmentResult)}>
-                      {t(selectedAssessment.assessmentResult)}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Assessment Type")}</label>
+                  <p className="text-sm text-slate-800">{t(selectedAssessment.assessmentType)}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Vendor")}</label>
+                  <p className="text-sm text-slate-800">{selectedAssessment.vendor.name}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Status")}</label>
+                  <div>
+                    <Badge variant={getStatusVariant(selectedAssessment.status)}>
+                      {t(selectedAssessment.status)}
                     </Badge>
-                  ) : (
-                    "-"
-                  )}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Questionnaire Template")}</label>
-                <p>{selectedAssessment.questionnaireTemplate || "-"}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Vendor Submission Date")}</label>
-                <p>{formatDate(selectedAssessment.vendorSubmissionDate)}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Assessor Completion Date")}</label>
-                <p>{formatDate(selectedAssessment.assessorCompletionDate)}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Approval Date")}</label>
-                <p>{formatDate(selectedAssessment.approvalDate)}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Completion Date")}</label>
-                <p>{formatDate(selectedAssessment.completionDate)}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Initiated By")}</label>
-                <p>{selectedAssessment.initiatedBy?.fullName || "-"}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Assessor")}</label>
-                <p>{selectedAssessment.assessor?.fullName || "-"}</p>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">{t("Approver")}</label>
-                <p>{selectedAssessment.approver?.fullName || "-"}</p>
-              </div>
-              {selectedAssessment.approverComment && (
-                <div className="col-span-2">
-                  <label className="text-sm text-muted-foreground">{t("Approver Comment")}</label>
-                  <p>{selectedAssessment.approverComment}</p>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Assessment Result")}</label>
+                  <div>
+                    {selectedAssessment.assessmentResult ? (
+                      <Badge variant={getResultVariant(selectedAssessment.assessmentResult)}>
+                        {t(selectedAssessment.assessmentResult)}
+                      </Badge>
+                    ) : (
+                      <span className="text-sm text-slate-400">-</span>
+                    )}
+                  </div>
                 </div>
-              )}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Questionnaire Template")}</label>
+                  <p className="text-sm text-slate-800">{selectedAssessment.questionnaireTemplate || "-"}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Vendor Submission Date")}</label>
+                  <p className="text-sm text-slate-800">{formatDate(selectedAssessment.vendorSubmissionDate)}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Assessor Completion Date")}</label>
+                  <p className="text-sm text-slate-800">{formatDate(selectedAssessment.assessorCompletionDate)}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Approval Date")}</label>
+                  <p className="text-sm text-slate-800">{formatDate(selectedAssessment.approvalDate)}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Completion Date")}</label>
+                  <p className="text-sm text-slate-800">{formatDate(selectedAssessment.completionDate)}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Initiated By")}</label>
+                  <p className="text-sm text-slate-800">{selectedAssessment.initiatedBy?.fullName || "-"}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Assessor")}</label>
+                  <p className="text-sm text-slate-800">{selectedAssessment.assessor?.fullName || "-"}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">{t("Approver")}</label>
+                  <p className="text-sm text-slate-800">{selectedAssessment.approver?.fullName || "-"}</p>
+                </div>
+                {selectedAssessment.approverComment && (
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="text-sm font-medium text-slate-700">{t("Approver Comment")}</label>
+                    <p className="text-sm text-slate-800">{selectedAssessment.approverComment}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+              {t("Close")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
+
+      {/* Log Detail Dialog */}
+      <LogDetailDialog
+        open={logDialogOpen}
+        onOpenChange={setLogDialogOpen}
+        logGroup={selectedLogAssessment}
+        loading={logsLoading}
+        onExport={handleExportLogs}
+        onRefresh={handleRefreshLogs}
+        t={t}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
+import { withAuth, getTenantFilter } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 
 interface RouteContext {
@@ -11,11 +11,11 @@ export const GET = withAuth(
   async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id } = await context.params;
-      const customerAccountId = getCustomerAccountId(session);
+      const tenantFilter = getTenantFilter(session);
       console.log(`[ASR] GET /asr-assessments/${id} — user=${session.email}`);
 
       const assessment = await prisma.tPRMAssessment.findFirst({
-        where: { id, customerAccountId },
+        where: { id, ...tenantFilter },
         include: {
           vendor: {
             select: {
@@ -56,7 +56,7 @@ export const GET = withAuth(
       let questions: unknown[] = [];
       if (assessment.questionnaireTemplate) {
         const template = await prisma.tPRMQuestionnaireTemplate.findFirst({
-          where: { customerAccountId, templateName: assessment.questionnaireTemplate },
+          where: { customerAccountId: assessment.customerAccountId, templateName: assessment.questionnaireTemplate },
           include: {
             masterQuestionLinks: {
               include: {
@@ -103,7 +103,7 @@ export const GET = withAuth(
 
       // Load domains
       const domains = await prisma.tPRMDomain.findMany({
-        where: { customerAccountId, isActive: true },
+        where: { customerAccountId: assessment.customerAccountId, isActive: true },
         orderBy: { sortOrder: 'asc' },
         select: { id: true, name: true },
       });
