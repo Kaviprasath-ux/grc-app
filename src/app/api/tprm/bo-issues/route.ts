@@ -93,7 +93,7 @@ export const GET = withAuth(
           include: {
             assessment: {
               include: {
-                vendor: { select: { name: true, vendorCode: true } },
+                vendor: { select: { id: true, name: true, vendorCode: true } },
               },
             },
             assignedToUser: { select: { fullName: true } },
@@ -108,6 +108,7 @@ export const GET = withAuth(
         const data = remediations.map((rem) => ({
           id: rem.id,
           issueCode: rem.issueCode || null,
+          vendorId: rem.assessment?.vendor?.id || null,
           vendorName: rem.assessment?.vendor?.name || "Unknown",
           vendorCode: rem.assessment?.vendor?.vendorCode || "",
           domain: rem.domainName || null,

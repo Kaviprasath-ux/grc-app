@@ -41,6 +41,12 @@ const STATUS_VARIANTS: Record<string, string> = {
   Reviewed: "bg-teal-100 text-teal-700",
   Cancelled: "bg-gray-200 text-gray-500",
   Expired: "bg-yellow-100 text-yellow-700",
+  Offboard_In_Progress: "bg-orange-100 text-orange-700",
+  Offboard_Awaiting_Response: "bg-amber-100 text-amber-700",
+  Offboard_Approve_Assessor: "bg-purple-100 text-purple-700",
+  Offboard_Approve_RM: "bg-indigo-100 text-indigo-700",
+  Offboard_Approve_BO: "bg-blue-100 text-blue-700",
+  Offboard_Completed: "bg-green-100 text-green-700",
 };
 
 export default function AMAssessmentsPage() {
@@ -74,6 +80,11 @@ export default function AMAssessmentsPage() {
   }, [activeTab, fetchAssessments]);
 
   const handleStartAssessment = (assessment: Assessment) => {
+    // Route offboard assessments to the offboard questionnaire page
+    if (assessment.assessmentType === "Offboard Assessment") {
+      router.push(`/tprm/am-assessments/offboard/${assessment.id}`);
+      return;
+    }
     router.push(`/tprm/am-assessments/${assessment.id}`);
   };
 
@@ -153,19 +164,19 @@ export default function AMAssessmentsPage() {
                           <TableCell>{a.initiatedBy?.fullName || "-"}</TableCell>
                           <TableCell>
                             <Badge className={STATUS_VARIANTS[a.status] || "bg-gray-100 text-gray-700"}>
-                              {t(a.status)}
+                              {t(a.status.replace(/_/g, " "))}
                             </Badge>
                           </TableCell>
                           <TableCell>{formatDate(a.createdAt)}</TableCell>
                           <TableCell>
-                            {tab === "active" ? (
+                            {tab === "active" || (tab === "offboard" && ["Offboard_In_Progress", "Offboard_Awaiting_Response"].includes(a.status)) ? (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleStartAssessment(a)}
                               >
                                 <PlayCircle className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                                {a.status === "Draft" ? t("Start") : t("Resume")}
+                                {a.status === "Draft" || a.status === "Offboard_In_Progress" ? t("Start") : t("Resume")}
                               </Button>
                             ) : (
                               <Button

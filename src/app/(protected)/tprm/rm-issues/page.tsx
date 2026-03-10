@@ -73,6 +73,7 @@ interface RemediationComment {
 interface IssueRemediationEntry {
   id: string;
   issueCode: string | null;
+  vendorId: string | null;
   vendorName: string;
   vendorCode: string;
   domain: string | null;
@@ -308,6 +309,33 @@ export default function RMIssuesPage() {
       setActionLoading(false);
     }
   }, [commentAction, commentText, toast, t, loadData]);
+
+  const handleTerminate = useCallback(async (remediation: IssueRemediationEntry) => {
+    if (!remediation.vendorId) {
+      toast({ title: t("Error"), description: t("Vendor not found for this issue"), variant: "destructive" });
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/tprm/offboard-assessments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vendorId: remediation.vendorId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: data.error || t("Failed to initiate termination"), variant: "destructive" });
+        return;
+      }
+      toast({ title: t("Success"), description: t("Offboard assessment created. Vendor will receive offboarding questionnaire.") });
+      setViewRemediation(null);
+      loadData();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to initiate termination"), variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  }, [toast, t, loadData]);
 
   // ==================== ISSUE REGISTER ====================
 
@@ -814,6 +842,7 @@ export default function RMIssuesPage() {
             <DataGrid columns={vendorIssueColumns} data={filteredVendorIssues} hideSearch />
           )}
         </TabsContent>
+
       </Tabs>
 
       {/* ==================== REMEDIATION DETAIL DIALOG (assessor style) ==================== */}
@@ -943,8 +972,8 @@ export default function RMIssuesPage() {
                   <ShieldCheck className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Accept Risk")}
                 </Button>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Terminated")} disabled={actionLoading} className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
-                  <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                <Button onClick={() => handleTerminate(viewRemediation)} disabled={actionLoading} className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                  {actionLoading ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
                   {t("Initiate Termination")}
                 </Button>
               </>

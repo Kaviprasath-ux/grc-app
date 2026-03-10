@@ -513,6 +513,7 @@ export default function AsrFollowUpsPage() {
             <DataGrid columns={remediationColumns} data={filteredRemediations} hideSearch />
           )}
         </TabsContent>
+
       </Tabs>
 
       {/* Remediation View Dialog */}

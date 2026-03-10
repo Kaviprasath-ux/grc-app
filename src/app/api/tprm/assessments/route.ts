@@ -17,7 +17,10 @@ export const GET = withAuth(
 
       const tenantFilter = getTenantFilter(session);
 
-      const where: Record<string, unknown> = { ...tenantFilter };
+      const where: Record<string, unknown> = {
+        ...tenantFilter,
+        assessmentType: { not: "Offboard Assessment" },
+      };
 
       if (search) {
         where.OR = [

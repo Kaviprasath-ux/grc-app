@@ -13,7 +13,7 @@ export const GET = withAuth(
       console.log(`[ASR] GET /asr-assessments — user=${session.email} limit=${limit}`);
 
       const assessments = await prisma.tPRMAssessment.findMany({
-        where: { customerAccountId },
+        where: { customerAccountId, assessmentType: { not: "Offboard Assessment" } },
         include: {
           vendor: { select: { id: true, name: true, vendorCode: true, serviceCategory: true } },
           initiatedBy: { select: { id: true, fullName: true } },

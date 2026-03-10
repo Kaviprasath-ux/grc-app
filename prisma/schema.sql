@@ -2640,6 +2640,28 @@ CREATE TABLE "TPRMOffboardingQuestion" (
 );
 
 -- CreateTable
+CREATE TABLE "TPRMOffboardResponse" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "questionId" TEXT NOT NULL,
+    "questionNo" INTEGER NOT NULL,
+    "questionTitle" TEXT NOT NULL,
+    "questionText" TEXT,
+    "response" TEXT,
+    "comment" TEXT,
+    "artifactUrl" TEXT,
+    "artifactName" TEXT,
+    "isFlagged" BOOLEAN NOT NULL DEFAULT false,
+    "isDelegated" BOOLEAN NOT NULL DEFAULT false,
+    "delegatedToId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMOffboardResponse_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "TPRMScorecardFactor" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -4338,6 +4360,15 @@ CREATE UNIQUE INDEX "TPRMQuestionnaireTemplate_customerAccountId_templateName_ke
 CREATE INDEX "TPRMOffboardingQuestion_customerAccountId_idx" ON "TPRMOffboardingQuestion"("customerAccountId");
 
 -- CreateIndex
+CREATE INDEX "TPRMOffboardResponse_customerAccountId_idx" ON "TPRMOffboardResponse"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMOffboardResponse_assessmentId_idx" ON "TPRMOffboardResponse"("assessmentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMOffboardResponse_assessmentId_questionId_key" ON "TPRMOffboardResponse"("assessmentId", "questionId");
+
+-- CreateIndex
 CREATE INDEX "TPRMScorecardFactor_customerAccountId_idx" ON "TPRMScorecardFactor"("customerAccountId");
 
 -- CreateIndex
@@ -5458,6 +5489,15 @@ ALTER TABLE "TPRMQuestionnaireTemplate" ADD CONSTRAINT "TPRMQuestionnaireTemplat
 
 -- AddForeignKey
 ALTER TABLE "TPRMOffboardingQuestion" ADD CONSTRAINT "TPRMOffboardingQuestion_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMOffboardResponse" ADD CONSTRAINT "TPRMOffboardResponse_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMOffboardResponse" ADD CONSTRAINT "TPRMOffboardResponse_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMOffboardResponse" ADD CONSTRAINT "TPRMOffboardResponse_delegatedToId_fkey" FOREIGN KEY ("delegatedToId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TPRMScorecardFactor" ADD CONSTRAINT "TPRMScorecardFactor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

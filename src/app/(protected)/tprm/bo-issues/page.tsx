@@ -56,6 +56,7 @@ interface RemediationComment {
 interface IssueRemediationEntry {
   id: string;
   issueCode: string | null;
+  vendorId: string | null;
   vendorName: string;
   vendorCode: string;
   domain: string | null;
@@ -197,11 +198,12 @@ export default function BOIssuesPage() {
   const [commentText, setCommentText] = useState("");
 
   // Terminate Vendor confirmation dialog
-  const [terminateConfirm, setTerminateConfirm] = useState<{ remediationId: string } | null>(null);
+  const [terminateConfirm, setTerminateConfirm] = useState<{ remediationId: string; vendorId: string } | null>(null);
 
   // Vendor Issue detail dialog
   const [viewVendorIssue, setViewVendorIssue] = useState<VendorIssueEntry | null>(null);
   const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
+
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -270,26 +272,32 @@ export default function BOIssuesPage() {
     }
   }, [commentAction, commentText, toast, t, loadData]);
 
-  // Handles the Terminate Vendor → Initiate flow
+  // Handles the Terminate Vendor → creates offboard assessment
   const handleTerminateInitiate = useCallback(async () => {
     if (!terminateConfirm) return;
     setActionLoading(true);
     try {
-      const res = await fetch("/api/tprm/bo-issues", {
-        method: "PATCH",
+      // Create offboard assessment for the vendor
+      const res = await fetch("/api/tprm/offboard-assessments", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: terminateConfirm.remediationId,
-          status: "Closed",
-          addComment: "Vendor termination initiated - offboarding process started",
-        }),
+        body: JSON.stringify({ vendorId: terminateConfirm.vendorId }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        toast({ title: t("Success"), description: t("Vendor termination initiated successfully") });
+        // Add comment to the remediation about termination initiation
+        await fetch("/api/tprm/bo-issues", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: terminateConfirm.remediationId,
+            addComment: `Vendor termination initiated - offboarding assessment ${data.assessmentCode || ""} created`,
+          }),
+        });
+        toast({ title: t("Success"), description: t("Offboard assessment created. The vendor will receive the offboarding questionnaire.") });
         setTerminateConfirm(null);
         loadData();
       } else {
-        const data = await res.json().catch(() => ({}));
         toast({ title: t("Error"), description: data.error || t("Failed to initiate termination"), variant: "destructive" });
       }
     } catch {
@@ -651,6 +659,7 @@ export default function BOIssuesPage() {
             <DataGrid columns={vendorIssueColumns} data={filteredVendorIssues} hideSearch />
           )}
         </TabsContent>
+
       </Tabs>
 
       {/* ==================== VENDOR ISSUE DETAIL DIALOG ==================== */}
@@ -844,7 +853,7 @@ export default function BOIssuesPage() {
                   <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Send To Assessor")}
                 </Button>
-                <Button onClick={() => { setTerminateConfirm({ remediationId: viewRemediation.id }); setViewRemediation(null); }} disabled={actionLoading} className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                <Button onClick={() => { setTerminateConfirm({ remediationId: viewRemediation.id, vendorId: viewRemediation.vendorId || "" }); setViewRemediation(null); }} disabled={actionLoading} className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
                   <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Terminate Vendor")}
                 </Button>

@@ -94,15 +94,19 @@ export const GET = withAuth(
 
       // ==================== TAB 2: ISSUE REMEDIATION ====================
       if (tab === "remediation") {
-        // Show all remediations for this customer account (RM sees full picture)
+        // RM sees remediations assigned to them (by userId) OR with "Assigned to RM" status
         const remediations = await prisma.tPRMIssueRemediation.findMany({
           where: {
             customerAccountId,
+            OR: [
+              { assignedToUserId: session.id },
+              { status: "Assigned to RM" },
+            ],
           },
           include: {
             assessment: {
               include: {
-                vendor: { select: { name: true, vendorCode: true } },
+                vendor: { select: { id: true, name: true, vendorCode: true } },
               },
             },
             assignedToUser: { select: { fullName: true } },
@@ -117,6 +121,7 @@ export const GET = withAuth(
         const data = remediations.map((rem) => ({
           id: rem.id,
           issueCode: rem.issueCode || null,
+          vendorId: rem.assessment?.vendor?.id || null,
           vendorName: rem.assessment?.vendor?.name || "Unknown",
           vendorCode: rem.assessment?.vendor?.vendorCode || "",
           domain: rem.domainName || null,

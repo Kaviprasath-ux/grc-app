@@ -41,7 +41,7 @@ export const GET = withAuth<RouteContext>(
       );
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
+  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory", "tprm.asr-inventory"], action: "view" }
 );
 
 // PATCH update vendor

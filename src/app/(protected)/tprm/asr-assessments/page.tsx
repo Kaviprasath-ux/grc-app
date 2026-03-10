@@ -27,6 +27,7 @@ import {
 import { Loader2, Eye, RotateCcw, Home, ChevronRight, UserPlus } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { ColumnDef } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 
 interface AssessmentItem {
   id: string;
@@ -90,6 +91,7 @@ export default function AsrAssessmentsPage() {
   const [activeTab, setActiveTab] = useState(TAB_MAP[initialTab] || "my-queue");
   const [subTab, setSubTab] = useState("main");
   const [items, setItems] = useState<AssessmentItem[]>([]);
+  const [offboardItems, setOffboardItems] = useState<AssessmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
@@ -110,6 +112,7 @@ export default function AsrAssessmentsPage() {
   const [reassignTargets, setReassignTargets] = useState<Assessor[]>([]);
   const [selectedReassignId, setSelectedReassignId] = useState<string>("");
   const [reassigning, setReassigning] = useState(false);
+  const router = useRouter();
 
   // Get current user ID from session
   useEffect(() => {
@@ -121,10 +124,30 @@ export default function AsrAssessmentsPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/tprm/asr-assessments?limit=200`);
-      if (res.ok) {
-        const json = await res.json();
+      const [mainRes, offboardRes] = await Promise.all([
+        fetch(`/api/tprm/asr-assessments?limit=200`),
+        fetch(`/api/tprm/offboard-assessments?role=all`),
+      ]);
+      if (mainRes.ok) {
+        const json = await mainRes.json();
         setItems(json.data || []);
+      }
+      if (offboardRes.ok) {
+        const json = await offboardRes.json();
+        setOffboardItems((json.data || []).map((a: Record<string, unknown>) => ({
+          id: a.id,
+          assessmentCode: a.assessmentCode,
+          assessmentType: "Offboard Assessment",
+          status: a.status as string,
+          vendorSubmissionDate: null,
+          completionDate: null,
+          assessmentResult: null,
+          approverComment: null,
+          vendor: { id: a.vendorId || "", name: a.vendorName || "Unknown", vendorCode: a.vendorCode || "", serviceCategory: null },
+          initiatedBy: a.initiatedBy ? { id: "", fullName: a.initiatedBy as string } : null,
+          assessor: null,
+          approver: null,
+        })));
       }
     } catch (error) {
       console.error("Error fetching assessments:", error);
@@ -279,13 +302,24 @@ export default function AsrAssessmentsPage() {
       }
     }
 
-    // Offboarding
+    // Offboarding — use separate offboard data
     if (activeTab === "offboarding") {
+      let offData = offboardItems;
       if (subTab === "terminated") {
-        data = data.filter((i) => i.status === "Terminated");
+        offData = offData.filter((i) => i.status === "Offboard_Completed");
       } else {
-        data = data.filter((i) => i.status === "Offboarding" || i.status === "Terminated");
+        offData = offData.filter((i) => i.status === "Offboard_Approve_Assessor");
       }
+      if (search) {
+        const q = search.toLowerCase();
+        offData = offData.filter(
+          (i) =>
+            i.assessmentCode?.toLowerCase().includes(q) ||
+            i.vendor?.name?.toLowerCase().includes(q) ||
+            i.vendor?.serviceCategory?.toLowerCase().includes(q)
+        );
+      }
+      return offData;
     }
 
     // Completed
@@ -313,7 +347,7 @@ export default function AsrAssessmentsPage() {
     }
 
     return data;
-  }, [items, activeTab, subTab, search, dateFilter, currentUserId, isApprover]);
+  }, [items, offboardItems, activeTab, subTab, search, dateFilter, currentUserId, isApprover]);
 
   // Determine if current sub-tab is "unassigned" or "assigned"
   const isUnassignedQueue = (activeTab === "due-diligence" || activeTab === "reassessments") && subTab === "unassigned";
@@ -562,7 +596,13 @@ export default function AsrAssessmentsPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}
+          onClick={() => {
+            if (row.original.assessmentType === "Offboard Assessment") {
+              router.push(`/tprm/offboard-review/${row.original.id}?role=assessor`);
+            } else {
+              window.open(`/tprm/asr-assessments/${row.original.id}`, "_self");
+            }
+          }}
         >
           <Eye className="h-4 w-4 text-primary" />
         </Button>
@@ -847,6 +887,7 @@ export default function AsrAssessmentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

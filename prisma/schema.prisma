@@ -134,6 +134,7 @@ model CustomerAccount {
   tprmDepartments            TPRMDepartment[]
   tprmQuestionnaireTemplates TPRMQuestionnaireTemplate[]
   tprmOffboardingQuestions   TPRMOffboardingQuestion[]
+  tprmOffboardResponses      TPRMOffboardResponse[]
   tprmScorecardFactors       TPRMScorecardFactor[]
   tprmDomains                TPRMDomain[]
   tprmMasterQuestions        TPRMMasterQuestion[]
@@ -464,6 +465,7 @@ model User {
   tprmInternalComments       TPRMInternalComment[]    @relation("TPRMInternalCommentAuthor")
   tprmRemediationComments    TPRMRemediationComment[] @relation("TPRMRemediationComments")
   tprmRemediationAssignments TPRMIssueRemediation[]  @relation("TPRMRemediationAssignee")
+  tprmOffboardDelegations    TPRMOffboardResponse[]  @relation("TPRMOffboardDelegatee")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -3470,6 +3472,7 @@ model TPRMAssessment {
   updatedAt             DateTime        @updatedAt
   logs                  TPRMAssessmentLog[]
   responses             TPRMAssessmentResponse[]
+  offboardResponses     TPRMOffboardResponse[]
   clarifications        TPRMClarification[]
   issueRemediations     TPRMIssueRemediation[]
   internalComments      TPRMInternalComment[]
@@ -3673,6 +3676,33 @@ model TPRMOffboardingQuestion {
   updatedAt         DateTime        @updatedAt
 
   @@index([customerAccountId])
+}
+
+// TPRMOffboardResponse — Per-question responses for vendor offboarding assessment
+model TPRMOffboardResponse {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessmentId      String
+  assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId        String          // TPRMOffboardingQuestion.id
+  questionNo        Int             // sequenceNo snapshot
+  questionTitle     String          // question title snapshot
+  questionText      String?         @db.Text // question text snapshot
+  response          String?         // "Yes", "No", "NA"
+  comment           String?         @db.Text
+  artifactUrl       String?
+  artifactName      String?
+  isFlagged         Boolean         @default(false)
+  isDelegated       Boolean         @default(false)
+  delegatedToId     String?
+  delegatedTo       User?           @relation("TPRMOffboardDelegatee", fields: [delegatedToId], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([assessmentId, questionId])
+  @@index([customerAccountId])
+  @@index([assessmentId])
 }
 
 // TPRMScorecardFactor — Security scorecard factors (SecurityPosture & ThreatExposure)

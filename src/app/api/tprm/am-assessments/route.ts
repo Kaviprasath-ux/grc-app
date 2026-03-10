@@ -33,7 +33,7 @@ export const GET = withAuth(
           statusFilter = ['Completed', 'Approved', 'Rejected', 'Reviewed'];
           break;
         case 'offboard':
-          statusFilter = ['Cancelled', 'Expired'];
+          statusFilter = ['Offboard_In_Progress', 'Offboard_Awaiting_Response', 'Offboard_Approve_Assessor', 'Offboard_Approve_RM', 'Offboard_Approve_BO', 'Offboard_Completed'];
           break;
       }
 
