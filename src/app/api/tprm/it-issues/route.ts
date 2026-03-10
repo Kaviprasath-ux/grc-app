@@ -146,6 +146,58 @@ export const GET = withAuth(
         return NextResponse.json({ data, total: data.length });
       }
 
+      // ==================== TAB 3: REGISTER DETAIL (per-vendor issues) ====================
+      if (tab === "register-detail") {
+        const vendorId = searchParams.get("vendorId");
+        if (!vendorId) {
+          return NextResponse.json({ error: "vendorId is required" }, { status: 400 });
+        }
+
+        const vendor = await prisma.tPRMVendor.findFirst({
+          where: { id: vendorId, customerAccountId },
+          select: { name: true },
+        });
+
+        const allRemediations = await prisma.tPRMIssueRemediation.findMany({
+          where: {
+            customerAccountId,
+            assessment: { vendorId },
+          },
+          include: {
+            assessment: {
+              select: { id: true, assessmentCode: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        // Deduplicate: keep latest remediation per assessmentId+questionNo
+        const seen = new Set<string>();
+        const remediations = allRemediations.filter((rem) => {
+          const key = `${rem.assessmentId}:${rem.questionNo || rem.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        const data = remediations.map((rem, idx) => ({
+          id: rem.id,
+          remediationId: rem.id,
+          domain: rem.domainName || null,
+          severity: rem.severity || "Medium",
+          issue: rem.issue || null,
+          risk: rem.risk || null,
+          recommendation: rem.recommendation || null,
+          assessmentCode: rem.assessment?.assessmentCode || null,
+          dueDate: rem.dueDate?.toISOString() || null,
+          status: rem.status || "Open",
+          issueCode: rem.issueCode || `ISS-${String(idx + 1).padStart(3, "0")}`,
+          questionNo: rem.questionNo || null,
+        }));
+
+        return NextResponse.json({ data, total: data.length, vendorName: vendor?.name || "Unknown" });
+      }
+
       return NextResponse.json({ error: "Invalid tab parameter" }, { status: 400 });
     } catch (error) {
       console.error("IT Issues GET error:", error);

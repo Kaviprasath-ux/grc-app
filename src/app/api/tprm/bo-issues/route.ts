@@ -172,75 +172,56 @@ export const GET = withAuth(
         return NextResponse.json({ data, total: data.length });
       }
 
-      // ==================== TAB 1b: REGISTER DETAIL (drill-down per vendor) ====================
+      // ==================== TAB 4: REGISTER DETAIL (per-vendor issues) ====================
       if (tab === "register-detail") {
         const vendorId = searchParams.get("vendorId");
         if (!vendorId) {
           return NextResponse.json({ error: "vendorId is required" }, { status: 400 });
         }
 
-        const domains = await prisma.tPRMDomain.findMany({
-          where: { customerAccountId },
-          select: { id: true, name: true },
-        });
-        const domainMap = new Map(domains.map((d) => [d.id, d.name]));
-
         const vendor = await prisma.tPRMVendor.findFirst({
-          where: { id: vendorId, ...tenantFilter },
+          where: { id: vendorId, customerAccountId },
+          select: { name: true },
+        });
+
+        const allRemediations = await prisma.tPRMIssueRemediation.findMany({
+          where: {
+            customerAccountId,
+            assessment: { vendorId },
+          },
           include: {
-            assessments: {
-              select: {
-                id: true,
-                assessmentCode: true,
-                completionDate: true,
-                responses: {
-                  select: {
-                    id: true,
-                    domainId: true,
-                    poSeverity: true,
-                    poStatus: true,
-                    poIssue: true,
-                    poRisk: true,
-                    assessorSeverity: true,
-                    assessorStatus: true,
-                    assessorIssue: true,
-                    assessorRisk: true,
-                    assessmentId: true,
-                  },
-                },
-              },
+            assessment: {
+              select: { id: true, assessmentCode: true },
             },
           },
+          orderBy: { createdAt: "desc" },
         });
 
-        if (!vendor) {
-          return NextResponse.json({ data: [], total: 0 });
-        }
+        // Deduplicate: keep latest remediation per assessmentId+questionNo
+        const seen = new Set<string>();
+        const remediations = allRemediations.filter((rem) => {
+          const key = `${rem.assessmentId}:${rem.questionNo || rem.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
 
-        const details = [];
-        for (const assessment of vendor.assessments) {
-          for (const resp of assessment.responses) {
-            const severity = resp.assessorSeverity || resp.poSeverity;
-            const status = resp.assessorStatus || resp.poStatus;
-            if (!severity || (status && status.toLowerCase() === "satisfactory")) continue;
+        const data = remediations.map((rem, idx) => ({
+          id: rem.id,
+          remediationId: rem.id,
+          domain: rem.domainName || null,
+          severity: rem.severity || "Medium",
+          issue: rem.issue || null,
+          risk: rem.risk || null,
+          recommendation: rem.recommendation || null,
+          assessmentCode: rem.assessment?.assessmentCode || null,
+          dueDate: rem.dueDate?.toISOString() || null,
+          status: rem.status || "Open",
+          issueCode: rem.issueCode || `ISS-${String(idx + 1).padStart(3, "0")}`,
+          questionNo: rem.questionNo || null,
+        }));
 
-            const domainName = resp.domainId ? domainMap.get(resp.domainId) || null : null;
-            const issue = resp.assessorIssue || resp.poIssue || null;
-            const risk = resp.assessorRisk || resp.poRisk || null;
-
-            details.push({
-              domain: domainName,
-              severity: severity || "Medium",
-              issue,
-              risk,
-              assessmentId: assessment.assessmentCode || resp.assessmentId.slice(0, 6).toUpperCase(),
-              dueDate: assessment.completionDate ? assessment.completionDate.toISOString() : null,
-              status: "OPEN",
-            });
-          }
-        }
-
-        return NextResponse.json({ data: details, total: details.length });
+        return NextResponse.json({ data, total: data.length, vendorName: vendor?.name || "Unknown" });
       }
 
       return NextResponse.json({ error: "Invalid tab parameter" }, { status: 400 });
