@@ -39,7 +39,7 @@ export const POST = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { name, description } = body;
+      const { name, description, categoryId } = body;
 
       if (!name) {
         return NextResponse.json(
@@ -63,12 +63,29 @@ export const POST = withAuth(
         );
       }
 
+      // Auto-generate sequential vulnId (e.g., VUL-001, VUL-002)
+      const lastVuln = await prisma.riskVulnerability.findFirst({
+        where: { customerAccountId },
+        orderBy: { createdAt: "desc" },
+        select: { vulnId: true },
+      });
+      let nextVulnId = "VUL-001";
+      if (lastVuln?.vulnId) {
+        const match = lastVuln.vulnId.match(/VUL-(\d+)/);
+        if (match) {
+          nextVulnId = `VUL-${String(parseInt(match[1], 10) + 1).padStart(3, "0")}`;
+        }
+      }
+
       const vulnerability = await prisma.riskVulnerability.create({
         data: {
           customerAccountId,
+          vulnId: nextVulnId,
           name,
           description,
+          categoryId: categoryId || null,
         },
+        include: { category: true },
       });
 
       if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskVulnerability', vulnerability.id, { name: vulnerability.name, description: vulnerability.description });
@@ -83,6 +100,49 @@ export const POST = withAuth(
     }
   },
   { resource: "risk.settings", action: "create" }
+);
+
+// PUT update a risk vulnerability - with tenant filtering
+export const PUT = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const tenantFilter = getTenantFilter(session, { globalAccess: true });
+      const body = await req.json();
+      const { id, name, description, categoryId } = body;
+
+      if (!id) {
+        return NextResponse.json({ error: "Vulnerability ID is required" }, { status: 400 });
+      }
+      if (!name?.trim()) {
+        return NextResponse.json({ error: "Vulnerability name is required" }, { status: 400 });
+      }
+
+      const existing = await prisma.riskVulnerability.findFirst({
+        where: { id, ...tenantFilter },
+      });
+      if (!existing) {
+        return NextResponse.json({ error: "Vulnerability not found" }, { status: 404 });
+      }
+
+      const vulnerability = await prisma.riskVulnerability.update({
+        where: { id },
+        data: {
+          name: name.trim(),
+          description: description?.trim() || null,
+          categoryId: categoryId || null,
+        },
+        include: { category: true },
+      });
+
+      if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskVulnerability', vulnerability.id, { name: vulnerability.name, description: vulnerability.description });
+
+      return NextResponse.json(vulnerability);
+    } catch (error) {
+      console.error("Error updating risk vulnerability:", error);
+      return NextResponse.json({ error: "Failed to update risk vulnerability" }, { status: 500 });
+    }
+  },
+  { resource: "risk.settings", action: "edit" }
 );
 
 // DELETE a risk vulnerability - with tenant filtering

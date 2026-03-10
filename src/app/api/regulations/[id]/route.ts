@@ -14,10 +14,6 @@ export async function PUT(
     const body = await request.json();
     const { name, version, sa1Date, sa2Date, scope, exclusionJustification, document, certificate, status } = body;
 
-    if (name && !isValidName(name.trim())) {
-      return NextResponse.json({ error: "Only letters, spaces, and hyphens are allowed" }, { status: 400 });
-    }
-
     const regulation = await prisma.regulation.update({
       where: { id },
       data: {

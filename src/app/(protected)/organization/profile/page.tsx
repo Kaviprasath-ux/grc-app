@@ -472,7 +472,6 @@ function ProfilePageContent() {
   const handleAddRegulation = async () => {
     const errors: Record<string, string> = {};
     if (!newRegulation.name.trim()) errors.name = t("Please enter the name");
-    else if (!isValidName(newRegulation.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!newRegulation.version.trim()) errors.version = t("Please enter the version");
     if (Object.keys(errors).length > 0) { setRegulationErrors(errors); return; }
     setRegulationErrors({});
@@ -525,7 +524,6 @@ function ProfilePageContent() {
     if (!editingRegulation) return;
     const errors: Record<string, string> = {};
     if (!editingRegulation.name.trim()) errors.name = t("Please enter the name");
-    else if (!isValidName(editingRegulation.name.trim())) errors.name = t("Only letters, spaces, and hyphens are allowed");
     if (!editingRegulation.version.trim()) errors.version = t("Please enter the version");
     if (Object.keys(errors).length > 0) { setEditRegulationErrors(errors); return; }
     setEditRegulationErrors({});

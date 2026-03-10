@@ -38,10 +38,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    if (!isValidName(name.trim())) {
-      return NextResponse.json({ error: "Only letters, spaces, and hyphens are allowed" }, { status: 400 });
-    }
-
     // Check for duplicate within the same tenant
     const existing = await prisma.regulation.findFirst({
       where: {
