@@ -254,17 +254,18 @@ export const navigation: NavItem[] = [
       { name: "Follow-Ups", href: "/tprm/am-follow-ups", icon: ClipboardList, permission: "tprm.am-follow-ups:view" },
       { name: "SME Management", href: "/tprm/am-sme-management", icon: UserCog, permission: "tprm.am-sme-management:view" },
       { name: "Support", href: "/tprm/am-support", icon: HelpCircle, permission: "tprm.am-support:view" },
-      // ---- Assessor menu items ----
+      // ---- Assessor / Auditor menu items ----
       { name: "Dashboard", href: "/tprm/asr-dashboard", icon: LayoutDashboard, permission: "tprm.asr-dashboard:view" },
       { name: "Assessments", href: "/tprm/asr-assessments", icon: ClipboardCheck, permission: "tprm.asr-assessments:view" },
       { name: "Inventory", href: "/tprm/asr-inventory", icon: Package, permission: "tprm.asr-inventory:view" },
+      { name: "Issue Register", href: "/tprm/asr-issue-register", icon: AlertTriangle, permission: "tprm.asr-issue-register:view" },
       { name: "Monitoring", href: "/tprm/asr-monitoring", icon: Radar, permission: "tprm.asr-monitoring:view" },
       { name: "Follow-ups", href: "/tprm/asr-follow-ups", icon: ClipboardList, permission: "tprm.asr-follow-ups:view" },
-      { name: "Issue Register", href: "/tprm/asr-issue-register", icon: AlertTriangle, permission: "tprm.asr-issue-register:view" },
       { name: "Assessment Factory", href: "/tprm/asr-assessment-factory", icon: Factory, permission: "tprm.asr-assessment-factory:view" },
+      { name: "Assessment Factory History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
+      { name: "Reports", href: "/tprm/reports", icon: FileBarChart, permission: "tprm.reports:view" },
       { name: "Template", href: "/tprm/asr-template", icon: FileText, permission: "tprm.asr-template:view" },
       { name: "Support", href: "/tprm/asr-support", icon: HelpCircle, permission: "tprm.asr-support:view" },
-      { name: "Assessment History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
       // ---- Internal IT Team menu items ----
       { name: "Issue Management", href: "/tprm/it-issues", icon: AlertTriangle, permission: "tprm.it-issues:view" },
       // ---- Factory Admin / Factory Assessor menu items ----
