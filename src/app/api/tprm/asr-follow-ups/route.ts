@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from '@/lib/notification-service';
 
 // GET follow-ups data for assessor (clarifications and remediations)
 export const GET = withAuth(
@@ -189,6 +190,89 @@ export const PATCH = withAuth(
             message: comment.trim(),
           },
         });
+      }
+
+      // Send notifications for remediation status changes
+      const remediationWithAssessment = await prisma.tPRMIssueRemediation.findFirst({
+        where: { id, customerAccountId },
+        include: {
+          assessment: {
+            include: { vendor: { select: { name: true, accountManagerEmail: true } } },
+          },
+        },
+      });
+      const vendorName = remediationWithAssessment?.assessment?.vendor?.name || '';
+      const issueCode = remediation.issueCode || id.substring(0, 8);
+      const questionTitle = remediation.questionText || '';
+
+      // Resolve AM user ID
+      const amEmail = remediationWithAssessment?.assessment?.vendor?.accountManagerEmail?.split(';')[0]?.trim();
+      const amUser = amEmail ? await prisma.user.findFirst({
+        where: { customerAccountId, email: { equals: amEmail, mode: 'insensitive' }, isActive: true },
+        select: { id: true },
+      }) : null;
+
+      // Resolve BO/admin user IDs for bulk notifications
+      const boAdmins = await prisma.user.findMany({
+        where: {
+          customerAccountId, isActive: true,
+          OR: [{ role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } }, { tprmRole: 'Business Owner' }],
+        },
+        select: { id: true },
+        take: 10,
+      });
+      const boAdminIds = boAdmins.map(u => u.id);
+      const amAndBoIds = [...new Set([...(amUser ? [amUser.id] : []), ...boAdminIds])];
+
+      switch (action) {
+        case 'satisfied':
+          if (amAndBoIds.length > 0) {
+            void notificationService.notifyTPRMRemediationSatisfied({
+              customerAccountId, actorId: session.id, recipientIds: amAndBoIds,
+              remediationId: id, issueCode, vendorName, questionTitle,
+            });
+          }
+          break;
+        case 'unsatisfied':
+          if (amAndBoIds.length > 0) {
+            void notificationService.notifyTPRMRemediationUnsatisfied({
+              customerAccountId, actorId: session.id, recipientIds: amAndBoIds,
+              remediationId: id, issueCode, vendorName, questionTitle, reason: comment,
+            });
+          }
+          break;
+        case 'send-to-business':
+          if (assignedToUserId) {
+            void notificationService.notifyTPRMRemediationSentToBusiness({
+              customerAccountId, actorId: session.id, recipientId: assignedToUserId,
+              remediationId: id, issueCode, vendorName, questionTitle,
+            });
+          }
+          break;
+        case 'reassign-to-it':
+          if (assignedToUserId) {
+            void notificationService.notifyTPRMRemediationAssignedToIT({
+              customerAccountId, actorId: session.id, recipientId: assignedToUserId,
+              remediationId: id, issueCode, vendorName, questionTitle,
+            });
+          }
+          break;
+        case 'approve-it':
+          if (remediation.assignedToUserId) {
+            void notificationService.notifyTPRMRemediationITApproved({
+              customerAccountId, actorId: session.id, recipientId: remediation.assignedToUserId,
+              remediationId: id, issueCode, vendorName, questionTitle,
+            });
+          }
+          break;
+        case 'return-to-it':
+          if (remediation.assignedToUserId) {
+            void notificationService.notifyTPRMRemediationITReturned({
+              customerAccountId, actorId: session.id, recipientId: remediation.assignedToUserId,
+              remediationId: id, issueCode, vendorName, questionTitle, reason: comment,
+            });
+          }
+          break;
       }
 
       return NextResponse.json(updated);

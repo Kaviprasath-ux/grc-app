@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId, getAMEmail } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { saveUploadedFile } from '@/lib/file-upload';
+import { notificationService } from '@/lib/notification-service';
 
 // GET /api/tprm/am-follow-ups/issue-remediations — List issue remediations for AM
 export const GET = withAuth(
@@ -120,6 +121,44 @@ export const PATCH = withAuth(
           ...(artifactUrl && { artifactUrl }),
         },
       });
+
+      // Notify assessors/BO about remediation submission
+      const remWithAssessment = await prisma.tPRMIssueRemediation.findFirst({
+        where: { id, customerAccountId },
+        include: {
+          assessment: {
+            include: {
+              vendor: { select: { name: true } },
+              assessor: { select: { id: true } },
+            },
+          },
+        },
+      });
+      const recipientIds: string[] = [];
+      if (remWithAssessment?.assessment?.assessor?.id) recipientIds.push(remWithAssessment.assessment.assessor.id);
+      // Add BO/admins
+      const boUsers = await prisma.user.findMany({
+        where: {
+          customerAccountId, isActive: true,
+          OR: [{ role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } }, { tprmRole: 'Business Owner' }],
+        },
+        select: { id: true },
+        take: 10,
+      });
+      for (const u of boUsers) {
+        if (!recipientIds.includes(u.id)) recipientIds.push(u.id);
+      }
+      if (recipientIds.length > 0) {
+        void notificationService.notifyTPRMRemediationSubmitted({
+          customerAccountId,
+          actorId: session.id,
+          recipientIds,
+          remediationId: id,
+          issueCode: remediation.issueCode || id.substring(0, 8),
+          vendorName: remWithAssessment?.assessment?.vendor?.name || '',
+          questionTitle: remediation.questionText || '',
+        });
+      }
 
       return NextResponse.json(updated);
     } catch (error) {

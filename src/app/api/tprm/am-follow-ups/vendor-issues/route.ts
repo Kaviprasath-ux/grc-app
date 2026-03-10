@@ -165,6 +165,52 @@ export const PATCH = withAuth(
         },
       });
 
+      // Notify on status changes
+      if (status !== undefined && status !== issue.status) {
+        // Resolve reporter and admin users
+        const recipientIds: string[] = [];
+        if (issue.reportedById) recipientIds.push(issue.reportedById);
+
+        const admins = await prisma.user.findMany({
+          where: {
+            customerAccountId,
+            isActive: true,
+            OR: [
+              { role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
+              { tprmRole: 'Business Owner' },
+            ],
+          },
+          select: { id: true },
+          take: 10,
+        });
+        for (const a of admins) {
+          if (!recipientIds.includes(a.id)) recipientIds.push(a.id);
+        }
+
+        const vendorName = updated.vendor?.name || '';
+
+        if (status === 'Resolved' || status === 'Closed') {
+          void notificationService.notifyTPRMVendorIssueResolved({
+            customerAccountId,
+            actorId: session.id,
+            recipientIds,
+            issueId: id,
+            issueTitle: updated.title || issue.title,
+            vendorName,
+          });
+        } else {
+          void notificationService.notifyTPRMVendorIssueUpdated({
+            customerAccountId,
+            actorId: session.id,
+            recipientIds,
+            issueId: id,
+            issueTitle: updated.title || issue.title,
+            vendorName,
+            newStatus: status,
+          });
+        }
+      }
+
       return NextResponse.json(updated);
     } catch (error) {
       console.error('AM Vendor Issues PATCH error:', error);
