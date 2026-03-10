@@ -105,6 +105,44 @@ export const GET = withAuth(
   { resource: "audit.documents", action: "view" }
 );
 
+// Helper function to generate unique document code
+// NOTE: documentCode has a GLOBAL unique constraint, so we check ALL documents (not per-tenant)
+async function generateUniqueDocumentCode(): Promise<string> {
+  // Find the highest existing document code number GLOBALLY
+  const allDocs = await prisma.internalAuditDocument.findMany({
+    select: { documentCode: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  let maxNum = 0;
+  for (const doc of allDocs) {
+    const match = doc.documentCode.match(/^DOC-(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNum) maxNum = num;
+    }
+  }
+
+  // Generate next sequential code
+  const nextNum = maxNum + 1;
+  const code = `DOC-${String(nextNum).padStart(4, "0")}`;
+
+  // Verify code doesn't exist globally (final check)
+  const exists = await prisma.internalAuditDocument.findFirst({
+    where: { documentCode: code },
+    select: { id: true },
+  });
+
+  if (!exists) {
+    return code;
+  }
+
+  // If code exists (race condition), use timestamp-based code for guaranteed uniqueness
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `DOC-${timestamp}${randomSuffix}`;
+}
+
 // POST - Upload a new document
 export const POST = withAuth(
   async (request: NextRequest, context, session) => {
@@ -131,41 +169,58 @@ export const POST = withAuth(
       const originalName = file.name;
       const ext = path.extname(originalName);
 
-      // Generate document code - find the highest existing number across ALL codes, scoped to tenant
-      const allDocs = await prisma.internalAuditDocument.findMany({
-        where: { ...(customerAccountId ? { customerAccountId } : {}) },
-        select: { documentCode: true },
-      });
+      // Generate unique document code (globally unique, not per-tenant)
+      // Create document record in database with retry on unique constraint violation
+      let document;
+      let createAttempts = 0;
+      const maxCreateAttempts = 3;
 
-      let maxNum = 0;
-      for (const doc of allDocs) {
-        const match = doc.documentCode.match(/(\d+)$/);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (num > maxNum) maxNum = num;
+      while (createAttempts < maxCreateAttempts) {
+        try {
+          const codeToUse = await generateUniqueDocumentCode();
+
+          document = await prisma.internalAuditDocument.create({
+            data: {
+              documentCode: codeToUse,
+              name: name || originalName,
+              description: description || null,
+              category,
+              fileName: originalName,
+              fileType: ext.replace(".", "").toLowerCase(),
+              fileSize: buffer.length,
+              filePath: urlPath,
+              uploadedAt: new Date(),
+              ...(customerAccountId ? { customerAccountId } : {}),
+              ...(auditHeadId ? { auditHeadId } : {}),
+            },
+          });
+          break; // Success - exit retry loop
+        } catch (createError: unknown) {
+          createAttempts++;
+          // Check if it's a unique constraint violation (P2002)
+          if (
+            createError &&
+            typeof createError === 'object' &&
+            'code' in createError &&
+            createError.code === 'P2002' &&
+            createAttempts < maxCreateAttempts
+          ) {
+            console.log(`[Document Upload] Unique constraint collision, retrying (attempt ${createAttempts + 1}/${maxCreateAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 100 * createAttempts));
+            continue;
+          }
+          throw createError; // Re-throw if not a unique constraint error or max retries reached
         }
       }
-      const documentCode = `DOC-${String(maxNum + 1).padStart(4, "0")}`;
 
-      // Create document record in database
-      const document = await prisma.internalAuditDocument.create({
-        data: {
-          documentCode,
-          name: name || originalName,
-          description: description || null,
-          category,
-          fileName: originalName,
-          fileType: ext.replace(".", "").toLowerCase(),
-          fileSize: buffer.length,
-          filePath: urlPath,
-          uploadedAt: new Date(),
-          ...(customerAccountId ? { customerAccountId } : {}),
-          ...(auditHeadId ? { auditHeadId } : {}),
-        },
-      });
+      if (!document) {
+        throw new Error('Failed to create document after multiple attempts');
+      }
 
       // Store file binary via raw SQL (bypasses Prisma client cache on Vercel)
       await prisma.$executeRaw`UPDATE "InternalAuditDocument" SET "fileData" = ${Buffer.from(buffer)} WHERE "id" = ${document.id}`;
+
+      console.log(`[Document Upload] Created document ${document.documentCode} (${document.fileName}), fileData stored`);
 
       // Translate document name and file name
       if (customerAccountId && isTranslationConfigured()) {
