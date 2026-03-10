@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Send, Loader2,
-  Eye, FileText, ExternalLink, ArrowLeft,
+  Eye, FileText, ExternalLink, ArrowLeft, ShieldCheck, Ban, MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,6 +195,8 @@ export default function RMIssuesPage() {
   // Remediation detail modal
   const [viewRemediation, setViewRemediation] = useState<IssueRemediationEntry | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [commentAction, setCommentAction] = useState<{ id: string; status: string } | null>(null);
+  const [commentText, setCommentText] = useState("");
 
   // Vendor Issues filters
   const [viSeverityFilter, setViSeverityFilter] = useState("all");
@@ -269,6 +271,41 @@ export default function RMIssuesPage() {
       setActionLoading(false);
     }
   }, [toast, t, loadData]);
+
+  const openCommentDialog = useCallback((id: string, status: string) => {
+    setCommentAction({ id, status });
+    setCommentText("");
+  }, []);
+
+  const handleCommentSave = useCallback(async () => {
+    if (!commentAction) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/tprm/rm-issues", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: commentAction.id,
+          status: commentAction.status,
+          addComment: commentText.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Issue updated successfully") });
+        setCommentAction(null);
+        setCommentText("");
+        setViewRemediation(null);
+        loadData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: data.error || t("Failed to update issue"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to update issue"), variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  }, [commentAction, commentText, toast, t, loadData]);
 
   // ==================== ISSUE REGISTER ====================
 
@@ -373,11 +410,11 @@ export default function RMIssuesPage() {
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab =
         remSubTab === "Open"
-          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Submitted", "Assigned to BO", "Assigned to IT", "IT Submitted", "Returned to IT"].includes(e.status)
+          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Submitted"].includes(e.status)
           : remSubTab === "Assigned to IT"
           ? e.status === "Assigned to IT"
           : remSubTab === "Assigned to BO"
-          ? e.status === "Assigned to BO"
+          ? ["Assigned to BO", "Terminated"].includes(e.status)
           : true;
       const matchesResponseDate = !remResponseDateFilter ||
         (e.responseDate && e.responseDate.startsWith(remResponseDateFilter));
@@ -885,20 +922,53 @@ export default function RMIssuesPage() {
             </div>
           )}
           <DialogFooter className="flex-wrap gap-2">
-            {viewRemediation && ["Assigned to BO", "Assigned to IT", "Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Submitted"].includes(viewRemediation.status) && (
+            {viewRemediation && remSubTab === "Open" && (
               <>
-                <Button onClick={() => handleAssign(viewRemediation.id, "Assigned to IT")} disabled={actionLoading} variant="secondary">
-                  {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Assigned to IT")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
                   <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                  {t("Assign to IT")}
+                  {t("Reassign to IT")}
                 </Button>
-                <Button onClick={() => handleAssign(viewRemediation.id, "Assigned to BO")} disabled={actionLoading} variant="secondary">
-                  <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                  {t("Assign to BO")}
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Assigned to BO")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                  <ShieldCheck className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Accept Risk")}
+                </Button>
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Terminated")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                  <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Initiate Termination")}
                 </Button>
               </>
             )}
             <Button variant="outline" onClick={() => setViewRemediation(null)}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== COMMENT DIALOG ==================== */}
+      <Dialog open={!!commentAction} onOpenChange={(open) => { if (!open) { setCommentAction(null); setCommentText(""); } }}>
+        <DialogContent className="!max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {commentAction?.status === "Assigned to IT" ? t("Reassign to IT") :
+               commentAction?.status === "Assigned to BO" ? t("Accept Risk") :
+               commentAction?.status === "Terminated" ? t("Initiate Termination") :
+               t("Update Status")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">{t("Comment")} ({t("optional")})</Label>
+            <Textarea
+              placeholder={t("Add a comment...")}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCommentAction(null); setCommentText(""); }}>{t("Cancel")}</Button>
+            <Button onClick={handleCommentSave} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+              {actionLoading && <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />}
+              {t("Save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

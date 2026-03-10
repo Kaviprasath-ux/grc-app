@@ -191,9 +191,12 @@ export default function BOIssuesPage() {
   const [viewRemediation, setViewRemediation] = useState<IssueRemediationEntry | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Comment dialog (for Accept Risk, Send To Assessor, Terminate Vendor)
+  // Comment dialog (for Accept Risk, Send To Assessor)
   const [commentAction, setCommentAction] = useState<{ remediationId: string; targetStatus: string } | null>(null);
   const [commentText, setCommentText] = useState("");
+
+  // Terminate Vendor confirmation dialog
+  const [terminateConfirm, setTerminateConfirm] = useState<{ remediationId: string } | null>(null);
 
   // Vendor Issue detail dialog
   const [viewVendorIssue, setViewVendorIssue] = useState<VendorIssueEntry | null>(null);
@@ -265,6 +268,35 @@ export default function BOIssuesPage() {
     }
   }, [commentAction, commentText, toast, t, loadData]);
 
+  // Handles the Terminate Vendor → Initiate flow
+  const handleTerminateInitiate = useCallback(async () => {
+    if (!terminateConfirm) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/tprm/bo-issues", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: terminateConfirm.remediationId,
+          status: "Closed",
+          addComment: "Vendor termination initiated - offboarding process started",
+        }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Vendor termination initiated successfully") });
+        setTerminateConfirm(null);
+        loadData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: data.error || t("Failed to initiate termination"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to initiate termination"), variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  }, [terminateConfirm, toast, t, loadData]);
+
   // ==================== VENDOR RISK REGISTER DRILL-DOWN ====================
   const loadVendorRiskIssues = useCallback(async (vendorId: string, vendorName: string) => {
     setSelectedVendor({ id: vendorId, name: vendorName });
@@ -335,9 +367,9 @@ export default function BOIssuesPage() {
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab =
         remSubTab === "Open"
-          ? ["Open", "Assigned to BO", "Pending", "Terminated"].includes(e.status)
+          ? ["Open", "Assigned to BO", "Pending"].includes(e.status)
           : remSubTab === "Closed"
-          ? ["Closed", "Submitted"].includes(e.status)
+          ? ["Closed", "Terminated"].includes(e.status)
           : remSubTab === "Rejected"
           ? e.status === "Rejected"
           : true;
@@ -381,6 +413,7 @@ export default function BOIssuesPage() {
       const matchesSubTab =
         viSubTab === "Open" ? ["Open", "Pending"].includes(e.status)
         : viSubTab === "Closed" ? ["Closed", "Resolved"].includes(e.status)
+        : viSubTab === "Awaiting Response" ? ["Submitted", "Awaiting Response"].includes(e.status)
         : e.status === viSubTab;
       return matchesSeverity && matchesSubTab;
     });
@@ -796,17 +829,17 @@ export default function BOIssuesPage() {
             </div>
           )}
           <DialogFooter className="flex-wrap gap-2">
-            {viewRemediation && (
+            {viewRemediation && ["Open", "Assigned to BO", "Pending"].includes(viewRemediation.status) && (
               <>
                 <Button onClick={() => openCommentDialog(viewRemediation.id, "Closed")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
                   <ShieldCheck className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Accept Risk")}
                 </Button>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Submitted")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Rejected")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
                   <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Send To Assessor")}
                 </Button>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Terminated")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => { setTerminateConfirm({ remediationId: viewRemediation.id }); setViewRemediation(null); }} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
                   <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Terminate Vendor")}
                 </Button>
@@ -883,6 +916,23 @@ export default function BOIssuesPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewIssueDetail(null)}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== TERMINATE VENDOR CONFIRMATION DIALOG ==================== */}
+      <Dialog open={!!terminateConfirm} onOpenChange={(open) => { if (!open) setTerminateConfirm(null); }}>
+        <DialogContent className="!max-w-md w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>{t("Edit Remediation")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{t("Are you sure you want to initiate offboard?")}</p>
+          <DialogFooter className="gap-2">
+            <Button onClick={handleTerminateInitiate} disabled={actionLoading} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Initiate")}
+            </Button>
+            <Button variant="outline" onClick={() => setTerminateConfirm(null)}>{t("Cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

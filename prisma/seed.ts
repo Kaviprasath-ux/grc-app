@@ -32,12 +32,13 @@ async function main() {
   // Create CustomerAccount for GRC Administrator (for GRC Admin data isolation)
   const grcAdminCustomerAccount = await prisma.customerAccount.upsert({
     where: { code: "GRC_ADMIN_001" },
-    update: {},
+    update: { isTprmAdded: true },
     create: {
       id: "grc-admin-account-1",
       code: "GRC_ADMIN_001",
       name: "GRC Administrator Account",
       isActive: true,
+      isTprmAdded: true,
     },
   });
   console.log("✅ GRC Admin Customer Account created");
@@ -4807,6 +4808,216 @@ async function main() {
     }
   }
   console.log("✅ TPRM Assessment Logs created");
+
+  // ==================== TPRM ROLE USERS (RM, BO, IT) ====================
+
+  const tprmRoleUsers = [
+    { userId: "TPRM-RM-001", userName: "remm", email: "remm@baarez.com", firstName: "Rajesh", lastName: "Kumar", fullName: "Rajesh Kumar", designation: "Relationship Manager", tprmRole: "Relationship Manager", roleName: "RelationshipManager" },
+    { userId: "TPRM-BO-001", userName: "bowner", email: "bowner@baarez.com", firstName: "Priya", lastName: "Sharma", fullName: "Priya Sharma", designation: "Business Owner", tprmRole: "Business Owner", roleName: "BusinessOwner" },
+    { userId: "TPRM-IT-001", userName: "itteam", email: "itteam@baarez.com", firstName: "Amit", lastName: "Patel", fullName: "Amit Patel", designation: "IT Security Lead", tprmRole: "Internal IT Team", roleName: "InternalITTeam" },
+    { userId: "TPRM-ASR-001", userName: "assessor1", email: "assessor1@baarez.com", firstName: "Neha", lastName: "Gupta", fullName: "Neha Gupta", designation: "TPRM Assessor", tprmRole: "Assessor", roleName: "TPRMAssessor" },
+  ];
+
+  const tprmUserIds: Record<string, string> = {};
+  for (const u of tprmRoleUsers) {
+    const user = await prisma.user.upsert({
+      where: { userId: u.userId },
+      update: { password: hashedPassword1, customerAccountId: grcAdminCustomerAccountId, tprmRole: u.tprmRole },
+      create: {
+        userId: u.userId,
+        userName: u.userName,
+        email: u.email,
+        password: hashedPassword1,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        fullName: u.fullName,
+        designation: u.designation,
+        role: "Contributor",
+        function: "TPRM",
+        tprmRole: u.tprmRole,
+        isActive: true,
+        isBlocked: false,
+        customerAccountId: grcAdminCustomerAccountId,
+      },
+    });
+    tprmUserIds[u.roleName] = user.id;
+
+    // Ensure role exists and assign
+    const role = await prisma.role.upsert({
+      where: { name: u.roleName },
+      update: {},
+      create: { name: u.roleName, description: `TPRM ${u.tprmRole} role`, isSystem: true },
+    });
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: user.id, roleId: role.id } },
+      update: {},
+      create: { userId: user.id, roleId: role.id },
+    });
+  }
+  console.log("✅ TPRM Role Users created (remm, bowner, itteam, assessor1 / password: 1)");
+
+  // ==================== TPRM ISSUE REMEDIATIONS (Open issues for RM) ====================
+
+  const issueRemediations = [
+    {
+      issueCode: "ISS-001",
+      assessmentCode: "ASM001",
+      questionNo: "IS-01",
+      questionText: "Does your organization enforce data encryption for all data at rest using industry-standard algorithms (e.g., AES-256)?",
+      questionResponse: "No",
+      domainName: "Information Security",
+      severity: "High",
+      issue: "Vendor does not enforce AES-256 encryption on all storage systems. Legacy databases remain unencrypted, exposing sensitive client data to unauthorized access.",
+      risk: "Unencrypted data at rest can be exfiltrated if storage is compromised, leading to regulatory fines (GDPR, PCI-DSS) and reputational damage.",
+      recommendation: "Mandate full-disk encryption with AES-256 across all storage tiers. Implement key management via HSM. Target completion within 90 days.",
+      reassignComment: "RM please review and coordinate with the vendor for remediation timeline.",
+      status: "Open",
+      dueDate: new Date("2026-04-15"),
+      requestedDate: new Date("2026-03-01"),
+    },
+    {
+      issueCode: "ISS-002",
+      assessmentCode: "ASM001",
+      questionNo: "IS-02",
+      questionText: "Does the vendor implement multi-factor authentication (MFA) for all user access to critical systems?",
+      questionResponse: "Partial",
+      domainName: "Information Security",
+      severity: "Critical",
+      issue: "MFA is only enabled for admin accounts. Regular user accounts on production systems rely solely on passwords, increasing the risk of credential-based attacks.",
+      risk: "Single-factor authentication on production systems creates a high-risk attack vector. Compromised credentials could lead to unauthorized data access and lateral movement.",
+      recommendation: "Deploy MFA for all user accounts accessing production environments. Consider FIDO2/WebAuthn for phishing-resistant authentication.",
+      reassignComment: "Critical finding - needs immediate attention from RM.",
+      status: "Pending",
+      dueDate: new Date("2026-03-30"),
+      requestedDate: new Date("2026-02-28"),
+    },
+    {
+      issueCode: "ISS-003",
+      assessmentCode: "ASM002",
+      questionNo: "CS-01",
+      questionText: "Does the cloud service provider guarantee data residency within contracted geographic boundaries?",
+      questionResponse: "Yes",
+      domainName: "Cloud Security",
+      severity: "Medium",
+      issue: "While data residency is contractually guaranteed, monitoring and audit mechanisms to verify compliance are not automated. Manual checks are performed quarterly.",
+      risk: "Without continuous monitoring, data could inadvertently be processed outside contracted regions during failover events, creating regulatory non-compliance.",
+      recommendation: "Implement automated data residency monitoring using cloud-native tools (e.g., Azure Policy). Set up real-time alerts for cross-region data transfers.",
+      reassignComment: "Please verify with Azure team about their monitoring capabilities.",
+      status: "Open",
+      dueDate: new Date("2026-05-01"),
+      requestedDate: new Date("2026-03-05"),
+    },
+    {
+      issueCode: "ISS-004",
+      assessmentCode: "ASM005",
+      questionNo: "RM-01",
+      questionText: "Has the vendor updated their risk register to reflect the current threat landscape including emerging AI-based threats?",
+      questionResponse: "No",
+      domainName: "Risk Management",
+      severity: "High",
+      issue: "IBM's vendor risk register has not been updated since Q2 2025. It does not account for AI-driven threats, supply chain attacks, or zero-day exploit trends observed in H2 2025.",
+      risk: "Outdated risk register may result in unmitigated threats. The organization may not be adequately prepared for emerging attack vectors targeting AI/ML pipelines.",
+      recommendation: "Request immediate update of vendor risk register. Include AI threat modeling, supply chain risk assessment, and zero-day response procedures.",
+      reassignComment: "Annual review flagged this. RM to follow up with IBM security team.",
+      status: "Open",
+      dueDate: new Date("2026-04-01"),
+      requestedDate: new Date("2026-03-08"),
+    },
+    {
+      issueCode: "ISS-005",
+      assessmentCode: "ASM006",
+      questionNo: "ERP-01",
+      questionText: "Are user access reviews conducted at least quarterly with evidence of remediation for identified access violations?",
+      questionResponse: "Partial",
+      domainName: "ERP Security",
+      severity: "Medium",
+      issue: "SAP user access reviews are conducted quarterly, but remediation of identified violations takes an average of 45 days. Three privilege escalation findings from Q4 2025 remain unresolved.",
+      risk: "Delayed remediation of access violations creates a window for privilege abuse. SOD conflicts may persist, increasing the risk of fraudulent transactions.",
+      recommendation: "Enforce a 15-day SLA for remediation of access review findings. Implement automated SOD conflict detection and integrate with SAP GRC Access Control.",
+      status: "Pending",
+      dueDate: new Date("2026-04-20"),
+      requestedDate: new Date("2026-03-02"),
+    },
+    {
+      issueCode: "ISS-006",
+      assessmentCode: "ASM009",
+      questionNo: "DB-01",
+      questionText: "Is encryption at rest enabled for all database instances, including legacy and development environments?",
+      questionResponse: "No",
+      domainName: "Database Security",
+      severity: "Critical",
+      issue: "Oracle legacy database systems (versions 12c and earlier) do not have TDE (Transparent Data Encryption) enabled. Development environments contain production data copies without any encryption.",
+      risk: "Unencrypted production data in development environments violates data protection regulations. Legacy systems are vulnerable to data exfiltration through physical media theft or unauthorized backup access.",
+      recommendation: "Enable TDE on all Oracle instances immediately. Mask or anonymize production data used in development. Upgrade legacy 12c instances to 19c with encryption enabled by default.",
+      reassignComment: "Database security is critical. RM coordinate with Oracle team for emergency remediation.",
+      status: "Open",
+      dueDate: new Date("2026-03-25"),
+      requestedDate: new Date("2026-02-20"),
+    },
+    {
+      issueCode: "ISS-007",
+      assessmentCode: "ASM013",
+      questionNo: "ERP-03",
+      questionText: "Has custom ABAP code been reviewed for security vulnerabilities using static analysis tools?",
+      questionResponse: "No",
+      domainName: "ERP Security",
+      severity: "High",
+      issue: "Custom ABAP code deployed across 12 SAP modules has never been subjected to static code analysis. Preliminary manual review found SQL injection patterns and hardcoded credentials in 3 custom programs.",
+      risk: "Vulnerable custom code in production SAP systems could be exploited for data theft, privilege escalation, or system manipulation. Hardcoded credentials pose an immediate security risk.",
+      recommendation: "Conduct comprehensive ABAP code scan using SAP Code Vulnerability Analyzer or third-party tools (e.g., Virtual Forge). Remediate critical findings within 30 days. Establish mandatory code review process for all custom developments.",
+      status: "Open",
+      dueDate: new Date("2026-04-10"),
+      requestedDate: new Date("2026-03-05"),
+    },
+    {
+      issueCode: "ISS-008",
+      assessmentCode: "ASM002",
+      questionNo: "CO-01",
+      questionText: "Does the vendor maintain current SOC 2 Type II certification with no critical exceptions noted?",
+      questionResponse: "Yes",
+      domainName: "Compliance",
+      severity: "Low",
+      issue: "SOC 2 Type II report is current but contains two minor exceptions related to change management notification delays. While classified as low risk, the exceptions indicate process gaps.",
+      risk: "Minor SOC 2 exceptions, if not addressed, could escalate to material findings in future audits, potentially affecting the vendor's compliance posture.",
+      recommendation: "Request vendor's remediation plan for the two SOC 2 exceptions. Monitor resolution progress in the next assessment cycle.",
+      status: "Pending",
+      dueDate: new Date("2026-06-01"),
+      requestedDate: new Date("2026-03-10"),
+    },
+  ];
+
+  for (const rem of issueRemediations) {
+    const assessmentId = createdAssessments[rem.assessmentCode];
+    if (!assessmentId) continue;
+
+    const existing = await prisma.tPRMIssueRemediation.findFirst({
+      where: { customerAccountId: grcAdminCustomerAccountId, issueCode: rem.issueCode },
+    });
+    if (!existing) {
+      await prisma.tPRMIssueRemediation.create({
+        data: {
+          issueCode: rem.issueCode,
+          customerAccountId: grcAdminCustomerAccountId,
+          assessmentId,
+          questionNo: rem.questionNo,
+          questionText: rem.questionText,
+          questionResponse: rem.questionResponse,
+          domainName: rem.domainName,
+          severity: rem.severity,
+          issue: rem.issue,
+          risk: rem.risk,
+          recommendation: rem.recommendation,
+          reassignComment: rem.reassignComment || null,
+          status: rem.status,
+          dueDate: rem.dueDate,
+          requestedDate: rem.requestedDate,
+          assignedToUserId: tprmUserIds["RelationshipManager"],
+          assignedAt: new Date(),
+        },
+      });
+    }
+  }
+  console.log("✅ TPRM Issue Remediations created (8 open issues for RM user 'remm')");
 
   // ==================== EMAIL TEMPLATES (GLOBAL - SYSTEM DEFAULT) ====================
   // Seed all 73 English email templates as system defaults
