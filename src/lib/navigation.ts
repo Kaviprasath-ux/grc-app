@@ -582,7 +582,8 @@ export function filterNavigationByPermissionsAndRole(
   // Factory roles and IT roles always get flattened TPRM nav (their items should be top-level)
   const isFactoryRole = userRoles.some(r => r === 'FactoryAdmin' || r === 'FactoryAssessor');
   const isITRole = userRoles.some(r => r === 'InternalITTeam');
-  if (isFactoryRole || isITRole) {
+  const isTPRMAuditor = userRoles.some(r => r === 'TPRMAuditor');
+  if (isFactoryRole || isITRole || isTPRMAuditor) {
     navItems = flattenTprmNavigation(items);
   }
   // For non-system roles with ONLY TPRM (no GRC), flatten TPRM children to top-level
