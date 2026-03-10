@@ -21,7 +21,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, Home, ChevronRight, FileText, Download, ExternalLink } from "lucide-react";
+import { Loader2, Eye, Home, ChevronRight, FileText, Download, ExternalLink, MessageSquare } from "lucide-react";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 import { ColumnDef } from "@tanstack/react-table";
 
@@ -96,6 +96,7 @@ export default function AsrFollowUpsPage() {
   const [dateFilter, setDateFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [viewRemediation, setViewRemediation] = useState<RemediationItem | null>(null);
+  const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showUnsatisfiedComment, setShowUnsatisfiedComment] = useState(false);
   const [unsatisfiedComment, setUnsatisfiedComment] = useState("");
@@ -349,6 +350,15 @@ export default function AsrFollowUpsPage() {
     },
     { accessorKey: "responseDate", header: t("Response Date"), cell: ({ row }) => formatDate(row.getValue("responseDate")) },
     { accessorKey: "dueDate", header: t("Due Date"), cell: ({ row }) => formatDate(row.getValue("dueDate")) },
+    {
+      id: "comments",
+      header: t("Comments"),
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" onClick={() => setCommentsOnlyId(row.original.id)}>
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      ),
+    },
     {
       id: "actions",
       header: t("Action"),
@@ -718,6 +728,19 @@ export default function AsrFollowUpsPage() {
               </>
             )}
             <Button variant="outline" onClick={() => { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); setShowReturnToITComment(false); setReturnToITComment(""); }}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== COMMENTS ONLY DIALOG ==================== */}
+      <Dialog open={!!commentsOnlyId} onOpenChange={(open) => { if (!open) setCommentsOnlyId(null); }}>
+        <DialogContent className="!max-w-lg w-[90vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Comments")}</DialogTitle>
+          </DialogHeader>
+          {commentsOnlyId && <RemediationComments remediationId={commentsOnlyId} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentsOnlyId(null)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

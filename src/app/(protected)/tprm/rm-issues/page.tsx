@@ -132,6 +132,7 @@ const STATUS_COLORS: Record<string, string> = {
   Rejected: "border-red-300 bg-red-50 text-red-700",
   Pending: "border-yellow-300 bg-yellow-50 text-yellow-700",
   "Assigned to BO": "border-blue-300 bg-blue-50 text-blue-700",
+  "Assigned to RM": "border-violet-300 bg-violet-50 text-violet-700",
   "Assigned to IT": "border-indigo-300 bg-indigo-50 text-indigo-700",
   "IT Submitted": "border-teal-300 bg-teal-50 text-teal-700",
   "IT Approved": "border-emerald-300 bg-emerald-50 text-emerald-700",
@@ -194,6 +195,7 @@ export default function RMIssuesPage() {
 
   // Remediation detail modal
   const [viewRemediation, setViewRemediation] = useState<IssueRemediationEntry | null>(null);
+  const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [commentAction, setCommentAction] = useState<{ id: string; status: string } | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -410,7 +412,7 @@ export default function RMIssuesPage() {
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab =
         remSubTab === "Open"
-          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Submitted"].includes(e.status)
+          ? ["Open", "Pending", "In-Progress", "In Progress", "Awaiting Response", "Submitted", "Assigned to RM"].includes(e.status)
           : remSubTab === "Assigned to IT"
           ? e.status === "Assigned to IT"
           : remSubTab === "Assigned to BO"
@@ -463,6 +465,15 @@ export default function RMIssuesPage() {
       accessorKey: "dueDate",
       header: t("Due Date"),
       cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span>,
+    },
+    {
+      id: "comments",
+      header: t("Comments"),
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" onClick={() => setCommentsOnlyId(row.original.id)}>
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      ),
     },
     {
       id: "actions",
@@ -924,15 +935,15 @@ export default function RMIssuesPage() {
           <DialogFooter className="flex-wrap gap-2">
             {viewRemediation && remSubTab === "Open" && (
               <>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Assigned to IT")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Assigned to IT")} disabled={actionLoading} className="bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-200">
                   <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Reassign to IT")}
                 </Button>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Assigned to BO")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Assigned to BO")} disabled={actionLoading} className="bg-green-100 text-green-800 hover:bg-green-200 border border-green-200">
                   <ShieldCheck className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Accept Risk")}
                 </Button>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Terminated")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Terminated")} disabled={actionLoading} className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
                   <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Initiate Termination")}
                 </Button>
@@ -965,10 +976,23 @@ export default function RMIssuesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCommentAction(null); setCommentText(""); }}>{t("Cancel")}</Button>
-            <Button onClick={handleCommentSave} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+            <Button onClick={handleCommentSave} disabled={actionLoading} className="bg-primary/90 hover:bg-primary text-primary-foreground">
               {actionLoading && <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />}
               {t("Save")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== COMMENTS ONLY DIALOG ==================== */}
+      <Dialog open={!!commentsOnlyId} onOpenChange={(open) => { if (!open) setCommentsOnlyId(null); }}>
+        <DialogContent className="!max-w-lg w-[90vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Comments")}</DialogTitle>
+          </DialogHeader>
+          {commentsOnlyId && <RemediationComments remediationId={commentsOnlyId} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentsOnlyId(null)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

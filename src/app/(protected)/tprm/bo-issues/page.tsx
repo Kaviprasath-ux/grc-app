@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Loader2,
-  Eye, FileText, ExternalLink, MessageSquare, ShieldCheck, Send, Ban, ArrowLeft,
+  Eye, FileText, ExternalLink, MessageSquare, ShieldCheck, Send, Ban, ArrowLeft, Forward,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,6 +135,7 @@ const STATUS_COLORS: Record<string, string> = {
   "Returned to IT": "border-rose-300 bg-rose-50 text-rose-700",
   Submitted: "border-orange-300 bg-orange-50 text-orange-700",
   Overdue: "border-red-300 bg-red-50 text-red-700",
+  "Sent to Vendor": "border-amber-300 bg-amber-50 text-amber-700",
 };
 
 const SEVERITIES = ["High", "Medium", "Low"];
@@ -200,6 +201,7 @@ export default function BOIssuesPage() {
 
   // Vendor Issue detail dialog
   const [viewVendorIssue, setViewVendorIssue] = useState<VendorIssueEntry | null>(null);
+  const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -367,9 +369,9 @@ export default function BOIssuesPage() {
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab =
         remSubTab === "Open"
-          ? ["Open", "Assigned to BO", "Pending"].includes(e.status)
+          ? e.status === "Assigned to BO"
           : remSubTab === "Closed"
-          ? ["Closed", "Terminated"].includes(e.status)
+          ? ["Closed", "Submitted", "Terminated", "Sent to Vendor"].includes(e.status)
           : remSubTab === "Rejected"
           ? e.status === "Rejected"
           : true;
@@ -390,7 +392,7 @@ export default function BOIssuesPage() {
     {
       id: "comments", header: t("Comments"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => setViewRemediation(row.original)}>
+        <Button variant="ghost" size="sm" onClick={() => setCommentsOnlyId(row.original.id)}>
           <MessageSquare className="h-4 w-4 text-muted-foreground" />
         </Button>
       ),
@@ -437,7 +439,6 @@ export default function BOIssuesPage() {
   const remSubTabs = [
     { value: "Open", label: t("Open Issues") },
     { value: "Closed", label: t("Closed Issues") },
-    { value: "Rejected", label: t("Rejected Issues") },
   ];
 
   // ==================== RENDER ====================
@@ -829,17 +830,21 @@ export default function BOIssuesPage() {
             </div>
           )}
           <DialogFooter className="flex-wrap gap-2">
-            {viewRemediation && ["Open", "Assigned to BO", "Pending"].includes(viewRemediation.status) && (
+            {viewRemediation && viewRemediation.status === "Assigned to BO" && (
               <>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Closed")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Closed")} disabled={actionLoading} className="bg-green-100 text-green-800 hover:bg-green-200 border border-green-200">
                   <ShieldCheck className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Accept Risk")}
                 </Button>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Rejected")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Sent to Vendor")} disabled={actionLoading} className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-200">
+                  <Forward className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Send To Vendor")}
+                </Button>
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Submitted")} disabled={actionLoading} className="bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-200">
                   <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Send To Assessor")}
                 </Button>
-                <Button onClick={() => { setTerminateConfirm({ remediationId: viewRemediation.id }); setViewRemediation(null); }} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => { setTerminateConfirm({ remediationId: viewRemediation.id }); setViewRemediation(null); }} disabled={actionLoading} className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
                   <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Terminate Vendor")}
                 </Button>
@@ -864,7 +869,7 @@ export default function BOIssuesPage() {
             className="w-full"
           />
           <DialogFooter className="gap-2">
-            <Button onClick={handleCommentSave} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+            <Button onClick={handleCommentSave} disabled={actionLoading} className="bg-primary/90 hover:bg-primary text-primary-foreground">
               {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
               {t("Save")}
             </Button>
@@ -916,6 +921,19 @@ export default function BOIssuesPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewIssueDetail(null)}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== COMMENTS ONLY DIALOG ==================== */}
+      <Dialog open={!!commentsOnlyId} onOpenChange={(open) => { if (!open) setCommentsOnlyId(null); }}>
+        <DialogContent className="!max-w-lg w-[90vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Comments")}</DialogTitle>
+          </DialogHeader>
+          {commentsOnlyId && <RemediationComments remediationId={commentsOnlyId} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentsOnlyId(null)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

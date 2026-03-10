@@ -88,7 +88,7 @@ export const GET = withAuth(
         const remediations = await prisma.tPRMIssueRemediation.findMany({
           where: {
             customerAccountId,
-            status: { in: ["Assigned to BO", "Open", "Pending", "Submitted", "Closed", "Rejected", "Terminated"] },
+            status: { in: ["Assigned to BO", "Submitted", "Closed", "Terminated", "Sent to Vendor"] },
           },
           include: {
             assessment: {

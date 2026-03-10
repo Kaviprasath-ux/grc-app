@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Send, Loader2,
-  Eye, FileText, ExternalLink, Upload, Trash2, ArrowLeft,
+  Eye, FileText, ExternalLink, Upload, Trash2, ArrowLeft, MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,6 +158,7 @@ export default function ITIssuesPage() {
 
   // Remediation detail modal
   const [viewRemediation, setViewRemediation] = useState<IssueRemediationEntry | null>(null);
+  const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Submit form state
@@ -434,6 +435,15 @@ export default function ITIssuesPage() {
       accessorKey: "dueDate",
       header: t("Due Date"),
       cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span>,
+    },
+    {
+      id: "comments",
+      header: t("Comments"),
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" onClick={() => setCommentsOnlyId(row.original.id)}>
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      ),
     },
     {
       id: "actions",
@@ -884,13 +894,26 @@ export default function ITIssuesPage() {
           )}
           <DialogFooter className="flex-wrap gap-2">
             {canSubmit && (
-              <Button onClick={handleSubmitResponse} disabled={actionLoading} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={handleSubmitResponse} disabled={actionLoading} className="bg-green-100 text-green-800 hover:bg-green-200 border border-green-200">
                 {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
                 <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Submit Response")}
               </Button>
             )}
             <Button variant="outline" onClick={() => { setViewRemediation(null); setSubmitComment(""); setSelectedFiles([]); }}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== COMMENTS ONLY DIALOG ==================== */}
+      <Dialog open={!!commentsOnlyId} onOpenChange={(open) => { if (!open) setCommentsOnlyId(null); }}>
+        <DialogContent className="!max-w-lg w-[90vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Comments")}</DialogTitle>
+          </DialogHeader>
+          {commentsOnlyId && <RemediationComments remediationId={commentsOnlyId} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentsOnlyId(null)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

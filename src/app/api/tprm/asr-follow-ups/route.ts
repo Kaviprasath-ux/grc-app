@@ -79,7 +79,7 @@ export const GET = withAuth(
           returnedAt: r.returnedAt?.toISOString() || null,
           responseDate: r.responseDate?.toISOString() || r.requestedDate?.toISOString() || null,
           dueDate: r.dueDate?.toISOString() || null,
-          reassignStatus: r.status === "Assigned to BO" ? "Assigned to BO" : (r.status === "Assigned to IT" || r.status === "IT Submitted") ? "Assigned to IT" : "Not Assigned",
+          reassignStatus: r.status === "Assigned to BO" ? "Assigned to BO" : r.status === "Assigned to RM" ? "Assigned to RM" : (r.status === "Assigned to IT" || r.status === "IT Submitted") ? "Assigned to IT" : "Not Assigned",
           status: r.status === "Submitted" ? "Received" : r.status || "Pending",
         }));
 
@@ -136,7 +136,7 @@ export const PATCH = withAuth(
             return NextResponse.json({ error: "Assigned RM user is required" }, { status: 400 });
           }
           updateData = {
-            status: "Assigned to BO",
+            status: "Assigned to RM",
             reassignComment: comment || null,
             assignedToUserId,
             assignedAt: new Date(),
@@ -174,8 +174,8 @@ export const PATCH = withAuth(
         data: updateData,
       });
 
-      // Also save the unsatisfied / return-to-it comment as a chat-style remediation comment
-      if ((action === "unsatisfied" || action === "return-to-it") && comment?.trim()) {
+      // Save comment as a chat-style remediation comment for all actions
+      if (comment?.trim()) {
         const roles = session.roles || [];
         let userRole = "Assessor";
         if (roles.some((r: string) => r.includes("Approver"))) userRole = "Approver";

@@ -94,11 +94,10 @@ export const GET = withAuth(
 
       // ==================== TAB 2: ISSUE REMEDIATION ====================
       if (tab === "remediation") {
-        // Only show remediations assigned to this RM by the assessor
+        // Show all remediations for this customer account (RM sees full picture)
         const remediations = await prisma.tPRMIssueRemediation.findMany({
           where: {
             customerAccountId,
-            assignedToUserId: session.id,
           },
           include: {
             assessment: {
