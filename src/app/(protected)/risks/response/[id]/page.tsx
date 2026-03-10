@@ -19,8 +19,16 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ArrowLeft, Plus, Home, ChevronRight, Link2 } from "lucide-react";
+import { ChevronDown, ArrowLeft, Plus, Home, ChevronRight, Link2, Trash2, Pencil, Unlink } from "lucide-react";
 import Link from "next/link";
 import { AddControlDialog } from "@/components/risks/add-control-dialog";
 import { ChooseControlDialog } from "@/components/risks/choose-control-dialog";
@@ -58,6 +66,9 @@ interface Risk {
   treatmentDueDate: string | null;
   likelihood: number;
   impact: number;
+  riskScore: number;
+  inherentRiskScore: number | null;
+  residualRiskScore: number | null;
   owner: { fullName: string } | null;
   assessmentStatus?: string;
   responseStatus?: string; // Separate status for Risk Response Strategy workflow
@@ -73,13 +84,32 @@ interface Control {
   effectiveness: number;
 }
 
+interface PlannedAction {
+  id: string;
+  plannedAction: string;
+  description: string | null;
+  percentageCompleted: number;
+  startDate: string | null;
+  status: string;
+}
+
 interface PlannedControl {
   id: string;
   controlId: string;
+  controlCode?: string;
   name: string;
   description: string | null;
   domain?: string;
   functionalGrouping?: string;
+  relativeControlWeighting?: string | null;
+  estimatedBudget?: number;
+  startDate?: string | null;
+  targetDate?: string | null;
+  status?: string;
+  completionPercentage?: number;
+  amountUsed?: number;
+  remarks?: string | null;
+  plannedActions?: PlannedAction[];
 }
 
 export default function RiskViewPage() {
@@ -98,6 +128,63 @@ export default function RiskViewPage() {
   const [chooseControlOpen, setChooseControlOpen] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Planned action dialog states
+  const [addActionOpen, setAddActionOpen] = useState(false);
+  const [activeControlId, setActiveControlId] = useState<string | null>(null);
+  const [actionForm, setActionForm] = useState({ plannedAction: "", description: "", percentageCompleted: "0", startDate: "", status: "Open" });
+  const [savingAction, setSavingAction] = useState(false);
+  // Per-control bottom form states
+  const [controlFormData, setControlFormData] = useState<Record<string, { status: string; completionPercentage: string; amountUsed: string; remarks: string }>>({});
+  const [savingControlUpdate, setSavingControlUpdate] = useState<string | null>(null);
+
+  // Edit control details dialog states
+  const [editControlOpen, setEditControlOpen] = useState(false);
+  const [editControlId, setEditControlId] = useState<string | null>(null);
+  const [editControlForm, setEditControlForm] = useState({ startDate: "", targetDate: "", estimatedBudget: "", relativeControlWeighting: "" });
+  const [savingControlEdit, setSavingControlEdit] = useState(false);
+
+  // Risk Treatment chart calculation
+  const treatmentChartData = useMemo(() => {
+    // plannedControls are already the planned controls linked to this risk
+    const totalPlanned = plannedControls.length;
+
+    // Sum completion percentages (only for controls that have a value)
+    let sum = 0;
+    for (const ctrl of plannedControls) {
+      if (ctrl.completionPercentage != null && ctrl.completionPercentage !== undefined) {
+        sum += Number(ctrl.completionPercentage) || 0;
+      }
+    }
+
+    // Count by status
+    const completedCount = plannedControls.filter(c => c.status === "Completed").length;
+    const inProgressCount = plannedControls.filter(c => c.status === "In-Progress").length;
+    const openCount = plannedControls.filter(c => c.status === "Open").length;
+
+    // Average = sum / totalPlanned (or 0 if sum is 0)
+    const average = sum !== 0 ? Math.round(sum / totalPlanned) : 0;
+
+    // Budget calculation: sum estimatedBudget and amountUsed across all planned controls
+    let totalEstimatedBudget = 0;
+    let totalAmountUsed = 0;
+    for (const ctrl of plannedControls) {
+      totalEstimatedBudget += Number(ctrl.estimatedBudget) || 0;
+      totalAmountUsed += Number(ctrl.amountUsed) || 0;
+    }
+    const remainingBudget = totalEstimatedBudget - totalAmountUsed;
+
+    return {
+      average,
+      completedCount,
+      inProgressCount,
+      openCount,
+      totalPlanned,
+      totalEstimatedBudget,
+      totalAmountUsed,
+      remainingBudget,
+    };
+  }, [plannedControls]);
 
   // Send Back dialog states
   const [showSendBackDialog, setShowSendBackDialog] = useState(false);
@@ -128,8 +215,156 @@ export default function RiskViewPage() {
     }
   };
 
-  const handleControlAdded = (control: PlannedControl) => {
-    setPlannedControls(prev => [...prev, control]);
+  const handleControlAdded = () => {
+    // Re-fetch from DB to ensure we have the real DB-generated IDs
+    fetchPlannedControls(params.id as string);
+  };
+
+  const openAddActionDialog = (controlId: string) => {
+    setActiveControlId(controlId);
+    setActionForm({ plannedAction: "", description: "", percentageCompleted: "0", startDate: "", status: "Open" });
+    setAddActionOpen(true);
+  };
+
+  const handleAddAction = async () => {
+    if (!activeControlId || !actionForm.plannedAction.trim()) return;
+    setSavingAction(true);
+    try {
+      const res = await fetch(`/api/risks/${params.id}/planned-controls/${activeControlId}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(actionForm),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPlannedControls(prev => prev.map(pc =>
+          pc.id === activeControlId
+            ? { ...pc, plannedActions: [...(pc.plannedActions || []), data.data] }
+            : pc
+        ));
+        setAddActionOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to add action:", error);
+    } finally {
+      setSavingAction(false);
+    }
+  };
+
+  const handleDeleteAction = async (controlId: string, actionId: string) => {
+    try {
+      const res = await fetch(`/api/risks/${params.id}/planned-controls/${controlId}/actions?actionId=${actionId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setPlannedControls(prev => prev.map(pc =>
+          pc.id === controlId
+            ? { ...pc, plannedActions: (pc.plannedActions || []).filter(a => a.id !== actionId) }
+            : pc
+        ));
+      }
+    } catch (error) {
+      console.error("Failed to delete action:", error);
+    }
+  };
+
+  const handleDeletePlannedControl = async (controlId: string) => {
+    try {
+      const res = await fetch(`/api/risks/${params.id}/planned-controls?controlId=${controlId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setPlannedControls(prev => prev.filter(pc => pc.id !== controlId));
+      }
+    } catch (error) {
+      console.error("Failed to delete control:", error);
+    }
+  };
+
+  const openEditControlDialog = (control: PlannedControl) => {
+    setEditControlId(control.id);
+    setEditControlForm({
+      startDate: control.startDate ? new Date(control.startDate).toISOString().split("T")[0] : "",
+      targetDate: control.targetDate ? new Date(control.targetDate).toISOString().split("T")[0] : "",
+      estimatedBudget: control.estimatedBudget ? String(control.estimatedBudget) : "",
+      relativeControlWeighting: control.relativeControlWeighting || "",
+    });
+    setEditControlOpen(true);
+  };
+
+  const handleSaveControlEdit = async () => {
+    if (!editControlId) return;
+    setSavingControlEdit(true);
+    try {
+      const res = await fetch(`/api/risks/${params.id}/planned-controls`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          controlId: editControlId,
+          startDate: editControlForm.startDate || null,
+          targetDate: editControlForm.targetDate || null,
+          estimatedBudget: editControlForm.estimatedBudget || null,
+          relativeControlWeighting: editControlForm.relativeControlWeighting || null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPlannedControls(prev => prev.map(pc => pc.id === editControlId ? { ...pc, ...data.data } : pc));
+        setEditControlOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to update control details:", error);
+    } finally {
+      setSavingControlEdit(false);
+    }
+  };
+
+  const getControlFormData = (control: PlannedControl) => {
+    return controlFormData[control.id] || {
+      status: control.status || "Open",
+      completionPercentage: String(control.completionPercentage || 0),
+      amountUsed: String(control.amountUsed || 0),
+      remarks: control.remarks || "",
+    };
+  };
+
+  const updateControlFormField = (controlId: string, field: string, value: string) => {
+    const current = { ...getControlFormData(plannedControls.find(c => c.id === controlId)!), [field]: value };
+    // Auto-set completion percentage based on status
+    if (field === "status") {
+      if (value === "Open") current.completionPercentage = "0";
+      else if (value === "Completed") current.completionPercentage = "100";
+    }
+    setControlFormData(prev => ({
+      ...prev,
+      [controlId]: current,
+    }));
+  };
+
+  const handleSaveControlUpdate = async (controlId: string) => {
+    const formData = getControlFormData(plannedControls.find(c => c.id === controlId)!);
+    setSavingControlUpdate(controlId);
+    try {
+      const res = await fetch(`/api/risks/${params.id}/planned-controls`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          controlId,
+          status: formData.status,
+          completionPercentage: formData.completionPercentage,
+          amountUsed: formData.amountUsed,
+          remarks: formData.remarks,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPlannedControls(prev => prev.map(pc => pc.id === controlId ? { ...pc, ...data.data } : pc));
+      }
+    } catch (error) {
+      console.error("Failed to update control:", error);
+    } finally {
+      setSavingControlUpdate(null);
+    }
   };
 
   const togglePlannedControl = (id: string) => {
@@ -478,8 +713,8 @@ export default function RiskViewPage() {
                   <PieChart>
                     <Pie
                       data={[
-                        { name: "Completed", value: 0 },
-                        { name: "Remaining", value: 100 },
+                        { name: "Completed", value: treatmentChartData.average },
+                        { name: "Remaining", value: 100 - treatmentChartData.average },
                       ]}
                       cx="50%"
                       cy="50%"
@@ -496,17 +731,25 @@ export default function RiskViewPage() {
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-xs text-slate-500">{t("Total")}</span>
-                  <span className="text-lg font-bold text-slate-800">100%</span>
+                  <span className="text-lg font-bold text-slate-800">{treatmentChartData.average}%</span>
                 </div>
               </div>
               <div className="flex flex-col gap-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-primary-500 rounded-sm"></div>
-                  <span className="text-slate-600">{t("Completed")}</span>
+                  <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+                  <span className="text-slate-600">{t("Completed")} - {treatmentChartData.completedCount}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-slate-200 rounded-sm"></div>
-                  <span className="text-slate-600">{t("Total")}</span>
+                  <div className="w-3 h-3 bg-amber-500 rounded-sm"></div>
+                  <span className="text-slate-600">{t("In-Progress")} - {treatmentChartData.inProgressCount}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-slate-300 rounded-sm"></div>
+                  <span className="text-slate-600">{t("Open")} - {treatmentChartData.openCount}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-primary-500 rounded-sm"></div>
+                  <span className="text-slate-600">{t("Total")} - {treatmentChartData.totalPlanned}</span>
                 </div>
               </div>
             </div>
@@ -519,16 +762,24 @@ export default function RiskViewPage() {
           <div className="h-48 flex flex-col justify-between">
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wide">{t("Allocated")}</p>
-              <p className="text-3xl font-bold text-slate-800">0</p>
+              <p className="text-3xl font-bold text-slate-800">{treatmentChartData.totalEstimatedBudget.toLocaleString()}</p>
             </div>
+            {treatmentChartData.totalEstimatedBudget > 0 && (
+              <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
+                <div
+                  className="bg-yellow-500 h-3 rounded-full transition-all"
+                  style={{ width: `${Math.min((treatmentChartData.totalAmountUsed / treatmentChartData.totalEstimatedBudget) * 100, 100)}%` }}
+                />
+              </div>
+            )}
             <div className="flex items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-yellow-500"></div>
-                <span className="text-slate-600">{t("Used")} - 0</span>
+                <span className="text-slate-600">{t("Used")} - {treatmentChartData.totalAmountUsed.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-slate-200"></div>
-                <span className="text-slate-600">{t("Remaining")} - 0</span>
+                <span className="text-slate-600">{t("Remaining")} - {treatmentChartData.remainingBudget.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -572,7 +823,7 @@ export default function RiskViewPage() {
                 <div className="w-3 h-3 rounded-full bg-orange-500"></div>
               </div>
               <span className={cn("text-lg font-semibold", getRiskRatingColor(risk.riskRating))}>
-                {risk.riskRating} (35.00)
+                {risk.riskRating} ({(risk.residualRiskScore ?? risk.riskScore ?? 0).toFixed(2)})
               </span>
             </div>
 
@@ -584,7 +835,7 @@ export default function RiskViewPage() {
                   <div className="w-2 h-2 rounded-full bg-orange-500"></div>
                 </div>
                 <span className={cn("font-semibold", getRiskRatingColor(risk.riskRating))}>
-                  {risk.riskRating} (35.00)
+                  {risk.riskRating} ({(risk.residualRiskScore ?? risk.riskScore ?? 0).toFixed(2)})
                 </span>
               </div>
             </div>
@@ -755,21 +1006,176 @@ export default function RiskViewPage() {
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div className="px-4 pb-4">
+                    <div className="px-4 pb-4 space-y-4">
+                      {/* Control Details */}
                       <div className="border border-slate-100 rounded-lg p-4 bg-slate-50">
-                        <p className="text-sm text-slate-500 mb-4">{control.description}</p>
-                        <div className="flex items-center gap-4 text-sm">
-                          {control.domain && (
-                            <span className="bg-slate-100 px-2 py-1 rounded text-xs text-slate-600">
-                              {control.domain}
-                            </span>
-                          )}
-                          {control.functionalGrouping && (
-                            <span className="bg-primary-50 text-primary-700 px-2 py-1 rounded text-xs">
-                              {control.functionalGrouping}
-                            </span>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            {control.description && (
+                              <p className="text-sm text-slate-500 mb-3">{control.description}</p>
+                            )}
+                          </div>
+                          {canEdit && (
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-primary-600" onClick={() => openEditControlDialog(control)}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-red-600" onClick={() => handleDeletePlannedControl(control.id)} title={t("Unlink Control")}>
+                                <Unlink className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           )}
                         </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                          <div>
+                            <p className="text-xs text-slate-500">{t("Start Date")}</p>
+                            <p className="font-medium text-slate-700">{control.startDate ? new Date(control.startDate).toLocaleDateString("en-GB") : "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">{t("Target Date")}</p>
+                            <p className="font-medium text-slate-700">{control.targetDate ? new Date(control.targetDate).toLocaleDateString("en-GB") : "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">{t("Estimated Budget")}</p>
+                            <p className="font-medium text-slate-700">{control.estimatedBudget ? control.estimatedBudget : "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">{t("Relative Control Weighting")}</p>
+                            <p className="font-medium text-slate-700">{control.relativeControlWeighting || "—"}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-3">
+                          {control.domain && (
+                            <span className="bg-slate-100 px-2 py-1 rounded text-xs text-slate-600">{control.domain}</span>
+                          )}
+                          {control.functionalGrouping && (
+                            <span className="bg-primary-50 text-primary-700 px-2 py-1 rounded text-xs">{control.functionalGrouping}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Planned Actions Section */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-slate-700">{t("Planned Actions")}</h4>
+                          {canEdit && (
+                            <Button variant="outline" size="sm" onClick={() => openAddActionDialog(control.id)}>
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              {t("Add planned Action")}
+                            </Button>
+                          )}
+                        </div>
+                        {(control.plannedActions && control.plannedActions.length > 0) ? (
+                          <div className="border border-slate-200 rounded-lg overflow-hidden">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200">
+                                  <th className="text-left px-3 py-2 font-medium text-slate-600">{t("Planned Actions")}</th>
+                                  <th className="text-left px-3 py-2 font-medium text-slate-600">{t("Description")}</th>
+                                  <th className="text-left px-3 py-2 font-medium text-slate-600">{t("% Completed")}</th>
+                                  <th className="text-left px-3 py-2 font-medium text-slate-600">{t("Start Date")}</th>
+                                  <th className="text-left px-3 py-2 font-medium text-slate-600">{t("Status")}</th>
+                                  {canEdit && <th className="text-left px-3 py-2 font-medium text-slate-600">{t("Action")}</th>}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {control.plannedActions.map((action) => (
+                                  <tr key={action.id} className="border-b border-slate-100 last:border-0">
+                                    <td className="px-3 py-2 text-slate-800">{action.plannedAction}</td>
+                                    <td className="px-3 py-2 text-slate-600">{action.description || "-"}</td>
+                                    <td className="px-3 py-2 text-slate-800">{action.percentageCompleted}%</td>
+                                    <td className="px-3 py-2 text-slate-600">{action.startDate ? new Date(action.startDate).toLocaleDateString("en-GB") : "-"}</td>
+                                    <td className="px-3 py-2">
+                                      <span className={cn(
+                                        "px-2 py-0.5 rounded text-xs font-medium",
+                                        action.status === "Completed" && "bg-green-100 text-green-700",
+                                        action.status === "In-Progress" && "bg-amber-100 text-amber-700",
+                                        action.status === "Open" && "bg-slate-100 text-slate-600",
+                                      )}>
+                                        {action.status}
+                                      </span>
+                                    </td>
+                                    {canEdit && (
+                                      <td className="px-3 py-2">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteAction(control.id, action.id)}>
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-400 py-2">{t("No planned actions added yet")}</p>
+                        )}
+                      </div>
+
+                      {/* Control Status/Progress Section */}
+                      <div className="border border-slate-200 rounded-lg p-4 bg-white">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                          <div>
+                            <Label className="text-xs text-slate-500">{t("Status")}</Label>
+                            <Select
+                              value={getControlFormData(control).status}
+                              onValueChange={(val) => updateControlFormField(control.id, "status", val)}
+                              disabled={!canEdit}
+                            >
+                              <SelectTrigger className="mt-1 h-9 bg-white">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Open">{t("Open")}</SelectItem>
+                                <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+                                <SelectItem value="Completed">{t("Completed")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-slate-500">{t("Completion Percentage")}</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              className="mt-1 h-9 bg-white"
+                              value={getControlFormData(control).completionPercentage}
+                              onChange={(e) => updateControlFormField(control.id, "completionPercentage", e.target.value)}
+                              disabled={!canEdit}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-slate-500">{t("Amount Used")}</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              className="mt-1 h-9 bg-white"
+                              value={getControlFormData(control).amountUsed}
+                              onChange={(e) => updateControlFormField(control.id, "amountUsed", e.target.value)}
+                              disabled={!canEdit}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-slate-500">{t("Remarks")}</Label>
+                            <Input
+                              className="mt-1 h-9 bg-white"
+                              value={getControlFormData(control).remarks}
+                              onChange={(e) => updateControlFormField(control.id, "remarks", e.target.value)}
+                              disabled={!canEdit}
+                            />
+                          </div>
+                        </div>
+                        {canEdit && (
+                          <div className="flex justify-between items-center mt-4">
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveControlUpdate(control.id)}
+                              disabled={savingControlUpdate === control.id}
+                            >
+                              {savingControlUpdate === control.id ? t("Saving...") : t("Save")}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CollapsibleContent>
@@ -845,6 +1251,155 @@ export default function RiskViewPage() {
             </Button>
             <Button onClick={handleSendBack} disabled={processingSendBack || !sendBackComment.trim()}>
               {processingSendBack ? t("Sending...") : t("Send Back")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Planned Action Dialog */}
+      <Dialog open={addActionOpen} onOpenChange={setAddActionOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0">
+          <DialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add new planned action")}</DialogTitle>
+            <DialogDescription className="text-slate-500">
+              {t("Add a planned action to this control")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-4 sm:px-6 py-5 space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Planned Action")} *</Label>
+              <Input
+                className="mt-1 bg-white"
+                placeholder={t("Enter planned action")}
+                value={actionForm.plannedAction}
+                onChange={(e) => setActionForm(prev => ({ ...prev, plannedAction: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
+              <Textarea
+                className="mt-1 min-h-[80px] bg-white"
+                placeholder={t("Enter description")}
+                value={actionForm.description}
+                onChange={(e) => setActionForm(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Percentage Completed")} *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  className="mt-1 bg-white"
+                  value={actionForm.percentageCompleted}
+                  onChange={(e) => setActionForm(prev => ({ ...prev, percentageCompleted: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Start Date")}</Label>
+                <Input
+                  type="date"
+                  className="mt-1 bg-white"
+                  value={actionForm.startDate}
+                  onChange={(e) => setActionForm(prev => ({ ...prev, startDate: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
+              <Select
+                value={actionForm.status}
+                onValueChange={(val) => setActionForm(prev => ({ ...prev, status: val }))}
+              >
+                <SelectTrigger className="mt-1 bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Open">{t("Open")}</SelectItem>
+                  <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+                  <SelectItem value="Completed">{t("Completed")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="px-4 sm:px-6 py-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setAddActionOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleAddAction} disabled={savingAction || !actionForm.plannedAction.trim()}>
+              {savingAction ? t("Adding...") : t("Add Action")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Control Details Dialog */}
+      <Dialog open={editControlOpen} onOpenChange={setEditControlOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-0 gap-0">
+          <DialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Control Details")}</DialogTitle>
+            <DialogDescription className="text-slate-500">
+              {t("Update the control schedule, budget, and weighting")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-4 sm:px-6 py-5 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Start Date")}</Label>
+                <Input
+                  type="date"
+                  className="mt-1 bg-white"
+                  value={editControlForm.startDate}
+                  onChange={(e) => setEditControlForm(prev => ({ ...prev, startDate: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Target Date")}</Label>
+                <Input
+                  type="date"
+                  className="mt-1 bg-white"
+                  value={editControlForm.targetDate}
+                  onChange={(e) => setEditControlForm(prev => ({ ...prev, targetDate: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Estimated Budget")}</Label>
+              <Input
+                type="number"
+                min="0"
+                className="mt-1 bg-white"
+                placeholder={t("Enter estimated budget")}
+                value={editControlForm.estimatedBudget}
+                onChange={(e) => setEditControlForm(prev => ({ ...prev, estimatedBudget: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Relative Control Weighting")}</Label>
+              <Select
+                value={editControlForm.relativeControlWeighting}
+                onValueChange={(val) => setEditControlForm(prev => ({ ...prev, relativeControlWeighting: val }))}
+              >
+                <SelectTrigger className="mt-1 bg-white">
+                  <SelectValue placeholder={t("Select weighting")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Preventive">{t("Preventive")}</SelectItem>
+                  <SelectItem value="Detective">{t("Detective")}</SelectItem>
+                  <SelectItem value="Corrective">{t("Corrective")}</SelectItem>
+                  <SelectItem value="Directive">{t("Directive")}</SelectItem>
+                  <SelectItem value="Compensating">{t("Compensating")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="px-4 sm:px-6 py-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setEditControlOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleSaveControlEdit} disabled={savingControlEdit}>
+              {savingControlEdit ? t("Saving...") : t("Save")}
             </Button>
           </DialogFooter>
         </DialogContent>

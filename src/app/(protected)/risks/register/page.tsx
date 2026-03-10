@@ -33,6 +33,7 @@ import {
   Home,
   ChevronRight,
   Settings2,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import { NewRiskWizard } from "@/components/risks/new-risk-wizard";
@@ -618,11 +619,11 @@ function RiskRegisterContent() {
 
           {/* Column Headers + Rows */}
           <div className="overflow-x-auto">
-          <div className="grid gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]" style={{ gridTemplateColumns: visibleColumns.map((col) => ({ riskId: "80px", name: "1.5fr", description: "1fr", category: "100px", owner: "100px", rating: "90px" }[col.key])).join(" ") + ((canEdit || canDelete) ? " 56px" : "") }}>
+          <div className="grid gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs font-medium text-slate-500 uppercase tracking-wider min-w-[700px]" style={{ gridTemplateColumns: visibleColumns.map((col) => ({ riskId: "80px", name: "1.5fr", description: "1fr", category: "100px", owner: "100px", rating: "90px" }[col.key])).join(" ") + " 80px" }}>
             {visibleColumns.map((col) => (
               <span key={col.key}>{col.label}</span>
             ))}
-            {(canEdit || canDelete) && <span className="text-end">{t("Actions")}</span>}
+            <span className="text-end">{t("Actions")}</span>
           </div>
 
           {/* Rows */}
@@ -631,7 +632,7 @@ function RiskRegisterContent() {
               <div
                 key={risk.id}
                 className="grid gap-2 sm:gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[700px]"
-                style={{ gridTemplateColumns: visibleColumns.map((col) => ({ riskId: "80px", name: "1.5fr", description: "1fr", category: "100px", owner: "100px", rating: "90px" }[col.key])).join(" ") + ((canEdit || canDelete) ? " 56px" : "") }}
+                style={{ gridTemplateColumns: visibleColumns.map((col) => ({ riskId: "80px", name: "1.5fr", description: "1fr", category: "100px", owner: "100px", rating: "90px" }[col.key])).join(" ") + " 80px" }}
               >
                 {columnVisibility.riskId && <span className="text-sm font-medium text-slate-800">{risk.riskId}</span>}
                 {columnVisibility.name && <span className="text-sm text-slate-700 truncate" title={risk.name}>{risk.name}</span>}
@@ -639,30 +640,37 @@ function RiskRegisterContent() {
                 {columnVisibility.category && <span className="text-sm text-slate-600 truncate">{(risk.category?.id ? translatedCategories.find(c => c.id === risk.category?.id)?.name : null) || risk.category?.name || "-"}</span>}
                 {columnVisibility.owner && <span className="text-sm text-slate-600 truncate">{(risk.owner?.id ? translatedOwners.find(o => o.id === risk.owner?.id)?.fullName : null) || risk.owner?.fullName || "-"}</span>}
                 {columnVisibility.rating && <div><RiskRatingBadge rating={risk.riskRating} /></div>}
-                {(canEdit || canDelete) && (
-                  <div className="flex items-center justify-end gap-1">
-                    {canEdit && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEditRisk(risk)}
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {canDelete && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteClick(risk)}
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                )}
+                <div className="flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => router.push(`/risks/register/${risk.id}`)}
+                    className="h-8 w-8 text-slate-400 hover:text-primary-600"
+                    title={t("View Details")}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  {canEdit && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEditRisk(risk)}
+                      className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteClick(risk)}
+                      className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -19,6 +19,7 @@ const ratingColors: Record<string, { bg: string; text: string }> = {
 
 export function RiskRatingBadge({ rating, className }: RiskRatingBadgeProps) {
   const { t } = useLanguage();
+  if (!rating) return <span className="text-xs text-slate-400">-</span>;
   const colors = ratingColors[rating] || { bg: "bg-gray-400", text: "text-white" };
 
   return (

@@ -1250,10 +1250,10 @@ CREATE TABLE "Risk" (
     "riskRating" TEXT NOT NULL DEFAULT 'Low',
     "inherentLikelihood" INTEGER,
     "inherentImpact" INTEGER,
-    "inherentRiskScore" INTEGER,
+    "inherentRiskScore" DOUBLE PRECISION,
     "residualLikelihood" INTEGER,
     "residualImpact" INTEGER,
-    "residualRiskScore" INTEGER,
+    "residualRiskScore" DOUBLE PRECISION,
     "targetLikelihood" INTEGER,
     "targetImpact" INTEGER,
     "targetRiskScore" INTEGER,
@@ -1349,6 +1349,46 @@ CREATE TABLE "RiskResponse" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "RiskResponse_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RiskPlannedControl" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "riskId" TEXT NOT NULL,
+    "controlCode" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "domain" TEXT,
+    "functionalGrouping" TEXT,
+    "relativeControlWeighting" TEXT,
+    "justification" TEXT,
+    "estimatedBudget" DOUBLE PRECISION DEFAULT 0,
+    "startDate" TIMESTAMP(3),
+    "targetDate" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'Open',
+    "completionPercentage" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "amountUsed" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "remarks" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RiskPlannedControl_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RiskPlannedAction" (
+    "id" TEXT NOT NULL,
+    "plannedAction" TEXT NOT NULL,
+    "description" TEXT,
+    "percentageCompleted" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "startDate" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'Open',
+    "plannedControlId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RiskPlannedAction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -3838,6 +3878,12 @@ CREATE INDEX "RiskResponse_customerAccountId_idx" ON "RiskResponse"("customerAcc
 CREATE UNIQUE INDEX "RiskResponse_customerAccountId_responseId_key" ON "RiskResponse"("customerAccountId", "responseId");
 
 -- CreateIndex
+CREATE INDEX "RiskPlannedControl_customerAccountId_idx" ON "RiskPlannedControl"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "RiskPlannedControl_riskId_idx" ON "RiskPlannedControl"("riskId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "RiskSetting_category_key_key" ON "RiskSetting"("category", "key");
 
 -- CreateIndex
@@ -4994,6 +5040,15 @@ ALTER TABLE "RiskResponse" ADD CONSTRAINT "RiskResponse_customerAccountId_fkey" 
 
 -- AddForeignKey
 ALTER TABLE "RiskResponse" ADD CONSTRAINT "RiskResponse_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskPlannedControl" ADD CONSTRAINT "RiskPlannedControl_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskPlannedControl" ADD CONSTRAINT "RiskPlannedControl_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskPlannedAction" ADD CONSTRAINT "RiskPlannedAction_plannedControlId_fkey" FOREIGN KEY ("plannedControlId") REFERENCES "RiskPlannedControl"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "VulnerabilityCategory" ADD CONSTRAINT "VulnerabilityCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;

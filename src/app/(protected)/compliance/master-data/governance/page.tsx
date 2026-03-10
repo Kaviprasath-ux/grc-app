@@ -429,7 +429,7 @@ export default function GovernanceMasterDataPage() {
 
   const handleExport = () => {
     const csv = [
-      ["Policy Name", "Status", "Assignee", "Approver", "Department Name", "Policy Requirement", "Recurrence", "Policy Code", "Document Type"],
+      ["Policy Name", "Status", "Assignee", "Approver", "Department Name", "Recurrence", "Policy Code", "Document Type"],
       ...policies.map((p) => [
         p.name,
         p.status,
@@ -637,7 +637,6 @@ export default function GovernanceMasterDataPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Approver")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Requirement")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Recurrence")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Code")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
@@ -647,7 +646,7 @@ export default function GovernanceMasterDataPage() {
           <TableBody>
             {filteredPolicies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="py-0">
+                <TableCell colSpan={9} className="py-0">
                   <div className="py-16 text-center">
                     <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                       <FileText className="h-6 w-6 text-primary-400" />
@@ -671,9 +670,6 @@ export default function GovernanceMasterDataPage() {
                   <TableCell className="py-3 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-600 max-w-[150px] truncate">
-                    {policy.content || "-"}
-                  </TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{policy.recurrence ? t(policy.recurrence) : "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{policy.code}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{t(policy.documentType)}</TableCell>

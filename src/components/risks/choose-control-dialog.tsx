@@ -167,7 +167,8 @@ export function ChooseControlDialog({
         });
 
         if (response.ok) {
-          onControlSelected?.(control);
+          const responseData = await response.json();
+          onControlSelected?.(responseData.data || control);
         }
       }
       handleClose();

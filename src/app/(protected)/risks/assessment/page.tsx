@@ -32,6 +32,7 @@ interface Risk {
   owner: { id: string; fullName: string } | null;
   type: { id: string; name: string } | null;
   assessmentStatus: string;
+  responseStatus: string | null;
   threats?: { threat: { id: string; name: string } }[];
   vulnerabilities?: { vulnerability: { id: string; name: string } }[];
   riskSources?: string | null;
@@ -215,7 +216,14 @@ export default function RiskAssessmentPage() {
           </Button>
         ) : null;
       case "Closed":
-        // Closed = awaiting Risk Response Strategy approval, show Resume
+        // If risk response is completed, show Re-assess; otherwise Resume
+        if (risk.responseStatus === "Completed") {
+          return canCreate ? (
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openAssessment(risk)}>
+              {t("Re-assess")}
+            </Button>
+          ) : null;
+        }
         return canEdit ? (
           <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openAssessment(risk)}>
             {t("Resume")}

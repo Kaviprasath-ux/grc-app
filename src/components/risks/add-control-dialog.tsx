@@ -238,11 +238,12 @@ export function AddControlDialog({
       });
 
       if (response.ok) {
+        const responseData = await response.json();
         toast({
           title: t("Success"),
           description: t("Control added successfully"),
         });
-        onControlAdded?.(plannedControl);
+        onControlAdded?.(responseData.data || plannedControl);
         handleClose();
       } else {
         const errorData = await response.json();

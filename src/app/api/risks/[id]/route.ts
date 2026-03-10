@@ -128,6 +128,7 @@ export const PUT = withAuth(
       status,
       assessmentStatus,
       responseStrategy,
+      responseStatus,
       treatmentPlan,
       treatmentDueDate,
       treatmentStatus,
@@ -190,6 +191,19 @@ export const PUT = withAuth(
       treatmentStatus,
     };
 
+    if (inherentLikelihood !== undefined) updateData.inherentLikelihood = inherentLikelihood;
+    if (inherentImpact !== undefined) updateData.inherentImpact = inherentImpact;
+    if (body.inherentRiskScore !== undefined) updateData.inherentRiskScore = body.inherentRiskScore;
+    if (residualLikelihood !== undefined) updateData.residualLikelihood = residualLikelihood;
+    if (residualImpact !== undefined) updateData.residualImpact = residualImpact;
+    if (body.residualRiskScore !== undefined) updateData.residualRiskScore = body.residualRiskScore;
+    if (targetLikelihood !== undefined) updateData.targetLikelihood = targetLikelihood;
+    if (targetImpact !== undefined) updateData.targetImpact = targetImpact;
+
+    if (responseStatus !== undefined) {
+      updateData.responseStatus = responseStatus;
+    }
+
     // Handle assessmentFormData (JSON string)
     if (assessmentFormData !== undefined) {
       updateData.assessmentFormData = assessmentFormData;
@@ -206,35 +220,7 @@ export const PUT = withAuth(
       updateData.lastAssessmentDate = lastAssessmentDate ? new Date(lastAssessmentDate) : null;
     }
 
-    // Handle inherent scores
-    if (inherentLikelihood !== undefined) {
-      updateData.inherentLikelihood = inherentLikelihood;
-    }
-    if (inherentImpact !== undefined) {
-      updateData.inherentImpact = inherentImpact;
-    }
-    if (inherentLikelihood !== undefined && inherentImpact !== undefined) {
-      updateData.inherentRiskScore = inherentLikelihood * inherentImpact;
-    }
-
-    // Handle residual scores
-    if (residualLikelihood !== undefined) {
-      updateData.residualLikelihood = residualLikelihood;
-    }
-    if (residualImpact !== undefined) {
-      updateData.residualImpact = residualImpact;
-    }
-    if (residualLikelihood !== undefined && residualImpact !== undefined) {
-      updateData.residualRiskScore = residualLikelihood * residualImpact;
-    }
-
     // Handle target scores
-    if (targetLikelihood !== undefined) {
-      updateData.targetLikelihood = targetLikelihood;
-    }
-    if (targetImpact !== undefined) {
-      updateData.targetImpact = targetImpact;
-    }
     if (targetLikelihood !== undefined && targetImpact !== undefined) {
       updateData.targetRiskScore = targetLikelihood * targetImpact;
     }

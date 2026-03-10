@@ -50,6 +50,7 @@ model CustomerAccount {
   riskControlMatrixEntries RiskControlMatrixEntry[]
   riskAssessments        RiskAssessment[]
   riskResponses          RiskResponse[]
+  riskPlannedControls    RiskPlannedControl[]
   audits                 Audit[]
   auditFindings          AuditFinding[]
   capas                  CAPA[]
@@ -1856,10 +1857,10 @@ model Risk {
   // Inherent, Residual, Target risk scores
   inherentLikelihood  Int?
   inherentImpact      Int?
-  inherentRiskScore   Int?
+  inherentRiskScore   Float?
   residualLikelihood  Int?
   residualImpact      Int?
-  residualRiskScore   Int?
+  residualRiskScore   Float?
   targetLikelihood    Int?
   targetImpact        Int?
   targetRiskScore     Int?
@@ -1885,6 +1886,7 @@ model Risk {
   causes              RiskCauseMapping[]
   assessments         RiskAssessment[]
   responses           RiskResponse[]
+  plannedControls     RiskPlannedControl[]
   activityLogs        RiskActivityLog[]
   controlRisks        ControlRisk[]
   exceptions          Exception[]     @relation("RiskExceptions")
@@ -1996,6 +1998,49 @@ model RiskResponse {
 
   @@unique([customerAccountId, responseId])
   @@index([customerAccountId])
+}
+
+// Risk Planned Controls (for risk response treatment plans)
+model RiskPlannedControl {
+  id                       String    @id @default(cuid())
+  customerAccountId        String
+  customerAccount          CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  riskId                   String
+  risk                     Risk      @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  controlCode              String
+  name                     String
+  description              String?
+  domain                   String?
+  functionalGrouping       String?
+  relativeControlWeighting String?
+  justification            String?
+  estimatedBudget          Float?    @default(0)
+  startDate                DateTime?
+  targetDate               DateTime?
+  status                   String    @default("Open") // Open, In-Progress, Completed
+  completionPercentage     Float     @default(0)
+  amountUsed               Float     @default(0)
+  remarks                  String?
+  plannedActions           RiskPlannedAction[]
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@index([customerAccountId])
+  @@index([riskId])
+}
+
+// Risk Planned Actions (actions within a planned control)
+model RiskPlannedAction {
+  id                  String    @id @default(cuid())
+  plannedAction       String
+  description         String?
+  percentageCompleted Float     @default(0)
+  startDate           DateTime?
+  status              String    @default("Open") // Open, In-Progress, Completed
+  plannedControlId    String
+  plannedControl      RiskPlannedControl @relation(fields: [plannedControlId], references: [id], onDelete: Cascade)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 // Risk Settings (configurable parameters)

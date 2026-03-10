@@ -42,7 +42,7 @@ interface Risk {
   treatmentDueDate: string | null;
   likelihood: number;
   impact: number;
-  owner: { fullName: string } | null;
+  owner: { id: string; fullName: string } | null;
   assessmentStatus?: string;
   responseStatus?: string; // Separate status for Risk Response Strategy workflow
   department?: { id: string; name: string } | null;
@@ -166,7 +166,7 @@ export default function RiskResponsePage() {
       const response = await fetch(`/api/risks/${risk.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ responseStatus: "Completed" }),
+        body: JSON.stringify({ responseStatus: "Completed", assessmentStatus: "Completed" }),
       });
       if (response.ok) {
         setSuccessMessage(t("Risk Approved Successfully !"));
@@ -201,6 +201,49 @@ export default function RiskResponsePage() {
     const rawStatus = risk.responseStatus || "Open";
     const status = normalizeStatus(rawStatus);
     const isLoading = actionLoading === risk.id;
+
+    // Accept strategy: no Respond/Resume, only Submit for Approval + View
+    // Risk owner can approve their own risk
+    const isAccept = risk.responseStrategy === "Accept";
+    const isRiskOwner = risk.owner?.id === session?.user?.id;
+
+    if (isAccept) {
+      switch (status) {
+        case "Completed":
+          return (
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => router.push(`/risks/register/${risk.id}`)}>
+              {t("View")}
+            </Button>
+          );
+        case "Awaiting Approval":
+          return (
+            <div className="flex gap-2">
+              {isRiskOwner && (
+                <Button size="sm" className="h-8 text-xs" onClick={(e) => handleApprove(risk, e)} disabled={isLoading}>
+                  {isLoading ? "..." : t("Approve")}
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => router.push(`/risks/register/${risk.id}`)}>
+                {t("View")}
+              </Button>
+            </div>
+          );
+        default:
+          // Open, In-Progress, Sent Back - show Submit for Approval + View
+          return (
+            <div className="flex gap-2">
+              {canEdit && (
+                <Button size="sm" className="h-8 text-xs" onClick={(e) => handleSubmitForApproval(risk, e)} disabled={isLoading}>
+                  {isLoading ? "..." : t("Submit for Approval")}
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => router.push(`/risks/register/${risk.id}`)}>
+                {t("View")}
+              </Button>
+            </div>
+          );
+      }
+    }
 
     switch (status) {
       case "Open":

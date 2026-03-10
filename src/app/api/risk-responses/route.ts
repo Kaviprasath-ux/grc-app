@@ -3,8 +3,20 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, canAccessRecord, forbidden } from "@/lib/api-auth";
 
 // Helper function to generate response ID
-async function generateResponseId(): Promise<string> {
-  const count = await prisma.riskResponse.count();
+async function generateResponseId(customerAccountId: string): Promise<string> {
+  const lastResponse = await prisma.riskResponse.findFirst({
+    where: { customerAccountId },
+    orderBy: { createdAt: "desc" },
+    select: { responseId: true },
+  });
+  if (lastResponse) {
+    const match = lastResponse.responseId.match(/RR-(\d+)/);
+    if (match) {
+      const nextNum = parseInt(match[1], 10) + 1;
+      return `RR-${String(nextNum).padStart(4, "0")}`;
+    }
+  }
+  const count = await prisma.riskResponse.count({ where: { customerAccountId } });
   return `RR-${String(count + 1).padStart(4, "0")}`;
 }
 
@@ -138,7 +150,7 @@ export const POST = withAuth(
       // Get customer account ID for the new record
       const customerAccountId = getCustomerAccountId(session);
 
-      const responseId = await generateResponseId();
+      const responseId = await generateResponseId(customerAccountId);
 
       const response = await prisma.riskResponse.create({
         data: {
@@ -175,8 +187,9 @@ export const POST = withAuth(
       return NextResponse.json(response, { status: 201 });
     } catch (error) {
       console.error("Error creating risk response:", error);
+      const message = error instanceof Error ? error.message : "Failed to create risk response";
       return NextResponse.json(
-        { error: "Failed to create risk response" },
+        { error: message },
         { status: 500 }
       );
     }

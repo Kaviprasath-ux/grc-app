@@ -184,8 +184,8 @@ export const POST = withAuth(
         ownerId,
         impactedAssetId,
         impactedProcessId,
-        likelihood = 1,
-        impact = 1,
+        likelihood = 0,
+        impact = 0,
         inherentLikelihood,
         inherentImpact,
         residualLikelihood,
@@ -216,7 +216,7 @@ export const POST = withAuth(
 
       const riskId = await generateRiskId(customerAccountId);
       const riskScore = likelihood * impact;
-      const riskRating = calculateRiskRating(riskScore);
+      const riskRating = (likelihood && impact) ? calculateRiskRating(riskScore) : "";
 
       const risk = await prisma.risk.create({
         data: {
