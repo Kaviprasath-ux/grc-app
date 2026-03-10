@@ -16,6 +16,7 @@ import {
   Home, ChevronRight, Loader2, FileText, Flag,
   CheckCircle2, XCircle, MinusCircle, ArrowLeft,
 } from "lucide-react";
+import { useHasRole } from "@/hooks/usePermissions";
 
 interface OffboardResponse {
   id: string;
@@ -50,6 +51,7 @@ export default function OffboardReviewPage() {
 
   const assessmentId = params.id as string;
   const role = (searchParams.get("role") || "assessor") as "assessor" | "rm" | "bo";
+  const isAuditor = useHasRole("TPRMAuditor");
 
   const [assessment, setAssessment] = useState<AssessmentData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -205,7 +207,7 @@ export default function OffboardReviewPage() {
           <Badge className="bg-orange-100 text-orange-700 text-sm px-3 py-1">
             {t(assessment.status.replace(/_/g, " "))}
           </Badge>
-          {role === "assessor" && (
+          {!isAuditor && role === "assessor" && (
             <>
               <Button
                 onClick={() => handleAction("assessor-approve")}
@@ -224,7 +226,7 @@ export default function OffboardReviewPage() {
               </Button>
             </>
           )}
-          {role === "rm" && (
+          {!isAuditor && role === "rm" && (
             <>
               <Button
                 onClick={() => handleAction("rm-approve")}
@@ -243,7 +245,7 @@ export default function OffboardReviewPage() {
               </Button>
             </>
           )}
-          {role === "bo" && (
+          {!isAuditor && role === "bo" && (
             <>
               <Button
                 onClick={() => handleAction("bo-approve")}

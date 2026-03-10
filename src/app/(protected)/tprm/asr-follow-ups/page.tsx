@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, Home, ChevronRight, FileText, Download, ExternalLink, MessageSquare } from "lucide-react";
+import { useHasRole } from "@/hooks/usePermissions";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 import { ColumnDef } from "@tanstack/react-table";
 
@@ -86,6 +87,7 @@ export default function AsrFollowUpsPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "clarifications";
 
+  const isAuditor = useHasRole("TPRMAuditor");
   const [activeTab, setActiveTab] = useState(initialTab);
   const [clarSubTab, setClarSubTab] = useState("open");
   const [remSubTab, setRemSubTab] = useState("received");
@@ -697,7 +699,7 @@ export default function AsrFollowUpsPage() {
             </div>
           )}
           <DialogFooter className="flex-wrap gap-2">
-            {viewRemediation?.status === "Received" && (
+            {!isAuditor && viewRemediation?.status === "Received" && (
               <>
                 <Button onClick={() => handleRemediationAction("satisfied", t("Satisfied"))} disabled={actionLoading} className="bg-green-600 hover:bg-green-700">
                   {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
@@ -716,7 +718,7 @@ export default function AsrFollowUpsPage() {
               </>
             )}
             {/* IT Submitted items: Approve / Send Back */}
-            {viewRemediation?.status === "IT Submitted" && (
+            {!isAuditor && viewRemediation?.status === "IT Submitted" && (
               <>
                 <Button onClick={() => handleRemediationAction("approve-it", t("Approved"))} disabled={actionLoading} className="bg-green-600 hover:bg-green-700">
                   {actionLoading && !showReturnToITComment && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
@@ -728,7 +730,7 @@ export default function AsrFollowUpsPage() {
                 </Button>
               </>
             )}
-            <Button variant="outline" onClick={() => { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); setShowReturnToITComment(false); setReturnToITComment(""); }}>{t("Cancel")}</Button>
+            <Button variant="outline" onClick={() => { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); setShowReturnToITComment(false); setReturnToITComment(""); }}>{isAuditor ? t("Close") : t("Cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

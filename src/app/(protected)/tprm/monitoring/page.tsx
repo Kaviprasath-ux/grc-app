@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useHasRole } from "@/hooks/usePermissions";
 
 // ==================== TYPES ====================
 
@@ -104,6 +105,7 @@ export default function MonitoringPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [vendors, setVendors] = useState<TPRMMonitoringVendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -291,31 +293,33 @@ export default function MonitoringPage() {
         </div>
       </div>
 
-      {/* Analyze Vendor Input */}
-      <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
-        <div className="px-5 py-3 bg-gradient-to-r from-primary/5 to-white border-b flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Activity className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <span className="text-sm font-semibold">{t("New Vendor Scan")}</span>
-        </div>
-        <div className="p-5">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
-            <div>
-              <Label className="text-xs text-muted-foreground">{t("Vendor Name")}</Label>
-              <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder={t("Enter vendor name")} className="mt-1" />
+      {/* Analyze Vendor Input — hidden for auditor (read-only) */}
+      {!isAuditor && (
+        <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+          <div className="px-5 py-3 bg-gradient-to-r from-primary/5 to-white border-b flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Activity className="h-3.5 w-3.5 text-primary" />
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">{t("Vendor Domain (URL)")}</Label>
-              <Input value={vendorDomain} onChange={(e) => setVendorDomain(e.target.value)} placeholder="https://example.com" className="mt-1" />
+            <span className="text-sm font-semibold">{t("New Vendor Scan")}</span>
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+              <div>
+                <Label className="text-xs text-muted-foreground">{t("Vendor Name")}</Label>
+                <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder={t("Enter vendor name")} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">{t("Vendor Domain (URL)")}</Label>
+                <Input value={vendorDomain} onChange={(e) => setVendorDomain(e.target.value)} placeholder="https://example.com" className="mt-1" />
+              </div>
+              <Button onClick={handleAnalyze} disabled={submitting} className="h-10">
+                {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
+                {submitting ? t("Submitting...") : t("Analyze Vendor")}
+              </Button>
             </div>
-            <Button onClick={handleAnalyze} disabled={submitting} className="h-10">
-              {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
-              {submitting ? t("Submitting...") : t("Analyze Vendor")}
-            </Button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Search & Stats Bar */}
       <div className="flex items-center gap-4">
@@ -363,7 +367,7 @@ export default function MonitoringPage() {
                   {KPI_COLUMNS.map((col) => (
                     <th key={col} className="text-center px-2 py-3 font-semibold whitespace-nowrap text-xs text-slate-600">{t(col)}</th>
                   ))}
-                  <th className="px-3 py-3 w-10" />
+                  {!isAuditor && <th className="px-3 py-3 w-10" />}
                 </tr>
               </thead>
               <tbody>
@@ -407,17 +411,19 @@ export default function MonitoringPage() {
                       {KPI_COLUMNS.map((col) => (
                         <KpiCell key={col} score={getKpiScore(a?.kpiDetails ?? [], col)} />
                       ))}
-                      {/* Delete */}
-                      <td className="px-3 py-2.5 text-center">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 transition-colors"
-                          onClick={(e) => { e.stopPropagation(); toast({ title: t("Info"), description: t("Delete functionality coming soon") }); }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </td>
+                      {/* Delete — hidden for auditor */}
+                      {!isAuditor && (
+                        <td className="px-3 py-2.5 text-center">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); toast({ title: t("Info"), description: t("Delete functionality coming soon") }); }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

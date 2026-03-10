@@ -88,6 +88,7 @@ export default function AsrAssessmentsPage() {
   const initialTab = searchParams.get("tab") || "my-queue";
 
   const isApprover = useHasRole("TPRMApprover");
+  const isAuditor = useHasRole("TPRMAuditor");
   const [activeTab, setActiveTab] = useState(TAB_MAP[initialTab] || "my-queue");
   const [subTab, setSubTab] = useState("main");
   const [items, setItems] = useState<AssessmentItem[]>([]);
@@ -428,7 +429,11 @@ export default function AsrAssessmentsPage() {
     {
       id: "actions",
       header: t("Action"),
-      cell: ({ row }) => (
+      cell: ({ row }) => isAuditor ? (
+        <Button variant="ghost" size="sm" onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}>
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ) : (
         <Button
           variant="outline"
           size="sm"
@@ -525,7 +530,11 @@ export default function AsrAssessmentsPage() {
     {
       id: "actions",
       header: t("Action"),
-      cell: ({ row }) => (
+      cell: ({ row }) => isAuditor ? (
+        <Button variant="ghost" size="sm" onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}>
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ) : (
         <Button
           variant="outline"
           size="sm"

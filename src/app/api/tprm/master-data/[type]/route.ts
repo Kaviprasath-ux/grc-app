@@ -61,7 +61,7 @@ export const GET = withAuth(
       return NextResponse.json({ error: 'Failed to fetch master data', detail: msg }, { status: 500 });
     }
   },
-  { resource: 'tprm.master-data', action: 'view' }
+  { resource: ['tprm.master-data', 'tprm.asr-template'], action: 'view' }
 );
 
 // ============ POST ============

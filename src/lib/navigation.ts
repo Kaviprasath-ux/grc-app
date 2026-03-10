@@ -254,15 +254,15 @@ export const navigation: NavItem[] = [
       { name: "Follow-Ups", href: "/tprm/am-follow-ups", icon: ClipboardList, permission: "tprm.am-follow-ups:view" },
       { name: "SME Management", href: "/tprm/am-sme-management", icon: UserCog, permission: "tprm.am-sme-management:view" },
       { name: "Support", href: "/tprm/am-support", icon: HelpCircle, permission: "tprm.am-support:view" },
-      // ---- Assessor / Auditor menu items ----
+      // ---- Assessor menu items ----
       { name: "Dashboard", href: "/tprm/asr-dashboard", icon: LayoutDashboard, permission: "tprm.asr-dashboard:view" },
       { name: "Assessments", href: "/tprm/asr-assessments", icon: ClipboardCheck, permission: "tprm.asr-assessments:view" },
       { name: "Inventory", href: "/tprm/asr-inventory", icon: Package, permission: "tprm.asr-inventory:view" },
-      { name: "Issue Register", href: "/tprm/asr-issue-register", icon: AlertTriangle, permission: "tprm.asr-issue-register:view" },
       { name: "Monitoring", href: "/tprm/asr-monitoring", icon: Radar, permission: "tprm.asr-monitoring:view" },
       { name: "Follow-ups", href: "/tprm/asr-follow-ups", icon: ClipboardList, permission: "tprm.asr-follow-ups:view" },
+      { name: "Issue Register", href: "/tprm/asr-issue-register", icon: AlertTriangle, permission: "tprm.asr-issue-register:view" },
       { name: "Assessment Factory", href: "/tprm/asr-assessment-factory", icon: Factory, permission: "tprm.asr-assessment-factory:view" },
-      { name: "Assessment Factory History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
+      { name: "Assessment History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
       { name: "Reports", href: "/tprm/reports", icon: FileBarChart, permission: "tprm.reports:view" },
       { name: "Template", href: "/tprm/asr-template", icon: FileText, permission: "tprm.asr-template:view" },
       { name: "Support", href: "/tprm/asr-support", icon: HelpCircle, permission: "tprm.asr-support:view" },
@@ -586,6 +586,9 @@ export function filterNavigationByPermissionsAndRole(
   const isTPRMAuditor = userRoles.some(r => r === 'TPRMAuditor');
   if (isFactoryRole || isITRole || isTPRMAuditor) {
     navItems = flattenTprmNavigation(items);
+    if (isTPRMAuditor) {
+      navItems = reorderForTPRMAuditor(navItems);
+    }
   }
   // For non-system roles with ONLY TPRM (no GRC), flatten TPRM children to top-level
   else if (!isSystemRole && moduleFlags?.isTprmAdded && !moduleFlags?.isGrcAdded) {
@@ -630,6 +633,42 @@ function flattenTprmNavigation(items: NavItem[]): NavItem[] {
   }
 
   return result;
+}
+
+/**
+ * Reorder and rename nav items specifically for TPRMAuditor role.
+ * Custom order: Dashboard, Assessments, Inventory, Issue Register, Follow-ups,
+ * Assessment Factory History, Reports, Template, Support
+ */
+function reorderForTPRMAuditor(items: NavItem[]): NavItem[] {
+  // Rename "Assessment History" to "Assessment Factory History"
+  const renamed = items.map(item =>
+    item.name === 'Assessment History' ? { ...item, name: 'Assessment Factory History' } : item
+  );
+
+  // Define desired order by href
+  const order = [
+    '/tprm/asr-dashboard',
+    '/tprm/asr-assessments',
+    '/tprm/asr-inventory',
+    '/tprm/asr-issue-register',
+    '/tprm/asr-follow-ups',
+    '/tprm/asr-factory-reports',
+    '/tprm/reports',
+    '/tprm/asr-template',
+    '/tprm/asr-support',
+  ];
+
+  const ordered: NavItem[] = [];
+  for (const href of order) {
+    const found = renamed.find(i => i.href === href);
+    if (found) ordered.push(found);
+  }
+  // Append any remaining items not in the explicit order
+  for (const item of renamed) {
+    if (!order.includes(item.href || '')) ordered.push(item);
+  }
+  return ordered;
 }
 
 /**
