@@ -509,6 +509,7 @@ function getPrimaryRole(roles: string[]): string {
     "BusinessOwner",
     "RelationshipManager",
     "InternalITTeam",
+    "TPRMAuditor",
     "AccountManager",
   ];
 
@@ -573,7 +574,7 @@ export function filterNavigationByPermissionsAndRole(
 
   // System roles ignore module flags
   const isSystemRole = userRoles.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'InternalITTeam'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'InternalITTeam' || r === 'TPRMAuditor'
   );
 
   let navItems = items;
