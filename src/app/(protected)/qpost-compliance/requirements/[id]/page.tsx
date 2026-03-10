@@ -258,7 +258,7 @@ export default function QPostRequirementDetailPage() {
       const res = await fetch("/api/qpost-compliance/evidences?limit=200");
       if (res.ok) {
         const data = await res.json();
-        const items = Array.isArray(data) ? data : data.items || data.evidences || [];
+        const items = Array.isArray(data) ? data : data.data || data.items || data.evidences || [];
         // Filter out already-linked evidences
         const linkedIds = new Set(requirement?.evidences.map((e) => e.evidence.id) || []);
         setAvailableEvidences(items.filter((e: EvidenceItem) => !linkedIds.has(e.id)));
@@ -299,7 +299,7 @@ export default function QPostRequirementDetailPage() {
       const res = await fetch("/api/qpost-compliance/policies?limit=200");
       if (res.ok) {
         const data = await res.json();
-        const items = Array.isArray(data) ? data : data.items || data.policies || [];
+        const items = Array.isArray(data) ? data : data.data || data.items || data.policies || [];
         const linkedIds = new Set(requirement?.policies.map((p) => p.policy.id) || []);
         setAvailablePolicies(items.filter((p: PolicyItem) => !linkedIds.has(p.id)));
       }

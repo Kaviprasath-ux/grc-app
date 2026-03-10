@@ -240,7 +240,7 @@ export default function GovernancePage() {
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
   const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
-  const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'FrameworkRequirement' });
+  const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'QPostRequirement' });
 
   // Lookup maps for translated nested data
   const departmentNameMap = useMemo(() => {
@@ -375,7 +375,7 @@ export default function GovernancePage() {
   const fetchVaultDocuments = async () => {
     try {
       setVaultLoading(true);
-      const response = await fetch("/api/governance-vault");
+      const response = await fetch("/api/qpost-compliance/governance-vault");
       if (response.ok) {
         const data = await response.json();
         setVaultDocuments(data.data || []);
@@ -568,7 +568,7 @@ export default function GovernancePage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/governance-vault", {
+      const response = await fetch("/api/qpost-compliance/governance-vault", {
         method: "POST",
         body: formData,
       });
@@ -589,7 +589,7 @@ export default function GovernancePage() {
 
   const handleDeleteVaultDoc = async (docId: string) => {
     try {
-      const response = await fetch(`/api/governance-vault/${docId}`, {
+      const response = await fetch(`/api/qpost-compliance/governance-vault/${docId}`, {
         method: "DELETE",
       });
       if (response.ok) {
@@ -625,7 +625,7 @@ export default function GovernancePage() {
   const handleLinkGovernance = async () => {
     if (!selectedVaultDoc) return;
     try {
-      const response = await fetch(`/api/governance-vault/${selectedVaultDoc.id}/link`, {
+      const response = await fetch(`/api/qpost-compliance/governance-vault/${selectedVaultDoc.id}/link`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ governanceIds: selectedGovernanceIds }),
@@ -1127,7 +1127,7 @@ export default function GovernancePage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                              onClick={() => window.open(`/api/governance-vault/${doc.id}/download`, "_blank")}
+                              onClick={() => window.open(`/api/qpost-compliance/governance-vault/${doc.id}/download`, "_blank")}
                               title={t("Download")}
                             >
                               <Download className="h-4 w-4" />

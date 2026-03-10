@@ -395,6 +395,8 @@ model User {
   // QPost Compliance relations
   qpostAssignedPolicies    QPostPolicy[]    @relation("QPostPolicyAssignee")
   qpostApprovedPolicies    QPostPolicy[]    @relation("QPostPolicyApprover")
+  qpostPolicyManualReviews QPostPolicyManualReview[] @relation("QPostPolicyManualReviewer")
+  qpostEvidenceManualReviews QPostEvidenceManualReview[] @relation("QPostEvidenceManualReviewer")
   qpostAssignedEvidences   QPostEvidence[]  @relation("QPostEvidenceAssignee")
   qpostUploadedArtifacts   QPostArtifact[]  @relation("QPostArtifactUploader")
   qpostRequestedExceptions QPostException[] @relation("QPostExceptionRequester")
@@ -4347,6 +4349,7 @@ model QPostPolicy {
   attachments           QPostPolicyAttachment[]
   requirements          QPostRequirementPolicy[]
   policyAIReviews       QPostPolicyAIReview[]
+  manualReviews         QPostPolicyManualReview[]
   policyExceptions      QPostPolicyException[]
   exceptions            QPostException[]                @relation("QPostPolicyExceptions")
   vaultDocumentLinks    QPostGovernanceVaultDocumentLink[]
@@ -4394,6 +4397,7 @@ model QPostEvidence {
   evidenceAIIngestJobs  QPostEvidenceAIIngestJob[]
   evidenceAIIngestResults QPostEvidenceAIIngestResult[]
   cycleComments         QPostEvidenceCycleComment[]
+  manualReviews         QPostEvidenceManualReview[]
 
   @@unique([customerAccountId, evidenceCode])
   @@index([customerAccountId])
@@ -4723,6 +4727,42 @@ model QPostRequirementPolicy {
   createdAt     DateTime         @default(now())
 
   @@unique([requirementId, policyId])
+}
+
+model QPostPolicyManualReview {
+  id            String      @id @default(cuid())
+  policyId      String
+  policy        QPostPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  reviewerId    String
+  reviewer      User        @relation("QPostPolicyManualReviewer", fields: [reviewerId], references: [id])
+  status        String      @default("Reviewed") // Reviewed, Approved, Rejected, Needs Revision
+  score         Float?
+  comments      String?     @db.Text
+  findings      String?     @db.Text
+  recommendation String?    @db.Text
+  reviewDate    DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([policyId])
+}
+
+model QPostEvidenceManualReview {
+  id             String        @id @default(cuid())
+  evidenceId     String
+  evidence       QPostEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  reviewerId     String
+  reviewer       User          @relation("QPostEvidenceManualReviewer", fields: [reviewerId], references: [id])
+  status         String        @default("Reviewed") // Reviewed, Approved, Rejected, Needs Revision
+  score          Float?
+  comments       String?       @db.Text
+  findings       String?       @db.Text
+  recommendation String?       @db.Text
+  reviewDate     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([evidenceId])
 }
 
 // ============================================================
