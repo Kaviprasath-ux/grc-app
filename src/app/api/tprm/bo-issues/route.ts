@@ -88,7 +88,7 @@ export const GET = withAuth(
         const remediations = await prisma.tPRMIssueRemediation.findMany({
           where: {
             customerAccountId,
-            status: { in: ["Assigned to BO", "Open", "Pending", "Submitted", "Closed", "Rejected"] },
+            status: { in: ["Assigned to BO", "Open", "Pending", "Submitted", "Closed", "Rejected", "Terminated"] },
           },
           include: {
             assessment: {
@@ -172,6 +172,77 @@ export const GET = withAuth(
         return NextResponse.json({ data, total: data.length });
       }
 
+      // ==================== TAB 1b: REGISTER DETAIL (drill-down per vendor) ====================
+      if (tab === "register-detail") {
+        const vendorId = searchParams.get("vendorId");
+        if (!vendorId) {
+          return NextResponse.json({ error: "vendorId is required" }, { status: 400 });
+        }
+
+        const domains = await prisma.tPRMDomain.findMany({
+          where: { customerAccountId },
+          select: { id: true, name: true },
+        });
+        const domainMap = new Map(domains.map((d) => [d.id, d.name]));
+
+        const vendor = await prisma.tPRMVendor.findFirst({
+          where: { id: vendorId, ...tenantFilter },
+          include: {
+            assessments: {
+              select: {
+                id: true,
+                assessmentCode: true,
+                completionDate: true,
+                responses: {
+                  select: {
+                    id: true,
+                    domainId: true,
+                    poSeverity: true,
+                    poStatus: true,
+                    poIssue: true,
+                    poRisk: true,
+                    assessorSeverity: true,
+                    assessorStatus: true,
+                    assessorIssue: true,
+                    assessorRisk: true,
+                    assessmentId: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (!vendor) {
+          return NextResponse.json({ data: [], total: 0 });
+        }
+
+        const details = [];
+        for (const assessment of vendor.assessments) {
+          for (const resp of assessment.responses) {
+            const severity = resp.assessorSeverity || resp.poSeverity;
+            const status = resp.assessorStatus || resp.poStatus;
+            if (!severity || (status && status.toLowerCase() === "satisfactory")) continue;
+
+            const domainName = resp.domainId ? domainMap.get(resp.domainId) || null : null;
+            const issue = resp.assessorIssue || resp.poIssue || null;
+            const risk = resp.assessorRisk || resp.poRisk || null;
+
+            details.push({
+              domain: domainName,
+              severity: severity || "Medium",
+              issue,
+              risk,
+              assessmentId: assessment.assessmentCode || resp.assessmentId.slice(0, 6).toUpperCase(),
+              dueDate: assessment.completionDate ? assessment.completionDate.toISOString() : null,
+              status: "OPEN",
+            });
+          }
+        }
+
+        return NextResponse.json({ data: details, total: details.length });
+      }
+
       return NextResponse.json({ error: "Invalid tab parameter" }, { status: 400 });
     } catch (error) {
       console.error("BO Issues GET error:", error);
@@ -181,13 +252,13 @@ export const GET = withAuth(
   { resource: "tprm.bo-issues", action: "view" }
 );
 
-// PATCH /api/tprm/bo-issues — BO actions on remediations (add comment)
+// PATCH /api/tprm/bo-issues — BO actions on remediations (status change + comment)
 export const PATCH = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { id, addComment } = body;
+      const { id, status, addComment } = body;
 
       if (!id) {
         return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -201,6 +272,7 @@ export const PATCH = withAuth(
         return NextResponse.json({ error: "Remediation not found" }, { status: 404 });
       }
 
+      // Add comment if provided
       if (addComment && typeof addComment === "string" && addComment.trim()) {
         await prisma.tPRMRemediationComment.create({
           data: {
@@ -210,6 +282,19 @@ export const PATCH = withAuth(
             message: addComment.trim(),
           },
         });
+
+        if (!status) {
+          return NextResponse.json({ success: true });
+        }
+      }
+
+      // Update status if provided
+      if (status) {
+        const updated = await prisma.tPRMIssueRemediation.update({
+          where: { id },
+          data: { status },
+        });
+        return NextResponse.json(updated);
       }
 
       return NextResponse.json({ success: true });

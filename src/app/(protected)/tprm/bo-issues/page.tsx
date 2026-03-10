@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Loader2,
-  Eye, FileText, ExternalLink,
+  Eye, FileText, ExternalLink, MessageSquare, ShieldCheck, Send, Ban, ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,14 @@ interface IssueRegisterEntry {
   status: string;
 }
 
+interface RemediationComment {
+  id: string;
+  message: string;
+  userRole: string | null;
+  userName: string;
+  createdAt: string;
+}
+
 interface IssueRemediationEntry {
   id: string;
   issueCode: string | null;
@@ -59,6 +67,9 @@ interface IssueRemediationEntry {
   questionText: string | null;
   questionResponse: string | null;
   reassignComment: string | null;
+  amResponse: string | null;
+  amComment: string | null;
+  assessorComment: string | null;
   artifactUrl: string | null;
   artifactName: string | null;
   assignedTo: string | null;
@@ -67,19 +78,41 @@ interface IssueRemediationEntry {
   dueDate: string | null;
   status: string;
   createdAt: string;
+  comments: RemediationComment[];
 }
 
 interface VendorIssueEntry {
   id: string;
   title: string;
+  description: string | null;
   vendorName: string;
+  vendorCode: string;
   severity: string;
   dueDate: string | null;
+  resolution: string | null;
   status: string;
   reportedBy: string | null;
+  createdAt: string;
+}
+
+interface VendorIssueDetail {
+  domain: string | null;
+  severity: string;
+  issue: string | null;
+  risk: string | null;
+  assessmentId: string;
+  dueDate: string | null;
+  status: string;
 }
 
 // ==================== HELPERS ====================
+
+const SEVERITY_COLORS: Record<string, string> = {
+  High: "border-red-300 bg-red-50 text-red-700",
+  Critical: "border-red-300 bg-red-50 text-red-700",
+  Medium: "border-orange-300 bg-orange-50 text-orange-700",
+  Low: "border-green-300 bg-green-50 text-green-700",
+};
 
 const STATUS_COLORS: Record<string, string> = {
   Open: "border-blue-300 bg-blue-50 text-blue-700",
@@ -90,6 +123,9 @@ const STATUS_COLORS: Record<string, string> = {
   "Awaiting Response": "border-purple-300 bg-purple-50 text-purple-700",
   Rejected: "border-red-300 bg-red-50 text-red-700",
   Resolved: "border-green-300 bg-green-50 text-green-700",
+  Terminated: "border-red-300 bg-red-50 text-red-700",
+  Pending: "border-yellow-300 bg-yellow-50 text-yellow-700",
+  OPEN: "border-blue-300 bg-blue-50 text-blue-700",
 };
 
 const SEVERITIES = ["High", "Medium", "Low"];
@@ -137,6 +173,20 @@ export default function BOIssuesPage() {
 
   // Remediation detail modal
   const [viewRemediation, setViewRemediation] = useState<IssueRemediationEntry | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Comment dialog (for Accept Risk, Send To Assessor, Terminate Vendor)
+  const [commentAction, setCommentAction] = useState<{ remediationId: string; targetStatus: string } | null>(null);
+  const [commentText, setCommentText] = useState("");
+
+  // Vendor detail drill-down (Issue Register)
+  const [selectedVendor, setSelectedVendor] = useState<IssueRegisterEntry | null>(null);
+  const [vendorIssueDetails, setVendorIssueDetails] = useState<VendorIssueDetail[]>([]);
+  const [vendorDetailLoading, setVendorDetailLoading] = useState(false);
+  const [vendorDomainSearch, setVendorDomainSearch] = useState("");
+
+  // Vendor Issue detail dialog
+  const [viewVendorIssue, setViewVendorIssue] = useState<VendorIssueEntry | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -168,6 +218,78 @@ export default function BOIssuesPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Opens the comment dialog before performing an action
+  const openCommentDialog = useCallback((remediationId: string, targetStatus: string) => {
+    setCommentAction({ remediationId, targetStatus });
+    setCommentText("");
+    setViewRemediation(null);
+  }, []);
+
+  // Saves the comment and performs the action
+  const handleCommentSave = useCallback(async () => {
+    if (!commentAction) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/tprm/bo-issues", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: commentAction.remediationId,
+          status: commentAction.targetStatus,
+          addComment: commentText.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Issue updated successfully") });
+        setCommentAction(null);
+        setCommentText("");
+        loadData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: data.error || t("Failed to update issue"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to update issue"), variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  }, [commentAction, commentText, toast, t, loadData]);
+
+  // ==================== VENDOR DETAIL DRILL-DOWN ====================
+  const loadVendorDetail = useCallback(async (vendor: IssueRegisterEntry) => {
+    setSelectedVendor(vendor);
+    setVendorDetailLoading(true);
+    setVendorDomainSearch("");
+    try {
+      const res = await fetch(`/api/tprm/bo-issues?tab=register-detail&vendorId=${vendor.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setVendorIssueDetails(data.data || []);
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to load vendor details"), variant: "destructive" });
+    } finally {
+      setVendorDetailLoading(false);
+    }
+  }, [toast, t]);
+
+  const filteredVendorDetails = useMemo(() => {
+    if (!vendorDomainSearch) return vendorIssueDetails;
+    return vendorIssueDetails.filter((d) =>
+      (d.domain || "").toLowerCase().includes(vendorDomainSearch.toLowerCase())
+    );
+  }, [vendorIssueDetails, vendorDomainSearch]);
+
+  const vendorDetailColumns: ColumnDef<VendorIssueDetail>[] = [
+    { accessorKey: "domain", header: t("Domain"), cell: ({ row }) => <span className="text-sm">{row.original.domain || "-"}</span> },
+    { accessorKey: "severity", header: t("Severity"), cell: ({ row }) => <Badge variant="outline" className={`${SEVERITY_COLORS[row.original.severity] || ""} text-xs font-medium`}>{t(row.original.severity)}</Badge> },
+    { accessorKey: "issue", header: t("Issue"), cell: ({ row }) => <span className="text-sm max-w-[200px] truncate block">{row.original.issue || "-"}</span> },
+    { accessorKey: "risk", header: t("Risk"), cell: ({ row }) => <span className="text-sm max-w-[200px] truncate block">{row.original.risk || "-"}</span> },
+    { accessorKey: "assessmentId", header: t("Assessment ID"), cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.assessmentId.slice(0, 6).toUpperCase()}</span> },
+    { accessorKey: "dueDate", header: t("Due Date"), cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span> },
+    { accessorKey: "status", header: t("Status"), cell: ({ row }) => <Badge variant="outline" className={`${STATUS_COLORS[row.original.status] || "border-blue-300 bg-blue-50 text-blue-700"} text-xs font-medium`}>{t(row.original.status)}</Badge> },
+  ];
+
   // ==================== ISSUE REGISTER ====================
 
   const filteredRegister = useMemo(() => {
@@ -181,7 +303,14 @@ export default function BOIssuesPage() {
 
   const registerColumns: ColumnDef<IssueRegisterEntry>[] = [
     { accessorKey: "department", header: t("Department"), cell: ({ row }) => <span className="text-sm">{row.original.department || "-"}</span> },
-    { accessorKey: "vendorName", header: t("Vendor Name"), cell: ({ row }) => <span className="font-medium text-sm">{row.original.vendorName}</span> },
+    {
+      accessorKey: "vendorName", header: t("Vendor Name"),
+      cell: ({ row }) => (
+        <button className="font-medium text-sm text-primary hover:underline cursor-pointer" onClick={() => loadVendorDetail(row.original)}>
+          {row.original.vendorName}
+        </button>
+      ),
+    },
     { accessorKey: "vendorCode", header: t("Vendor ID"), cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span> },
     { accessorKey: "high", header: t("High"), cell: ({ row }) => <span className={`text-sm font-medium ${row.original.high > 0 ? "text-red-600" : "text-muted-foreground"}`}>{row.original.high}</span> },
     { accessorKey: "medium", header: t("Medium"), cell: ({ row }) => <span className={`text-sm font-medium ${row.original.medium > 0 ? "text-orange-600" : "text-muted-foreground"}`}>{row.original.medium}</span> },
@@ -213,7 +342,7 @@ export default function BOIssuesPage() {
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab =
         remSubTab === "Open"
-          ? ["Open", "Assigned to BO", "Pending"].includes(e.status)
+          ? ["Open", "Assigned to BO", "Pending", "Terminated"].includes(e.status)
           : remSubTab === "Closed"
           ? ["Closed", "Submitted"].includes(e.status)
           : remSubTab === "Rejected"
@@ -227,13 +356,28 @@ export default function BOIssuesPage() {
   }, [remediationEntries, remSearch, remSeverityFilter, remSubTab, remDateFilter]);
 
   const remediationColumns: ColumnDef<IssueRemediationEntry>[] = [
-    { accessorKey: "issueCode", header: t("Issue ID"), cell: ({ row }) => <span className="font-mono text-sm">{row.original.issueCode || "-"}</span> },
+    { accessorKey: "issueCode", header: t("Issue ID"), cell: ({ row }) => <span className="font-mono text-sm">{row.original.issueCode || row.original.id.slice(0, 6).toUpperCase()}</span> },
     { accessorKey: "vendorName", header: t("Vendor Name"), cell: ({ row }) => <span className="text-sm font-medium">{row.original.vendorName}</span> },
     { accessorKey: "domain", header: t("Domain"), cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.domain || "-"}</span> },
     { accessorKey: "severity", header: t("Severity"), cell: ({ row }) => row.original.severity ? <Badge variant={getSeverityVariant(row.original.severity)}>{t(row.original.severity)}</Badge> : <span>-</span> },
     { accessorKey: "responseDate", header: t("Response Date"), cell: ({ row }) => <span className="text-sm">{formatDate(row.original.responseDate || row.original.requestedDate)}</span> },
     { accessorKey: "dueDate", header: t("Due Date"), cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span> },
-    { id: "actions", header: t("Action"), cell: ({ row }) => <Button variant="ghost" size="sm" onClick={() => setViewRemediation(row.original)}><Eye className="h-4 w-4 text-primary" /></Button> },
+    {
+      id: "comments", header: t("Comments"),
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" onClick={() => setViewRemediation(row.original)}>
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      ),
+    },
+    {
+      id: "actions", header: t("Action"),
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" onClick={() => setViewRemediation(row.original)}>
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ),
+    },
   ];
 
   // ==================== VENDOR ISSUES ====================
@@ -252,9 +396,16 @@ export default function BOIssuesPage() {
   const vendorIssueColumns: ColumnDef<VendorIssueEntry>[] = [
     { accessorKey: "title", header: t("Title"), cell: ({ row }) => <span className="text-sm font-medium">{row.original.title}</span> },
     { accessorKey: "status", header: t("Status"), cell: ({ row }) => <Badge variant="outline" className={`${STATUS_COLORS[row.original.status] || ""} text-xs font-medium`}>{t(row.original.status)}</Badge> },
-    { accessorKey: "severity", header: t("Severity"), cell: ({ row }) => row.original.severity ? <Badge variant={getSeverityVariant(row.original.severity)}>{t(row.original.severity)}</Badge> : <span>-</span> },
+    { accessorKey: "severity", header: t("Severity"), cell: ({ row }) => row.original.severity ? <Badge variant="outline" className={`${SEVERITY_COLORS[row.original.severity] || ""} text-xs font-medium`}>{t(row.original.severity)}</Badge> : <span>-</span> },
     { accessorKey: "dueDate", header: t("Due Date"), cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span> },
-    { accessorKey: "reportedBy", header: t("Reported By"), cell: ({ row }) => <span className="text-sm">{row.original.reportedBy || "-"}</span> },
+    {
+      id: "actions", header: t("Action"),
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" onClick={() => setViewVendorIssue(row.original)}>
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ),
+    },
   ];
 
   const remSubTabs = [
@@ -295,30 +446,75 @@ export default function BOIssuesPage() {
 
         {/* ==================== TAB 1: ISSUE REGISTER ==================== */}
         <TabsContent value="register" className="space-y-4 mt-4">
-          <h2 className="text-xl font-bold">{t("Issue Register")}</h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder={t("Search")} value={regVendorSearch} onChange={(e) => setRegVendorSearch(e.target.value)} className="pl-9" />
-              {regVendorSearch && <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRegVendorSearch("")}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>}
-            </div>
-            <Select value={regStatusFilter} onValueChange={setRegStatusFilter}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder={t("Status")} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("All Statuses")}</SelectItem>
-                {["Open", "Closed"].map((s) => <SelectItem key={s} value={s}>{t(s)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <div className="ltr:ml-auto rtl:mr-auto">
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
+          {selectedVendor ? (
+            /* Vendor Detail Drill-down View */
+            <div className="space-y-4">
+              <Button variant="outline" size="sm" onClick={() => setSelectedVendor(null)}>
+                <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Back")}
               </Button>
+              <h2 className="text-lg font-semibold">{t("Risk Register For")} {selectedVendor.vendorName}</h2>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                <h3 className="text-sm font-semibold">{t("Risk Register")}</h3>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder={t("Search Domain")} value={vendorDomainSearch} onChange={(e) => setVendorDomainSearch(e.target.value)} className="pl-9" />
+                  {vendorDomainSearch && (
+                    <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setVendorDomainSearch("")}>
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setVendorDomainSearch("")}>{t("Clear")}</Button>
+                <div className="ltr:ml-auto rtl:mr-auto">
+                  <Button variant="outline" size="sm" onClick={handleExport}>
+                    <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
+                  </Button>
+                </div>
+              </div>
+
+              {vendorDetailLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : filteredVendorDetails.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground"><AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-40" /><p>{t("No issues found")}</p></div>
+              ) : (
+                <DataGrid columns={vendorDetailColumns} data={filteredVendorDetails} hideSearch />
+              )}
             </div>
-          </div>
-          {filteredRegister.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground"><AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-40" /><p>{t("No issues found")}</p></div>
           ) : (
-            <DataGrid columns={registerColumns} data={filteredRegister} hideSearch />
+            /* Main Issue Register List */
+            <>
+              <h2 className="text-xl font-bold">{t("Issue Register")}</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder={t("Search")} value={regVendorSearch} onChange={(e) => setRegVendorSearch(e.target.value)} className="pl-9" />
+                  {regVendorSearch && <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRegVendorSearch("")}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>}
+                </div>
+                <Select value={regStatusFilter} onValueChange={setRegStatusFilter}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder={t("Status")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                    {["Open", "Closed"].map((s) => <SelectItem key={s} value={s}>{t(s)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <div className="ltr:ml-auto rtl:mr-auto">
+                  <Button variant="outline" size="sm" onClick={handleExport}>
+                    <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
+                  </Button>
+                </div>
+              </div>
+              {filteredRegister.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground"><AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-40" /><p>{t("No issues found")}</p></div>
+              ) : (
+                <DataGrid columns={registerColumns} data={filteredRegister} hideSearch />
+              )}
+            </>
           )}
         </TabsContent>
 
@@ -384,6 +580,68 @@ export default function BOIssuesPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* ==================== VENDOR ISSUE DETAIL DIALOG ==================== */}
+      <Dialog open={!!viewVendorIssue} onOpenChange={(open) => { if (!open) setViewVendorIssue(null); }}>
+        <DialogContent className="!max-w-2xl w-[90vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Vendor Issue Details")}</DialogTitle>
+          </DialogHeader>
+          {viewVendorIssue && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{t("Title")}</Label>
+                  <p className="text-sm mt-1">{viewVendorIssue.title}</p>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Vendor")}</Label>
+                  <p className="text-sm mt-1">{viewVendorIssue.vendorName}</p>
+                </div>
+              </div>
+              {viewVendorIssue.description && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("Description")}</Label>
+                  <p className="text-sm mt-1 text-muted-foreground">{viewVendorIssue.description}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{t("Severity")}</Label>
+                  <div className="mt-1">
+                    <Badge variant="outline" className={`${SEVERITY_COLORS[viewVendorIssue.severity] || ""} text-xs font-medium`}>{t(viewVendorIssue.severity)}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Status")}</Label>
+                  <div className="mt-1">
+                    <Badge variant="outline" className={`${STATUS_COLORS[viewVendorIssue.status] || ""} text-xs font-medium`}>{t(viewVendorIssue.status)}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Due Date")}</Label>
+                  <p className="text-sm mt-1">{formatDate(viewVendorIssue.dueDate)}</p>
+                </div>
+              </div>
+              {viewVendorIssue.resolution && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("Resolution")}</Label>
+                  <p className="text-sm mt-1 text-muted-foreground">{viewVendorIssue.resolution}</p>
+                </div>
+              )}
+              {viewVendorIssue.reportedBy && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("Reported By")}</Label>
+                  <p className="text-sm mt-1">{viewVendorIssue.reportedBy}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewVendorIssue(null)}>{t("Close")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ==================== REMEDIATION DETAIL DIALOG (assessor style) ==================== */}
       <Dialog open={!!viewRemediation} onOpenChange={(open) => { if (!open) setViewRemediation(null); }}>
@@ -499,8 +757,47 @@ export default function BOIssuesPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-wrap gap-2">
+            {viewRemediation && (
+              <>
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Closed")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                  <ShieldCheck className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Accept Risk")}
+                </Button>
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Submitted")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                  <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Send To Assessor")}
+                </Button>
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Terminated")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                  <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Terminate Vendor")}
+                </Button>
+              </>
+            )}
             <Button variant="outline" onClick={() => setViewRemediation(null)}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== COMMENT DIALOG (before action) ==================== */}
+      <Dialog open={!!commentAction} onOpenChange={(open) => { if (!open) { setCommentAction(null); setCommentText(""); } }}>
+        <DialogContent className="!max-w-lg w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>{t("Comment")}</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            rows={5}
+            placeholder={t("Enter your comment...")}
+            className="w-full"
+          />
+          <DialogFooter className="gap-2">
+            <Button onClick={handleCommentSave} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+              {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Save")}
+            </Button>
+            <Button variant="outline" onClick={() => { setCommentAction(null); setCommentText(""); }}>{t("Cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
