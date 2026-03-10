@@ -320,10 +320,10 @@ export default function EvidenceDetailPage() {
   const [requirementFrameworkFilter, setRequirementFrameworkFilter] = useState("all");
 
   // Dynamic translations for user-entered data
-  const { data: translatedEvidence } = useTranslatedRecord(evidence, { modelName: 'Evidence' });
+  const { data: translatedEvidence } = useTranslatedRecord(evidence, { modelName: 'QPostEvidence' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
   const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'QPostRequirement' });
 
   // Translate linked KPI record

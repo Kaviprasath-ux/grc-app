@@ -456,10 +456,10 @@ export default function GovernanceDetailPage() {
   const [selectedExceptionId, setSelectedExceptionId] = useState("");
 
   // Dynamic translation hooks
-  const { data: translatedPolicy } = useTranslatedRecord(policy, { modelName: 'Policy' });
+  const { data: translatedPolicy } = useTranslatedRecord(policy, { modelName: 'QPostPolicy' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
   const { data: translatedRequirements } = useTranslatedData(availableRequirements, { modelName: 'QPostRequirement' });
   const { data: translatedExceptions } = useTranslatedData(availableExceptions, { modelName: 'QPostException' });
 

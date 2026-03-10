@@ -235,11 +235,11 @@ export default function GovernancePage() {
   });
 
   // Dynamic translation hooks
-  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'Policy' });
-  const { data: translatedAllPolicies } = useTranslatedData(allPolicies, { modelName: 'Policy' });
+  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'QPostPolicy' });
+  const { data: translatedAllPolicies } = useTranslatedData(allPolicies, { modelName: 'QPostPolicy' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
   const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'QPostRequirement' });
 
   // Lookup maps for translated nested data

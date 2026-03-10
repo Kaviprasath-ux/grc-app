@@ -78,10 +78,10 @@ function ManagementReportContent() {
   const [governanceDocuments, setGovernanceDocuments] = useState<GovernanceDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
-  const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'Requirement' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
+  const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'QPostRequirement' });
   const { data: translatedExceptions } = useTranslatedData(exceptions, { modelName: 'QPostException' });
-  const { data: translatedGovernance } = useTranslatedData(governanceDocuments, { modelName: 'Policy' });
+  const { data: translatedGovernance } = useTranslatedData(governanceDocuments, { modelName: 'QPostPolicy' });
 
   // Calculate overall compliance stats
   const overallStats = {

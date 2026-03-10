@@ -711,15 +711,15 @@ export default function FrameworkDetailPage({
   const AUDIT_LOG_PAGE_SIZE = 10;
 
   // Dynamic data translation hooks
-  const { data: translatedFramework } = useTranslatedRecord(framework, { modelName: 'Framework' });
+  const { data: translatedFramework } = useTranslatedRecord(framework, { modelName: 'QPostFramework' });
 
   // Flatten all requirements for translation
   const allRequirements = useMemo(() => framework?.requirements || [], [framework?.requirements]);
-  const { data: translatedRequirements } = useTranslatedData(allRequirements, { modelName: 'Requirement' });
+  const { data: translatedRequirements } = useTranslatedData(allRequirements, { modelName: 'QPostRequirement' });
 
   // Translate categories
   const allCategories = useMemo(() => framework?.requirementCategories || [], [framework?.requirementCategories]);
-  const { data: translatedCategories } = useTranslatedData(allCategories, { modelName: 'RequirementCategory' });
+  const { data: translatedCategories } = useTranslatedData(allCategories, { modelName: 'QPostRequirementCategory' });
 
   // Lookup helpers
   const tReq = useCallback((reqId: string, fallback: string) => {

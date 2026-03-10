@@ -126,7 +126,7 @@ export default function GovernanceMasterDataPage() {
   const [policyErrors, setPolicyErrors] = useState<Record<string, string>>({});
 
   // Dynamic translation hooks
-  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'Policy' });
+  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'QPostPolicy' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
 

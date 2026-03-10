@@ -59,7 +59,7 @@ export default function FrameworkMasterDataPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);

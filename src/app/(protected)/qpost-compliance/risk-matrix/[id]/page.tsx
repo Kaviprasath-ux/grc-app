@@ -163,7 +163,7 @@ export default function RiskDetailPage() {
 
   const { data: tRisk } = useTranslatedRecord(risk, { modelName: 'Risk' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
-  const { data: translatedRequirements } = useTranslatedData(availableRequirements, { modelName: 'Requirement' });
+  const { data: translatedRequirements } = useTranslatedData(availableRequirements, { modelName: 'QPostRequirement' });
 
   const fetchRisk = useCallback(async () => {
     try {

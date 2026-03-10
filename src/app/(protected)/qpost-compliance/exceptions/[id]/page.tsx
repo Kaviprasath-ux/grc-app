@@ -140,7 +140,7 @@ export default function ExceptionDetailPage({
   // Translate nested reference objects
   const policyArray = useMemo(() => exception?.policy ? [exception.policy] : [], [exception?.policy]);
   const riskArray = useMemo(() => exception?.risk ? [exception.risk] : [], [exception?.risk]);
-  const { data: translatedPolicies } = useTranslatedData(policyArray, { modelName: 'Policy' });
+  const { data: translatedPolicies } = useTranslatedData(policyArray, { modelName: 'QPostPolicy' });
   const { data: translatedRisks } = useTranslatedData(riskArray, { modelName: 'Risk' });
 
   // Form state
