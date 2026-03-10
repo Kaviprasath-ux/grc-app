@@ -160,9 +160,9 @@ export default function AsrIssueRegisterPage() {
   }, [entries, vendorSearch, statusFilter]);
 
   const handleExport = () => {
-    const headers = ["Department", "Business Owner", "Vendor", "Vendor ID", "High", "Medium", "Low", "Total", "Status"];
+    const headers = ["Vendor ID", "Vendor", "High", "Medium", "Low", "Total", "Status"];
     const rows = filtered.map((e) => [
-      e.department || "", e.businessOwner || "", e.vendor, e.vendorId, e.high, e.medium, e.low, e.total, e.status,
+      e.vendorId, e.vendor, e.high, e.medium, e.low, e.total, e.status,
     ]);
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -175,8 +175,7 @@ export default function AsrIssueRegisterPage() {
   };
 
   const columns: ColumnDef<IssueRegisterEntry>[] = [
-    { accessorKey: "department", header: t("Department"), cell: ({ row }) => row.getValue("department") || "-" },
-    { accessorKey: "businessOwner", header: t("Business Owner"), cell: ({ row }) => row.getValue("businessOwner") || "-" },
+    { accessorKey: "vendorId", header: t("Vendor ID") },
     {
       accessorKey: "vendor",
       header: t("Vendor"),
@@ -189,7 +188,6 @@ export default function AsrIssueRegisterPage() {
         </button>
       ),
     },
-    { accessorKey: "vendorId", header: t("Vendor ID") },
     {
       accessorKey: "high",
       header: t("High"),

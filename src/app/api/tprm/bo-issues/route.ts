@@ -63,8 +63,11 @@ export const GET = withAuth(
           if (total === 0) continue;
 
           const hasOpenAssessment = vendor.assessments.some(
-            (a) => !["Completed", "Approved", "Closed"].includes(a.status)
+            (a) => !["Completed", "Approved", "Closed", "Offboard_Completed"].includes(a.status)
           );
+
+          // If vendor is offboarded, mark as Closed regardless
+          const isOffboarded = vendor.status === "Offboarded";
 
           registerEntries.push({
             id: vendor.id,
@@ -76,7 +79,7 @@ export const GET = withAuth(
             medium: mediumCount,
             low: lowCount,
             total,
-            status: hasOpenAssessment ? "Open" : "Closed",
+            status: isOffboarded ? "Offboarded" : hasOpenAssessment ? "Open" : "Closed",
           });
         }
 

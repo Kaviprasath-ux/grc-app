@@ -350,9 +350,9 @@ export default function RMIssuesPage() {
 
   const registerColumns: ColumnDef<IssueRegisterEntry>[] = [
     {
-      accessorKey: "department",
-      header: t("Department"),
-      cell: ({ row }) => <span className="text-sm">{row.original.department || "-"}</span>,
+      accessorKey: "vendorCode",
+      header: t("Vendor ID"),
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span>,
     },
     {
       accessorKey: "vendorName",
@@ -365,11 +365,6 @@ export default function RMIssuesPage() {
           {row.original.vendorName}
         </button>
       ),
-    },
-    {
-      accessorKey: "vendorCode",
-      header: t("Vendor ID"),
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span>,
     },
     {
       accessorKey: "high",
@@ -415,9 +410,9 @@ export default function RMIssuesPage() {
   ];
 
   const handleExport = () => {
-    const headers = ["Department", "Vendor Name", "Vendor ID", "High", "Medium", "Low", "Total", "Status"];
+    const headers = ["Vendor ID", "Vendor Name", "High", "Medium", "Low", "Total", "Status"];
     const rows = filteredRegister.map((e) => [
-      e.department || "", e.vendorName, e.vendorCode || "", e.high, e.medium, e.low, e.total, e.status,
+      e.vendorCode || "", e.vendorName, e.high, e.medium, e.low, e.total, e.status,
     ]);
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });

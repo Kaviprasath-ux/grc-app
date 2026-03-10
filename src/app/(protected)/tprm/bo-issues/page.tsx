@@ -337,7 +337,7 @@ export default function BOIssuesPage() {
   }, [registerEntries, regVendorSearch, regStatusFilter]);
 
   const registerColumns: ColumnDef<IssueRegisterEntry>[] = [
-    { accessorKey: "department", header: t("Department"), cell: ({ row }) => <span className="text-sm">{row.original.department || "-"}</span> },
+    { accessorKey: "vendorCode", header: t("Vendor ID"), cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span> },
     {
       accessorKey: "vendorName", header: t("Vendor Name"),
       cell: ({ row }) => (
@@ -346,7 +346,6 @@ export default function BOIssuesPage() {
         </button>
       ),
     },
-    { accessorKey: "vendorCode", header: t("Vendor ID"), cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span> },
     { accessorKey: "high", header: t("High"), cell: ({ row }) => <span className={`text-sm font-medium ${row.original.high > 0 ? "text-red-600" : "text-muted-foreground"}`}>{row.original.high}</span> },
     { accessorKey: "medium", header: t("Medium"), cell: ({ row }) => <span className={`text-sm font-medium ${row.original.medium > 0 ? "text-orange-600" : "text-muted-foreground"}`}>{row.original.medium}</span> },
     { accessorKey: "low", header: t("Low"), cell: ({ row }) => <span className={`text-sm font-medium ${row.original.low > 0 ? "text-green-600" : "text-muted-foreground"}`}>{row.original.low}</span> },
@@ -355,8 +354,8 @@ export default function BOIssuesPage() {
   ];
 
   const handleExport = () => {
-    const headers = ["Department", "Vendor Name", "Vendor ID", "High", "Medium", "Low", "Total", "Status"];
-    const rows = filteredRegister.map((e) => [e.department || "", e.vendorName, e.vendorCode || "", e.high, e.medium, e.low, e.total, e.status]);
+    const headers = ["Vendor ID", "Vendor Name", "High", "Medium", "Low", "Total", "Status"];
+    const rows = filteredRegister.map((e) => [e.vendorCode || "", e.vendorName, e.high, e.medium, e.low, e.total, e.status]);
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
