@@ -9,7 +9,7 @@
 // REGULATORY AI BASE URL
 // ============================================================================
 
-export const REGULATORY_AI_BASE_URL = process.env.REGULATORY_AI_API_URL || 'https://a4t2jogsl4815o-9000.proxy.runpod.net';
+export const REGULATORY_AI_BASE_URL = process.env.AI_API_BASE_URL || '';
 
 // ============================================================================
 // REGULATORY AI API ENDPOINTS
