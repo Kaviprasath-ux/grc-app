@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSession } from "next-auth/react";
 import { Home, ChevronRight, Loader2, Eye, Download, Trash2, ArrowLeft, X } from "lucide-react";
+import { useHasRole } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -59,6 +60,7 @@ function getSatisfactoryRatio(rows: AssessmentRow[]) {
 export default function AsrFactoryReportsPage() {
   const { t } = useLanguage();
   const { data: session } = useSession();
+  const isAuditor = useHasRole("TPRMAuditor");
   const storageKey = `assessment-factory-reports-${session?.user?.customerAccountId || session?.user?.id || "default"}`;
 
   const [reports, setReports] = useState<AssessmentReport[]>([]);
@@ -305,9 +307,11 @@ export default function AsrFactoryReportsPage() {
                         <Button variant="ghost" size="sm" onClick={() => downloadReport(report)} title={t("Download")}>
                           <Download className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => deleteReport(report.id)} title={t("Delete")} className="text-red-500 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {!isAuditor && (
+                          <Button variant="ghost" size="sm" onClick={() => deleteReport(report.id)} title={t("Delete")} className="text-red-500 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -67,7 +67,7 @@ async function handler(
         });
 
         return NextResponse.json(
-            { error: "Failed to check framework status", details: error.message },
+            { error: "Something went wrong. Please try again." },
             { status: error.status || 500 }
         );
     }

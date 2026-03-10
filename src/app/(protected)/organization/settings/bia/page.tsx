@@ -234,7 +234,6 @@ export default function BIASettingsPage() {
     const lowValue = editingRange ? editingRange.lowValue : newRange.lowValue;
     const errors: Record<string, string> = {};
     if (!rangeLabel?.trim()) errors.rangeLabel = t("Please enter the rating");
-    else if (!isValidName(rangeLabel.trim())) errors.rangeLabel = t("Only letters, spaces, and hyphens are allowed");
     if (highValue === "" || highValue === null || highValue === undefined) errors.rangeHigh = t("Please enter the high range");
     else if (!isValidNumber(highValue)) errors.rangeHigh = t("Please enter a valid number");
     if (lowValue === "" || lowValue === undefined) errors.rangeLow = t("Please enter the low range");
@@ -243,15 +242,29 @@ export default function BIASettingsPage() {
       errors.rangeLow = t("Low range must be less than high range");
     }
     // Validate High Range based on calculation type
-    if ((calculationType === "Product of all" || calculationType === "Addition of all") && highValue !== "" && highValue !== null && highValue !== undefined) {
+    if (highValue !== "" && highValue !== null && highValue !== undefined) {
       const maxScore = ratings.length > 0 ? Math.max(...ratings.map(r => r.score)) : 0;
       const categoryCount = categories.length;
       if (maxScore > 0) {
-        const maxAllowed = calculationType === "Product of all"
-          ? Math.pow(maxScore, categoryCount)
-          : categoryCount * maxScore;
-        if (Number(highValue) > maxAllowed) {
-          errors.rangeHigh = t("High range must be less than or equal to") + ` ${maxAllowed}`;
+        const categoryNames = categories.map(c => c.name);
+        if (calculationType === "High of all") {
+          const minScore = ratings.length > 0 ? Math.min(...ratings.map(r => r.score)) : 0;
+          if (Number(highValue) > maxScore) {
+            errors.rangeHigh = t("High range value must be within the highest category rating range") + ` (${minScore} - ${maxScore}). ` + t("High of All uses the maximum rating value among all BIA categories.");
+          }
+        } else if (calculationType === "Product of all") {
+          const maxAllowed = Math.pow(maxScore, categoryCount);
+          if (Number(highValue) > maxAllowed) {
+            const breakdown = categoryNames.map(n => `${n}:${maxScore}`).join(" × ");
+            errors.rangeHigh = t("High range value must be less than or equal to the product of category values") + ` (${breakdown} = ${maxAllowed})`;
+          }
+        } else {
+          // Addition of all
+          const maxAllowed = categoryCount * maxScore;
+          if (Number(highValue) > maxAllowed) {
+            const breakdown = categoryNames.map(n => `${n}:${maxScore}`).join(" + ");
+            errors.rangeHigh = t("High range value must be less than or equal to the sum of category values") + ` (${breakdown} = ${maxAllowed})`;
+          }
         }
       }
     }

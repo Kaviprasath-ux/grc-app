@@ -157,7 +157,7 @@ export default function ReportsPage() {
   // Framework selection
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [selectedFrameworkId, setSelectedFrameworkId] = useState<string>("");
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
 
   // Fetch frameworks on mount
   useEffect(() => {

@@ -562,7 +562,7 @@ export const PATCH = withAuth(
     } catch (error) {
       console.error("Error updating risk:", error);
       return NextResponse.json(
-        { error: "Failed to update risk", details: error instanceof Error ? error.message : "Unknown error" },
+        { error: "Unable to update the risk. Please try again." },
         { status: 500 }
       );
     }

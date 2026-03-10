@@ -72,8 +72,11 @@ export const GET = withAuth(
 
           // Determine overall status: if any assessment has open issues
           const hasOpenAssessment = vendor.assessments.some(
-            (a) => !["Completed", "Approved", "Closed"].includes(a.status)
+            (a) => !["Completed", "Approved", "Closed", "Offboard_Completed"].includes(a.status)
           );
+
+          // If vendor is offboarded, mark as Closed regardless
+          const isOffboarded = vendor.status === "Offboarded";
 
           registerEntries.push({
             id: vendor.id,
@@ -85,7 +88,7 @@ export const GET = withAuth(
             medium: mediumCount,
             low: lowCount,
             total,
-            status: hasOpenAssessment ? "Open" : "Closed",
+            status: isOffboarded ? "Offboarded" : hasOpenAssessment ? "Open" : "Closed",
           });
         }
 
@@ -94,16 +97,19 @@ export const GET = withAuth(
 
       // ==================== TAB 2: ISSUE REMEDIATION ====================
       if (tab === "remediation") {
-        // Only show remediations assigned to this RM by the assessor
+        // RM sees remediations assigned to them (by userId) OR with "Assigned to RM" status
         const remediations = await prisma.tPRMIssueRemediation.findMany({
           where: {
             customerAccountId,
-            assignedToUserId: session.id,
+            OR: [
+              { assignedToUserId: session.id },
+              { status: "Assigned to RM" },
+            ],
           },
           include: {
             assessment: {
               include: {
-                vendor: { select: { name: true, vendorCode: true } },
+                vendor: { select: { id: true, name: true, vendorCode: true } },
               },
             },
             assignedToUser: { select: { fullName: true } },
@@ -118,6 +124,7 @@ export const GET = withAuth(
         const data = remediations.map((rem) => ({
           id: rem.id,
           issueCode: rem.issueCode || null,
+          vendorId: rem.assessment?.vendor?.id || null,
           vendorName: rem.assessment?.vendor?.name || "Unknown",
           vendorCode: rem.assessment?.vendor?.vendorCode || "",
           domain: rem.domainName || null,

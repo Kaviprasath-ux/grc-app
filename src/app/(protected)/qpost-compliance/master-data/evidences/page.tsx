@@ -184,7 +184,7 @@ export default function EvidencesMasterDataPage() {
   }, [fetchEvidences, fetchDepartments, fetchUsers]);
 
   // Dynamic translation hooks
-  const { data: translatedEvidences } = useTranslatedData(evidences, { modelName: 'Evidence' });
+  const { data: translatedEvidences } = useTranslatedData(evidences, { modelName: 'QPostEvidence' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
 
   // Filter users by selected department and DepartmentContributor role only

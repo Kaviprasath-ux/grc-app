@@ -203,7 +203,7 @@ export const POST = withAuth(
 
         await updateEvidenceAIStatus(evidenceId, { reviewStatus: 'FAILED' });
 
-        return errorResponse(`Failed to ingest artifact: ${err.message}`, 502);
+        return errorResponse("Unable to process artifact. Please try again.", 502);
       }
 
       // ─────────────────────────────────────────────────────────────────────
@@ -247,7 +247,7 @@ export const POST = withAuth(
 
         await updateEvidenceAIStatus(evidenceId, { reviewStatus: 'FAILED' });
 
-        return errorResponse(`Failed to query vault: ${err.message}`, 502);
+        return errorResponse("Unable to query the vault. Please try again.", 502);
       }
 
       // ─────────────────────────────────────────────────────────────────────
@@ -347,7 +347,7 @@ export const POST = withAuth(
       console.error('[Vault Query] Error:', err);
 
       return errorResponse(
-        err.message || 'Failed to perform vault query',
+        "Unable to query the vault. Please try again.",
         err.status || 500
       );
     }

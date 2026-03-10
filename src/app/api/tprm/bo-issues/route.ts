@@ -63,8 +63,11 @@ export const GET = withAuth(
           if (total === 0) continue;
 
           const hasOpenAssessment = vendor.assessments.some(
-            (a) => !["Completed", "Approved", "Closed"].includes(a.status)
+            (a) => !["Completed", "Approved", "Closed", "Offboard_Completed"].includes(a.status)
           );
+
+          // If vendor is offboarded, mark as Closed regardless
+          const isOffboarded = vendor.status === "Offboarded";
 
           registerEntries.push({
             id: vendor.id,
@@ -76,7 +79,7 @@ export const GET = withAuth(
             medium: mediumCount,
             low: lowCount,
             total,
-            status: hasOpenAssessment ? "Open" : "Closed",
+            status: isOffboarded ? "Offboarded" : hasOpenAssessment ? "Open" : "Closed",
           });
         }
 
@@ -88,12 +91,12 @@ export const GET = withAuth(
         const remediations = await prisma.tPRMIssueRemediation.findMany({
           where: {
             customerAccountId,
-            status: { in: ["Assigned to BO", "Open", "Pending", "Submitted", "Closed", "Rejected", "Terminated"] },
+            status: { in: ["Assigned to BO", "Submitted", "Closed", "Terminated", "Sent to Vendor"] },
           },
           include: {
             assessment: {
               include: {
-                vendor: { select: { name: true, vendorCode: true } },
+                vendor: { select: { id: true, name: true, vendorCode: true } },
               },
             },
             assignedToUser: { select: { fullName: true } },
@@ -108,6 +111,7 @@ export const GET = withAuth(
         const data = remediations.map((rem) => ({
           id: rem.id,
           issueCode: rem.issueCode || null,
+          vendorId: rem.assessment?.vendor?.id || null,
           vendorName: rem.assessment?.vendor?.name || "Unknown",
           vendorCode: rem.assessment?.vendor?.vendorCode || "",
           domain: rem.domainName || null,

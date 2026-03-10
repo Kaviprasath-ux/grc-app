@@ -103,8 +103,8 @@ export default function SOAPage() {
   // Reference data
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
 
-  const { data: translatedEntries } = useTranslatedData(entries, { modelName: 'Requirement' });
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedEntries } = useTranslatedData(entries, { modelName: 'QPostRequirement' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
 
   // Edit form
   const [editForm, setEditForm] = useState({

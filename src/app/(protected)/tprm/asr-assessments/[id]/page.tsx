@@ -275,6 +275,7 @@ export default function ASRAssessmentDetailPage() {
 
   // Role detection — approver sees different buttons than assessor
   const isApprover = useHasRole("TPRMApprover");
+  const isAuditor = useHasRole("TPRMAuditor");
 
   // ── Load Data ──────────────────────────────────────────────────────────
 
@@ -849,7 +850,7 @@ export default function ASRAssessmentDetailPage() {
             <h1 className="text-xl font-semibold">{t("Assessment Summary")}</h1>
           </div>
           <div className="flex items-center gap-2">
-            {!isApprover && (assessment.status === "In-Progress" || assessment.status === "Returned" || assessment.status === "Submitted" || assessment.status === "Under Review") && (
+            {!isApprover && !isAuditor && (assessment.status === "In-Progress" || assessment.status === "Returned" || assessment.status === "Submitted" || assessment.status === "Under Review") && (
               <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
                 {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
                 {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
@@ -1234,7 +1235,7 @@ export default function ASRAssessmentDetailPage() {
 
               {/* Action buttons — centered, filled style */}
               <div className="flex flex-wrap gap-2 pt-3 justify-center">
-                {assessment.status !== "Approved" && (
+                {!isAuditor && assessment.status !== "Approved" && (
                   <>
                     <Button size="sm" onClick={openOverride}>
                       {t("Override AI")}
@@ -1734,7 +1735,17 @@ export default function ASRAssessmentDetailPage() {
 
           {/* Action bar — sticky at bottom */}
           <div className="sticky bottom-0 bg-muted/50 backdrop-blur-sm border-t px-8 py-3 flex items-center justify-end gap-3">
-            {isApprover ? (
+            {isAuditor ? (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setReportOpen(false)}>{t("Close")}</Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadExcel}>
+                  <FileSpreadsheet className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Download Excel Report")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadReport}>
+                  <Download className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Download Report")}
+                </Button>
+              </>
+            ) : isApprover ? (
               <>
                 <Button variant="outline" size="sm" onClick={handleDownloadReport}>
                   <Download className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />{t("Download PDF Report")}

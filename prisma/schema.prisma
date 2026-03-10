@@ -134,6 +134,7 @@ model CustomerAccount {
   tprmDepartments            TPRMDepartment[]
   tprmQuestionnaireTemplates TPRMQuestionnaireTemplate[]
   tprmOffboardingQuestions   TPRMOffboardingQuestion[]
+  tprmOffboardResponses      TPRMOffboardResponse[]
   tprmScorecardFactors       TPRMScorecardFactor[]
   tprmDomains                TPRMDomain[]
   tprmMasterQuestions        TPRMMasterQuestion[]
@@ -395,6 +396,8 @@ model User {
   // QPost Compliance relations
   qpostAssignedPolicies    QPostPolicy[]    @relation("QPostPolicyAssignee")
   qpostApprovedPolicies    QPostPolicy[]    @relation("QPostPolicyApprover")
+  qpostPolicyManualReviews QPostPolicyManualReview[] @relation("QPostPolicyManualReviewer")
+  qpostEvidenceManualReviews QPostEvidenceManualReview[] @relation("QPostEvidenceManualReviewer")
   qpostAssignedEvidences   QPostEvidence[]  @relation("QPostEvidenceAssignee")
   qpostUploadedArtifacts   QPostArtifact[]  @relation("QPostArtifactUploader")
   qpostRequestedExceptions QPostException[] @relation("QPostExceptionRequester")
@@ -462,6 +465,7 @@ model User {
   tprmInternalComments       TPRMInternalComment[]    @relation("TPRMInternalCommentAuthor")
   tprmRemediationComments    TPRMRemediationComment[] @relation("TPRMRemediationComments")
   tprmRemediationAssignments TPRMIssueRemediation[]  @relation("TPRMRemediationAssignee")
+  tprmOffboardDelegations    TPRMOffboardResponse[]  @relation("TPRMOffboardDelegatee")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -3468,6 +3472,7 @@ model TPRMAssessment {
   updatedAt             DateTime        @updatedAt
   logs                  TPRMAssessmentLog[]
   responses             TPRMAssessmentResponse[]
+  offboardResponses     TPRMOffboardResponse[]
   clarifications        TPRMClarification[]
   issueRemediations     TPRMIssueRemediation[]
   internalComments      TPRMInternalComment[]
@@ -3671,6 +3676,33 @@ model TPRMOffboardingQuestion {
   updatedAt         DateTime        @updatedAt
 
   @@index([customerAccountId])
+}
+
+// TPRMOffboardResponse — Per-question responses for vendor offboarding assessment
+model TPRMOffboardResponse {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  assessmentId      String
+  assessment        TPRMAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId        String          // TPRMOffboardingQuestion.id
+  questionNo        Int             // sequenceNo snapshot
+  questionTitle     String          // question title snapshot
+  questionText      String?         @db.Text // question text snapshot
+  response          String?         // "Yes", "No", "NA"
+  comment           String?         @db.Text
+  artifactUrl       String?
+  artifactName      String?
+  isFlagged         Boolean         @default(false)
+  isDelegated       Boolean         @default(false)
+  delegatedToId     String?
+  delegatedTo       User?           @relation("TPRMOffboardDelegatee", fields: [delegatedToId], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([assessmentId, questionId])
+  @@index([customerAccountId])
+  @@index([assessmentId])
 }
 
 // TPRMScorecardFactor — Security scorecard factors (SecurityPosture & ThreatExposure)
@@ -4347,6 +4379,7 @@ model QPostPolicy {
   attachments           QPostPolicyAttachment[]
   requirements          QPostRequirementPolicy[]
   policyAIReviews       QPostPolicyAIReview[]
+  manualReviews         QPostPolicyManualReview[]
   policyExceptions      QPostPolicyException[]
   exceptions            QPostException[]                @relation("QPostPolicyExceptions")
   vaultDocumentLinks    QPostGovernanceVaultDocumentLink[]
@@ -4394,6 +4427,7 @@ model QPostEvidence {
   evidenceAIIngestJobs  QPostEvidenceAIIngestJob[]
   evidenceAIIngestResults QPostEvidenceAIIngestResult[]
   cycleComments         QPostEvidenceCycleComment[]
+  manualReviews         QPostEvidenceManualReview[]
 
   @@unique([customerAccountId, evidenceCode])
   @@index([customerAccountId])
@@ -4723,6 +4757,42 @@ model QPostRequirementPolicy {
   createdAt     DateTime         @default(now())
 
   @@unique([requirementId, policyId])
+}
+
+model QPostPolicyManualReview {
+  id            String      @id @default(cuid())
+  policyId      String
+  policy        QPostPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  reviewerId    String
+  reviewer      User        @relation("QPostPolicyManualReviewer", fields: [reviewerId], references: [id])
+  status        String      @default("Reviewed") // Reviewed, Approved, Rejected, Needs Revision
+  score         Float?
+  comments      String?     @db.Text
+  findings      String?     @db.Text
+  recommendation String?    @db.Text
+  reviewDate    DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([policyId])
+}
+
+model QPostEvidenceManualReview {
+  id             String        @id @default(cuid())
+  evidenceId     String
+  evidence       QPostEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  reviewerId     String
+  reviewer       User          @relation("QPostEvidenceManualReviewer", fields: [reviewerId], references: [id])
+  status         String        @default("Reviewed") // Reviewed, Approved, Rejected, Needs Revision
+  score          Float?
+  comments       String?       @db.Text
+  findings       String?       @db.Text
+  recommendation String?       @db.Text
+  reviewDate     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([evidenceId])
 }
 
 // ============================================================

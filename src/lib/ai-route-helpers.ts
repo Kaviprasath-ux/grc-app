@@ -678,19 +678,10 @@ export function handleAIRouteError(
 
   console.error(`[${context.route}] Error after ${latencyMs}ms:`, err.message);
 
-  // Build details string
-  let details: string | undefined;
-  if (err.rawResponse) {
-    details = err.rawResponse.substring(0, 200);
-  } else if (err.data) {
-    details = typeof err.data === 'string' ? err.data.substring(0, 200) : JSON.stringify(err.data).substring(0, 200);
-  }
-
   return errorResponse(
-    err.message || `Failed to process ${context.route}`,
+    'Something went wrong. Please try again later.',
     err.status || 500,
     {
-      details,
       requestId: err.requestId,
     }
   );
@@ -715,7 +706,7 @@ export async function handleAIRouteErrorWithAudit(
 
   console.error(`[${context.route}] Error after ${latencyMs}ms:`, err.message);
 
-  // Log to audit service
+  // Log to audit service (server-side only — technical details stay here)
   await aiAuditService.logOperation({
     endpoint: context.endpoint,
     method: 'POST',
@@ -726,19 +717,10 @@ export async function handleAIRouteErrorWithAudit(
     userId: context.userId,
   });
 
-  // Build details string
-  let details: string | undefined;
-  if (err.rawResponse) {
-    details = err.rawResponse.substring(0, 200);
-  } else if (err.data) {
-    details = typeof err.data === 'string' ? err.data.substring(0, 200) : JSON.stringify(err.data).substring(0, 200);
-  }
-
   return errorResponse(
-    err.message || `Failed to process ${context.route}`,
+    'Something went wrong. Please try again later.',
     err.status || 500,
     {
-      details,
       requestId: err.requestId,
     }
   );

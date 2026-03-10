@@ -37,11 +37,16 @@ export const GET = withAuth(
 
       const assessmentIds = assessments.map(a => a.id);
 
+      // "Pending" sub-tab also shows "Sent to Vendor" issues (forwarded by BO)
+      const statusFilter = status === "Pending"
+        ? { in: ["Pending", "Sent to Vendor"] }
+        : status;
+
       const remediations = await prisma.tPRMIssueRemediation.findMany({
         where: {
           customerAccountId,
           assessmentId: { in: assessmentIds },
-          status,
+          status: statusFilter,
         },
         include: {
           assessment: {

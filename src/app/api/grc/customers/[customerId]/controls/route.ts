@@ -101,7 +101,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     console.error("Error fetching customer controls:", error);
     const message = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json(
-      { error: message },
+      { error: "Unable to complete the request. Please try again." },
       { status: 500 }
     );
   }

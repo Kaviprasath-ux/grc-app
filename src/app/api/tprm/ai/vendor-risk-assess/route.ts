@@ -206,7 +206,7 @@ export const POST = withAuth(
       console.error(`[TPRM AI] ══════════════════════════════════════════════`);
 
       return errorResponse(
-        err.message || 'Failed to assess vendor risk',
+        'Unable to assess vendor risk. Please try again.',
         err.status || 500,
         { requestId: err.requestId }
       );

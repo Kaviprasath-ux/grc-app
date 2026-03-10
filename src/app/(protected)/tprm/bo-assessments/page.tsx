@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Home, ChevronRight, Loader2, Eye, Search } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 // ── Types ──────────────────────────────────────────────
 interface Assessment {
@@ -58,10 +59,10 @@ function formatStatusLabel(status: string): string {
     "In-Progress(approver)": "In-Progress(approver)",
     Offboard_In_Progress: "Offboard In-Progress",
     Offboard_Completed: "Offboard Completed",
-    Offboard_Awaiting_Respose: "Offboard Awaiting Response",
+    Offboard_Awaiting_Response: "Offboard Awaiting Response",
     Offboard_Approve_Assessor: "Offboard Approved (Assessor)",
     Offboard_Approve_RM: "Offboard Approved (RM)",
-    Offboard_Approve_BO: "Terminated",
+    Offboard_Approve_BO: "Pending BO Approval",
   };
   return labels[status] || status;
 }
@@ -75,7 +76,7 @@ const ONGOING_STATUSES = ["Initiated", "Awaiting_Response", "In-Progress", "In-P
 const COMPLETED_STATUSES = ["Completed", "Approved"];
 const AWAITING_STATUSES = ["Awaiting_Response"];
 const PENDING_ASSESSOR_STATUSES = ["In-Progress", "In-Progress(approver)"];
-const OFFBOARD_STATUSES = ["Offboard_In_Progress", "Offboard_Completed", "Offboard_Awaiting_Respose", "Offboard_Approve_Assessor", "Offboard_Approve_RM", "Offboard_Approve_BO"];
+const OFFBOARD_STATUSES = ["Offboard_In_Progress", "Offboard_Completed", "Offboard_Awaiting_Response", "Offboard_Approve_Assessor", "Offboard_Approve_RM", "Offboard_Approve_BO"];
 
 // ── Main Component ──────────────────────────────────────
 export default function BOAssessmentsPage() {
@@ -83,6 +84,7 @@ export default function BOAssessmentsPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [offboardAssessments, setOffboardAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [topTab, setTopTab] = useState<"ongoing" | "completed" | "offboard">("ongoing");
@@ -90,14 +92,40 @@ export default function BOAssessmentsPage() {
   const [offboardSubTab, setOffboardSubTab] = useState<"approval" | "terminated">("approval");
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const router = useRouter();
 
   const fetchAssessments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/tprm/assessments?limit=500");
-      if (res.ok) {
-        const json = await res.json();
+      const [mainRes, offboardRes] = await Promise.all([
+        fetch("/api/tprm/assessments?limit=500"),
+        fetch("/api/tprm/offboard-assessments?role=all"),
+      ]);
+      if (mainRes.ok) {
+        const json = await mainRes.json();
         setAssessments(json.data || []);
+      }
+      if (offboardRes.ok) {
+        const json = await offboardRes.json();
+        setOffboardAssessments((json.data || []).map((a: Record<string, unknown>) => ({
+          id: a.id,
+          assessmentCode: a.assessmentCode,
+          assessmentType: "Offboard Assessment",
+          status: a.status,
+          assessmentResult: null,
+          vendorSubmissionDate: null,
+          assessorCompletionDate: null,
+          approvalDate: null,
+          completionDate: null,
+          questionnaireTemplate: null,
+          approverComment: null,
+          rejectedById: null,
+          createdAt: a.createdAt,
+          vendor: { id: a.vendorId || "", name: a.vendorName || "Unknown", vendorCode: a.vendorCode || "", serviceCategory: null },
+          initiatedBy: a.initiatedBy ? { id: "", fullName: a.initiatedBy } : null,
+          assessor: null,
+          approver: null,
+        })));
       }
     } catch {
       toast({ title: t("Error"), description: t("Failed to load assessments"), variant: "destructive" });
@@ -109,8 +137,26 @@ export default function BOAssessmentsPage() {
   useEffect(() => { fetchAssessments(); }, [fetchAssessments]);
 
   const filtered = useMemo(() => {
-    let data = assessments;
+    if (topTab === "offboard") {
+      let data = offboardAssessments;
+      if (offboardSubTab === "approval") {
+        data = data.filter((a) => a.status === "Offboard_Approve_BO");
+      } else {
+        data = data.filter((a) => a.status === "Offboard_Completed");
+      }
+      if (search) {
+        const s = search.toLowerCase();
+        data = data.filter(
+          (a) =>
+            a.assessmentCode.toLowerCase().includes(s) ||
+            a.vendor.name.toLowerCase().includes(s) ||
+            (a.initiatedBy?.fullName || "").toLowerCase().includes(s)
+        );
+      }
+      return data;
+    }
 
+    let data = assessments;
     if (topTab === "ongoing") {
       data = data.filter((a) => ONGOING_STATUSES.includes(a.status));
       if (subTab === "awaiting") {
@@ -120,13 +166,6 @@ export default function BOAssessmentsPage() {
       }
     } else if (topTab === "completed") {
       data = data.filter((a) => COMPLETED_STATUSES.includes(a.status));
-    } else {
-      data = data.filter((a) => OFFBOARD_STATUSES.includes(a.status));
-      if (offboardSubTab === "approval") {
-        data = data.filter((a) => a.status === "Offboard_Approve_RM");
-      } else {
-        data = data.filter((a) => a.status === "Offboard_Approve_BO");
-      }
     }
 
     if (search) {
@@ -140,7 +179,7 @@ export default function BOAssessmentsPage() {
     }
 
     return data;
-  }, [assessments, topTab, subTab, offboardSubTab, search, session]);
+  }, [assessments, offboardAssessments, topTab, subTab, offboardSubTab, search, session]);
 
   const topTabs = [
     { key: "ongoing" as const, label: t("Ongoing Assessments") },
@@ -286,7 +325,13 @@ export default function BOAssessmentsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => { setSelectedAssessment(a); setDialogOpen(true); }}
+                          onClick={() => {
+                            if (a.assessmentType === "Offboard Assessment") {
+                              router.push(`/tprm/offboard-review/${a.id}?role=bo`);
+                            } else {
+                              setSelectedAssessment(a); setDialogOpen(true);
+                            }
+                          }}
                         >
                           <Eye className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                           {t("View")}
@@ -373,6 +418,7 @@ export default function BOAssessmentsPage() {
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

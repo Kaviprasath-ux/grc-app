@@ -39,7 +39,7 @@ export const POST = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { name, description } = body;
+      const { name, description, categoryId } = body;
 
       if (!name) {
         return NextResponse.json(
@@ -63,12 +63,29 @@ export const POST = withAuth(
         );
       }
 
+      // Auto-generate sequential threatId (e.g., THR-001, THR-002)
+      const lastThreat = await prisma.riskThreat.findFirst({
+        where: { customerAccountId },
+        orderBy: { createdAt: "desc" },
+        select: { threatId: true },
+      });
+      let nextThreatId = "THR-001";
+      if (lastThreat?.threatId) {
+        const match = lastThreat.threatId.match(/THR-(\d+)/);
+        if (match) {
+          nextThreatId = `THR-${String(parseInt(match[1], 10) + 1).padStart(3, "0")}`;
+        }
+      }
+
       const threat = await prisma.riskThreat.create({
         data: {
           customerAccountId,
+          threatId: nextThreatId,
           name,
           description,
+          categoryId: categoryId || null,
         },
+        include: { category: true },
       });
 
       if (session.customerAccountId) void translateRecord(session.customerAccountId, 'RiskThreat', threat.id, { name: threat.name, description: threat.description });

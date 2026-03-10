@@ -128,7 +128,7 @@ export const GET = withAuth(
       console.error('[Vault Query Sources] Error:', err);
 
       return errorResponse(
-        err.message || 'Failed to fetch vault query sources',
+        "Unable to fetch sources. Please try again.",
         err.status || 500
       );
     }

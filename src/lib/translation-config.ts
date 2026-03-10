@@ -82,6 +82,19 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'TPRMDomain', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
   { modelName: 'TPRMMasterQuestion', fields: [{ name: 'questionText' }], priority: 6 },
 
+  // Priority 5 — QPost Compliance (client-specific duplicated module)
+  { modelName: 'QPostFramework', fields: [{ name: 'name' }, { name: 'description' }, { name: 'country' }, { name: 'industry' }], priority: 5 },
+  { modelName: 'QPostRequirement', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
+  { modelName: 'QPostRequirementCategory', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
+  { modelName: 'QPostPolicy', fields: [{ name: 'name' }], priority: 5 },
+  { modelName: 'QPostEvidence', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
+  { modelName: 'QPostException', fields: [{ name: 'name' }, { name: 'description' }], priority: 5 },
+  { modelName: 'QPostKPI', fields: [{ name: 'objective' }, { name: 'description' }, { name: 'dataSource' }, { name: 'calculationFormula' }], priority: 5 },
+  { modelName: 'QPostGovernanceVaultDocument', fields: [{ name: 'fileName' }], priority: 5 },
+  { modelName: 'QPostGovernanceTemplate', fields: [{ name: 'name' }], priority: 5 },
+  { modelName: 'QPostPolicyManualReview', fields: [{ name: 'comments' }, { name: 'findings' }, { name: 'recommendation' }], priority: 5 },
+  { modelName: 'QPostEvidenceManualReview', fields: [{ name: 'comments' }, { name: 'findings' }, { name: 'recommendation' }], priority: 5 },
+
   // Priority 5 — Organization & assets
   { modelName: 'User', fields: [{ name: 'fullName' }, { name: 'firstName' }, { name: 'lastName' }, { name: 'designation' }], priority: 5 },
   { modelName: 'Organization', fields: [{ name: 'name' }, { name: 'description' }, { name: 'vision' }, { name: 'mission' }, { name: 'value' }, { name: 'ceoMessage' }, { name: 'headOfficeLocation' }, { name: 'headOfficeAddress' }], priority: 5 },

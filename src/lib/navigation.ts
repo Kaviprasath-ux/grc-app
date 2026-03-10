@@ -262,9 +262,10 @@ export const navigation: NavItem[] = [
       { name: "Follow-ups", href: "/tprm/asr-follow-ups", icon: ClipboardList, permission: "tprm.asr-follow-ups:view" },
       { name: "Issue Register", href: "/tprm/asr-issue-register", icon: AlertTriangle, permission: "tprm.asr-issue-register:view" },
       { name: "Assessment Factory", href: "/tprm/asr-assessment-factory", icon: Factory, permission: "tprm.asr-assessment-factory:view" },
+      { name: "Assessment History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
+      { name: "Reports", href: "/tprm/reports", icon: FileBarChart, permission: "tprm.reports:view" },
       { name: "Template", href: "/tprm/asr-template", icon: FileText, permission: "tprm.asr-template:view" },
       { name: "Support", href: "/tprm/asr-support", icon: HelpCircle, permission: "tprm.asr-support:view" },
-      { name: "Assessment History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
       // ---- Internal IT Team menu items ----
       { name: "Issue Management", href: "/tprm/it-issues", icon: AlertTriangle, permission: "tprm.it-issues:view" },
       // ---- Factory Admin / Factory Assessor menu items ----
@@ -509,6 +510,7 @@ function getPrimaryRole(roles: string[]): string {
     "BusinessOwner",
     "RelationshipManager",
     "InternalITTeam",
+    "TPRMAuditor",
     "AccountManager",
   ];
 
@@ -573,7 +575,7 @@ export function filterNavigationByPermissionsAndRole(
 
   // System roles ignore module flags
   const isSystemRole = userRoles.some(r =>
-    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'InternalITTeam'
+    r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'InternalITTeam' || r === 'TPRMAuditor'
   );
 
   let navItems = items;
@@ -581,8 +583,12 @@ export function filterNavigationByPermissionsAndRole(
   // Factory roles and IT roles always get flattened TPRM nav (their items should be top-level)
   const isFactoryRole = userRoles.some(r => r === 'FactoryAdmin' || r === 'FactoryAssessor');
   const isITRole = userRoles.some(r => r === 'InternalITTeam');
-  if (isFactoryRole || isITRole) {
+  const isTPRMAuditor = userRoles.some(r => r === 'TPRMAuditor');
+  if (isFactoryRole || isITRole || isTPRMAuditor) {
     navItems = flattenTprmNavigation(items);
+    if (isTPRMAuditor) {
+      navItems = reorderForTPRMAuditor(navItems);
+    }
   }
   // For non-system roles with ONLY TPRM (no GRC), flatten TPRM children to top-level
   else if (!isSystemRole && moduleFlags?.isTprmAdded && !moduleFlags?.isGrcAdded) {
@@ -627,6 +633,43 @@ function flattenTprmNavigation(items: NavItem[]): NavItem[] {
   }
 
   return result;
+}
+
+/**
+ * Reorder and rename nav items specifically for TPRMAuditor role.
+ * Custom order: Dashboard, Assessments, Inventory, Issue Register, Follow-ups,
+ * Assessment Factory History, Reports, Template, Support
+ */
+function reorderForTPRMAuditor(items: NavItem[]): NavItem[] {
+  // Rename "Assessment History" to "Assessment Factory History"
+  const renamed = items.map(item =>
+    item.name === 'Assessment History' ? { ...item, name: 'Assessment Factory History' } : item
+  );
+
+  // Define desired order by href
+  const order = [
+    '/tprm/asr-dashboard',
+    '/tprm/asr-assessments',
+    '/tprm/asr-inventory',
+    '/tprm/asr-issue-register',
+    '/tprm/asr-follow-ups',
+    '/tprm/asr-monitoring',
+    '/tprm/asr-factory-reports',
+    '/tprm/reports',
+    '/tprm/asr-template',
+    '/tprm/asr-support',
+  ];
+
+  const ordered: NavItem[] = [];
+  for (const href of order) {
+    const found = renamed.find(i => i.href === href);
+    if (found) ordered.push(found);
+  }
+  // Append any remaining items not in the explicit order
+  for (const item of renamed) {
+    if (!order.includes(item.href || '')) ordered.push(item);
+  }
+  return ordered;
 }
 
 /**

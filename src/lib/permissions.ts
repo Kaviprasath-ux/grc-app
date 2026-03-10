@@ -664,10 +664,18 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.asr-support', actions: ['*'], scope: 'all' },
   ],
 
-  // TPRM Auditor - Assessment Workspace + Task Queue (audit)
+  // TPRM Auditor - Read-only access to all assessor pages except Assessment Factory
   TPRMAuditor: [
-    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.asr-dashboard', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.asr-assessments', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.asr-inventory', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.asr-monitoring', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.asr-follow-ups', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.asr-issue-register', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.asr-template', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.asr-support', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.asr-factory-reports', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.reports', actions: ['view'], scope: 'all' },
   ],
 
   // Internal IT Team - IT-assigned issue management

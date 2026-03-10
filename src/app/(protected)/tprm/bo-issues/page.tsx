@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Loader2,
-  Eye, FileText, ExternalLink, MessageSquare, ShieldCheck, Send, Ban, ArrowLeft,
+  Eye, FileText, ExternalLink, MessageSquare, ShieldCheck, Send, Ban, ArrowLeft, Forward,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,7 @@ interface RemediationComment {
 interface IssueRemediationEntry {
   id: string;
   issueCode: string | null;
+  vendorId: string | null;
   vendorName: string;
   vendorCode: string;
   domain: string | null;
@@ -135,6 +136,7 @@ const STATUS_COLORS: Record<string, string> = {
   "Returned to IT": "border-rose-300 bg-rose-50 text-rose-700",
   Submitted: "border-orange-300 bg-orange-50 text-orange-700",
   Overdue: "border-red-300 bg-red-50 text-red-700",
+  "Sent to Vendor": "border-amber-300 bg-amber-50 text-amber-700",
 };
 
 const SEVERITIES = ["High", "Medium", "Low"];
@@ -196,10 +198,12 @@ export default function BOIssuesPage() {
   const [commentText, setCommentText] = useState("");
 
   // Terminate Vendor confirmation dialog
-  const [terminateConfirm, setTerminateConfirm] = useState<{ remediationId: string } | null>(null);
+  const [terminateConfirm, setTerminateConfirm] = useState<{ remediationId: string; vendorId: string } | null>(null);
 
   // Vendor Issue detail dialog
   const [viewVendorIssue, setViewVendorIssue] = useState<VendorIssueEntry | null>(null);
+  const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
+
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -268,26 +272,32 @@ export default function BOIssuesPage() {
     }
   }, [commentAction, commentText, toast, t, loadData]);
 
-  // Handles the Terminate Vendor → Initiate flow
+  // Handles the Terminate Vendor → creates offboard assessment
   const handleTerminateInitiate = useCallback(async () => {
     if (!terminateConfirm) return;
     setActionLoading(true);
     try {
-      const res = await fetch("/api/tprm/bo-issues", {
-        method: "PATCH",
+      // Create offboard assessment for the vendor
+      const res = await fetch("/api/tprm/offboard-assessments", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: terminateConfirm.remediationId,
-          status: "Closed",
-          addComment: "Vendor termination initiated - offboarding process started",
-        }),
+        body: JSON.stringify({ vendorId: terminateConfirm.vendorId }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        toast({ title: t("Success"), description: t("Vendor termination initiated successfully") });
+        // Add comment to the remediation about termination initiation
+        await fetch("/api/tprm/bo-issues", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: terminateConfirm.remediationId,
+            addComment: `Vendor termination initiated - offboarding assessment ${data.assessmentCode || ""} created`,
+          }),
+        });
+        toast({ title: t("Success"), description: t("Offboard assessment created. The vendor will receive the offboarding questionnaire.") });
         setTerminateConfirm(null);
         loadData();
       } else {
-        const data = await res.json().catch(() => ({}));
         toast({ title: t("Error"), description: data.error || t("Failed to initiate termination"), variant: "destructive" });
       }
     } catch {
@@ -327,7 +337,7 @@ export default function BOIssuesPage() {
   }, [registerEntries, regVendorSearch, regStatusFilter]);
 
   const registerColumns: ColumnDef<IssueRegisterEntry>[] = [
-    { accessorKey: "department", header: t("Department"), cell: ({ row }) => <span className="text-sm">{row.original.department || "-"}</span> },
+    { accessorKey: "vendorCode", header: t("Vendor ID"), cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span> },
     {
       accessorKey: "vendorName", header: t("Vendor Name"),
       cell: ({ row }) => (
@@ -336,7 +346,6 @@ export default function BOIssuesPage() {
         </button>
       ),
     },
-    { accessorKey: "vendorCode", header: t("Vendor ID"), cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.vendorCode || "-"}</span> },
     { accessorKey: "high", header: t("High"), cell: ({ row }) => <span className={`text-sm font-medium ${row.original.high > 0 ? "text-red-600" : "text-muted-foreground"}`}>{row.original.high}</span> },
     { accessorKey: "medium", header: t("Medium"), cell: ({ row }) => <span className={`text-sm font-medium ${row.original.medium > 0 ? "text-orange-600" : "text-muted-foreground"}`}>{row.original.medium}</span> },
     { accessorKey: "low", header: t("Low"), cell: ({ row }) => <span className={`text-sm font-medium ${row.original.low > 0 ? "text-green-600" : "text-muted-foreground"}`}>{row.original.low}</span> },
@@ -345,8 +354,8 @@ export default function BOIssuesPage() {
   ];
 
   const handleExport = () => {
-    const headers = ["Department", "Vendor Name", "Vendor ID", "High", "Medium", "Low", "Total", "Status"];
-    const rows = filteredRegister.map((e) => [e.department || "", e.vendorName, e.vendorCode || "", e.high, e.medium, e.low, e.total, e.status]);
+    const headers = ["Vendor ID", "Vendor Name", "High", "Medium", "Low", "Total", "Status"];
+    const rows = filteredRegister.map((e) => [e.vendorCode || "", e.vendorName, e.high, e.medium, e.low, e.total, e.status]);
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -367,9 +376,9 @@ export default function BOIssuesPage() {
       const matchesSeverity = remSeverityFilter === "all" || e.severity === remSeverityFilter;
       const matchesSubTab =
         remSubTab === "Open"
-          ? ["Open", "Assigned to BO", "Pending"].includes(e.status)
+          ? e.status === "Assigned to BO"
           : remSubTab === "Closed"
-          ? ["Closed", "Terminated"].includes(e.status)
+          ? ["Closed", "Submitted", "Terminated", "Sent to Vendor"].includes(e.status)
           : remSubTab === "Rejected"
           ? e.status === "Rejected"
           : true;
@@ -390,7 +399,7 @@ export default function BOIssuesPage() {
     {
       id: "comments", header: t("Comments"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => setViewRemediation(row.original)}>
+        <Button variant="ghost" size="sm" onClick={() => setCommentsOnlyId(row.original.id)}>
           <MessageSquare className="h-4 w-4 text-muted-foreground" />
         </Button>
       ),
@@ -437,7 +446,6 @@ export default function BOIssuesPage() {
   const remSubTabs = [
     { value: "Open", label: t("Open Issues") },
     { value: "Closed", label: t("Closed Issues") },
-    { value: "Rejected", label: t("Rejected Issues") },
   ];
 
   // ==================== RENDER ====================
@@ -650,6 +658,7 @@ export default function BOIssuesPage() {
             <DataGrid columns={vendorIssueColumns} data={filteredVendorIssues} hideSearch />
           )}
         </TabsContent>
+
       </Tabs>
 
       {/* ==================== VENDOR ISSUE DETAIL DIALOG ==================== */}
@@ -829,17 +838,21 @@ export default function BOIssuesPage() {
             </div>
           )}
           <DialogFooter className="flex-wrap gap-2">
-            {viewRemediation && ["Open", "Assigned to BO", "Pending"].includes(viewRemediation.status) && (
+            {viewRemediation && viewRemediation.status === "Assigned to BO" && (
               <>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Closed")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Closed")} disabled={actionLoading} className="bg-green-100 text-green-800 hover:bg-green-200 border border-green-200">
                   <ShieldCheck className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Accept Risk")}
                 </Button>
-                <Button onClick={() => openCommentDialog(viewRemediation.id, "Rejected")} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Sent to Vendor")} disabled={actionLoading} className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-200">
+                  <Forward className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Send To Vendor")}
+                </Button>
+                <Button onClick={() => openCommentDialog(viewRemediation.id, "Submitted")} disabled={actionLoading} className="bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-200">
                   <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Send To Assessor")}
                 </Button>
-                <Button onClick={() => { setTerminateConfirm({ remediationId: viewRemediation.id }); setViewRemediation(null); }} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+                <Button onClick={() => { setTerminateConfirm({ remediationId: viewRemediation.id, vendorId: viewRemediation.vendorId || "" }); setViewRemediation(null); }} disabled={actionLoading} className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
                   <Ban className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Terminate Vendor")}
                 </Button>
@@ -864,7 +877,7 @@ export default function BOIssuesPage() {
             className="w-full"
           />
           <DialogFooter className="gap-2">
-            <Button onClick={handleCommentSave} disabled={actionLoading} className="bg-teal-600 hover:bg-teal-700 text-white">
+            <Button onClick={handleCommentSave} disabled={actionLoading} className="bg-primary/90 hover:bg-primary text-primary-foreground">
               {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
               {t("Save")}
             </Button>
@@ -916,6 +929,19 @@ export default function BOIssuesPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewIssueDetail(null)}>{t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== COMMENTS ONLY DIALOG ==================== */}
+      <Dialog open={!!commentsOnlyId} onOpenChange={(open) => { if (!open) setCommentsOnlyId(null); }}>
+        <DialogContent className="!max-w-lg w-[90vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Comments")}</DialogTitle>
+          </DialogHeader>
+          {commentsOnlyId && <RemediationComments remediationId={commentsOnlyId} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentsOnlyId(null)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

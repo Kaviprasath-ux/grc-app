@@ -342,7 +342,7 @@ export const POST = withAuth(
             confidence: null,
             reviewId: '',
             status: 'failed',
-            error: err.message || 'Unknown error',
+            error: 'Unable to process artifact review. Please try again.',
           });
         }
       }
@@ -372,7 +372,7 @@ export const POST = withAuth(
       console.error('[Artifact Review] Error:', err);
 
       return errorResponse(
-        err.message || 'Failed to review artifact',
+        'Unable to process artifact review. Please try again.',
         err.status || 500
       );
     }

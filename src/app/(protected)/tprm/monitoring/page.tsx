@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useHasRole } from "@/hooks/usePermissions";
 
 // ==================== TYPES ====================
 
@@ -128,6 +129,7 @@ export default function MonitoringPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [vendors, setVendors] = useState<TPRMMonitoringVendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -404,7 +406,7 @@ export default function MonitoringPage() {
                       {KPI_COLUMNS.map((col) => (
                         <th key={col} className="text-center px-2 py-3 font-semibold whitespace-nowrap text-xs text-slate-600">{t(col)}</th>
                       ))}
-                      <th className="px-3 py-3 w-10" />
+                      {!isAuditor && <th className="px-3 py-3 w-10" />}
                     </tr>
                   </thead>
                   <tbody>
@@ -448,18 +450,20 @@ export default function MonitoringPage() {
                           {KPI_COLUMNS.map((col) => (
                             <KpiCell key={col} score={getKpiScore(a?.kpiDetails ?? [], col)} />
                           ))}
-                          {/* Delete */}
-                          <td className="px-3 py-2.5 text-center">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 text-slate-400 hover:text-red-600"
-                              onClick={(e) => { e.stopPropagation(); toast({ title: t("Info"), description: t("Delete functionality coming soon") }); }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </td>
-                        </tr>
+                          {/* Delete — hidden for auditor */}
+                          {!isAuditor && (
+                        <td className="px-3 py-2.5 text-center">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 text-slate-400 hover:text-red-600"
+                                onClick={(e) => { e.stopPropagation(); toast({ title: t("Info"), description: t("Delete functionality coming soon") }); }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </td>
+                          )}
+                    </tr>
                       );
                     })}
                   </tbody>

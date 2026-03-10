@@ -216,9 +216,7 @@ async function handler(
             userId: session.id
         });
 
-        return errorResponse("Failed to submit semantic matching job", err.status || 500, {
-            details: err.message,
-        });
+        return errorResponse("Something went wrong. Please try again.", err.status || 500);
     }
 }
 

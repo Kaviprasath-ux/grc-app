@@ -104,7 +104,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
+  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory", "tprm.asr-inventory", "tprm.reports"], action: "view" }
 );
 
 // POST create a new vendor

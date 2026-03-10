@@ -98,10 +98,7 @@ export const POST = withAuth(
         // Update evidence review status to failed
         await updateEvidenceAIStatus(evidenceId, { reviewStatus: 'FAILED' });
 
-        return errorResponse('AI review failed', err.status || 502, {
-          details: err.rawResponse?.substring(0, 200) || err.message,
-          requestId: err.requestId,
-        });
+        return errorResponse("Unable to process evidence review. Please try again.", err.status || 502);
       }
 
       const runpodRaw = response.data;
@@ -271,10 +268,7 @@ export const POST = withAuth(
       const err = error as { message?: string; rawResponse?: string; requestId?: string; status?: number };
       console.error('[Evidence Review] Error:', err);
 
-      return errorResponse(err.message || 'Failed to trigger AI review', err.status || 500, {
-        details: err.rawResponse?.substring(0, 200) || String(err),
-        requestId: err.requestId,
-      });
+      return errorResponse("Unable to process evidence review. Please try again.", err.status || 500);
     }
   },
   { resource: 'compliance.evidence', action: 'edit' }

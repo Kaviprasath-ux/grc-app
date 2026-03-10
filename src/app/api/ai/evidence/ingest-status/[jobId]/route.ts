@@ -78,11 +78,7 @@ export const GET = withAuth(
           data: { aiIngestStatus: "failed" },
         });
 
-        return errorResponse(err.message || "Status check failed", err.status || 502, {
-          jobId,
-          currentStatus: "failed",
-          requestId: err.requestId,
-        });
+        return errorResponse("Unable to check processing status. Please try again.", err.status || 502);
       }
 
       // Response: { "job_id": "...", "status": "completed", "error": null }
@@ -175,9 +171,7 @@ export const GET = withAuth(
     } catch (error: unknown) {
       const err = error as { message?: string; requestId?: string; status?: number };
       console.error("[Evidence Ingest Status] Error:", err);
-      return errorResponse(err.message || "Failed to poll ingest status", err.status || 500, {
-        requestId: err.requestId,
-      });
+      return errorResponse("Unable to check processing status. Please try again.", err.status || 500);
     }
   },
   { resource: "compliance.evidence", action: "view" }

@@ -346,17 +346,41 @@ export default function GovernanceDetailPage() {
   const [newTemplateFile, setNewTemplateFile] = useState<File | null>(null);
   const [newTemplateName, setNewTemplateName] = useState("");
 
-  // AI Review Details Modal state
+  // AI Review Details Modal state (hidden for QPost — kept for future use)
   const [aiReviewDetailsOpen, setAiReviewDetailsOpen] = useState(false);
   const [aiReviewResult, setAiReviewResult] = useState<AIReviewResponse | null>(null);
+
+  // Manual Review state
+  interface ManualReview {
+    id: string;
+    status: string;
+    score: number | null;
+    comments: string | null;
+    findings: string | null;
+    recommendation: string | null;
+    reviewDate: string;
+    reviewer: { id: string; userName: string; fullName: string };
+  }
+  const [manualReviews, setManualReviews] = useState<ManualReview[]>([]);
+  const [manualReviewDialogOpen, setManualReviewDialogOpen] = useState(false);
+  const [manualReviewForm, setManualReviewForm] = useState({
+    status: "Reviewed",
+    score: "",
+    comments: "",
+    findings: "",
+    recommendation: "",
+  });
+  const [savingManualReview, setSavingManualReview] = useState(false);
+  const [deleteReviewId, setDeleteReviewId] = useState<string | null>(null);
+  const [deletingReview, setDeletingReview] = useState(false);
 
   // AI Review Hook - orchestrates ingest → review flow
   const {
     phase: aiReviewPhase,
-    progress: aiReviewProgress,
-    error: aiReviewError,
-    startAIReview,
-    reset: resetAIReview,
+    progress: _aiReviewProgress,
+    error: _aiReviewError,
+    startAIReview: _startAIReview,
+    reset: _resetAIReview,
   } = useGovernanceAIReview({
     policyId: id as string,
     onIngestStart: () => {
@@ -432,11 +456,11 @@ export default function GovernanceDetailPage() {
   const [selectedExceptionId, setSelectedExceptionId] = useState("");
 
   // Dynamic translation hooks
-  const { data: translatedPolicy } = useTranslatedRecord(policy, { modelName: 'Policy' });
+  const { data: translatedPolicy } = useTranslatedRecord(policy, { modelName: 'QPostPolicy' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
-  const { data: translatedRequirements } = useTranslatedData(availableRequirements, { modelName: 'FrameworkRequirement' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
+  const { data: translatedRequirements } = useTranslatedData(availableRequirements, { modelName: 'QPostRequirement' });
   const { data: translatedExceptions } = useTranslatedData(availableExceptions, { modelName: 'QPostException' });
 
   // Lookup maps for translated nested data
@@ -560,7 +584,7 @@ export default function GovernanceDetailPage() {
 
   const fetchVaultDocuments = useCallback(async () => {
     try {
-      const response = await fetch("/api/governance-vault");
+      const response = await fetch("/api/qpost-compliance/governance-vault");
       if (response.ok) {
         const data = await response.json();
         setVaultDocuments(data.data || []);
@@ -570,11 +594,24 @@ export default function GovernanceDetailPage() {
     }
   }, []);
 
+  const fetchManualReviews = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/qpost-compliance/policies/${id}/manual-reviews`);
+      if (response.ok) {
+        const data = await response.json();
+        setManualReviews(data);
+      }
+    } catch (error) {
+      console.error("Error fetching manual reviews:", error);
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchPolicy();
     fetchReferenceData();
     fetchVaultDocuments();
-  }, [fetchPolicy, fetchReferenceData, fetchVaultDocuments]);
+    fetchManualReviews();
+  }, [fetchPolicy, fetchReferenceData, fetchVaultDocuments, fetchManualReviews]);
 
   // Filtered user lists for role-based assignment restrictions
   // Assignees: Only DepartmentContributor and DepartmentReviewer from the selected department
@@ -771,9 +808,9 @@ export default function GovernanceDetailPage() {
     }
   };
 
-  // Trigger AI Review using the new hook (handles ingest → review flow)
+  // Trigger AI Review using the new hook (handles ingest → review flow) — hidden for QPost
   const handleTriggerAIReview = () => {
-    startAIReview();
+    _startAIReview();
   };
 
   const handleClearAIReview = async () => {
@@ -798,6 +835,52 @@ export default function GovernanceDetailPage() {
     } catch (error) {
       console.error("Error clearing AI review:", error);
       toast.error(t("Failed to clear AI review"));
+    }
+  };
+
+  // Manual Review handlers
+  const handleAddManualReview = async () => {
+    setSavingManualReview(true);
+    try {
+      const response = await fetch(`/api/qpost-compliance/policies/${id}/manual-reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manualReviewForm),
+      });
+      if (response.ok) {
+        toast.success(t("Review added successfully"));
+        setManualReviewDialogOpen(false);
+        setManualReviewForm({ status: "Reviewed", score: "", comments: "", findings: "", recommendation: "" });
+        fetchManualReviews();
+      } else {
+        const err = await response.json();
+        toast.error(err.error || t("Failed to add review"));
+      }
+    } catch {
+      toast.error(t("Failed to add review"));
+    } finally {
+      setSavingManualReview(false);
+    }
+  };
+
+  const handleDeleteManualReview = async () => {
+    if (!deleteReviewId) return;
+    setDeletingReview(true);
+    try {
+      const response = await fetch(`/api/qpost-compliance/policies/${id}/manual-reviews?reviewId=${deleteReviewId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        toast.success(t("Review deleted"));
+        setDeleteReviewId(null);
+        fetchManualReviews();
+      } else {
+        toast.error(t("Failed to delete review"));
+      }
+    } catch {
+      toast.error(t("Failed to delete review"));
+    } finally {
+      setDeletingReview(false);
     }
   };
 
@@ -936,7 +1019,7 @@ export default function GovernanceDetailPage() {
       const formData = new FormData();
       formData.append("file", uploadFile);
 
-      const vaultResponse = await fetch("/api/governance-vault", {
+      const vaultResponse = await fetch("/api/qpost-compliance/governance-vault", {
         method: "POST",
         body: formData,
       });
@@ -951,7 +1034,7 @@ export default function GovernanceDetailPage() {
       const vaultDoc = await vaultResponse.json();
 
       // Step 2: Auto-link vault document to this policy
-      await fetch(`/api/governance-vault/${vaultDoc.id}/link`, {
+      await fetch(`/api/qpost-compliance/governance-vault/${vaultDoc.id}/link`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ governanceIds: [id] }),
@@ -1001,7 +1084,7 @@ export default function GovernanceDetailPage() {
           );
           if (matchingVaultLink) {
             deletedVaultDocId = matchingVaultLink.document.id;
-            await fetch(`/api/governance-vault/${matchingVaultLink.document.id}`, {
+            await fetch(`/api/qpost-compliance/governance-vault/${matchingVaultLink.document.id}`, {
               method: "DELETE",
             });
           }
@@ -1073,7 +1156,7 @@ export default function GovernanceDetailPage() {
         if (vaultDoc) {
           // Add current policy to the linked governance IDs
           const newLinkedIds = [...new Set([...vaultDoc.linkedGovernanceIds, id])];
-          await fetch(`/api/governance-vault/${docId}/link`, {
+          await fetch(`/api/qpost-compliance/governance-vault/${docId}/link`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ governanceIds: newLinkedIds }),
@@ -1112,7 +1195,7 @@ export default function GovernanceDetailPage() {
   const handleUnlinkVaultDocument = async (vaultDocId: string) => {
     try {
       // Delete vault document entirely (also removes from Information Security Vault)
-      const response = await fetch(`/api/governance-vault/${vaultDocId}`, {
+      const response = await fetch(`/api/qpost-compliance/governance-vault/${vaultDocId}`, {
         method: "DELETE",
       });
 
@@ -1393,9 +1476,8 @@ export default function GovernanceDetailPage() {
             </Button>
           )}
 
-          {/* AI Review Buttons - Requires edit permission */}
-          <PermissionGate resource="qpost-compliance.governance" action="edit">
-            {/* AI Review in progress via hook */}
+          {/* AI Review Buttons - Hidden for QPost (kept for future use) */}
+          {/* <PermissionGate resource="qpost-compliance.governance" action="edit">
             {aiReviewPhase !== 'idle' && aiReviewPhase !== 'complete' && aiReviewPhase !== 'error' ? (
               <Button variant="outline" disabled>
                 <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
@@ -1420,7 +1502,7 @@ export default function GovernanceDetailPage() {
                 {t("Start AI Review")}
               </Button>
             )}
-          </PermissionGate>
+          </PermissionGate> */}
 
           {/* Edit Button - Only show if user can edit */}
           <PermissionGate resource="qpost-compliance.governance" action="edit">
@@ -1873,152 +1955,195 @@ export default function GovernanceDetailPage() {
         </div>
       </div>
 
-      {/* AI Review Section */}
+      {/* AI Review Section — Hidden for QPost (kept for future re-enable) */}
+      {/* BEGIN HIDDEN AI REVIEW SECTION
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="flex items-center gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
           <Sparkles className="h-5 w-5 text-primary-600" />
           <h3 className="text-base font-semibold text-slate-800">{t("AI Review")}</h3>
         </div>
+        ...AI Review content...
+      </div>
+      END HIDDEN AI REVIEW SECTION */}
+
+      {/* Manual Review Section - Only show when governance has attachments */}
+      {(attachments.length > 0 || linkedVaultDocuments.length > 0) && (<>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <Eye className="h-5 w-5 text-primary-600" />
+            <h3 className="text-base font-semibold text-slate-800">{t("Manual Review")}</h3>
+            <Badge variant="outline" className="ml-2">{manualReviews.length}</Badge>
+          </div>
+          {canEdit && (
+            <Button size="sm" onClick={() => setManualReviewDialogOpen(true)}>
+              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+              {t("Add Review")}
+            </Button>
+          )}
+        </div>
         <div className="p-3 sm:p-5">
-          {!policy.aiReviewStatus || policy.aiReviewStatus === "Pending" ? (
+          {manualReviews.length === 0 ? (
             <div className="py-10 text-center">
-              <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                <Sparkles className="h-6 w-6 text-primary-400" />
+              <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center mx-auto mb-3">
+                <Eye className="h-6 w-6 text-slate-400" />
               </div>
-              <p className="text-sm font-medium text-slate-600 mb-1">{t("AI Review has not been performed yet")}</p>
-              <p className="text-xs text-slate-400">{t("Start an AI review to analyze this document")}</p>
-            </div>
-          ) : policy.aiReviewStatus === "In Progress" ? (
-            <div className="flex items-center justify-center gap-4 py-4">
-              <div className="w-6 h-6 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-              <p className="text-sm text-slate-600">{t("AI Review in progress...")}</p>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("No reviews yet")}</p>
+              <p className="text-xs text-slate-400">{t("Add a manual review to record your assessment of this document")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
-                <div>
-                  <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-slate-100 text-slate-600"}>
-                    {t(policy.aiReviewStatus)}
-                  </Badge>
-                </div>
-              </div>
-              {policy.aiReviewScore !== null && (
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Score")}</Label>
-                  <div>
-                    <span className={`text-2xl font-bold ${
-                      policy.aiReviewScore >= 80
-                        ? "text-green-600"
-                        : policy.aiReviewScore >= 60
-                        ? "text-yellow-600"
-                        : "text-red-600"
-                    }`}>
-                      {policy.aiReviewScore}%
-                    </span>
+            <div className="space-y-4">
+              {manualReviews.map((review) => (
+                <div key={review.id} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-sm font-semibold">
+                        {review.reviewer.fullName?.charAt(0) || "?"}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">{review.reviewer.fullName}</p>
+                        <p className="text-xs text-slate-500">{new Date(review.reviewDate).toLocaleDateString()} {new Date(review.reviewDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={
+                        review.status === "Approved" ? "bg-success-light text-success-dark" :
+                        review.status === "Rejected" ? "bg-error-light text-error-dark" :
+                        review.status === "Needs Revision" ? "bg-warning-light text-warning-dark" :
+                        "bg-info-light text-info-dark"
+                      }>
+                        {t(review.status)}
+                      </Badge>
+                      {review.score !== null && (
+                        <span className={`text-lg font-bold ${
+                          review.score >= 80 ? "text-green-600" :
+                          review.score >= 60 ? "text-yellow-600" :
+                          "text-red-600"
+                        }`}>
+                          {review.score}%
+                        </span>
+                      )}
+                      {canEdit && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteReviewId(review.id)}>
+                          <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  {review.comments && (
+                    <div className="mb-2">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Comments")}</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{review.comments}</p>
+                    </div>
+                  )}
+                  {review.findings && (
+                    <div className="mb-2">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Findings")}</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{review.findings}</p>
+                    </div>
+                  )}
+                  {review.recommendation && (
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Recommendation")}</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{review.recommendation}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              {policy.aiReviewJustification && (
-                <div className="col-span-3 space-y-2">
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Justification")}</Label>
-                  <p className="text-sm text-slate-700 p-3 bg-slate-50 rounded-lg">{policy.aiReviewJustification}</p>
-                </div>
-              )}
-              {/* View More Button */}
-              {aiReviewResult && aiReviewResult.raw_response?.controls_response && (
-                <div className="col-span-3 mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setAiReviewDetailsOpen(true)}
-                  >
-                    <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2 text-primary-600" />
-                    {t("View More")}
-                  </Button>
-                </div>
-              )}
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* AI Review Details Modal */}
-      <Dialog open={aiReviewDetailsOpen} onOpenChange={setAiReviewDetailsOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              {t("AI Review Details")}
-            </DialogTitle>
+      {/* Add Manual Review Dialog */}
+      <Dialog open={manualReviewDialogOpen} onOpenChange={setManualReviewDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Add Manual Review")}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
-            {aiReviewResult?.raw_response?.controls_response?.map((control, index) => (
-              <div
-                key={index}
-                className="bg-slate-50 rounded-lg p-3 sm:p-6 border border-slate-200"
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  {/* Left Column */}
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        {t("Control Code")}
-                      </p>
-                      <p className="text-sm text-slate-700">
-                        {control.control_code}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        {t("Question")}
-                      </p>
-                      <p className="text-sm text-slate-700">
-                        {control.question || "-"}
-                      </p>
-                    </div>
-                  </div>
-                  {/* Right Column */}
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        {t("Status")}
-                      </p>
-                      <Badge
-                        className={
-                          control.status?.toLowerCase() === "compliant"
-                            ? "bg-success-light text-success-dark"
-                            : control.status?.toLowerCase() === "non-compliant"
-                            ? "bg-error-light text-error-dark"
-                            : "bg-warning-light text-warning-dark"
-                        }
-                      >
-                        {control.status ? control.status.charAt(0).toUpperCase() + control.status.slice(1) : "-"}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        {t("Answer")}
-                      </p>
-                      <p className="text-sm text-slate-700">
-                        {control.answer || "-"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t("Review Status")}</Label>
+                <Select value={manualReviewForm.status} onValueChange={(v) => setManualReviewForm(prev => ({ ...prev, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Reviewed">{t("Reviewed")}</SelectItem>
+                    <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                    <SelectItem value="Rejected">{t("Rejected")}</SelectItem>
+                    <SelectItem value="Needs Revision">{t("Needs Revision")}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-            {(!aiReviewResult?.raw_response?.controls_response ||
-              aiReviewResult.raw_response.controls_response.length === 0) && (
-              <div className="py-10 text-center">
-                <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                  <Sparkles className="h-6 w-6 text-primary-400" />
-                </div>
-                <p className="text-sm font-medium text-slate-600 mb-1">{t("No detailed review data available")}</p>
+              <div className="space-y-2">
+                <Label>{t("Score")} (%)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder={t("Optional")}
+                  value={manualReviewForm.score}
+                  onChange={(e) => setManualReviewForm(prev => ({ ...prev, score: e.target.value }))}
+                />
               </div>
-            )}
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Comments")}</Label>
+              <Textarea
+                rows={3}
+                placeholder={t("Add your review comments...")}
+                value={manualReviewForm.comments}
+                onChange={(e) => setManualReviewForm(prev => ({ ...prev, comments: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Findings")}</Label>
+              <Textarea
+                rows={3}
+                placeholder={t("Document any findings...")}
+                value={manualReviewForm.findings}
+                onChange={(e) => setManualReviewForm(prev => ({ ...prev, findings: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Recommendation")}</Label>
+              <Textarea
+                rows={2}
+                placeholder={t("Add recommendations...")}
+                value={manualReviewForm.recommendation}
+                onChange={(e) => setManualReviewForm(prev => ({ ...prev, recommendation: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setManualReviewDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleAddManualReview} disabled={savingManualReview}>
+              {savingManualReview && <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />}
+              {t("Submit Review")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Review Confirmation */}
+      <AlertDialog open={!!deleteReviewId} onOpenChange={(open) => !open && setDeleteReviewId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete Review")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to delete this review? This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteManualReview} disabled={deletingReview}>
+              {deletingReview && <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />}
+              {t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      </>)}
 
       {/* Published Section - Only show when status is Published */}
       {policy.status === "Published" && (
@@ -2038,7 +2163,7 @@ export default function GovernanceDetailPage() {
                     if (attachments.length > 0) {
                       window.open(`/api/qpost-compliance/policies/${id}/attachments/${attachments[0].id}/download`, "_blank");
                     } else if (linkedVaultDocuments.length > 0) {
-                      window.open(`/api/governance-vault/${linkedVaultDocuments[0].document.id}/download`, "_blank");
+                      window.open(`/api/qpost-compliance/governance-vault/${linkedVaultDocuments[0].document.id}/download`, "_blank");
                     }
                   }}
                 >
@@ -2744,7 +2869,7 @@ export default function GovernanceDetailPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
+                            onClick={() => window.open(`/api/qpost-compliance/governance-vault/${link.document.id}/download`, "_blank")}
                             title={t("Download")}
                           >
                             <Download className="h-4 w-4" />
@@ -2852,7 +2977,7 @@ export default function GovernanceDetailPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
-                                    onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
+                                    onClick={() => window.open(`/api/qpost-compliance/governance-vault/${link.document.id}/download`, "_blank")}
                                   >
                                     <Download className="h-3.5 w-3.5" />
                                   </Button>
@@ -3321,7 +3446,7 @@ export default function GovernanceDetailPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
+                        onClick={() => window.open(`/api/qpost-compliance/governance-vault/${link.document.id}/download`, "_blank")}
                         title={t("Download")}
                       >
                         <Download className="h-4 w-4 text-primary" />

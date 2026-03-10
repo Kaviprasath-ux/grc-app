@@ -3,6 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
+import { getExternalApiUrl } from "@/config/external-apis";
 
 // Save scan response JSON to scan-results folder
 async function saveResponseJson(vendorName: string, data: unknown) {
@@ -19,9 +20,10 @@ async function saveResponseJson(vendorName: string, data: unknown) {
   }
 }
 
-const SCANNING_API_URL =
-  process.env.SCORECARD_API_URL ||
-  "https://a4t2jogsl4815o-7000.proxy.runpod.net";
+// Use the same Python backend URL as all other AI services
+function getScanApiUrl(path: string): string {
+  return getExternalApiUrl('PYTHON_BACKEND', path);
+}
 
 // ==================== TYPES ====================
 
@@ -402,9 +404,9 @@ export const POST = withAuth(
         );
       }
 
-      console.log("\n🔵🔵🔵 [SCAN SUBMIT] Sending request to external API:", { vendorName, vendorURL, url: `${SCANNING_API_URL}/risk_score_assess/submit` });
+      console.log("\n🔵🔵🔵 [SCAN SUBMIT] Sending request to external API:", { vendorName, vendorURL, url: getScanApiUrl('risk_score_assess/submit') });
 
-      const res = await fetch(`${SCANNING_API_URL}/risk_score_assess/submit`, {
+      const res = await fetch(getScanApiUrl('risk_score_assess/submit'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -510,7 +512,7 @@ export const GET = withAuth(
       // Check status with the external API
       console.log("\n🟡🟡🟡 [SCAN POLL] Checking status for job:", jobId);
       const statusRes = await fetch(
-        `${SCANNING_API_URL}/risk_score_assess/status/${jobId}`
+        getScanApiUrl(`risk_score_assess/status/${jobId}`)
       );
       if (!statusRes.ok) {
         console.error("❌❌❌ [SCAN POLL] Status API error:", statusRes.status, await statusRes.text());
@@ -537,7 +539,7 @@ export const GET = withAuth(
       // Status is "done" — fetch the full result
       console.log("\n🟢🟢🟢 [SCAN RESULT] Status is DONE! Fetching full result for job:", jobId);
       const resultRes = await fetch(
-        `${SCANNING_API_URL}/risk_score_assess/result/${jobId}`
+        getScanApiUrl(`risk_score_assess/result/${jobId}`)
       );
       if (!resultRes.ok) {
         console.error("❌❌❌ [SCAN RESULT] Result API error:", resultRes.status, await resultRes.text());

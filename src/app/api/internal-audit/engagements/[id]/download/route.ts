@@ -196,7 +196,7 @@ export const GET = withAuth(
       console.error('Error downloading engagement:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'Failed to download engagement', details: errorMessage },
+        { error: "Unable to complete the request. Please try again." },
         { status: 500 }
       );
     }

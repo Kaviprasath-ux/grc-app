@@ -1092,7 +1092,7 @@ export default function AssetSettingsPage() {
         const minCia = Math.min(...allCiaValues);
         const maxCia = Math.max(...allCiaValues);
         if (scoringConfigForm.maxScore < minCia || scoringConfigForm.maxScore > maxCia) {
-          setIsCiaRangeWarningOpen(true);
+          setScoringErrorMessage(t("High range value must be within the highest CIA value range") + ` (${minCia} - ${maxCia}). ` + t("High of All uses the maximum value among C, I, and A ratings."));
           return;
         }
       }
@@ -1105,7 +1105,7 @@ export default function AssetSettingsPage() {
       const maxA = availabilityRatings.length > 0 ? Math.max(...availabilityRatings.map(r => r.value)) : 0;
       const maxAllowed = maxC * maxI * maxA;
       if (maxAllowed > 0 && scoringConfigForm.maxScore > maxAllowed) {
-        setScoringErrorMessage(t("High range must be less than or equal to") + ` ${maxAllowed}`);
+        setScoringErrorMessage(t("High range value must be less than or equal to the product of CIA values") + ` (C:${maxC} × I:${maxI} × A:${maxA} = ${maxAllowed})`);
         return;
       }
     }
@@ -1117,7 +1117,7 @@ export default function AssetSettingsPage() {
       const maxA = availabilityRatings.length > 0 ? Math.max(...availabilityRatings.map(r => r.value)) : 0;
       const maxAllowed = maxC + maxI + maxA;
       if (maxAllowed > 0 && scoringConfigForm.maxScore > maxAllowed) {
-        setScoringErrorMessage(t("High range must be less than or equal to") + ` ${maxAllowed}`);
+        setScoringErrorMessage(t("High range value must be less than or equal to the sum of CIA values") + ` (C:${maxC} + I:${maxI} + A:${maxA} = ${maxAllowed})`);
         return;
       }
     }
@@ -1236,7 +1236,7 @@ export default function AssetSettingsPage() {
         const minCia = Math.min(...allCiaValues);
         const maxCia = Math.max(...allCiaValues);
         if (scoringConfigForm.maxScore < minCia || scoringConfigForm.maxScore > maxCia) {
-          setIsCiaRangeWarningOpen(true);
+          setScoringErrorMessage(t("High range value must be within the highest CIA value range") + ` (${minCia} - ${maxCia}). ` + t("High of All uses the maximum value among C, I, and A ratings."));
           return;
         }
       }
@@ -1249,7 +1249,7 @@ export default function AssetSettingsPage() {
       const maxA = availabilityRatings.length > 0 ? Math.max(...availabilityRatings.map(r => r.value)) : 0;
       const maxAllowed = maxC * maxI * maxA;
       if (maxAllowed > 0 && scoringConfigForm.maxScore > maxAllowed) {
-        setScoringErrorMessage(t("High range must be less than or equal to") + ` ${maxAllowed}`);
+        setScoringErrorMessage(t("High range value must be less than or equal to the product of CIA values") + ` (C:${maxC} × I:${maxI} × A:${maxA} = ${maxAllowed})`);
         return;
       }
     }
@@ -1261,7 +1261,7 @@ export default function AssetSettingsPage() {
       const maxA = availabilityRatings.length > 0 ? Math.max(...availabilityRatings.map(r => r.value)) : 0;
       const maxAllowed = maxC + maxI + maxA;
       if (maxAllowed > 0 && scoringConfigForm.maxScore > maxAllowed) {
-        setScoringErrorMessage(t("High range must be less than or equal to") + ` ${maxAllowed}`);
+        setScoringErrorMessage(t("High range value must be less than or equal to the sum of CIA values") + ` (C:${maxC} + I:${maxI} + A:${maxA} = ${maxAllowed})`);
         return;
       }
     }

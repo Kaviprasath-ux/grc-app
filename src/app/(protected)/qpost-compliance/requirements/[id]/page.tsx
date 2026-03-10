@@ -54,6 +54,8 @@ import {
   Loader2,
   Home,
   ChevronRight,
+  Upload,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { triggerTranslation } from "@/hooks/useTranslatedData";
@@ -182,6 +184,20 @@ export default function QPostRequirementDetailPage() {
   const [unlinkDialog, setUnlinkDialog] = useState<{ type: "evidence" | "policy"; id: string; name: string } | null>(null);
   const [unlinking, setUnlinking] = useState(false);
 
+  // Import evidences dialog
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+
+  // Import policies dialog
+  const [importPolicyOpen, setImportPolicyOpen] = useState(false);
+  const [importPolicyFile, setImportPolicyFile] = useState<File | null>(null);
+  const [importingPolicy, setImportingPolicy] = useState(false);
+  const [importPolicyErrors, setImportPolicyErrors] = useState<string[]>([]);
+  const [downloadingPolicyTemplate, setDownloadingPolicyTemplate] = useState(false);
+
   // ---------------------------------------------------------------------------
   // Fetch requirement
   // ---------------------------------------------------------------------------
@@ -258,7 +274,7 @@ export default function QPostRequirementDetailPage() {
       const res = await fetch("/api/qpost-compliance/evidences?limit=200");
       if (res.ok) {
         const data = await res.json();
-        const items = Array.isArray(data) ? data : data.items || data.evidences || [];
+        const items = Array.isArray(data) ? data : data.data || data.items || data.evidences || [];
         // Filter out already-linked evidences
         const linkedIds = new Set(requirement?.evidences.map((e) => e.evidence.id) || []);
         setAvailableEvidences(items.filter((e: EvidenceItem) => !linkedIds.has(e.id)));
@@ -299,7 +315,7 @@ export default function QPostRequirementDetailPage() {
       const res = await fetch("/api/qpost-compliance/policies?limit=200");
       if (res.ok) {
         const data = await res.json();
-        const items = Array.isArray(data) ? data : data.items || data.policies || [];
+        const items = Array.isArray(data) ? data : data.data || data.items || data.policies || [];
         const linkedIds = new Set(requirement?.policies.map((p) => p.policy.id) || []);
         setAvailablePolicies(items.filter((p: PolicyItem) => !linkedIds.has(p.id)));
       }
@@ -349,6 +365,138 @@ export default function QPostRequirementDetailPage() {
       toast({ title: t("Failed to unlink"), variant: "destructive" });
     } finally {
       setUnlinking(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Import evidences
+  // ---------------------------------------------------------------------------
+
+  const handleDownloadTemplate = async () => {
+    setDownloadingTemplate(true);
+    try {
+      const res = await fetch(`/api/qpost-compliance/requirements/${id}/import-evidences`);
+      if (!res.ok) throw new Error("Failed to download template");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "evidence-import-template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: t("Failed to download template"), variant: "destructive" });
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  };
+
+  const handleImportEvidences = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    setImportErrors([]);
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+
+      const res = await fetch(`/api/qpost-compliance/requirements/${id}/import-evidences`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({ title: t("Import Successful"), description: data.message });
+        setImportOpen(false);
+        setImportFile(null);
+        setImportErrors([]);
+        fetchRequirement();
+      } else {
+        const errs: string[] = [];
+        if (data.details) {
+          for (const d of data.details) {
+            errs.push(`Row ${d.row}: ${d.column ? `[${d.column}] ` : ""}${d.message}`);
+          }
+        }
+        if (data.errors) {
+          errs.push(...data.errors);
+        }
+        if (errs.length === 0) errs.push(data.error || "Import failed");
+        setImportErrors(errs);
+        toast({ title: t("Import Failed"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Failed to import evidences"), variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Import policies
+  // ---------------------------------------------------------------------------
+
+  const handleDownloadPolicyTemplate = async () => {
+    setDownloadingPolicyTemplate(true);
+    try {
+      const res = await fetch(`/api/qpost-compliance/requirements/${id}/import-policies`);
+      if (!res.ok) throw new Error("Failed to download template");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "governance-import-template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: t("Failed to download template"), variant: "destructive" });
+    } finally {
+      setDownloadingPolicyTemplate(false);
+    }
+  };
+
+  const handleImportPolicies = async () => {
+    if (!importPolicyFile) return;
+    setImportingPolicy(true);
+    setImportPolicyErrors([]);
+    try {
+      const formData = new FormData();
+      formData.append("file", importPolicyFile);
+
+      const res = await fetch(`/api/qpost-compliance/requirements/${id}/import-policies`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({ title: t("Import Successful"), description: data.message });
+        setImportPolicyOpen(false);
+        setImportPolicyFile(null);
+        setImportPolicyErrors([]);
+        fetchRequirement();
+      } else {
+        const errs: string[] = [];
+        if (data.details) {
+          for (const d of data.details) {
+            errs.push(`Row ${d.row}: ${d.column ? `[${d.column}] ` : ""}${d.message}`);
+          }
+        }
+        if (data.errors) {
+          errs.push(...data.errors);
+        }
+        if (errs.length === 0) errs.push(data.error || "Import failed");
+        setImportPolicyErrors(errs);
+        toast({ title: t("Import Failed"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Failed to import policies"), variant: "destructive" });
+    } finally {
+      setImportingPolicy(false);
     }
   };
 
@@ -525,10 +673,16 @@ export default function QPostRequirementDetailPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{t("Linked Evidences")}</CardTitle>
               {canEdit && (
-                <Button size="sm" onClick={openLinkEvidence}>
-                  <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                  {t("Link Evidence")}
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => { setImportFile(null); setImportErrors([]); setImportOpen(true); }}>
+                    <Upload className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Import")}
+                  </Button>
+                  <Button size="sm" onClick={openLinkEvidence}>
+                    <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Link Evidence")}
+                  </Button>
+                </div>
               )}
             </CardHeader>
             <CardContent>
@@ -582,10 +736,16 @@ export default function QPostRequirementDetailPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{t("Linked Policies")}</CardTitle>
               {canEdit && (
-                <Button size="sm" onClick={openLinkPolicy}>
-                  <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                  {t("Link Policy")}
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => { setImportPolicyFile(null); setImportPolicyErrors([]); setImportPolicyOpen(true); }}>
+                    <Upload className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Import")}
+                  </Button>
+                  <Button size="sm" onClick={openLinkPolicy}>
+                    <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Link Policy")}
+                  </Button>
+                </div>
               )}
             </CardHeader>
             <CardContent>
@@ -853,6 +1013,152 @@ export default function QPostRequirementDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Import Evidences Dialog                                              */}
+      {/* ------------------------------------------------------------------- */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Import Evidences")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              {t("Upload an Excel file (.xlsx) to import evidences and automatically link them to this requirement.")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("Note: Evidence Code and Status will be auto-generated. For Recurrence column, only these values are accepted:")}{" "}
+              <span className="font-medium">Yearly, Half-yearly, Quarterly, Monthly</span>.{" "}
+              {t("Any other value will be ignored.")}
+            </p>
+
+            {/* File input */}
+            <div className="space-y-2">
+              <Label>{t("Excel File")}</Label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => {
+                  setImportFile(e.target.files?.[0] || null);
+                  setImportErrors([]);
+                }}
+              />
+              {importFile && (
+                <p className="text-xs text-muted-foreground">{importFile.name} ({(importFile.size / 1024).toFixed(1)} KB)</p>
+              )}
+            </div>
+
+            {/* Download template */}
+            <div className="border rounded-md p-3 bg-muted/30">
+              <p className="text-sm font-medium mb-1">{t("Need a template?")}</p>
+              <p className="text-xs text-muted-foreground mb-2">
+                {t("Download the sample template with all column headers for your reference.")}
+              </p>
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate} disabled={downloadingTemplate}>
+                {downloadingTemplate ? (
+                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />
+                ) : (
+                  <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                )}
+                {t("Download Template")}
+              </Button>
+            </div>
+
+            {/* Import errors */}
+            {importErrors.length > 0 && (
+              <div className="border border-destructive/50 rounded-md p-3 bg-destructive/5 max-h-40 overflow-y-auto">
+                <p className="text-sm font-medium text-destructive mb-1">{t("Import Errors")}</p>
+                <ul className="text-xs text-destructive space-y-1">
+                  {importErrors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleImportEvidences} disabled={!importFile || importing}>
+              {importing && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Import")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Import Policies Dialog                                               */}
+      {/* ------------------------------------------------------------------- */}
+      <Dialog open={importPolicyOpen} onOpenChange={setImportPolicyOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Import Governance")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              {t("Upload an Excel file (.xlsx) to import governance documents and automatically link them to this requirement.")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("Note: Code and Status will be auto-generated. For Document Type, accepted values are:")}{" "}
+              <span className="font-medium">Policy, Standard, Procedure</span>.{" "}
+              {t("For Recurrence:")}{" "}
+              <span className="font-medium">Yearly, Half-yearly, Quarterly, Monthly</span>.{" "}
+              {t("Any other value will be ignored.")}
+            </p>
+
+            {/* File input */}
+            <div className="space-y-2">
+              <Label>{t("Excel File")}</Label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => {
+                  setImportPolicyFile(e.target.files?.[0] || null);
+                  setImportPolicyErrors([]);
+                }}
+              />
+              {importPolicyFile && (
+                <p className="text-xs text-muted-foreground">{importPolicyFile.name} ({(importPolicyFile.size / 1024).toFixed(1)} KB)</p>
+              )}
+            </div>
+
+            {/* Download template */}
+            <div className="border rounded-md p-3 bg-muted/30">
+              <p className="text-sm font-medium mb-1">{t("Need a template?")}</p>
+              <p className="text-xs text-muted-foreground mb-2">
+                {t("Download the sample template with all column headers for your reference.")}
+              </p>
+              <Button variant="outline" size="sm" onClick={handleDownloadPolicyTemplate} disabled={downloadingPolicyTemplate}>
+                {downloadingPolicyTemplate ? (
+                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />
+                ) : (
+                  <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                )}
+                {t("Download Template")}
+              </Button>
+            </div>
+
+            {/* Import errors */}
+            {importPolicyErrors.length > 0 && (
+              <div className="border border-destructive/50 rounded-md p-3 bg-destructive/5 max-h-40 overflow-y-auto">
+                <p className="text-sm font-medium text-destructive mb-1">{t("Import Errors")}</p>
+                <ul className="text-xs text-destructive space-y-1">
+                  {importPolicyErrors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setImportPolicyOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleImportPolicies} disabled={!importPolicyFile || importingPolicy}>
+              {importingPolicy && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Import")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

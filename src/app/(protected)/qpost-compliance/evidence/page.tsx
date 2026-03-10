@@ -274,9 +274,9 @@ export default function EvidencePage() {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
 
   // Dynamic translations for user-entered data
-  const { data: translatedEvidences } = useTranslatedData(evidences, { modelName: 'Evidence' });
+  const { data: translatedEvidences } = useTranslatedData(evidences, { modelName: 'QPostEvidence' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
   const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'QPostRequirement' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
 

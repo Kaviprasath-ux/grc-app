@@ -146,5 +146,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "compliance.evidence", action: "edit" }
+  { resource: "compliance.evidence", action: "approve" }
 );

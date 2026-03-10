@@ -360,10 +360,6 @@ export default function EvidenceDetailPage() {
   const [kpiActualScoreSaving, setKpiActualScoreSaving] = useState(false);
   const [kpiActualScoreEditMode, setKpiActualScoreEditMode] = useState(true); // Start in edit mode if no value
 
-  // Comment state
-  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [submittingComment, setSubmittingComment] = useState(false);
 
   // Send Back / Resubmit / View Comments dialog state
   const [sendBackDialogOpen, setSendBackDialogOpen] = useState(false);
@@ -999,32 +995,6 @@ export default function EvidenceDetailPage() {
     }
   };
 
-  const handleAddComment = async () => {
-    if (!newComment.trim()) return;
-
-    setSubmittingComment(true);
-    try {
-      const response = await fetch(`/api/evidences/${id}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: newComment,
-          userName: "Current User",
-        }),
-      });
-
-      if (response.ok) {
-        setNewComment("");
-        setCommentDialogOpen(false);
-        fetchEvidence();
-      }
-    } catch (error) {
-      console.error("Error adding comment:", error);
-    } finally {
-      setSubmittingComment(false);
-    }
-  };
-
   const handleDelete = async () => {
     try {
       const response = await fetch(`/api/evidences/${id}`, {
@@ -1605,16 +1575,6 @@ export default function EvidenceDetailPage() {
           <Badge className={statusColors[evidence.status] || "bg-slate-100 text-slate-600"}>
             {t(evidence.status)}
           </Badge>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setCommentDialogOpen(true)}
-            className="w-full sm:w-auto"
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            {t("Comments")} ({evidence.comments?.length || 0})
-          </Button>
         </div>
       </div>
       <p className="text-slate-500">{evidence.evidenceCode}</p>
@@ -2298,59 +2258,6 @@ export default function EvidenceDetailPage() {
           </div>
         </div>
 
-        {/* Recent Comments Card */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-3 sm:px-5 py-3 border-b border-slate-100">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h3 className="text-base font-semibold text-slate-800">{t("Recent Comments")}</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCommentDialogOpen(true)}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                {t("Add Comment")}
-              </Button>
-            </div>
-          </div>
-          <div className="p-3 sm:p-5">
-            {evidence.comments && evidence.comments.length > 0 ? (
-              <div className="space-y-3">
-                {evidence.comments.slice(0, 3).map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="p-3 bg-slate-50 rounded-lg"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">
-                        {comment.userName || t("Unknown User")}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        {new Date(comment.createdAt).toLocaleDateString(
-                          "en-GB"
-                        )}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-700">{comment.content}</p>
-                  </div>
-                ))}
-                {evidence.comments.length > 3 && (
-                  <Button
-                    variant="link"
-                    className="w-full"
-                    onClick={() => setCommentDialogOpen(true)}
-                  >
-                    {t("View all")} {evidence.comments.length} {t("comments")}
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <p className="text-slate-500 text-center py-4">
-                {t("No comments yet")}
-              </p>
-            )}
-          </div>
-        </div>
 
         {/* Linked Section - Tabs: Linked Controls / Linked Artifacts */}
         <div>
@@ -2622,63 +2529,6 @@ export default function EvidenceDetailPage() {
       </div>
 
       {/* Comments Dialog */}
-      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
-          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
-            <DialogTitle className="text-base font-semibold text-slate-800">{t("Comments")}</DialogTitle>
-          </div>
-          <div className="px-4 sm:px-6 py-4 space-y-4">
-            {/* Comment List */}
-            <div className="max-h-64 overflow-y-auto space-y-3">
-              {evidence.comments && evidence.comments.length > 0 ? (
-                evidence.comments.map((comment) => (
-                  <div key={comment.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm text-slate-800">
-                        {comment.userName || t("Unknown User")}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        {new Date(comment.createdAt).toLocaleDateString("en-GB")}{" "}
-                        {new Date(comment.createdAt).toLocaleTimeString("en-GB", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-600">{comment.content}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400 text-center py-6">
-                  {t("No comments yet")}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Add Comment Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Add a comment")}</Label>
-            <div className="flex items-end gap-2 mt-2">
-              <Textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder={t("Type your comment...")}
-                rows={2}
-                className="flex-1 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-primary-500/20 focus-visible:ring-offset-0 focus-visible:border-primary-300 transition-colors resize-none"
-              />
-              <Button
-                onClick={handleAddComment}
-                disabled={!newComment.trim() || submittingComment}
-                size="icon"
-                className="h-9 w-9 rounded-lg shrink-0"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

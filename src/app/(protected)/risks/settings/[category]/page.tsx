@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Search, Home, ChevronRight, Download, Upload } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
@@ -211,7 +211,27 @@ export default function RiskSettingsCategoryPage() {
   const [controlStrengthForm, setControlStrengthForm] = useState({ name: "", score: 0 });
   const [likelihoodForm, setLikelihoodForm] = useState({ title: "", score: 0, timeFrame: "", probability: "" });
   const [threatForm, setThreatForm] = useState({ name: "", description: "", categoryId: "" });
+
+  // Auto-generate next Threat ID
+  const nextThreatId = useMemo(() => {
+    let maxNum = 0;
+    for (const t of threats) {
+      const match = t.threatId?.match(/THR-(\d+)/);
+      if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+    }
+    return `THR-${String(maxNum + 1).padStart(3, "0")}`;
+  }, [threats]);
   const [vulnerabilityForm, setVulnerabilityForm] = useState({ name: "", description: "", categoryId: "" });
+
+  // Auto-generate next Vulnerability ID
+  const nextVulnId = useMemo(() => {
+    let maxNum = 0;
+    for (const v of vulnerabilities) {
+      const match = v.vulnId?.match(/VUL-(\d+)/);
+      if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+    }
+    return `VUL-${String(maxNum + 1).padStart(3, "0")}`;
+  }, [vulnerabilities]);
   const [riskCategoryForm, setRiskCategoryForm] = useState({ name: "", status: "Active" });
   const [impactCatForm, setImpactCatForm] = useState({ name: "" });
   const [impactRatingForm, setImpactRatingForm] = useState({ name: "", score: 0, description: "" });
@@ -612,8 +632,6 @@ export default function RiskSettingsCategoryPage() {
     const errors: { [key: string]: string } = {};
     if (!threatForm.name.trim()) {
       errors.threatName = t("Name is required");
-    } else if (!isValidName(threatForm.name.trim())) {
-      errors.threatName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
     setFieldErrors({});
@@ -642,8 +660,6 @@ export default function RiskSettingsCategoryPage() {
     const errors: { [key: string]: string } = {};
     if (!threatForm.name.trim()) {
       errors.threatName = t("Name is required");
-    } else if (!isValidName(threatForm.name.trim())) {
-      errors.threatName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
     setFieldErrors({});
@@ -683,8 +699,6 @@ export default function RiskSettingsCategoryPage() {
     const errors: { [key: string]: string } = {};
     if (!vulnerabilityForm.name.trim()) {
       errors.vulnName = t("Name is required");
-    } else if (!isValidName(vulnerabilityForm.name.trim())) {
-      errors.vulnName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
     setFieldErrors({});
@@ -713,8 +727,6 @@ export default function RiskSettingsCategoryPage() {
     const errors: { [key: string]: string } = {};
     if (!vulnerabilityForm.name.trim()) {
       errors.vulnName = t("Name is required");
-    } else if (!isValidName(vulnerabilityForm.name.trim())) {
-      errors.vulnName = t("Only letters, spaces, and hyphens are allowed");
     }
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
     setFieldErrors({});
@@ -2599,6 +2611,10 @@ export default function RiskSettingsCategoryPage() {
             {category === "threat" && (
               <>
                 <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">{t("Threat ID")}</Label>
+                  <Input value={!selectedItem ? nextThreatId : (selectedItem as RiskThreat).threatId || "—"} disabled className="bg-slate-50 text-slate-500" />
+                </div>
+                <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={threatForm.name}
@@ -2631,6 +2647,10 @@ export default function RiskSettingsCategoryPage() {
             )}
             {category === "vulnerability" && (
               <>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">{t("Vulnerability ID")}</Label>
+                  <Input value={!selectedItem ? nextVulnId : (selectedItem as RiskVulnerability).vulnId || "—"} disabled className="bg-slate-50 text-slate-500" />
+                </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input
@@ -3015,6 +3035,10 @@ export default function RiskSettingsCategoryPage() {
             {category === "threat" && (
               <>
                 <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">{t("Threat ID")}</Label>
+                  <Input value={!selectedItem ? nextThreatId : (selectedItem as RiskThreat).threatId || "—"} disabled className="bg-slate-50 text-slate-500" />
+                </div>
+                <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={threatForm.name}
@@ -3047,6 +3071,10 @@ export default function RiskSettingsCategoryPage() {
             )}
             {category === "vulnerability" && (
               <>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">{t("Vulnerability ID")}</Label>
+                  <Input value={!selectedItem ? nextVulnId : (selectedItem as RiskVulnerability).vulnId || "—"} disabled className="bg-slate-50 text-slate-500" />
+                </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-red-500">*</span></Label>
                   <Input

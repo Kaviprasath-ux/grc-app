@@ -168,7 +168,8 @@ export const POST = withAuth(
           });
           createdQuestionIds.push(question.id);
         } catch (err) {
-          errors.push({ row: rowNum, message: `DB error: ${err instanceof Error ? err.message : String(err)}` });
+          console.error(`Questions import DB error at row ${rowNum}:`, err);
+          errors.push({ row: rowNum, message: 'Failed to save question. Please check the data and try again.' });
         }
       }
 
@@ -201,8 +202,7 @@ export const POST = withAuth(
       });
     } catch (error) {
       console.error('Question import error:', error);
-      const msg = error instanceof Error ? error.message : String(error);
-      return NextResponse.json({ error: 'Failed to import questions', detail: msg }, { status: 500 });
+      return NextResponse.json({ error: 'Import failed. Please check your file format and try again.' }, { status: 500 });
     }
   },
   { resource: 'tprm.master-data', action: 'create' }

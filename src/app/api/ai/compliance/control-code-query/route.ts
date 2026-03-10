@@ -72,7 +72,7 @@ async function handler(
         });
 
         return errorResponse(
-            err.message || "Failed to query control code",
+            "Unable to process query. Please try again.",
             err.response?.status || err.status || 500
         );
     }

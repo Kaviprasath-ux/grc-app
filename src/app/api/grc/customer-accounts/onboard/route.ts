@@ -249,6 +249,6 @@ export async function POST(req: NextRequest) {
 
     // Return the actual error message in development for debugging
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: "Unable to complete the request. Please try again." }, { status: 500 });
   }
 }

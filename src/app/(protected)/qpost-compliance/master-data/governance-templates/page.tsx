@@ -96,7 +96,7 @@ export default function GovernanceTemplatesPage() {
   });
   const [templateErrors, setTemplateErrors] = useState<Record<string, string>>({});
 
-  const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'GovernanceTemplate' });
+  const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'QPostGovernanceTemplate' });
 
   const fetchTemplates = useCallback(async () => {
     try {

@@ -2640,6 +2640,28 @@ CREATE TABLE "TPRMOffboardingQuestion" (
 );
 
 -- CreateTable
+CREATE TABLE "TPRMOffboardResponse" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "assessmentId" TEXT NOT NULL,
+    "questionId" TEXT NOT NULL,
+    "questionNo" INTEGER NOT NULL,
+    "questionTitle" TEXT NOT NULL,
+    "questionText" TEXT,
+    "response" TEXT,
+    "comment" TEXT,
+    "artifactUrl" TEXT,
+    "artifactName" TEXT,
+    "isFlagged" BOOLEAN NOT NULL DEFAULT false,
+    "isDelegated" BOOLEAN NOT NULL DEFAULT false,
+    "delegatedToId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TPRMOffboardResponse_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "TPRMScorecardFactor" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -3524,6 +3546,40 @@ CREATE TABLE "QPostRequirementPolicy" (
 );
 
 -- CreateTable
+CREATE TABLE "QPostPolicyManualReview" (
+    "id" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "reviewerId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'Reviewed',
+    "score" DOUBLE PRECISION,
+    "comments" TEXT,
+    "findings" TEXT,
+    "recommendation" TEXT,
+    "reviewDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostPolicyManualReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidenceManualReview" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "reviewerId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'Reviewed',
+    "score" DOUBLE PRECISION,
+    "comments" TEXT,
+    "findings" TEXT,
+    "recommendation" TEXT,
+    "reviewDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "QPostEvidenceManualReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_EngagementTeamMembers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
@@ -4304,6 +4360,15 @@ CREATE UNIQUE INDEX "TPRMQuestionnaireTemplate_customerAccountId_templateName_ke
 CREATE INDEX "TPRMOffboardingQuestion_customerAccountId_idx" ON "TPRMOffboardingQuestion"("customerAccountId");
 
 -- CreateIndex
+CREATE INDEX "TPRMOffboardResponse_customerAccountId_idx" ON "TPRMOffboardResponse"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMOffboardResponse_assessmentId_idx" ON "TPRMOffboardResponse"("assessmentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TPRMOffboardResponse_assessmentId_questionId_key" ON "TPRMOffboardResponse"("assessmentId", "questionId");
+
+-- CreateIndex
 CREATE INDEX "TPRMScorecardFactor_customerAccountId_idx" ON "TPRMScorecardFactor"("customerAccountId");
 
 -- CreateIndex
@@ -4536,6 +4601,12 @@ CREATE UNIQUE INDEX "QPostRequirementEvidence_requirementId_evidenceId_key" ON "
 
 -- CreateIndex
 CREATE UNIQUE INDEX "QPostRequirementPolicy_requirementId_policyId_key" ON "QPostRequirementPolicy"("requirementId", "policyId");
+
+-- CreateIndex
+CREATE INDEX "QPostPolicyManualReview_policyId_idx" ON "QPostPolicyManualReview"("policyId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceManualReview_evidenceId_idx" ON "QPostEvidenceManualReview"("evidenceId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
@@ -5420,6 +5491,15 @@ ALTER TABLE "TPRMQuestionnaireTemplate" ADD CONSTRAINT "TPRMQuestionnaireTemplat
 ALTER TABLE "TPRMOffboardingQuestion" ADD CONSTRAINT "TPRMOffboardingQuestion_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TPRMOffboardResponse" ADD CONSTRAINT "TPRMOffboardResponse_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMOffboardResponse" ADD CONSTRAINT "TPRMOffboardResponse_assessmentId_fkey" FOREIGN KEY ("assessmentId") REFERENCES "TPRMAssessment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMOffboardResponse" ADD CONSTRAINT "TPRMOffboardResponse_delegatedToId_fkey" FOREIGN KEY ("delegatedToId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "TPRMScorecardFactor" ADD CONSTRAINT "TPRMScorecardFactor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -5724,6 +5804,18 @@ ALTER TABLE "QPostRequirementPolicy" ADD CONSTRAINT "QPostRequirementPolicy_requ
 
 -- AddForeignKey
 ALTER TABLE "QPostRequirementPolicy" ADD CONSTRAINT "QPostRequirementPolicy_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicyManualReview" ADD CONSTRAINT "QPostPolicyManualReview_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicyManualReview" ADD CONSTRAINT "QPostPolicyManualReview_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceManualReview" ADD CONSTRAINT "QPostEvidenceManualReview_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceManualReview" ADD CONSTRAINT "QPostEvidenceManualReview_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -70,7 +70,8 @@ import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { EvidenceAIReview } from "@/components/evidence/EvidenceAIReview";
+// EvidenceAIReview hidden for QPost — kept for future use
+// import { EvidenceAIReview } from "@/components/evidence/EvidenceAIReview";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
 // Cycle status types
@@ -319,10 +320,10 @@ export default function EvidenceDetailPage() {
   const [requirementFrameworkFilter, setRequirementFrameworkFilter] = useState("all");
 
   // Dynamic translations for user-entered data
-  const { data: translatedEvidence } = useTranslatedRecord(evidence, { modelName: 'Evidence' });
+  const { data: translatedEvidence } = useTranslatedRecord(evidence, { modelName: 'QPostEvidence' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
   const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'QPostRequirement' });
 
   // Translate linked KPI record
@@ -381,6 +382,30 @@ export default function EvidenceDetailPage() {
   const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([]);
   const [artifactSearchQuery, setArtifactSearchQuery] = useState("");
   const [linkingArtifacts, setLinkingArtifacts] = useState(false);
+
+  // Manual Review state
+  interface ManualReview {
+    id: string;
+    status: string;
+    score: number | null;
+    comments: string | null;
+    findings: string | null;
+    recommendation: string | null;
+    reviewDate: string;
+    reviewer: { id: string; userName: string; fullName: string };
+  }
+  const [manualReviews, setManualReviews] = useState<ManualReview[]>([]);
+  const [manualReviewDialogOpen, setManualReviewDialogOpen] = useState(false);
+  const [manualReviewForm, setManualReviewForm] = useState({
+    status: "Reviewed",
+    score: "",
+    comments: "",
+    findings: "",
+    recommendation: "",
+  });
+  const [savingManualReview, setSavingManualReview] = useState(false);
+  const [deleteReviewId, setDeleteReviewId] = useState<string | null>(null);
+  const [deletingReview, setDeletingReview] = useState(false);
 
   const fetchEvidence = useCallback(async () => {
     try {
@@ -454,10 +479,69 @@ export default function EvidenceDetailPage() {
     }
   }, []);
 
+  // Manual Review handlers
+  const fetchManualReviews = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/qpost-compliance/evidences/${id}/manual-reviews`);
+      if (response.ok) {
+        const data = await response.json();
+        setManualReviews(data);
+      }
+    } catch (error) {
+      console.error("Error fetching manual reviews:", error);
+    }
+  }, [id]);
+
+  const handleAddManualReview = async () => {
+    setSavingManualReview(true);
+    try {
+      const response = await fetch(`/api/qpost-compliance/evidences/${id}/manual-reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manualReviewForm),
+      });
+      if (response.ok) {
+        toast.success(t("Review added successfully"));
+        setManualReviewDialogOpen(false);
+        setManualReviewForm({ status: "Reviewed", score: "", comments: "", findings: "", recommendation: "" });
+        fetchManualReviews();
+      } else {
+        const err = await response.json();
+        toast.error(err.error || t("Failed to add review"));
+      }
+    } catch {
+      toast.error(t("Failed to add review"));
+    } finally {
+      setSavingManualReview(false);
+    }
+  };
+
+  const handleDeleteManualReview = async () => {
+    if (!deleteReviewId) return;
+    setDeletingReview(true);
+    try {
+      const response = await fetch(`/api/qpost-compliance/evidences/${id}/manual-reviews?reviewId=${deleteReviewId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        toast.success(t("Review deleted"));
+        setDeleteReviewId(null);
+        fetchManualReviews();
+      } else {
+        toast.error(t("Failed to delete review"));
+      }
+    } catch {
+      toast.error(t("Failed to delete review"));
+    } finally {
+      setDeletingReview(false);
+    }
+  };
+
   useEffect(() => {
     fetchEvidence();
     fetchReferenceData();
-  }, [fetchEvidence, fetchReferenceData]);
+    fetchManualReviews();
+  }, [fetchEvidence, fetchReferenceData, fetchManualReviews]);
 
   // Set default selected period to current cycle for ALL roles
   useEffect(() => {
@@ -2096,11 +2180,191 @@ export default function EvidenceDetailPage() {
               })}
             </div>
 
-            {/* AI Review Section - Real AI Integration */}
+            {/* AI Review Section - Hidden for QPost (kept for future use)
             <EvidenceAIReview
               evidenceId={id}
               hasAttachments={hasAnyAttachments || false}
             />
+            END HIDDEN AI REVIEW SECTION */}
+
+            {/* Manual Review Section - Only show when evidence has attachments */}
+            {hasAnyAttachments && (<>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4">
+              <div className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary-600" />
+                  <h3 className="text-base font-semibold text-slate-800">{t("Manual Review")}</h3>
+                  <Badge variant="outline" className="ml-2">{manualReviews.length}</Badge>
+                </div>
+                {isCustomerAdmin && (
+                  <Button size="sm" onClick={() => setManualReviewDialogOpen(true)}>
+                    <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Add Review")}
+                  </Button>
+                )}
+              </div>
+              <div className="p-3 sm:p-5">
+                {manualReviews.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center mx-auto mb-3">
+                      <Eye className="h-6 w-6 text-slate-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">{t("No reviews yet")}</p>
+                    <p className="text-xs text-slate-400">{t("Add a manual review to record your assessment of this evidence")}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {manualReviews.map((review) => (
+                      <div key={review.id} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-sm font-semibold">
+                              {review.reviewer.fullName?.charAt(0) || "?"}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-800">{review.reviewer.fullName}</p>
+                              <p className="text-xs text-slate-500">{new Date(review.reviewDate).toLocaleDateString()} {new Date(review.reviewDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={
+                              review.status === "Approved" ? "bg-success-light text-success-dark" :
+                              review.status === "Rejected" ? "bg-error-light text-error-dark" :
+                              review.status === "Needs Revision" ? "bg-warning-light text-warning-dark" :
+                              "bg-info-light text-info-dark"
+                            }>
+                              {t(review.status)}
+                            </Badge>
+                            {review.score !== null && (
+                              <span className={`text-lg font-bold ${
+                                review.score >= 80 ? "text-green-600" :
+                                review.score >= 60 ? "text-yellow-600" :
+                                "text-red-600"
+                              }`}>
+                                {review.score}%
+                              </span>
+                            )}
+                            {isCustomerAdmin && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteReviewId(review.id)}>
+                                <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        {review.comments && (
+                          <div className="mb-2">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Comments")}</p>
+                            <p className="text-sm text-slate-700 whitespace-pre-wrap">{review.comments}</p>
+                          </div>
+                        )}
+                        {review.findings && (
+                          <div className="mb-2">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Findings")}</p>
+                            <p className="text-sm text-slate-700 whitespace-pre-wrap">{review.findings}</p>
+                          </div>
+                        )}
+                        {review.recommendation && (
+                          <div>
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">{t("Recommendation")}</p>
+                            <p className="text-sm text-slate-700 whitespace-pre-wrap">{review.recommendation}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Add Manual Review Dialog */}
+            <Dialog open={manualReviewDialogOpen} onOpenChange={setManualReviewDialogOpen}>
+              <DialogContent className="max-w-[95vw] sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>{t("Add Manual Review")}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t("Review Status")}</Label>
+                      <Select value={manualReviewForm.status} onValueChange={(v) => setManualReviewForm(prev => ({ ...prev, status: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Reviewed">{t("Reviewed")}</SelectItem>
+                          <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                          <SelectItem value="Rejected">{t("Rejected")}</SelectItem>
+                          <SelectItem value="Needs Revision">{t("Needs Revision")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("Score")} (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder={t("Optional")}
+                        value={manualReviewForm.score}
+                        onChange={(e) => setManualReviewForm(prev => ({ ...prev, score: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("Comments")}</Label>
+                    <Textarea
+                      rows={3}
+                      placeholder={t("Add your review comments...")}
+                      value={manualReviewForm.comments}
+                      onChange={(e) => setManualReviewForm(prev => ({ ...prev, comments: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("Findings")}</Label>
+                    <Textarea
+                      rows={3}
+                      placeholder={t("Document any findings...")}
+                      value={manualReviewForm.findings}
+                      onChange={(e) => setManualReviewForm(prev => ({ ...prev, findings: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("Recommendation")}</Label>
+                    <Textarea
+                      rows={2}
+                      placeholder={t("Add recommendations...")}
+                      value={manualReviewForm.recommendation}
+                      onChange={(e) => setManualReviewForm(prev => ({ ...prev, recommendation: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setManualReviewDialogOpen(false)}>{t("Cancel")}</Button>
+                  <Button onClick={handleAddManualReview} disabled={savingManualReview}>
+                    {savingManualReview && <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />}
+                    {t("Submit Review")}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Review Confirmation */}
+            <AlertDialog open={!!deleteReviewId} onOpenChange={(open) => !open && setDeleteReviewId(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t("Delete Review")}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("Are you sure you want to delete this review? This action cannot be undone.")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteManualReview} disabled={deletingReview}>
+                    {deletingReview && <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />}
+                    {t("Delete")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            </>)}
 
             {/* Approval Workflow Buttons */}
             {selectedMonth && (

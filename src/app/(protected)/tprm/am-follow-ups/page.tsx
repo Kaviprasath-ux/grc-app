@@ -96,6 +96,8 @@ export default function AMFollowUpsPage() {
   const [vendorIssues, setVendorIssues] = useState<VendorIssue[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
+
   // Dialogs
   const [respondDialogOpen, setRespondDialogOpen] = useState(false);
   const [respondType, setRespondType] = useState<"clarification" | "remediation">("clarification");
@@ -372,6 +374,7 @@ export default function AMFollowUpsPage() {
                       <TableHead>{t("Severity")}</TableHead>
                       <TableHead>{t("Requested Date")}</TableHead>
                       <TableHead>{t("Due Date")}</TableHead>
+                      <TableHead>{t("Comments")}</TableHead>
                       <TableHead>{t("Action")}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -398,6 +401,11 @@ export default function AMFollowUpsPage() {
                         </TableCell>
                         <TableCell>{formatDate(r.requestedDate)}</TableCell>
                         <TableCell>{formatDate(r.dueDate)}</TableCell>
+                        <TableCell>
+                          <Button size="sm" variant="ghost" onClick={() => setCommentsOnlyId(r.id)}>
+                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </TableCell>
                         <TableCell>
                           {r.status === "Pending" ? (
                             <Button size="sm" variant="outline" onClick={() => openRemediationDialog(r)}>
@@ -549,6 +557,19 @@ export default function AMFollowUpsPage() {
             <Button onClick={handleCreateIssue} disabled={!newIssue.title.trim()}>
               {t("Create Issue")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== COMMENTS ONLY DIALOG ==================== */}
+      <Dialog open={!!commentsOnlyId} onOpenChange={(open) => { if (!open) setCommentsOnlyId(null); }}>
+        <DialogContent className="!max-w-lg w-[90vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Comments")}</DialogTitle>
+          </DialogHeader>
+          {commentsOnlyId && <RemediationComments remediationId={commentsOnlyId} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentsOnlyId(null)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

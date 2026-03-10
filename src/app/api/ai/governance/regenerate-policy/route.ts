@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         });
 
         return errorResponse(
-            err.message || "Failed to regenerate policy",
+            "Unable to regenerate policy. Please try again.",
             err.response?.status || err.status || 500
         );
     }

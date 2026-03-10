@@ -151,8 +151,7 @@ export const GET = withAuth(
       }
     } catch (error) {
       console.error('Configurations GET error:', error);
-      const msg = error instanceof Error ? error.message : String(error);
-      return NextResponse.json({ error: 'Failed to fetch configuration data', detail: msg }, { status: 500 });
+      return NextResponse.json({ error: 'Unable to load configuration data. Please refresh and try again.' }, { status: 500 });
     }
   },
   { resource: ['tprm.configurations', 'tprm.bo-inventory', 'tprm.rm-inventory', 'tprm.asr-monitoring'], action: 'view' }

@@ -57,11 +57,10 @@ export const GET = withAuth(
       }
     } catch (error) {
       console.error('Master Data GET error:', error);
-      const msg = error instanceof Error ? error.message : String(error);
-      return NextResponse.json({ error: 'Failed to fetch master data', detail: msg }, { status: 500 });
+      return NextResponse.json({ error: 'Unable to load data. Please refresh and try again.' }, { status: 500 });
     }
   },
-  { resource: 'tprm.master-data', action: 'view' }
+  { resource: ['tprm.master-data', 'tprm.asr-template'], action: 'view' }
 );
 
 // ============ POST ============

@@ -192,10 +192,10 @@ export default function ExceptionsPage() {
   const { data: translatedExceptions } = useTranslatedData(exceptions, { modelName: 'QPostException' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
-  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'Policy' });
+  const { data: translatedPolicies } = useTranslatedData(policies, { modelName: 'QPostPolicy' });
   const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'Risk' });
-  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'Framework' });
-  const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'Requirement' });
+  const { data: translatedFrameworks } = useTranslatedData(frameworks, { modelName: 'QPostFramework' });
+  const { data: translatedRequirements } = useTranslatedData(requirements, { modelName: 'QPostRequirement' });
 
   // Lookup helpers
   const tDept = useCallback((deptId: string | undefined, fallback: string) => {
