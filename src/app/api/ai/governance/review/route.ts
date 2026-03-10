@@ -249,8 +249,6 @@ export async function POST(req: NextRequest) {
       userId,
     });
 
-    return errorResponse(err.message || 'Failed to perform policy review', err.status || 500, {
-      details: err.rawResponse?.substring(0, 200) || (err.data ? JSON.stringify(err.data).substring(0, 200) : undefined),
-    });
+    return errorResponse("Unable to process review. Please try again.", err.status || 500);
   }
 }

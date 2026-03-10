@@ -159,7 +159,7 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
         });
 
         return NextResponse.json(
-            { error: "Failed to submit framework generation job", details: error.message },
+            { error: "Something went wrong. Please try again." },
             { status: error.status || 500 }
         );
     }

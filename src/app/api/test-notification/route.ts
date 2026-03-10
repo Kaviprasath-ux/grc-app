@@ -191,8 +191,7 @@ export const POST = withAuth(
       console.error("Error sending test notification:", error);
       return NextResponse.json(
         {
-          error: "Failed to send test notification",
-          details: error instanceof Error ? error.message : 'Unknown error'
+          error: "Unable to complete the request. Please try again.",
         },
         { status: 500 }
       );

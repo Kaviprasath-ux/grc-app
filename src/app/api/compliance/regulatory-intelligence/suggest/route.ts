@@ -164,7 +164,7 @@ export const POST = withAuth(
       console.error("Error suggesting regulations:", error);
       const err = error as { status?: number; message?: string };
       return NextResponse.json(
-        { error: err.message || "Failed to suggest regulations" },
+        { error: "Unable to complete the request. Please try again." },
         { status: err.status || 500 }
       );
     }

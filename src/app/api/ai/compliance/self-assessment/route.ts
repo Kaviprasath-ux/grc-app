@@ -75,7 +75,7 @@ async function handler(
         });
 
         return errorResponse(
-            err.message || "Failed to run self-assessment",
+            "Unable to run self-assessment. Please try again.",
             err.response?.status || err.status || 500
         );
     }

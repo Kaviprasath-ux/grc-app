@@ -75,9 +75,7 @@ async function handler(
             userId: session.id
         });
 
-        return errorResponse("Failed to check job status", err.status || 500, {
-            details: err.message,
-        });
+        return errorResponse("Something went wrong. Please try again.", err.status || 500);
     }
 }
 

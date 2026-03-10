@@ -189,7 +189,7 @@ export const POST = withAuth(
       console.error("Error creating risk response:", error);
       const message = error instanceof Error ? error.message : "Failed to create risk response";
       return NextResponse.json(
-        { error: message },
+        { error: "Unable to complete the request. Please try again." },
         { status: 500 }
       );
     }

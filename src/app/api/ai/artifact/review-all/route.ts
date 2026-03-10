@@ -387,7 +387,7 @@ export const POST = withAuth(
               jobId: null,
               documentRef: null,
               status: 'failed',
-              error: err.message,
+              error: 'Unable to process review. Please try again.',
             });
           }
         }
@@ -677,7 +677,7 @@ export const POST = withAuth(
               confidence: null,
               sources: null,
               status: 'failed',
-              error: err.message,
+              error: 'Unable to process review. Please try again.',
             });
           }
         }
@@ -730,7 +730,7 @@ export const POST = withAuth(
       console.error('[Artifact Review All] Error:', err);
 
       return errorResponse(
-        err.message || 'Failed to perform artifact review',
+        'Unable to process review. Please try again.',
         err.status || 500
       );
     }
