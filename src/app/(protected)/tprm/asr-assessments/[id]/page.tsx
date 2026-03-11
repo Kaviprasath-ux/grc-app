@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -115,49 +115,53 @@ interface InternalComment {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string | null | undefined }) {
+  const { t } = useLanguage();
   if (!status) return null;
   switch (status) {
     case "Satisfactory":
-      return <Badge className="bg-green-100 text-green-700 gap-1"><ShieldCheck className="h-3 w-3" />{status}</Badge>;
+      return <Badge className="bg-green-100 text-green-700 gap-1"><ShieldCheck className="h-3 w-3" />{t("Satisfactory")}</Badge>;
     case "Unsatisfactory":
-      return <Badge className="bg-red-100 text-red-700 gap-1"><ShieldAlert className="h-3 w-3" />{status}</Badge>;
+      return <Badge className="bg-red-100 text-red-700 gap-1"><ShieldAlert className="h-3 w-3" />{t("Unsatisfactory")}</Badge>;
     case "Not_Applicable":
-      return <Badge className="bg-gray-100 text-gray-600 gap-1"><ShieldOff className="h-3 w-3" />N/A</Badge>;
+      return <Badge className="bg-gray-100 text-gray-600 gap-1"><ShieldOff className="h-3 w-3" />{t("N/A")}</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
 }
 
 function SeverityBadge({ severity }: { severity: string | null | undefined }) {
+  const { t } = useLanguage();
   if (!severity) return null;
   switch (severity) {
-    case "High": return <Badge className="bg-red-100 text-red-700">{severity}</Badge>;
-    case "Medium": return <Badge className="bg-amber-100 text-amber-700">{severity}</Badge>;
-    case "Low": return <Badge className="bg-blue-100 text-blue-700">{severity}</Badge>;
+    case "High": return <Badge className="bg-red-100 text-red-700">{t("High")}</Badge>;
+    case "Medium": return <Badge className="bg-amber-100 text-amber-700">{t("Medium")}</Badge>;
+    case "Low": return <Badge className="bg-blue-100 text-blue-700">{t("Low")}</Badge>;
     default: return <Badge variant="outline">{severity}</Badge>;
   }
 }
 
 function ResponseBadge({ response }: { response: string | null }) {
+  const { t } = useLanguage();
   if (!response) return <Badge variant="outline">—</Badge>;
   switch (response) {
-    case "Yes": return <Badge className="bg-green-100 text-green-700">{response}</Badge>;
-    case "No": return <Badge className="bg-red-100 text-red-700">{response}</Badge>;
-    case "NA": return <Badge className="bg-gray-100 text-gray-600">N/A</Badge>;
+    case "Yes": return <Badge className="bg-green-100 text-green-700">{t("Yes")}</Badge>;
+    case "No": return <Badge className="bg-red-100 text-red-700">{t("No")}</Badge>;
+    case "NA": return <Badge className="bg-gray-100 text-gray-600">{t("N/A")}</Badge>;
     default: return <Badge variant="outline">{response}</Badge>;
   }
 }
 
 function AssessmentStatusBadge({ status }: { status: string }) {
+  const { t } = useLanguage();
   switch (status) {
     case "Reviewed": case "Approved": case "Completed":
-      return <Badge className="bg-green-100 text-green-700">{status}</Badge>;
+      return <Badge className="bg-green-100 text-green-700">{t(status)}</Badge>;
     case "Returned": case "Rejected":
-      return <Badge className="bg-red-100 text-red-700">{status}</Badge>;
+      return <Badge className="bg-red-100 text-red-700">{t(status)}</Badge>;
     case "Submitted": case "Under Review": case "In-Progress(approver)":
-      return <Badge className="bg-blue-100 text-blue-700">{status}</Badge>;
+      return <Badge className="bg-blue-100 text-blue-700">{t(status)}</Badge>;
     case "In-Progress":
-      return <Badge className="bg-amber-100 text-amber-700">{status}</Badge>;
+      return <Badge className="bg-amber-100 text-amber-700">{t(status)}</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -165,8 +169,9 @@ function AssessmentStatusBadge({ status }: { status: string }) {
 
 // Simple donut/pie chart component
 function PieChart({ data, title }: { data: { label: string; value: number; color: string }[]; title: string }) {
+  const { t } = useLanguage();
   const total = data.reduce((sum, d) => sum + d.value, 0);
-  if (total === 0) return <div className="text-center text-muted-foreground text-sm">{title}: No data</div>;
+  if (total === 0) return <div className="text-center text-muted-foreground text-sm">{title}: {t("No data")}</div>;
 
   let cumulativePercent = 0;
   const segments = data.filter(d => d.value > 0).map(d => {
@@ -277,6 +282,8 @@ export default function ASRAssessmentDetailPage() {
   // Translation hooks — must be before any early returns
   const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMMasterQuestion' });
   const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'TPRMDomain' });
+  const { data: translatedClarifications } = useTranslatedData(clarifications, { modelName: 'TPRMClarification' });
+  const { data: translatedComments } = useTranslatedData(comments, { modelName: 'TPRMInternalComment' });
 
   // Role detection — approver sees different buttons than assessor
   const isApprover = useHasRole("TPRMApprover");
@@ -470,6 +477,7 @@ export default function ASRAssessmentDetailPage() {
       const newClr = await res.json();
       setClarifications(prev => [newClr, ...prev]);
       setClarificationText("");
+      triggerTranslation('TPRMClarification', newClr.id, { rejectComment: newClr.rejectComment });
       toast({ title: t("Success"), description: t("Clarification requested") });
     } catch {
       toast({ title: t("Error"), description: t("Failed to request clarification"), variant: "destructive" });
@@ -501,6 +509,7 @@ export default function ASRAssessmentDetailPage() {
       const newComment = await res.json();
       setComments(prev => [...prev, newComment]);
       setCommentText("");
+      triggerTranslation('TPRMInternalComment', newComment.id, { message: newComment.message });
     } catch {
       toast({ title: t("Error"), description: t("Failed to post comment"), variant: "destructive" });
     } finally {
@@ -1430,9 +1439,9 @@ export default function ASRAssessmentDetailPage() {
           <DialogHeader><DialogTitle>{t("Clarification")} — Q{selectedFlat?.questionNo}</DialogTitle></DialogHeader>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             {/* Existing clarifications */}
-            {clarifications.length > 0 && (
+            {translatedClarifications.length > 0 && (
               <div className="space-y-2">
-                {clarifications.map(clr => (
+                {translatedClarifications.map(clr => (
                   <div key={clr.id} className="border rounded-lg p-3 text-sm space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{clr.requestedBy?.fullName || "—"}</span>
@@ -1478,10 +1487,10 @@ export default function ASRAssessmentDetailPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t("Internal Comments")}</DialogTitle></DialogHeader>
           <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-            {comments.length === 0 && (
+            {translatedComments.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">{t("No comments yet")}</p>
             )}
-            {comments.map(c => (
+            {translatedComments.map(c => (
               <div key={c.id} className="flex gap-2">
                 <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium flex-shrink-0">
                   {c.author.fullName.charAt(0).toUpperCase()}

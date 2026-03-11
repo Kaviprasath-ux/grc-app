@@ -124,9 +124,9 @@ export default function AsrFactoryReportsPage() {
   // Download Excel report
   const downloadReport = useCallback((report: AssessmentReport) => {
     const headers = [
-      "Sequence Number", "Domain Name", "Questions", "Response", "Comments",
-      "Compliance Status", "VerifAI Summary", "Confidence Score",
-      "Issue", "Risk", "Recommendation",
+      t("Sequence Number"), t("Domain Name"), t("Questions"), t("Response"), t("Comments"),
+      t("Compliance Status"), t("VerifAI Summary"), t("Confidence Score"),
+      t("Issue"), t("Risk"), t("Recommendation"),
     ];
     const data = report.rows.map(r => [
       r.sequenceNumber, r.domainName, r.question, r.response, r.comments,
@@ -163,10 +163,10 @@ export default function AsrFactoryReportsPage() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Assessment Report");
+    XLSX.utils.book_append_sheet(wb, ws, t("Assessment Report"));
     const dateStr = new Date(report.createdAt).toISOString().slice(0, 10);
     XLSX.writeFile(wb, `Assessment_Report_${dateStr}.xlsx`);
-  }, []);
+  }, [t]);
 
   const filteredRows = viewReport
     ? statusFilter === "all"

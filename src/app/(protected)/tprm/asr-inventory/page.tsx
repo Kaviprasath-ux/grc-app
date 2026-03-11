@@ -18,19 +18,19 @@ interface Vendor {
   contactPhone: string | null;
 }
 
-function getRiskBadge(rating: string | null) {
+function getRiskBadge(rating: string | null, t: (key: string) => string) {
   switch (rating) {
     case "High":
     case "Critical":
-      return <Badge variant="destructive">{rating}</Badge>;
+      return <Badge variant="destructive">{t(rating)}</Badge>;
     case "Moderate":
     case "Medium":
-      return <Badge variant="secondary">{rating}</Badge>;
+      return <Badge variant="secondary">{t(rating)}</Badge>;
     case "Low":
     case "Nominal":
-      return <Badge variant="default">{rating}</Badge>;
+      return <Badge variant="default">{t(rating)}</Badge>;
     default:
-      return <Badge variant="outline">{rating || "N/A"}</Badge>;
+      return <Badge variant="outline">{rating ? t(rating) : t("N/A")}</Badge>;
   }
 }
 
@@ -137,7 +137,7 @@ export default function AsrInventoryPage() {
                       {vendor.name}
                       {vendor.vendorRiskRating && (
                         <span className="text-muted-foreground ltr:ml-2 rtl:mr-2">
-                          - {vendor.vendorRiskRating}
+                          - {t(vendor.vendorRiskRating)}
                         </span>
                       )}
                     </span>
@@ -160,11 +160,11 @@ export default function AsrInventoryPage() {
                         </div>
                         <div>
                           <span className="text-muted-foreground">{t("Risk Rating")}:</span>
-                          <p className="mt-1">{getRiskBadge(vendor.vendorRiskRating)}</p>
+                          <p className="mt-1">{getRiskBadge(vendor.vendorRiskRating, t)}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">{t("Status")}:</span>
-                          <p className="font-medium">{vendor.status || "-"}</p>
+                          <p className="font-medium">{vendor.status ? t(vendor.status) : "-"}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">{t("Email")}:</span>

@@ -75,7 +75,7 @@ export default function AsrTemplatePage() {
   const groupByDomain = (links: QuestionLink[]) => {
     const groups: Record<string, { domain: string; questions: QuestionLink[] }> = {};
     for (const link of links) {
-      const domainName = link.question.domain?.name || "General";
+      const domainName = link.question.domain?.name || t("General");
       if (!groups[domainName]) groups[domainName] = { domain: domainName, questions: [] };
       groups[domainName].questions.push(link);
     }

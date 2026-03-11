@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -81,6 +82,13 @@ export const POST = withAuth(
         where: { id },
         data: updateData,
       });
+
+      // Fire-and-forget translation for approverComment (user-entered text on return actions)
+      if (customerAccountId && (action === 'return_to_assessor' || action === 'return') && comment) {
+        void translateRecord(customerAccountId, 'TPRMAssessment', id, {
+          approverComment: comment,
+        });
+      }
 
       // Notify approver when assessment is sent to them
       if (action === 'send_to_approver') {
@@ -200,7 +208,16 @@ export const POST = withAuth(
           }
           for (const data of newIssueData) {
             const issueCode = `ISS-${String(nextNum).padStart(3, '0')}`;
-            await prisma.tPRMIssueRemediation.create({ data: { ...data, issueCode } });
+            const createdRemediation = await prisma.tPRMIssueRemediation.create({ data: { ...data, issueCode } });
+            // Fire-and-forget translation for user-entered text in issue remediation
+            if (customerAccountId) {
+              void translateRecord(customerAccountId, 'TPRMIssueRemediation', createdRemediation.id, {
+                issue: createdRemediation.issue,
+                risk: createdRemediation.risk,
+                recommendation: createdRemediation.recommendation,
+                description: createdRemediation.description,
+              });
+            }
             nextNum++;
           }
           console.log(`[ASR] Created ${newIssueData.length} issue remediations for assessment ${id}`);

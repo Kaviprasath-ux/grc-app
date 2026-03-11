@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { notificationService, NOTIFICATION_EVENTS } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -72,6 +73,23 @@ export const POST = withAuth(
           relatedEntityId: id,
           link: `/tprm/asr-assessments/${id}`,
         });
+      }
+
+      // Fire-and-forget translation for assessor override text fields
+      if (customerAccountId && (assessorIssue || assessorRisk || assessorRecommendation || assessorComment)) {
+        // Look up the response record ID for translation (updateMany doesn't return it)
+        const responseRecord = await prisma.tPRMAssessmentResponse.findFirst({
+          where: { assessmentId: id, questionId, customerAccountId },
+          select: { id: true },
+        });
+        if (responseRecord) {
+          const fields: Record<string, string> = {};
+          if (assessorIssue) fields.assessorIssue = assessorIssue;
+          if (assessorRisk) fields.assessorRisk = assessorRisk;
+          if (assessorRecommendation) fields.assessorRecommendation = assessorRecommendation;
+          if (assessorComment) fields.assessorComment = assessorComment;
+          void translateRecord(customerAccountId, 'TPRMAssessmentResponse', responseRecord.id, fields);
+        }
       }
 
       console.log(`[ASR] POST /asr-assessments/${id}/override — OK, updated ${response.count} response(s) to ${assessorStatus}`);

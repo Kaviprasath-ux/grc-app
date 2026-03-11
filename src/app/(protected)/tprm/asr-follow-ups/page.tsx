@@ -352,7 +352,7 @@ export default function AsrFollowUpsPage() {
       header: t("Severity"),
       cell: ({ row }) => {
         const sev = row.getValue("severity") as string;
-        return sev ? <Badge variant={getSeverityVariant(sev)}>{sev}</Badge> : "-";
+        return sev ? <Badge variant={getSeverityVariant(sev)}>{t(sev)}</Badge> : "-";
       },
     },
     { accessorKey: "responseDate", header: t("Response Date"), cell: ({ row }) => formatDate(row.getValue("responseDate")) },
@@ -544,7 +544,7 @@ export default function AsrFollowUpsPage() {
                     viewRemediation.questionResponse === "Yes" ? "bg-green-50 text-green-700 border-green-300" :
                     viewRemediation.questionResponse === "No" ? "bg-red-50 text-red-700 border-red-300" :
                     "bg-gray-50 text-gray-700 border-gray-300"
-                  }`}>{viewRemediation.questionResponse}</Badge>
+                  }`}>{t(viewRemediation.questionResponse)}</Badge>
                 </div>
               )}
 

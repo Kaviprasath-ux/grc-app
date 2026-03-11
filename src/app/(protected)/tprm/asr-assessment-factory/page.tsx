@@ -442,7 +442,7 @@ export default function AsrAssessmentFactoryPage() {
               <SelectContent>
                 <SelectItem value="all">{t("Clear Filter")}</SelectItem>
                 {uniqueStatuses.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                  <SelectItem key={s} value={s}>{t(s)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -485,7 +485,7 @@ export default function AsrAssessmentFactoryPage() {
                   <div>
                     <p className="text-xs font-bold text-slate-700">{t("VerifAI Summary")}</p>
                     {row.complianceStatus && (
-                      <p className={`text-sm font-bold ${statusColor(row.complianceStatus)}`}>{row.complianceStatus}</p>
+                      <p className={`text-sm font-bold ${statusColor(row.complianceStatus)}`}>{t(row.complianceStatus)}</p>
                     )}
                     <p className="text-sm mt-1">{row.verifAISummary || "\u2014"}</p>
                   </div>

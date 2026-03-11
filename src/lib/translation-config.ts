@@ -79,6 +79,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'TPRMAssessment', fields: [{ name: 'questionnaireTemplate' }, { name: 'approverComment' }], priority: 5 },
   { modelName: 'TPRMVendorIssue', fields: [{ name: 'title' }, { name: 'description' }, { name: 'resolution' }], priority: 5 },
   { modelName: 'TPRMIssueRemediation', fields: [{ name: 'issue' }, { name: 'risk' }, { name: 'recommendation' }, { name: 'description' }], priority: 5 },
+  { modelName: 'TPRMAssessmentResponse', fields: [{ name: 'assessorIssue' }, { name: 'assessorRisk' }, { name: 'assessorRecommendation' }, { name: 'assessorComment' }], priority: 5 },
 
   // Priority 6 — TPRM Master Data
   { modelName: 'TPRMDomain', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },

@@ -238,7 +238,8 @@ export default function BOInventoryPage() {
   const [showRiskRatingDialog, setShowRiskRatingDialog] = useState(false);
   const [riskRatingVendor, setRiskRatingVendor] = useState<Vendor | null>(null);
   const [riskRatingLoading, setRiskRatingLoading] = useState(false);
-  const [questionnaireTemplates, setQuestionnaireTemplates] = useState<QuestionnaireTemplate[]>([]);
+  const [rawQuestionnaireTemplates, setRawQuestionnaireTemplates] = useState<QuestionnaireTemplate[]>([]);
+  const { data: questionnaireTemplates } = useTranslatedData(rawQuestionnaireTemplates, { modelName: 'TPRMQuestionnaireTemplate' });
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
   const [initiatingAssessment, setInitiatingAssessment] = useState(false);
 
@@ -709,7 +710,7 @@ export default function BOInventoryPage() {
       }
       if (templatesRes.ok) {
         const templates: QuestionnaireTemplate[] = await templatesRes.json();
-        setQuestionnaireTemplates(templates.filter((t) => t.templateName));
+        setRawQuestionnaireTemplates(templates.filter((t) => t.templateName));
         setSelectedTemplateIds(templates.filter((t) => t.templateName).map((t) => t.id));
       }
     } catch {
@@ -739,7 +740,7 @@ export default function BOInventoryPage() {
       if (vendorRes.ok) setRiskRatingVendor(await vendorRes.json());
       if (templatesRes.ok) {
         const templates: QuestionnaireTemplate[] = await templatesRes.json();
-        setQuestionnaireTemplates(templates.filter((tpl) => tpl.templateName));
+        setRawQuestionnaireTemplates(templates.filter((tpl) => tpl.templateName));
         setSelectedTemplateIds(templates.filter((tpl) => tpl.templateName).map((tpl) => tpl.id));
       }
     } catch {

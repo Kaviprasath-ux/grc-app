@@ -109,6 +109,7 @@ export default function AsrIssueRegisterPage() {
   const [viewIssueDetail, setViewIssueDetail] = useState<VendorRiskIssue | null>(null);
 
   // Dynamic data translation
+  const { data: translatedEntries } = useTranslatedData(entries, { modelName: 'TPRMVendor' });
   const { data: translatedVendorRiskIssues } = useTranslatedData(vendorRiskIssues, { modelName: 'TPRMIssueRemediation' });
 
   const fetchData = useCallback(async () => {
@@ -148,7 +149,7 @@ export default function AsrIssueRegisterPage() {
   }, [toast, t]);
 
   const filtered = useMemo(() => {
-    let data = entries;
+    let data = translatedEntries;
     if (vendorSearch) {
       const q = vendorSearch.toLowerCase();
       data = data.filter(
@@ -161,10 +162,10 @@ export default function AsrIssueRegisterPage() {
       data = data.filter((e) => e.status === statusFilter);
     }
     return data;
-  }, [entries, vendorSearch, statusFilter]);
+  }, [translatedEntries, vendorSearch, statusFilter]);
 
   const handleExport = () => {
-    const headers = ["Vendor ID", "Vendor", "High", "Medium", "Low", "Total", "Status"];
+    const headers = [t("Vendor ID"), t("Vendor"), t("High"), t("Medium"), t("Low"), t("Total"), t("Status")];
     const rows = filtered.map((e) => [
       e.vendorId, e.vendor, e.high, e.medium, e.low, e.total, e.status,
     ]);
@@ -250,7 +251,7 @@ export default function AsrIssueRegisterPage() {
               {t("Back")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => {
-              const headers = ["Domain", "Severity", "Issue", "Risk", "Assessment ID", "Due Date", "Status"];
+              const headers = [t("Domain"), t("Severity"), t("Issue"), t("Risk"), t("Assessment ID"), t("Due Date"), t("Status")];
               const rows = translatedVendorRiskIssues.map((i) => [
                 i.domain || "", i.severity, (i.issue || "").replace(/,/g, ";"), (i.risk || "").replace(/,/g, ";"),
                 i.assessmentCode || "", i.dueDate ? new Date(i.dueDate).toLocaleDateString() : "", i.status,

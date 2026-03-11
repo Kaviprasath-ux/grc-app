@@ -66,6 +66,7 @@ export default function AsrDashboardPage() {
 
   // Dynamic data translation
   const { data: translatedAssessments } = useTranslatedData(assessments, { modelName: 'TPRMAssessment' });
+  const { data: translatedIssues } = useTranslatedData(issues, { modelName: 'TPRMIssueRemediation' });
 
   const fetchData = useCallback(async () => {
     try {
@@ -96,11 +97,11 @@ export default function AsrDashboardPage() {
   // Issue Status chart data
   const issueStatusData = useMemo(() => {
     const counts: Record<string, number> = { Open: 0, Overdue: 0, Closed: 0 };
-    issues.forEach((i) => {
+    translatedIssues.forEach((i) => {
       if (counts[i.status] !== undefined) counts[i.status]++;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [issues]);
+  }, [translatedIssues]);
 
   // Assessment Progress chart data
   const progressData = useMemo(() => {
@@ -141,7 +142,7 @@ export default function AsrDashboardPage() {
   const vendorData = useMemo(() => {
     const vendorMap: Record<string, { High: number; Medium: number; Low: number }> = {};
     translatedAssessments.forEach((a) => {
-      const vName = a.vendor?.name || "Unknown";
+      const vName = a.vendor?.name || t("Unknown");
       if (!vendorMap[vName]) vendorMap[vName] = { High: 0, Medium: 0, Low: 0 };
       const sev = a.inherentRisk || "Medium";
       if (sev === "High") vendorMap[vName].High++;
@@ -234,8 +235,8 @@ export default function AsrDashboardPage() {
                   <Cell key={`cell-${index}`} fill={RISK_COLORS[entry.name] || "#6b7280"} />
                 ))}
               </Pie>
-              <Tooltip />
-              <Legend />
+              <Tooltip formatter={((value: number, name: string) => [value, t(name)]) as never} />
+              <Legend formatter={(value: string) => t(value)} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -257,8 +258,8 @@ export default function AsrDashboardPage() {
                   <Cell key={`cell-${index}`} fill={RESULT_COLORS[entry.name] || "#6b7280"} />
                 ))}
               </Pie>
-              <Tooltip />
-              <Legend />
+              <Tooltip formatter={((value: number, name: string) => [value, t(name)]) as never} />
+              <Legend formatter={(value: string) => t(value)} />
             </PieChart>
           </ResponsiveContainer>
         </div>

@@ -379,6 +379,7 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "assessmentType",
       header: t("Assessment Type"),
+      cell: ({ row }) => t(row.getValue("assessmentType") as string),
     },
     {
       accessorKey: "vendorSubmissionDate",
@@ -388,7 +389,7 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "status",
       header: t("Status"),
-      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{row.getValue("status")}</Badge>,
+      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>,
     },
     {
       id: "actions",
@@ -425,6 +426,7 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "assessmentType",
       header: t("Assessment Type"),
+      cell: ({ row }) => t(row.getValue("assessmentType") as string),
     },
     {
       accessorKey: "vendorSubmissionDate",
@@ -481,7 +483,7 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "status",
       header: t("Status"),
-      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{row.getValue("status")}</Badge>,
+      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>,
     },
     {
       id: "actions",
@@ -530,7 +532,7 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "status",
       header: t("Status"),
-      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{row.getValue("status")}</Badge>,
+      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>,
     },
     {
       id: "actions",
@@ -596,7 +598,7 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "status",
       header: t("Status"),
-      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{row.getValue("status")}</Badge>,
+      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>,
     },
     {
       accessorKey: "vendorSubmissionDate",
@@ -642,7 +644,7 @@ export default function AsrAssessmentsPage() {
       cell: ({ row }) => {
         const result = row.getValue("assessmentResult") as string;
         return result ? (
-          <Badge variant={result === "Satisfactory" ? "default" : "destructive"}>{result}</Badge>
+          <Badge variant={result === "Satisfactory" ? "default" : "destructive"}>{t(result)}</Badge>
         ) : (
           "-"
         );
