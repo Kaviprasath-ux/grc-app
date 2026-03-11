@@ -318,6 +318,18 @@ export async function saveFrameworkFromAIResult(
     const policyControlLinks = new Set<string>(); // Track policy-control links to avoid duplicates
     const evidenceSeq = { n: 0 };
 
+    // Fetch existing policyControl links from database to prevent unique constraint violations
+    const existingPolicyControlLinks = await tx.policyControl.findMany({
+      where: {
+        policy: { customerAccountId },
+      },
+      select: { policyId: true, controlId: true },
+    });
+    // Pre-populate the set with existing database links
+    for (const link of existingPolicyControlLinks) {
+      policyControlLinks.add(`${link.policyId}|${link.controlId}`);
+    }
+
     if (normalized.requirements) {
       for (const req of normalized.requirements) {
         if (!req.controls) continue;

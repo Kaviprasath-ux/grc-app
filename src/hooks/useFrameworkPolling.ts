@@ -30,7 +30,7 @@ export interface PollingOptions {
   onFailed?: (error: string) => void;
 }
 
-const DEFAULT_POLL_INTERVAL = 15000; // 15 seconds
+const DEFAULT_POLL_INTERVAL = 30000; // 30 seconds
 const DEFAULT_MAX_DURATION = 120 * 60 * 1000; // 120 minutes
 const ESTIMATED_TOTAL_TIME = 60 * 60 * 1000; // 60 minutes average
 
