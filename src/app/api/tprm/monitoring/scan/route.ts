@@ -688,10 +688,10 @@ export const DELETE = withAuth(
       const assessment = await prisma.tPRMMonitoringAssessment.findFirst({
         where: {
           jobID: jobId,
-          vendor: { customerAccountId },
+          customerAccountId,
           status: { in: ["queued", "processing"] },
         },
-        select: { id: true, vendorId: true },
+        select: { id: true, monitoringVendorId: true },
       });
 
       if (!assessment) {
@@ -703,10 +703,10 @@ export const DELETE = withAuth(
 
       // If the vendor has no other assessments, delete the vendor record too
       const remaining = await prisma.tPRMMonitoringAssessment.count({
-        where: { vendorId: assessment.vendorId },
+        where: { monitoringVendorId: assessment.monitoringVendorId },
       });
       if (remaining === 0) {
-        await prisma.tPRMMonitoringVendor.delete({ where: { id: assessment.vendorId } }).catch(() => {});
+        await prisma.tPRMMonitoringVendor.delete({ where: { id: assessment.monitoringVendorId } }).catch(() => {});
       }
 
       console.log(`[SCAN] Cancelled queued assessment: jobId=${jobId}`);
