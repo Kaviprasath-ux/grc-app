@@ -3,7 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
-import { getExternalApiUrl } from "@/config/external-apis";
+import { getExternalApiUrl, EXTERNAL_API_SECRETS } from "@/config/external-apis";
 import { notificationService } from "@/lib/notification-service";
 
 // Save scan response JSON to scan-results folder
@@ -405,11 +405,14 @@ export const POST = withAuth(
         );
       }
 
-      console.log("\n🔵🔵🔵 [SCAN SUBMIT] Sending request to external API:", { vendorName, vendorURL, url: getScanApiUrl('risk_score_assess/submit') });
+      console.log("\n🔵🔵🔵 [SCAN SUBMIT] Sending request to external API:", { vendorName, vendorURL, url: getScanApiUrl('api/risk_score_assess/submit') });
 
-      const res = await fetch(getScanApiUrl('risk_score_assess/submit'), {
+      const res = await fetch(getScanApiUrl('api/risk_score_assess/submit'), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(EXTERNAL_API_SECRETS.PYTHON_API_SECRET ? { auth: EXTERNAL_API_SECRETS.PYTHON_API_SECRET } : {}),
+        },
         body: JSON.stringify({
           vendor_name: vendorName || "",
           vendor_url: vendorURL || "",
@@ -513,7 +516,8 @@ export const GET = withAuth(
       // Check status with the external API
       console.log("\n🟡🟡🟡 [SCAN POLL] Checking status for job:", jobId);
       const statusRes = await fetch(
-        getScanApiUrl(`risk_score_assess/status/${jobId}`)
+        getScanApiUrl(`api/risk_score_assess/status/${jobId}`),
+        { headers: EXTERNAL_API_SECRETS.PYTHON_API_SECRET ? { auth: EXTERNAL_API_SECRETS.PYTHON_API_SECRET } : {} }
       );
       if (!statusRes.ok) {
         console.error("❌❌❌ [SCAN POLL] Status API error:", statusRes.status, await statusRes.text());
@@ -540,7 +544,8 @@ export const GET = withAuth(
       // Status is "done" — fetch the full result
       console.log("\n🟢🟢🟢 [SCAN RESULT] Status is DONE! Fetching full result for job:", jobId);
       const resultRes = await fetch(
-        getScanApiUrl(`risk_score_assess/result/${jobId}`)
+        getScanApiUrl(`api/risk_score_assess/result/${jobId}`),
+        { headers: EXTERNAL_API_SECRETS.PYTHON_API_SECRET ? { auth: EXTERNAL_API_SECRETS.PYTHON_API_SECRET } : {} }
       );
       if (!resultRes.ok) {
         console.error("❌❌❌ [SCAN RESULT] Result API error:", resultRes.status, await resultRes.text());
@@ -665,4 +670,51 @@ export const GET = withAuth(
     }
   },
   { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "view" }
+);
+
+// DELETE /api/tprm/monitoring/scan?jobId=xxx — Cancel a queued/processing assessment
+export const DELETE = withAuth(
+  async (req, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const { searchParams } = new URL(req.url);
+      const jobId = searchParams.get("jobId");
+
+      if (!jobId) {
+        return NextResponse.json({ error: "jobId is required" }, { status: 400 });
+      }
+
+      // Find the assessment by jobId scoped to customer
+      const assessment = await prisma.tPRMMonitoringAssessment.findFirst({
+        where: {
+          jobID: jobId,
+          vendor: { customerAccountId },
+          status: { in: ["queued", "processing"] },
+        },
+        select: { id: true, vendorId: true },
+      });
+
+      if (!assessment) {
+        return NextResponse.json({ error: "Queued assessment not found" }, { status: 404 });
+      }
+
+      // Delete the placeholder assessment record
+      await prisma.tPRMMonitoringAssessment.delete({ where: { id: assessment.id } });
+
+      // If the vendor has no other assessments, delete the vendor record too
+      const remaining = await prisma.tPRMMonitoringAssessment.count({
+        where: { vendorId: assessment.vendorId },
+      });
+      if (remaining === 0) {
+        await prisma.tPRMMonitoringVendor.delete({ where: { id: assessment.vendorId } }).catch(() => {});
+      }
+
+      console.log(`[SCAN] Cancelled queued assessment: jobId=${jobId}`);
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error("[SCAN] Error cancelling assessment:", error);
+      return NextResponse.json({ error: "Failed to cancel assessment" }, { status: 500 });
+    }
+  },
+  { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring"], action: "edit" }
 );

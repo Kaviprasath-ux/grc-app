@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   TrendingUp,
   ScanLine,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -264,6 +265,22 @@ export default function MonitoringPage() {
     }
   };
 
+  const handleCancelScan = async (jobId: string, vendorName: string) => {
+    try {
+      const res = await fetch(`/api/tprm/monitoring/scan?jobId=${encodeURIComponent(jobId)}`, { method: "DELETE" });
+      if (res.ok) {
+        setActiveScans((prev) => prev.filter((s) => s.jobId !== jobId));
+        toast({ title: t("Cancelled"), description: `${vendorName} ${t("scan has been cancelled")}` });
+        loadData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: err.error || t("Failed to cancel scan"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Network error"), variant: "destructive" });
+    }
+  };
+
   // Latest-assessment vendors (shown in main table) — must have at least one completed assessment
   const latestVendors = translatedVendors.filter((v) =>
     v.assessments.some((a) => a.calculatedOverallScore != null || a.overallScore != null || a.status?.toLowerCase() === "done")
@@ -355,15 +372,36 @@ export default function MonitoringPage() {
                 <Badge className={scan.status === "processing" ? "bg-blue-50 text-blue-600 border border-blue-200 text-[10px] h-5" : "bg-amber-50 text-amber-600 border border-amber-200 text-[10px] h-5"}>
                   {scan.status === "processing" ? t("Processing") : t("Queued")}
                 </Badge>
+                {!isAuditor && (
+                  <button
+                    onClick={() => handleCancelScan(scan.jobId, scan.vendorName)}
+                    className="ml-0.5 p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
+                    title={t("Cancel scan")}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             ))}
-            {queuedVendors.map((v) => (
-              <div key={v.id} className="inline-flex items-center gap-2 bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-sm">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
-                <span className="font-medium text-slate-700">{v.vendorName}</span>
-                <Badge className="bg-amber-50 text-amber-600 border border-amber-200 text-[10px] h-5">{t("Queued")}</Badge>
-              </div>
-            ))}
+            {queuedVendors.map((v) => {
+              const qJobId = v.assessments[0]?.jobID;
+              return (
+                <div key={v.id} className="inline-flex items-center gap-2 bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-sm">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
+                  <span className="font-medium text-slate-700">{v.vendorName}</span>
+                  <Badge className="bg-amber-50 text-amber-600 border border-amber-200 text-[10px] h-5">{t("Queued")}</Badge>
+                  {!isAuditor && qJobId && (
+                    <button
+                      onClick={() => handleCancelScan(qJobId, v.vendorName)}
+                      className="ml-0.5 p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
+                      title={t("Cancel scan")}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -19,15 +19,15 @@ export const TPRM_AI_ENDPOINTS = {
   // ─────────────────────────────────────────────────────────────────────────
   // Vendor Risk Assessment (async job flow: submit -> poll -> result)
   // ─────────────────────────────────────────────────────────────────────────
-  RISK_ASSESS_SUBMIT: '/risk_score_assess/submit',
-  RISK_ASSESS_STATUS: '/risk_score_assess/status', // Append /{job_id}
-  RISK_ASSESS_RESULT: '/risk_score_assess/result', // Append /{job_id}
+  RISK_ASSESS_SUBMIT: '/api/risk_score_assess/submit',
+  RISK_ASSESS_STATUS: '/api/risk_score_assess/status', // Append /{job_id}
+  RISK_ASSESS_RESULT: '/api/risk_score_assess/result', // Append /{job_id}
 
   // ─────────────────────────────────────────────────────────────────────────
   // Bulk/Multi-Vendor Assessment
   // ─────────────────────────────────────────────────────────────────────────
-  RISK_ASSESS_MULTIPLE: '/risk_score_assess/multiple',
-  RISK_ASSESS_CSV: '/risk_score_assess/csv',
+  RISK_ASSESS_MULTIPLE: '/api/risk_score_assess/multiple',
+  RISK_ASSESS_CSV: '/api/risk_score_assess/csv',
 
   // ─────────────────────────────────────────────────────────────────────────
   // Health Check

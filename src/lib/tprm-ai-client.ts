@@ -256,21 +256,21 @@ class TPRMAIClient {
    * Submit a vendor risk assessment job
    */
   async submitVendorAssessment(vendor: VendorRiskRequest): Promise<TPRMAIResponse<JobSubmitResponse>> {
-    return this.post<JobSubmitResponse>('/risk_score_assess/submit', vendor);
+    return this.post<JobSubmitResponse>('/api/risk_score_assess/submit', vendor);
   }
 
   /**
    * Check status of a vendor risk assessment job
    */
   async getAssessmentStatus(jobId: string): Promise<TPRMAIResponse<JobStatusResponse>> {
-    return this.get<JobStatusResponse>(`/risk_score_assess/status/${encodeURIComponent(jobId)}`);
+    return this.get<JobStatusResponse>(`/api/risk_score_assess/status/${encodeURIComponent(jobId)}`);
   }
 
   /**
    * Get result of a completed vendor risk assessment job
    */
   async getAssessmentResult<T = unknown>(jobId: string): Promise<TPRMAIResponse<T>> {
-    return this.get<T>(`/risk_score_assess/result/${encodeURIComponent(jobId)}`);
+    return this.get<T>(`/api/risk_score_assess/result/${encodeURIComponent(jobId)}`);
   }
 
   /**
