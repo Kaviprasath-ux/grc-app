@@ -89,7 +89,7 @@ const TEMPLATE_COLUMNS = [
 export default function QPostFrameworkPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, locale } = useLanguage();
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const isGRCReviewer = useHasRole("GRCReviewer");
   const isDepartmentReviewer = useHasRole("DepartmentReviewer");
@@ -273,6 +273,7 @@ export default function QPostFrameworkPage() {
       if (formData.industry) fd.append("industry", formData.industry);
       if (formData.code) fd.append("code", formData.code);
       if (uploadedFile) fd.append("attachment", uploadedFile);
+      fd.append("target_language", locale);
 
       const createRes = await fetch("/api/qpost-compliance/ai/generate-framework", {
         method: "POST",

@@ -85,6 +85,13 @@ export const AI_ENDPOINTS = {
   TPRM_QUERY: '/api/query',
 
   // ─────────────────────────────────────────────────────────────────────────
+  // QPost Framework Generation
+  // ─────────────────────────────────────────────────────────────────────────
+  QPOST_GENERATE_FRAMEWORK_JOB: '/api/Qp_generate_framework_job',
+  QPOST_FRAMEWORK_STATUS: '/api/Qp_framework_job_status',
+  QPOST_FRAMEWORK_RESULT: '/api/Qp_framework_job_result',
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Translation
   // ─────────────────────────────────────────────────────────────────────────
   TRANSLATE: '/api/translate',
@@ -137,6 +144,9 @@ export const ENDPOINT_NAMES: Record<string, string> = {
   [AI_ENDPOINTS.TPRM_INGEST]: 'TPRM Document Ingest',
   [AI_ENDPOINTS.TPRM_IMAGE]: 'TPRM Image Analysis',
   [AI_ENDPOINTS.TPRM_QUERY]: 'TPRM AI Query',
+  [AI_ENDPOINTS.QPOST_GENERATE_FRAMEWORK_JOB]: 'QPost Framework Generation Job',
+  [AI_ENDPOINTS.QPOST_FRAMEWORK_STATUS]: 'QPost Framework Status',
+  [AI_ENDPOINTS.QPOST_FRAMEWORK_RESULT]: 'QPost Framework Result',
   [AI_ENDPOINTS.TRANSLATE]: 'Text Translation',
 };
 
