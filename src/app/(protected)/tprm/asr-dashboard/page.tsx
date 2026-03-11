@@ -186,7 +186,7 @@ export default function AsrDashboardPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tickFormatter={(v) => t(v)} />
               <YAxis />
-              <Tooltip formatter={(value: number) => [value, t("Count")]} labelFormatter={(label) => t(label)} />
+              <Tooltip formatter={(value) => [value as number, t("Count")]} labelFormatter={(label) => t(label)} />
               <Bar dataKey="value" name={t("Count")}>
                 {issueStatusData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || "#6b7280"} />
@@ -204,7 +204,7 @@ export default function AsrDashboardPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" tickFormatter={(v) => t(v)} />
               <YAxis />
-              <Tooltip formatter={(value: number) => [value, t("Count")]} labelFormatter={(label) => t(label)} />
+              <Tooltip formatter={(value) => [value as number, t("Count")]} labelFormatter={(label) => t(label)} />
               <Bar dataKey="value" name={t("Count")}>
                 {progressData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={PROGRESS_COLORS[entry.name] || "#6b7280"} />
