@@ -247,6 +247,8 @@ export const GET = withAuth(
         select: {
           status: true,
           reviewDate: true,
+          kpiExpectedValue: true,
+          kpiTargetedValue: true,
           departmentId: true,
           department: { select: { name: true } },
         },
@@ -262,18 +264,22 @@ export const GET = withAuth(
         }
         const deptStats = processByDeptMap.get(deptName)!;
 
-        // Categorize process by status and review date
-        if (process.status === "Active" && process.reviewDate && new Date(process.reviewDate) <= now) {
+        // Categorize process KPI by comparing targeted achieved value vs expected value
+        const expected = process.kpiExpectedValue ?? 0;
+        const targeted = process.kpiTargetedValue ?? 0;
+        const reviewDatePassed = process.reviewDate && new Date(process.reviewDate) < now;
+        if (expected === 0 && targeted === 0) {
+          if (reviewDatePassed) {
+            deptStats.overdue++; // Review date passed but KPI not configured
+          } else {
+            deptStats.scheduled++;
+          }
+        } else if (targeted >= expected) {
           deptStats.achieved++;
-        } else if (process.reviewDate && new Date(process.reviewDate) > now) {
-          deptStats.scheduled++;
-        } else if (process.status === "Inactive" || process.status === "Suspended") {
-          deptStats.missed++;
-        } else if (process.reviewDate && new Date(process.reviewDate) < now && process.status !== "Active") {
-          deptStats.overdue++;
+        } else if (reviewDatePassed) {
+          deptStats.overdue++; // Target not met and review date passed
         } else {
-          // Default to scheduled for active processes without review date
-          deptStats.scheduled++;
+          deptStats.missed++;
         }
       });
 
