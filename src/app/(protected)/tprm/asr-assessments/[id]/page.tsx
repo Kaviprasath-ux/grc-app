@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -273,6 +274,10 @@ export default function ASRAssessmentDetailPage() {
   const [selectedApproverId, setSelectedApproverId] = useState<string>("");
   const [sendingToApprover, setSendingToApprover] = useState(false);
 
+  // Translation hooks — must be before any early returns
+  const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMMasterQuestion' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'TPRMDomain' });
+
   // Role detection — approver sees different buttons than assessor
   const isApprover = useHasRole("TPRMApprover");
   const isAuditor = useHasRole("TPRMAuditor");
@@ -315,7 +320,7 @@ export default function ASRAssessmentDetailPage() {
   const flatQuestions = (() => {
     const result: { question: Question | Question["children"][0]; isChild: boolean; parentIndex: number; questionNo: string; domainName: string; domainId: string | null }[] = [];
     let parentIdx = 0;
-    for (const q of questions) {
+    for (const q of translatedQuestions) {
       parentIdx++;
       // Domain filter
       if (selectedDomain !== "all" && q.domainId !== selectedDomain) continue;
@@ -974,7 +979,7 @@ export default function ASRAssessmentDetailPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-3">
-                {domains.map(domain => {
+                {translatedDomains.map(domain => {
                   const domainResps = flatQuestions.filter(fq => fq.domainId === domain.id);
                   const total = domainResps.length;
                   const unsat = domainResps.filter(fq => {
@@ -1108,7 +1113,7 @@ export default function ASRAssessmentDetailPage() {
             <SelectTrigger className="mt-1 h-8 bg-white/80" style={{ borderColor: "var(--primary-200)" }}><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("All Domains")}</SelectItem>
-              {domains.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              {translatedDomains.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>

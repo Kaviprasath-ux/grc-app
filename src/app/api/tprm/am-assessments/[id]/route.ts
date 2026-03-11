@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId, verifyAMAccess } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -134,6 +135,14 @@ export const PATCH = withAuth(
         where: { id },
         data: updateData,
       });
+
+      // Fire-and-forget translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'TPRMAssessment', updated.id, {
+          questionnaireTemplate: updated.questionnaireTemplate,
+          approverComment: updated.approverComment,
+        });
+      }
 
       return NextResponse.json(updated);
     } catch (error) {

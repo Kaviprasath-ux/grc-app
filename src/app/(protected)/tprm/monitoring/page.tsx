@@ -31,6 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // ==================== TYPES ====================
 
@@ -139,6 +140,8 @@ export default function MonitoringPage() {
   const [showScanDialog, setShowScanDialog] = useState(false);
   const [activeScans, setActiveScans] = useState<{ jobId: string; vendorName: string; vendorURL: string; status: string }[]>([]);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -262,13 +265,13 @@ export default function MonitoringPage() {
   };
 
   // Latest-assessment vendors (shown in main table) — must have at least one completed assessment
-  const latestVendors = vendors.filter((v) =>
+  const latestVendors = translatedVendors.filter((v) =>
     v.assessments.some((a) => a.calculatedOverallScore != null || a.overallScore != null || a.status?.toLowerCase() === "done")
   );
   // Queued vendors — only those with NO completed assessment at all
   const activeJobIds = new Set(activeScans.map((s) => s.jobId));
   const latestVendorIds = new Set(latestVendors.map((v) => v.id));
-  const queuedVendors = vendors.filter((v) => {
+  const queuedVendors = translatedVendors.filter((v) => {
     // Never show a vendor that already appears in the scorecard table
     if (latestVendorIds.has(v.id)) return false;
     const a = v.assessments[0];

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -275,6 +276,9 @@ export default function AssessmentWorkspacePage() {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [logStatusFilter, setLogStatusFilter] = useState("all");
 
+  // Translation hooks — must be before any early returns
+  const { data: translatedAssessments } = useTranslatedData(assessments, { modelName: 'TPRMAssessment' });
+
   const fetchAssessments = useCallback(async () => {
     try {
       setLoading(true);
@@ -378,6 +382,7 @@ export default function AssessmentWorkspacePage() {
     {
       accessorKey: "assessmentType",
       header: t("Type"),
+      cell: ({ row }) => t(row.getValue("assessmentType")),
     },
     {
       accessorKey: "vendor.name",
@@ -544,7 +549,7 @@ export default function AssessmentWorkspacePage() {
         <TabsContent value="overview" className="mt-6">
           <DataGrid
             columns={overviewColumns}
-            data={assessments}
+            data={translatedAssessments}
             searchPlaceholder={t("Search assessments...")}
             searchColumn="assessmentCode"
           />

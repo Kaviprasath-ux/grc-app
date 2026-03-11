@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET assessments with search, filters, pagination
 export const GET = withAuth(
@@ -167,6 +168,12 @@ export const POST = withAuth(
           assessor: { select: { id: true, fullName: true } },
           approver: { select: { id: true, fullName: true } },
         },
+      });
+
+      // Trigger translation for assessment
+      void translateRecord(customerAccountId, 'TPRMAssessment', assessment.id, {
+        questionnaireTemplate: assessment.questionnaireTemplate,
+        approverComment: assessment.approverComment,
       });
 
       // Notify the account manager that an assessment has been initiated

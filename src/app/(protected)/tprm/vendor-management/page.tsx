@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -306,6 +307,8 @@ export default function VendorManagementPage() {
   });
   const [performMonitoring, setPerformMonitoring] = useState(false);
 
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
+
   const loadVendors = useCallback(async () => {
     setLoading(true);
     try {
@@ -329,7 +332,7 @@ export default function VendorManagementPage() {
 
   useEffect(() => { loadVendors(); loadLookups(); }, [loadVendors, loadLookups]);
 
-  const filteredVendors = vendors.filter((v) =>
+  const filteredVendors = translatedVendors.filter((v) =>
     search === "" ||
     v.name.toLowerCase().includes(search.toLowerCase()) ||
     v.vendorCode.toLowerCase().includes(search.toLowerCase()) ||

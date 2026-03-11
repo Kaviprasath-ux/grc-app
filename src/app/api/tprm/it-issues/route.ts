@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { saveUploadedFile } from "@/lib/file-upload";
+import { translateRecord } from "@/lib/translation-service";
 
 /**
  * GET /api/tprm/it-issues — Issue data for Internal IT Team
@@ -231,7 +232,7 @@ export const PATCH = withAuth(
 
       // Add comment if provided
       if (comment && comment.trim()) {
-        await prisma.tPRMRemediationComment.create({
+        const createdComment = await prisma.tPRMRemediationComment.create({
           data: {
             remediationId: id,
             userId: session.id,
@@ -239,6 +240,7 @@ export const PATCH = withAuth(
             message: comment.trim(),
           },
         });
+        void translateRecord(customerAccountId, 'TPRMRemediationComment', createdComment.id, { message: createdComment.message });
       }
 
       if (action === "submit") {

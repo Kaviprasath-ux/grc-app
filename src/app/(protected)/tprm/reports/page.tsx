@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // ==================== TYPES ====================
 
@@ -115,10 +116,13 @@ export default function ReportPage() {
 
   useEffect(() => { loadVendors(); }, [loadVendors]);
 
-  const filtered = useMemo(() => vendors.filter((v) => {
+  // Dynamic data translation for vendor names/categories
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
+
+  const filtered = useMemo(() => translatedVendors.filter((v) => {
     const matchesRisk = riskFilter === "all" || v.criticalityRating === riskFilter;
     return matchesRisk;
-  }), [vendors, search, riskFilter]);
+  }), [translatedVendors, riskFilter]);
 
   const columns: ColumnDef<ReportRow>[] = [
     {
@@ -174,7 +178,7 @@ export default function ReportPage() {
   ];
 
   const handleExport = () => {
-    const headers = ["Vendor Name", "Vendor Category", "Security Posture Score", "Threat Exposure Score", "Overall Cybersecurity Risk Score", "Criticality Rating"];
+    const headers = [t("Vendor Name"), t("Vendor Category"), t("Security Posture Score"), t("Threat Exposure Score"), t("Overall Cybersecurity Risk Score"), t("Criticality Rating")];
     const rows = filtered.map((v) => [
       v.name,
       v.serviceCategory || "",

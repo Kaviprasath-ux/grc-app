@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // ==================== TYPES ====================
 
@@ -116,13 +117,15 @@ export default function BOReportsPage() {
 
   useEffect(() => { loadVendors(); }, [loadVendors]);
 
-  const filtered = useMemo(() => vendors.filter((v) => {
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
+
+  const filtered = useMemo(() => translatedVendors.filter((v) => {
     const matchesSearch = search === "" ||
       v.name.toLowerCase().includes(search.toLowerCase()) ||
       (v.serviceCategory || "").toLowerCase().includes(search.toLowerCase());
     const matchesRisk = riskFilter === "all" || v.criticalityRating === riskFilter;
     return matchesSearch && matchesRisk;
-  }), [vendors, search, riskFilter]);
+  }), [translatedVendors, search, riskFilter]);
 
   const columns: ColumnDef<ReportRow>[] = [
     {

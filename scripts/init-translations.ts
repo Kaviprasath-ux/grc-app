@@ -4945,6 +4945,35 @@ const translations: [string, string, string][] = [
   ['Open Sub-Menu', 'فتح القائمة الفرعية', 'Atvērt apakšizvēlni'],
   ['Close Sub-Menu', 'إغلاق القائمة الفرعية', 'Aizvērt apakšizvēlni'],
   ['Menus', 'القوائم', 'Izvēlnes'],
+
+  // ==========================================
+  // TPRM - MISSING TRANSLATIONS (added 2026-03-11)
+  // ==========================================
+  ['Assessment Logs', 'سجلات التقييم', 'Novērtējumu žurnāli'],
+  ['Cancelled', 'ملغى', 'Atcelts'],
+  ['Search by Vendor', 'البحث حسب المورد', 'Meklēt pēc piegādātāja'],
+  ['Assessment Count', 'عدد التقييمات', 'Novērtējumu skaits'],
+  ['Vendor Count', 'عدد الموردين', 'Piegādātāju skaits'],
+  ['All Vendor Contracts', 'جميع عقود الموردين', 'Visi piegādātāju līgumi'],
+  ['EXPIRING ON', 'تاريخ الانتهاء', 'BEIGU DATUMS'],
+  ['Reassessments', 'إعادة التقييم', 'Atkārtoti novērtējumi'],
+  ['Past', 'السابقة', 'Iepriekšējie'],
+  ['New Vendor Scan', 'فحص مورد جديد', 'Jauna piegādātāja skenēšana'],
+  ['Track and monitor vendor security posture in real-time', 'تتبع ومراقبة الوضع الأمني للمورد في الوقت الفعلي', 'Izsekojiet un uzraugiet piegādātāja drošības stāvokli reāllaikā'],
+  ['Results will appear here once the scanning API sends data', 'ستظهر النتائج هنا بمجرد إرسال واجهة برمجة الفحص للبيانات', 'Rezultāti parādīsies šeit, kad skenēšanas API nosūtīs datus'],
+  ['Discipline', 'التخصص', 'Disciplīna'],
+  ['Vendor Offboarding', 'إنهاء خدمة المورد', 'Piegādātāja izslēgšana'],
+  ['Questionnaires', 'الاستبيانات', 'Anketas'],
+  ['Manage assessment disciplines', 'إدارة تخصصات التقييم', 'Pārvaldīt novērtējumu disciplīnas'],
+  ['Manage vendor offboarding questionnaire', 'إدارة استبيان إنهاء خدمة المورد', 'Pārvaldīt piegādātāja izslēgšanas anketu'],
+  ['Link questions to questionnaire templates', 'ربط الأسئلة بقوالب الاستبيانات', 'Saistīt jautājumus ar anketu veidnēm'],
+  ['Manage service categories for vendor classification', 'إدارة فئات الخدمة لتصنيف الموردين', 'Pārvaldīt pakalpojumu kategorijas piegādātāju klasifikācijai'],
+  ['Manage vendor profile fields and onboarding questions', 'إدارة حقول ملف المورد وأسئلة التسجيل', 'Pārvaldīt piegādātāja profila laukus un reģistrācijas jautājumus'],
+  ['Manage assessment questionnaire templates', 'إدارة قوالب استبيانات التقييم', 'Pārvaldīt novērtējumu anketu veidnes'],
+  ['Manage TPRM departments', 'إدارة أقسام إدارة مخاطر الطرف الثالث', 'Pārvaldīt TPRM nodaļas'],
+  ['Configure scoring formula and security factors', 'تكوين معادلة التسجيل وعوامل الأمان', 'Konfigurēt punktu formulu un drošības faktorus'],
+  ['Manage assessment domain categories', 'إدارة فئات مجالات التقييم', 'Pārvaldīt novērtējumu jomu kategorijas'],
+  ['Manage the master question bank for assessments', 'إدارة بنك الأسئلة الرئيسي للتقييمات', 'Pārvaldīt galveno jautājumu banku novērtējumiem'],
 ];
 
 function createExcelFile(): void {

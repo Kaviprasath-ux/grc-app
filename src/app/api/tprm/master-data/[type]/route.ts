@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 const VALID_TYPES = ['questions', 'questionnaires', 'domains'] as const;
 type MasterDataType = typeof VALID_TYPES[number];
@@ -93,6 +94,7 @@ export const POST = withAuth(
               sortOrder: (maxOrder._max.sortOrder || 0) + 1,
             },
           });
+          void translateRecord(customerAccountId, 'TPRMDomain', domain.id, { name: domain.name, description: domain.description });
           return NextResponse.json(domain, { status: 201 });
         }
 
@@ -145,6 +147,7 @@ export const POST = withAuth(
             },
             include: { domain: { select: { id: true, name: true } } },
           });
+          void translateRecord(customerAccountId, 'TPRMMasterQuestion', question.id, { questionText: question.questionText });
           return NextResponse.json(question, { status: 201 });
         }
 
@@ -224,6 +227,7 @@ export const PATCH = withAuth(
               ...(isActive !== undefined && { isActive }),
             },
           });
+          void translateRecord(customerAccountId, 'TPRMDomain', domain.id, { name: domain.name, description: domain.description });
           return NextResponse.json(domain);
         }
 
@@ -271,6 +275,7 @@ export const PATCH = withAuth(
             },
             include: { domain: { select: { id: true, name: true } } },
           });
+          void translateRecord(customerAccountId, 'TPRMMasterQuestion', question.id, { questionText: question.questionText });
           return NextResponse.json(question);
         }
 
@@ -343,6 +348,7 @@ export const DELETE = withAuth(
             data: { domainId: null },
           });
           await prisma.tPRMDomain.delete({ where: { id } });
+          void deleteRecordTranslations(customerAccountId, 'TPRMDomain', id);
           return NextResponse.json({ success: true });
         }
 
@@ -351,6 +357,7 @@ export const DELETE = withAuth(
           if (!question) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           // Cascade deletes questionnaire links automatically
           await prisma.tPRMMasterQuestion.delete({ where: { id } });
+          void deleteRecordTranslations(customerAccountId, 'TPRMMasterQuestion', id);
           return NextResponse.json({ success: true });
         }
 

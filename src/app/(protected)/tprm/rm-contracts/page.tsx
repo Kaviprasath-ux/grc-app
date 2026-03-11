@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Home, ChevronRight, Loader2, Search, Eye, LogOut, RefreshCw, Upload, Download, FileText } from "lucide-react";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // ── Types ──────────────────────────────────────────────
 interface Vendor {
@@ -116,6 +117,8 @@ export default function RMContractsPage() {
 
   useEffect(() => { fetchVendors(); }, [fetchVendors]);
 
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
+
   const handleStartOffboarding = useCallback(async (vendor: Vendor) => {
     setActionLoading(vendor.id);
     try {
@@ -209,7 +212,7 @@ export default function RMContractsPage() {
   }, [toast, t]);
 
   const filtered = useMemo(() => {
-    let data = vendors;
+    let data = translatedVendors;
 
     if (tab === "expiring") {
       data = data.filter((v) => isExpiringSoon(v.contractEndDate) || isExpired(v.contractEndDate));
@@ -225,7 +228,7 @@ export default function RMContractsPage() {
     }
 
     return data;
-  }, [vendors, tab, search]);
+  }, [translatedVendors, tab, search]);
 
   const tabs = [
     { key: "expiring" as const, label: t("Expiring Contracts") },

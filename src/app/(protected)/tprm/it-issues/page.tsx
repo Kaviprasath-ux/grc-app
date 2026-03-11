@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 
@@ -165,6 +166,10 @@ export default function ITIssuesPage() {
   const [submitComment, setSubmitComment] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic data translation
+  const { data: translatedVendorRiskIssues } = useTranslatedData(vendorRiskIssues, { modelName: 'TPRMIssueRemediation' });
+  const { data: translatedRemediationEntries } = useTranslatedData(remediationEntries, { modelName: 'TPRMIssueRemediation' });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -366,7 +371,7 @@ export default function ITIssuesPage() {
   // ==================== ISSUE REMEDIATION ====================
 
   const filteredRemediation = useMemo(() => {
-    const filtered = remediationEntries.filter((e) => {
+    const filtered = translatedRemediationEntries.filter((e) => {
       const matchesSearch = remSearch === "" ||
         e.vendorName.toLowerCase().includes(remSearch.toLowerCase()) ||
         e.vendorCode.toLowerCase().includes(remSearch.toLowerCase()) ||
@@ -386,7 +391,7 @@ export default function ITIssuesPage() {
     });
     filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return filtered;
-  }, [remediationEntries, remSearch, remSeverityFilter, remSubTab, remDateFilter]);
+  }, [translatedRemediationEntries, remSearch, remSeverityFilter, remSubTab, remDateFilter]);
 
   const remediationColumns: ColumnDef<IssueRemediationEntry>[] = [
     {
@@ -501,7 +506,7 @@ export default function ITIssuesPage() {
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => {
                   const headers = ["Domain", "Severity", "Issue", "Risk", "Assessment ID", "Due Date", "Status"];
-                  const rows = vendorRiskIssues.map((i) => [
+                  const rows = translatedVendorRiskIssues.map((i) => [
                     i.domain || "", i.severity, (i.issue || "").replace(/,/g, ";"), (i.risk || "").replace(/,/g, ";"),
                     i.assessmentCode || "", i.dueDate ? new Date(i.dueDate).toLocaleDateString() : "", i.status,
                   ]);
@@ -532,7 +537,7 @@ export default function ITIssuesPage() {
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (() => {
-                const filteredRisk = vendorRiskIssues.filter((i) =>
+                const filteredRisk = translatedVendorRiskIssues.filter((i) =>
                   !riskDomainSearch || (i.domain && i.domain.toLowerCase().includes(riskDomainSearch.toLowerCase()))
                 );
                 return filteredRisk.length === 0 ? (

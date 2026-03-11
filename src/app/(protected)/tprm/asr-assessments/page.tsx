@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataGrid } from "@/components/shared/data-grid";
@@ -255,9 +256,13 @@ export default function AsrAssessmentsPage() {
     setDateFilter("");
   };
 
+  // Translation hooks — must be before any early returns
+  const { data: translatedItems } = useTranslatedData(items, { modelName: 'TPRMAssessment' });
+  const { data: translatedOffboardItems } = useTranslatedData(offboardItems, { modelName: 'TPRMAssessment' });
+
   // Filter data based on active tab and sub-tab
   const filteredItems = useMemo(() => {
-    let data = items;
+    let data = translatedItems;
 
     // My Queue: assessments assigned to the current user with active statuses
     if (activeTab === "my-queue") {
@@ -305,7 +310,7 @@ export default function AsrAssessmentsPage() {
 
     // Offboarding — use separate offboard data
     if (activeTab === "offboarding") {
-      let offData = offboardItems;
+      let offData = translatedOffboardItems;
       if (subTab === "terminated") {
         offData = offData.filter((i) => i.status === "Offboard_Completed");
       } else {
@@ -348,7 +353,7 @@ export default function AsrAssessmentsPage() {
     }
 
     return data;
-  }, [items, offboardItems, activeTab, subTab, search, dateFilter, currentUserId, isApprover]);
+  }, [translatedItems, translatedOffboardItems, activeTab, subTab, search, dateFilter, currentUserId, isApprover]);
 
   // Determine if current sub-tab is "unassigned" or "assigned"
   const isUnassignedQueue = (activeTab === "due-diligence" || activeTab === "reassessments") && subTab === "unassigned";

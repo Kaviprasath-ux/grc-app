@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +60,9 @@ export default function OffboardReviewPage() {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [comment, setComment] = useState("");
+
+  // Dynamic data translation for assessment
+  const { data: translatedAssessment } = useTranslatedRecord(assessment, { modelName: 'TPRMAssessment' });
 
   const backPath = role === "assessor"
     ? "/tprm/asr-assessments"

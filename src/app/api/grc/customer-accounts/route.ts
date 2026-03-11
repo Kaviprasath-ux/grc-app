@@ -103,6 +103,7 @@ export async function GET(req: NextRequest) {
       const flags = user.customerAccountId ? accountFlagsMap.get(user.customerAccountId) : null;
       return {
         id: user.id,
+        customerAccountId: user.customerAccountId || null,
         customerCode: user.customerCode || `GRC_${String(index + 1).padStart(3, "0")}`,
         customerName: user.fullName || `${user.firstName} ${user.lastName}`,
         email: user.email,

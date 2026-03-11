@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET follow-ups data for assessor (clarifications and remediations)
 export const GET = withAuth(
@@ -175,6 +176,16 @@ export const PATCH = withAuth(
         data: updateData,
       });
 
+      // Fire-and-forget translation for remediation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'TPRMIssueRemediation', updated.id, {
+          issue: updated.issue,
+          risk: updated.risk,
+          recommendation: updated.recommendation,
+          description: updated.description,
+        });
+      }
+
       // Save comment as a chat-style remediation comment for all actions
       if (comment?.trim()) {
         const roles = session.roles || [];
@@ -182,7 +193,7 @@ export const PATCH = withAuth(
         if (roles.some((r: string) => r.includes("Approver"))) userRole = "Approver";
         else if (roles.some((r: string) => r.includes("Admin"))) userRole = "Admin";
 
-        await prisma.tPRMRemediationComment.create({
+        const newComment = await prisma.tPRMRemediationComment.create({
           data: {
             remediationId: id,
             userId: session.id,
@@ -190,6 +201,13 @@ export const PATCH = withAuth(
             message: comment.trim(),
           },
         });
+
+        // Fire-and-forget translation for comment
+        if (customerAccountId) {
+          void translateRecord(customerAccountId, 'TPRMRemediationComment', newComment.id, {
+            message: comment.trim(),
+          });
+        }
       }
 
       // Send notifications for remediation status changes

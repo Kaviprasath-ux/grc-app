@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,10 @@ export default function RMAssessmentsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const router = useRouter();
 
+  // Translation hooks — must be before any early returns
+  const { data: translatedAssessments } = useTranslatedData(assessments, { modelName: 'TPRMAssessment' });
+  const { data: translatedOffboardAssessments } = useTranslatedData(offboardAssessments, { modelName: 'TPRMAssessment' });
+
   const fetchAssessments = useCallback(async () => {
     setLoading(true);
     try {
@@ -139,7 +144,7 @@ export default function RMAssessmentsPage() {
 
   const filtered = useMemo(() => {
     if (topTab === "offboard") {
-      let data = offboardAssessments;
+      let data = translatedOffboardAssessments;
       if (offboardSubTab === "approval") {
         data = data.filter((a) => a.status === "Offboard_Approve_RM");
       } else {
@@ -157,7 +162,7 @@ export default function RMAssessmentsPage() {
       return data;
     }
 
-    let data = assessments;
+    let data = translatedAssessments;
     if (topTab === "ongoing") {
       data = data.filter((a) => ONGOING_STATUSES.includes(a.status));
       if (subTab === "awaiting") {
@@ -180,7 +185,7 @@ export default function RMAssessmentsPage() {
     }
 
     return data;
-  }, [assessments, offboardAssessments, topTab, subTab, offboardSubTab, search, session]);
+  }, [translatedAssessments, translatedOffboardAssessments, topTab, subTab, offboardSubTab, search, session]);
 
   const topTabs = [
     { key: "ongoing" as const, label: t("Ongoing Assessments") },

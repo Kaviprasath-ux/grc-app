@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,10 @@ export default function AMFollowUpsPage() {
   const [remediations, setRemediations] = useState<IssueRemediation[]>([]);
   const [vendorIssues, setVendorIssues] = useState<VendorIssue[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Dynamic data translation
+  const { data: translatedClarifications } = useTranslatedData(clarifications, { modelName: 'TPRMClarification' });
+  const { data: translatedRemediations } = useTranslatedData(remediations, { modelName: 'TPRMIssueRemediation' });
 
   const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
 
@@ -307,7 +312,7 @@ export default function AMFollowUpsPage() {
                 <div className="flex items-center justify-center p-12">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : clarifications.length === 0 ? (
+              ) : translatedClarifications.length === 0 ? (
                 <div className="text-center p-12 text-muted-foreground">{t("No clarifications found")}</div>
               ) : (
                 <Table>
@@ -323,7 +328,7 @@ export default function AMFollowUpsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {clarifications.map(c => (
+                    {translatedClarifications.map(c => (
                       <TableRow key={c.id}>
                         <TableCell>{c.assessment.assessmentCode}</TableCell>
                         <TableCell>{c.assessment.vendor.name}</TableCell>
@@ -362,7 +367,7 @@ export default function AMFollowUpsPage() {
                 <div className="flex items-center justify-center p-12">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : remediations.length === 0 ? (
+              ) : translatedRemediations.length === 0 ? (
                 <div className="text-center p-12 text-muted-foreground">{t("No issue remediations found")}</div>
               ) : (
                 <Table>
@@ -379,7 +384,7 @@ export default function AMFollowUpsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {remediations.map(r => (
+                    {translatedRemediations.map(r => (
                       <TableRow key={r.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">

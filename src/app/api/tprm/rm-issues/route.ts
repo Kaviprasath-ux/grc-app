@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 /**
  * GET /api/tprm/rm-issues — Issue Register for RM
@@ -291,6 +292,8 @@ export const POST = withAuth(
         },
       });
 
+      void translateRecord(customerAccountId, 'TPRMVendorIssue', issue.id, { title: issue.title, description: issue.description });
+
       // Notify admins/BO about the new vendor issue
       const admins = await prisma.user.findMany({
         where: {
@@ -347,7 +350,7 @@ export const PATCH = withAuth(
 
       // Add comment if provided
       if (addComment && typeof addComment === "string" && addComment.trim()) {
-        await prisma.tPRMRemediationComment.create({
+        const comment = await prisma.tPRMRemediationComment.create({
           data: {
             remediationId: id,
             userId: session.id,
@@ -355,6 +358,7 @@ export const PATCH = withAuth(
             message: addComment.trim(),
           },
         });
+        void translateRecord(customerAccountId, 'TPRMRemediationComment', comment.id, { message: comment.message });
 
         if (!status) {
           return NextResponse.json({ success: true });

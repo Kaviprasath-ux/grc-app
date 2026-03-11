@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Loader2, Home, ChevronRight } from "lucide-react";
 import {
   BarChart,
@@ -63,6 +64,9 @@ export default function AsrDashboardPage() {
   const [issues, setIssues] = useState<IssueEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Dynamic data translation
+  const { data: translatedAssessments } = useTranslatedData(assessments, { modelName: 'TPRMAssessment' });
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -101,42 +105,42 @@ export default function AsrDashboardPage() {
   // Assessment Progress chart data
   const progressData = useMemo(() => {
     const counts: Record<string, number> = { Initiated: 0, "In Progress": 0, Completed: 0 };
-    assessments.forEach((a) => {
+    translatedAssessments.forEach((a) => {
       if (a.status === "Draft") counts.Initiated++;
       else if (["In Progress", "Submitted", "Under Review"].includes(a.status)) counts["In Progress"]++;
       else if (["Completed", "Approved"].includes(a.status)) counts.Completed++;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [assessments]);
+  }, [translatedAssessments]);
 
   // Inherent Risk pie chart
   const riskData = useMemo(() => {
     const counts: Record<string, number> = { High: 0, Medium: 0, Low: 0 };
-    assessments.forEach((a) => {
+    translatedAssessments.forEach((a) => {
       const risk = a.inherentRisk || a.vendor?.vendorRiskRating || "Medium";
       if (counts[risk] !== undefined) counts[risk]++;
     });
     return Object.entries(counts)
       .filter(([, v]) => v > 0)
       .map(([name, value]) => ({ name, value }));
-  }, [assessments]);
+  }, [translatedAssessments]);
 
   // Assessment Result pie chart
   const resultData = useMemo(() => {
     const counts: Record<string, number> = { Satisfactory: 0, Unsatisfactory: 0, Deficient: 0 };
-    assessments.forEach((a) => {
+    translatedAssessments.forEach((a) => {
       const result = a.assessmentResult || "";
       if (counts[result] !== undefined) counts[result]++;
     });
     return Object.entries(counts)
       .filter(([, v]) => v > 0)
       .map(([name, value]) => ({ name, value }));
-  }, [assessments]);
+  }, [translatedAssessments]);
 
   // Top 5 Vendors by severity
   const vendorData = useMemo(() => {
     const vendorMap: Record<string, { High: number; Medium: number; Low: number }> = {};
-    assessments.forEach((a) => {
+    translatedAssessments.forEach((a) => {
       const vName = a.vendor?.name || "Unknown";
       if (!vendorMap[vName]) vendorMap[vName] = { High: 0, Medium: 0, Low: 0 };
       const sev = a.inherentRisk || "Medium";
@@ -148,7 +152,7 @@ export default function AsrDashboardPage() {
       .map(([name, counts]) => ({ name, ...counts }))
       .sort((a, b) => (b.High + b.Medium + b.Low) - (a.High + a.Medium + a.Low))
       .slice(0, 5);
-  }, [assessments]);
+  }, [translatedAssessments]);
 
   if (loading) {
     return (
@@ -180,9 +184,9 @@ export default function AsrDashboardPage() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={issueStatusData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis dataKey="name" tickFormatter={(v) => t(v)} />
               <YAxis />
-              <Tooltip />
+              <Tooltip formatter={(value: number) => [value, t("Count")]} labelFormatter={(label) => t(label)} />
               <Bar dataKey="value" name={t("Count")}>
                 {issueStatusData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || "#6b7280"} />
@@ -198,9 +202,9 @@ export default function AsrDashboardPage() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={progressData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis dataKey="name" tickFormatter={(v) => t(v)} />
               <YAxis />
-              <Tooltip />
+              <Tooltip formatter={(value: number) => [value, t("Count")]} labelFormatter={(label) => t(label)} />
               <Bar dataKey="value" name={t("Count")}>
                 {progressData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={PROGRESS_COLORS[entry.name] || "#6b7280"} />

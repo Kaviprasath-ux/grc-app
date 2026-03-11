@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from "@/lib/notification-service";
+import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -91,6 +92,9 @@ export const PATCH = withAuth<RouteContext>(
         },
       });
 
+      const customerAccountId = getCustomerAccountId(session);
+      void translateRecord(customerAccountId, 'TPRMVendor', vendor.id, { name: vendor.name, serviceCategory: vendor.serviceCategory });
+
       // Notify account manager if vendor status changed to offboarding
       const offboardStatuses = ['Offboarding', 'Offboarded', 'Inactive'];
       if (body.status && offboardStatuses.includes(body.status) && existing.status !== body.status) {
@@ -145,6 +149,9 @@ export const DELETE = withAuth<RouteContext>(
       }
 
       await prisma.tPRMVendor.delete({ where: { id } });
+
+      const customerAccountId = getCustomerAccountId(session);
+      void deleteRecordTranslations(customerAccountId, 'TPRMVendor', id);
 
       return NextResponse.json({ message: "Vendor deleted" });
     } catch (error) {

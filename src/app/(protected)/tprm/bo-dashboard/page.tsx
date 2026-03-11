@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Home, ChevronRight, Loader2 } from "lucide-react";
 import {
@@ -46,6 +47,10 @@ export default function BODashboardPage() {
 
   const [loading, setLoading] = useState(true);
 
+  // Dynamic data translation for vendor/assessment data
+  const { data: translatedCriticalityRaw } = useTranslatedData(criticalityRaw, { modelName: 'TPRMVendor' });
+  const { data: translatedStatusRaw } = useTranslatedData(statusRaw, { modelName: 'TPRMAssessment' });
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -75,21 +80,21 @@ export default function BODashboardPage() {
 
   // Map { label, labelCount } → chart shape (ColumnchartHelper.Label / LabelCount)
   const criticalityData = useMemo(() =>
-    criticalityRaw.map((item) => ({
+    translatedCriticalityRaw.map((item) => ({
       name: item.label,
       count: item.labelCount,
       color: VRR_COLORS[item.label] || "#94a3b8",
     })),
-  [criticalityRaw]);
+  [translatedCriticalityRaw]);
 
   // Map { status, count } → chart shape (Barchart.Status / Barchart.Count)
   const statusData = useMemo(() =>
-    statusRaw.map((item) => ({
+    translatedStatusRaw.map((item) => ({
       name: item.status,
       count: item.count,
       color: STATUS_COLORS[item.status] || "#94a3b8",
     })),
-  [statusRaw]);
+  [translatedStatusRaw]);
 
   if (loading) {
     return (

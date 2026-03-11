@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId, getAMEmail } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET /api/tprm/am-follow-ups/clarifications — List clarifications for AM's assessments
 export const GET = withAuth(
@@ -87,6 +88,9 @@ export const PATCH = withAuth(
           status: 'Submitted',
         },
       });
+
+      // Fire-and-forget dynamic translation
+      if (customerAccountId) void translateRecord(customerAccountId, 'TPRMClarification', updated.id, { rejectComment: updated.rejectComment, amResponse: updated.amResponse });
 
       return NextResponse.json(updated);
     } catch (error) {

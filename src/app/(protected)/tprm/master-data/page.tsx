@@ -28,6 +28,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -216,6 +217,8 @@ function DomainsSection() {
   const [formActive, setFormActive] = useState(true);
   const [search, setSearch] = useState("");
 
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'TPRMDomain' });
+
   const loadDomains = useCallback(async () => {
     setLoading(true);
     try {
@@ -287,7 +290,7 @@ function DomainsSection() {
     }
   };
 
-  const filtered = domains.filter(
+  const filtered = translatedDomains.filter(
     (d) =>
       d.name.toLowerCase().includes(search.toLowerCase()) ||
       (d.description || "").toLowerCase().includes(search.toLowerCase())
@@ -405,6 +408,8 @@ function QuestionsSection() {
   const [search, setSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState("all");
 
+  const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMMasterQuestion' });
+
   // Rich form state (all UAT fields)
   const [qForm, setQForm] = useState({
     isParentQuestion: true, parentId: "", questionText: "", verifaiPrompt: "",
@@ -521,7 +526,7 @@ function QuestionsSection() {
   const activeDomains = domains.filter((d) => d.isActive);
   const parentQuestions = questions.filter((q) => q.isParentQuestion && q.id !== editItem?.id);
 
-  const filtered = questions.filter((q) => {
+  const filtered = translatedQuestions.filter((q) => {
     const matchesSearch =
       q.questionText.toLowerCase().includes(search.toLowerCase()) ||
       (q.verifaiPrompt || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -788,6 +793,8 @@ function QuestionnairesSection() {
   const [allQuestions, setAllQuestions] = useState<MasterQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'TPRMQuestionnaireTemplate' });
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkTemplateId, setLinkTemplateId] = useState<string | null>(null);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set());
@@ -868,7 +875,7 @@ function QuestionnairesSection() {
     }
   };
 
-  const filtered = templates.filter((t) =>
+  const filtered = translatedTemplates.filter((t) =>
     t.templateName.toLowerCase().includes(search.toLowerCase()) ||
     (t.frameworkName || "").toLowerCase().includes(search.toLowerCase()) ||
     t.templateCategory.toLowerCase().includes(search.toLowerCase())

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2, Pencil, Trash2, Home, ChevronRight, Plus, Search, Users } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 // Restricted to English and Arabic only per UAT
 const LANGUAGES = [
@@ -327,10 +328,18 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
         }),
       });
 
+      const json = await res.json();
       if (!res.ok) {
-        const json = await res.json();
         setError(json.error || t("Failed to create account"));
         return;
+      }
+
+      // Trigger dynamic translation for customer account name
+      if (json.customerAccount?.id) {
+        triggerTranslation('CustomerAccount', json.customerAccount.id, { name: formData.customerName });
+      }
+      if (json.user?.id) {
+        triggerTranslation('User', json.user.id, { fullName: formData.fullName, firstName: formData.fullName.split(' ')[0], lastName: formData.fullName.split(' ').slice(1).join(' ') });
       }
 
       resetForm();
@@ -585,7 +594,7 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
                               <span className={`px-2 py-1 rounded text-xs font-medium ${
                                 plan.status === "Active" ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-600"
                               }`}>
-                                {plan.status}
+                                {t(plan.status)}
                               </span>
                             </TableCell>
                             <TableCell className="py-3 pr-5">
@@ -874,11 +883,20 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
           })) : undefined,
         }),
       });
+      const json = await res.json();
       if (!res.ok) {
-        const json = await res.json();
         setError(json.error || t("Failed to update account"));
         return;
       }
+
+      // Trigger dynamic translation for updated customer account name and user
+      if (json.customerAccountId) {
+        triggerTranslation('CustomerAccount', json.customerAccountId, { name: formData.customerName });
+      }
+      if (userId) {
+        triggerTranslation('User', userId, { fullName: formData.fullName, firstName: formData.fullName.split(' ')[0], lastName: formData.fullName.split(' ').slice(1).join(' ') });
+      }
+
       onOpenChange(false);
       onSuccess();
     } catch {
@@ -1136,7 +1154,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
                                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                                     plan.status === "Active" ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-600"
                                   }`}>
-                                    {plan.status}
+                                    {t(plan.status)}
                                   </span>
                                 </TableCell>
                                 <TableCell className="py-3 pr-5">
@@ -1297,6 +1315,14 @@ function CustomerAccountsTab() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Dynamic translation for customer account names
+  const accountRecords = useMemo(() => data.map((c) => ({ id: c.id, name: c.companyName })), [data]);
+  const { data: translatedAccounts } = useTranslatedData(accountRecords, { modelName: 'CustomerAccount' });
+  const translatedData = useMemo(() => data.map((c) => {
+    const tr = translatedAccounts.find((r) => r.id === c.id);
+    return tr ? { ...c, companyName: tr.name || c.companyName } : c;
+  }), [data, translatedAccounts]);
+
   const handleDeleteAccount = async () => {
     if (!deleteAccountId) return;
     setDeleting(true);
@@ -1338,7 +1364,7 @@ function CustomerAccountsTab() {
       header: t("Active"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("active") === "Yes" ? "default" : "secondary"}>
-          {row.getValue("active")}
+          {t(row.getValue("active") as string)}
         </Badge>
       ),
     },
@@ -1403,7 +1429,7 @@ function CustomerAccountsTab() {
           {t("Create New Customer")}
         </Button>
       </div>
-      <DataGrid columns={columns} data={data} searchPlaceholder={t("Search customers...")} searchColumn="companyName" />
+      <DataGrid columns={columns} data={translatedData} searchPlaceholder={t("Search customers...")} searchColumn="companyName" />
       <CreateAccountDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
@@ -1547,7 +1573,7 @@ function VendorAccountsTab() {
       header: t("Active"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("active") === "Yes" ? "default" : "secondary"}>
-          {row.getValue("active")}
+          {t(row.getValue("active") as string)}
         </Badge>
       ),
     },
@@ -1721,7 +1747,7 @@ function AssessmentFactoryTab() {
       header: t("Active"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("active") === "Yes" ? "default" : "secondary"}>
-          {row.getValue("active")}
+          {t(row.getValue("active") as string)}
         </Badge>
       ),
     },
@@ -1906,7 +1932,7 @@ function SuperAdminTab() {
       header: t("Active"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("active") === "Yes" ? "default" : "secondary"}>
-          {row.getValue("active")}
+          {t(row.getValue("active") as string)}
         </Badge>
       ),
     },

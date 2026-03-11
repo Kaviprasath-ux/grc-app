@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,9 @@ export default function AMOffboardQuestionnairePage() {
   const [commentText, setCommentText] = useState("");
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Dynamic data translation for assessment
+  const { data: translatedAssessment } = useTranslatedRecord(assessment, { modelName: 'TPRMAssessment' });
 
   const fetchAssessment = useCallback(async () => {
     try {

@@ -3,6 +3,7 @@ import { withAuth, getCustomerAccountId, getAMEmail } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { saveUploadedFile } from '@/lib/file-upload';
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET /api/tprm/am-follow-ups/issue-remediations — List issue remediations for AM
 export const GET = withAuth(
@@ -121,6 +122,16 @@ export const PATCH = withAuth(
           ...(artifactUrl && { artifactUrl }),
         },
       });
+
+      // Fire-and-forget translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'TPRMIssueRemediation', updated.id, {
+          issue: updated.issue,
+          risk: updated.risk,
+          recommendation: updated.recommendation,
+          description: updated.description,
+        });
+      }
 
       // Notify assessors/BO about remediation submission
       const remWithAssessment = await prisma.tPRMIssueRemediation.findFirst({

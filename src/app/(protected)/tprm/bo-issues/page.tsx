@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 
@@ -204,6 +205,10 @@ export default function BOIssuesPage() {
   const [viewVendorIssue, setViewVendorIssue] = useState<VendorIssueEntry | null>(null);
   const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
 
+  // Dynamic data translation
+  const { data: translatedVendorRiskIssues } = useTranslatedData(vendorRiskIssues, { modelName: 'TPRMIssueRemediation' });
+  const { data: translatedRemediationEntries } = useTranslatedData(remediationEntries, { modelName: 'TPRMIssueRemediation' });
+  const { data: translatedVendorIssueEntries } = useTranslatedData(vendorIssueEntries, { modelName: 'TPRMVendorIssue' });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -369,7 +374,7 @@ export default function BOIssuesPage() {
   // ==================== ISSUE REMEDIATION ====================
 
   const filteredRemediation = useMemo(() => {
-    const filtered = remediationEntries.filter((e) => {
+    const filtered = translatedRemediationEntries.filter((e) => {
       const matchesSearch = remSearch === "" ||
         e.vendorName.toLowerCase().includes(remSearch.toLowerCase()) ||
         (e.issueCode && e.issueCode.toLowerCase().includes(remSearch.toLowerCase()));
@@ -387,7 +392,7 @@ export default function BOIssuesPage() {
     });
     filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return filtered;
-  }, [remediationEntries, remSearch, remSeverityFilter, remSubTab, remDateFilter]);
+  }, [translatedRemediationEntries, remSearch, remSeverityFilter, remSubTab, remDateFilter]);
 
   const remediationColumns: ColumnDef<IssueRemediationEntry>[] = [
     { accessorKey: "issueCode", header: t("Issue ID"), cell: ({ row }) => <span className="font-mono text-sm">{row.original.issueCode || row.original.id.slice(0, 6).toUpperCase()}</span> },
@@ -417,7 +422,7 @@ export default function BOIssuesPage() {
   // ==================== VENDOR ISSUES ====================
 
   const filteredVendorIssues = useMemo(() => {
-    return vendorIssueEntries.filter((e) => {
+    return translatedVendorIssueEntries.filter((e) => {
       const matchesSeverity = viSeverityFilter === "all" || e.severity === viSeverityFilter;
       const matchesSubTab =
         viSubTab === "Open" ? ["Open", "Pending"].includes(e.status)
@@ -426,7 +431,7 @@ export default function BOIssuesPage() {
         : e.status === viSubTab;
       return matchesSeverity && matchesSubTab;
     });
-  }, [vendorIssueEntries, viSeverityFilter, viSubTab]);
+  }, [translatedVendorIssueEntries, viSeverityFilter, viSubTab]);
 
   const vendorIssueColumns: ColumnDef<VendorIssueEntry>[] = [
     { accessorKey: "title", header: t("Title"), cell: ({ row }) => <span className="text-sm font-medium">{row.original.title}</span> },
@@ -490,7 +495,7 @@ export default function BOIssuesPage() {
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => {
                   const headers = ["Domain", "Severity", "Issue", "Risk", "Assessment ID", "Due Date", "Status"];
-                  const rows = vendorRiskIssues.map((i) => [
+                  const rows = translatedVendorRiskIssues.map((i) => [
                     i.domain || "", i.severity, (i.issue || "").replace(/,/g, ";"), (i.risk || "").replace(/,/g, ";"),
                     i.assessmentCode || "", i.dueDate ? new Date(i.dueDate).toLocaleDateString() : "", i.status,
                   ]);
@@ -521,7 +526,7 @@ export default function BOIssuesPage() {
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (() => {
-                const filteredRisk = vendorRiskIssues.filter((i) =>
+                const filteredRisk = translatedVendorRiskIssues.filter((i) =>
                   !riskDomainSearch || (i.domain && i.domain.toLowerCase().includes(riskDomainSearch.toLowerCase()))
                 );
                 return filteredRisk.length === 0 ? (

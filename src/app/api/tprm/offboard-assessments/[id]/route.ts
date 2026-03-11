@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuthOnly, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -154,6 +155,14 @@ export const PATCH = withAuthOnly(
         updateData.approverComment = existingComment
           ? `${existingComment}\n[${timestamp}] ${roleLabel}: ${comment.trim()}`
           : `[${timestamp}] ${roleLabel}: ${comment.trim()}`;
+      }
+
+      // Fire-and-forget translation (approverComment may have been updated)
+      if (customerAccountId && updateData.approverComment) {
+        void translateRecord(customerAccountId, 'TPRMAssessment', id, {
+          questionnaireTemplate: assessment.questionnaireTemplate,
+          approverComment: updateData.approverComment,
+        });
       }
 
       // Use transaction to ensure all operations succeed or fail together

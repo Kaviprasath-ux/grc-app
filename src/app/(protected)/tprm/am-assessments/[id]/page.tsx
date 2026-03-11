@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -140,6 +141,10 @@ export default function AMResponseQuestionnairePage() {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
+
+  // Translation hooks — must be before any early returns
+  const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMMasterQuestion' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'TPRMDomain' });
 
   // SME assignment state
   const [smeList, setSmeList] = useState<SME[]>([]);
@@ -404,8 +409,8 @@ export default function AMResponseQuestionnairePage() {
       const wb = XLSX.utils.book_new();
 
       const targetQuestions = domainOnly && selectedDomain !== "all"
-        ? questions.filter(q => q.domainId === selectedDomain)
-        : questions;
+        ? translatedQuestions.filter(q => q.domainId === selectedDomain)
+        : translatedQuestions;
 
       const rows: (string | null)[][] = [
         ["QuestionID", "Q#", "Domain", "Question", "Mandatory", "Response (Yes/No)", "Comment"],
@@ -593,7 +598,7 @@ export default function AMResponseQuestionnairePage() {
   };
 
   // Filter questions by domain and mode
-  const filteredQuestions = questions.filter(q => {
+  const filteredQuestions = translatedQuestions.filter(q => {
     // SME users only see questions assigned to them
     if (isSME && currentUserId) {
       const resp = responses[q.id];
@@ -607,8 +612,8 @@ export default function AMResponseQuestionnairePage() {
   });
 
   // Stats
-  const totalQuestions = questions.length;
-  const answeredQuestions = questions.filter(q => responses[q.id]?.response).length;
+  const totalQuestions = translatedQuestions.length;
+  const answeredQuestions = translatedQuestions.filter(q => responses[q.id]?.response).length;
   const isReadOnly = assessment?.status && !["Draft", "In Progress", "In-Progress", "Initiated", "Awaiting_Response"].includes(assessment.status);
 
   // AI evaluation status helpers
@@ -794,7 +799,7 @@ export default function AMResponseQuestionnairePage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("All Domains")}</SelectItem>
-              {domains.map(d => (
+              {translatedDomains.map(d => (
                 <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
               ))}
             </SelectContent>

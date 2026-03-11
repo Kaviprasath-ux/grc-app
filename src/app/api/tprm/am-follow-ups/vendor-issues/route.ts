@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId, getAMEmail } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET /api/tprm/am-follow-ups/vendor-issues — List vendor issues reported by AM
 export const GET = withAuth(
@@ -94,6 +95,15 @@ export const POST = withAuth(
         },
       });
 
+      // Fire-and-forget translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'TPRMVendorIssue', issue.id, {
+          title: issue.title,
+          description: issue.description,
+          resolution: issue.resolution,
+        });
+      }
+
       // Notify admins/BO about the new vendor issue
       const admins = await prisma.user.findMany({
         where: {
@@ -164,6 +174,15 @@ export const PATCH = withAuth(
           reportedBy: { select: { id: true, fullName: true } },
         },
       });
+
+      // Fire-and-forget translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'TPRMVendorIssue', updated.id, {
+          title: updated.title,
+          description: updated.description,
+          resolution: updated.resolution,
+        });
+      }
 
       // Notify on status changes
       if (status !== undefined && status !== issue.status) {
