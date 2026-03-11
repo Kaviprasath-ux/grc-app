@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
 import { validateEmail } from "@/lib/validations/email";
 
@@ -114,6 +115,7 @@ export default function UserManagementPage() {
   const { canCreate, canEdit, canDelete } = usePermissions("tprm.user-management");
 
   const [users, setUsers] = useState<TPRMUser[]>([]);
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState("all");
 
@@ -235,6 +237,12 @@ export default function UserManagementPage() {
       });
 
       if (res.ok) {
+        const savedUser = await res.json();
+        triggerTranslation('User', savedUser.id, {
+          fullName: savedUser.fullName,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        });
         toast({ title: t("User created successfully") });
         setShowCreateDialog(false);
         setFormData(emptyForm);
@@ -287,6 +295,12 @@ export default function UserManagementPage() {
       });
 
       if (res.ok) {
+        const savedUser = await res.json();
+        triggerTranslation('User', savedUser.id, {
+          fullName: savedUser.fullName,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        });
         toast({ title: t("User updated successfully") });
         setShowEditDialog(false);
         setSelectedUser(null);
@@ -675,9 +689,9 @@ export default function UserManagementPage() {
 
   // Filtered users based on role filter
   const filteredUsers = useMemo(() => {
-    if (roleFilter === "all") return users;
-    return users.filter((u) => u.tprmRole === roleFilter);
-  }, [users, roleFilter]);
+    if (roleFilter === "all") return translatedUsers;
+    return translatedUsers.filter((u) => u.tprmRole === roleFilter);
+  }, [translatedUsers, roleFilter]);
 
   const roleFilterToolbar = (
     <Select value={roleFilter} onValueChange={setRoleFilter}>

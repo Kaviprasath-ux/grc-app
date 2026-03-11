@@ -28,7 +28,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -242,10 +242,12 @@ function DomainsSection() {
   };
 
   const openEdit = (item: Domain) => {
-    setEditItem(item);
-    setFormName(item.name);
-    setFormDescription(item.description || "");
-    setFormActive(item.isActive);
+    // Always use original (untranslated) data for editing
+    const original = domains.find(d => d.id === item.id) || item;
+    setEditItem(original);
+    setFormName(original.name);
+    setFormDescription(original.description || "");
+    setFormActive(original.isActive);
     setDialogOpen(true);
   };
 
@@ -266,9 +268,13 @@ function DomainsSection() {
         toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
         return;
       }
+      const data = await res.json();
+      triggerTranslation('TPRMDomain', data.id, { name: data.name, description: data.description });
       toast({ title: t("Success"), description: editItem ? t("Domain updated") : t("Domain created") });
       setDialogOpen(false);
       loadDomains();
+      // Delayed refetch to pick up async translations
+      setTimeout(() => { clearTranslationCache(); loadDomains(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save"), variant: "destructive" });
     }
@@ -384,7 +390,7 @@ function DomainsSection() {
                 <Label>{t("Active")}</Label>
               </div>
             )}
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
               <Button onClick={handleSave} disabled={!formName.trim()}>{t("Save")}</Button>
             </div>
@@ -409,6 +415,7 @@ function QuestionsSection() {
   const [domainFilter, setDomainFilter] = useState("all");
 
   const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMMasterQuestion' });
+  const { data: translatedQSDomains } = useTranslatedData(domains, { modelName: 'TPRMDomain' });
 
   // Rich form state (all UAT fields)
   const [qForm, setQForm] = useState({
@@ -456,15 +463,17 @@ function QuestionsSection() {
   };
 
   const openEdit = (item: MasterQuestion) => {
-    setEditItem(item);
+    // Always use original (untranslated) data for editing
+    const original = questions.find(q => q.id === item.id) || item;
+    setEditItem(original);
     setQForm({
-      isParentQuestion: item.isParentQuestion, parentId: item.parentId || "",
-      questionText: item.questionText, verifaiPrompt: item.verifaiPrompt || "",
-      domainId: item.domainId || "", isActive: item.isActive,
-      mandatoryAttachment: item.mandatoryAttachment, validateThroughAI: item.validateThroughAI,
-      mandatoryQuestion: item.mandatoryQuestion, evidence: item.evidence || "",
-      issue: item.issue || "", risk: item.risk || "",
-      recommendation: item.recommendation || "", severity: item.severity || "",
+      isParentQuestion: original.isParentQuestion, parentId: original.parentId || "",
+      questionText: original.questionText, verifaiPrompt: original.verifaiPrompt || "",
+      domainId: original.domainId || "", isActive: original.isActive,
+      mandatoryAttachment: original.mandatoryAttachment, validateThroughAI: original.validateThroughAI,
+      mandatoryQuestion: original.mandatoryQuestion, evidence: original.evidence || "",
+      issue: original.issue || "", risk: original.risk || "",
+      recommendation: original.recommendation || "", severity: original.severity || "",
     });
     setDialogOpen(true);
   };
@@ -499,9 +508,13 @@ function QuestionsSection() {
         toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
         return;
       }
+      const data = await res.json();
+      triggerTranslation('TPRMMasterQuestion', data.id, { questionText: data.questionText, verifaiPrompt: data.verifaiPrompt || '', evidence: data.evidence || '', issue: data.issue || '', risk: data.risk || '', recommendation: data.recommendation || '' });
       toast({ title: t("Success"), description: editItem ? t("Question updated") : t("Question created") });
       setDialogOpen(false);
       loadQuestions();
+      // Delayed refetch to pick up async translations
+      setTimeout(() => { clearTranslationCache(); loadQuestions(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save"), variant: "destructive" });
     }
@@ -523,7 +536,7 @@ function QuestionsSection() {
     }
   };
 
-  const activeDomains = domains.filter((d) => d.isActive);
+  const activeDomains = translatedQSDomains.filter((d) => d.isActive);
   const parentQuestions = questions.filter((q) => q.isParentQuestion && q.id !== editItem?.id);
 
   const filtered = translatedQuestions.filter((q) => {
@@ -773,7 +786,7 @@ function QuestionsSection() {
                 <Label>{t("Active")}</Label>
               </div>
             )}
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
               <Button onClick={handleSave} disabled={!qForm.questionText.trim()}>{t("Save")}</Button>
             </div>
@@ -795,6 +808,7 @@ function QuestionnairesSection() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'TPRMQuestionnaireTemplate' });
+  const { data: translatedAllQuestions } = useTranslatedData(allQuestions, { modelName: 'TPRMMasterQuestion' });
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkTemplateId, setLinkTemplateId] = useState<string | null>(null);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set());
@@ -886,7 +900,7 @@ function QuestionnairesSection() {
     if (!linkTemplateId) return [];
     const template = templates.find((t) => t.id === linkTemplateId);
     const alreadyLinked = new Set(template?.masterQuestionLinks.map((l) => l.questionId) || []);
-    return allQuestions
+    return translatedAllQuestions
       .filter((q) => q.isActive && !alreadyLinked.has(q.id))
       .filter((q) =>
         questionSearch === "" ||

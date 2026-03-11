@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Minus, Pencil, Trash2, Search, X, Info,
   Download, Building2, Shield, Activity, AlertTriangle, Loader2,Upload,
@@ -295,7 +295,8 @@ export default function VendorManagementPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<Vendor | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [serviceCategories, setServiceCategories] = useState<{ id: string; name: string }[]>([]);
+  const [rawServiceCategories, setRawServiceCategories] = useState<{ id: string; name: string }[]>([]);
+  const { data: serviceCategories } = useTranslatedData(rawServiceCategories, { modelName: 'TPRMServiceCategory' });
 
   const [form, setForm] = useState({
     name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
@@ -326,7 +327,7 @@ export default function VendorManagementPage() {
         fetch("/api/tprm/configurations/service-categories"),
       ]);
       if (deptRes.ok) setDepartments(await deptRes.json());
-      if (catRes.ok) setServiceCategories(await catRes.json());
+      if (catRes.ok) setRawServiceCategories(await catRes.json());
     } catch { /* silent */ }
   }, []);
 

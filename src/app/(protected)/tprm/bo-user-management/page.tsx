@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
 import { validateEmail } from "@/lib/validations/email";
 
@@ -91,6 +92,7 @@ export default function BOUserManagementPage() {
   const { canCreate, canEdit, canDelete } = usePermissions("tprm.bo-user-management");
 
   const [users, setUsers] = useState<TPRMUser[]>([]);
+  const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -211,6 +213,14 @@ export default function BOUserManagementPage() {
       });
 
       if (res.ok) {
+        const created = await res.json();
+        if (created.id) {
+          triggerTranslation('User', created.id, {
+            fullName: formData.fullName,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+          });
+        }
         toast({ title: t("Relationship Manager created successfully") });
         setShowCreateDialog(false);
         setFormData(emptyForm);
@@ -263,6 +273,11 @@ export default function BOUserManagementPage() {
       });
 
       if (res.ok) {
+        triggerTranslation('User', selectedUser.id, {
+          fullName: formData.fullName,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        });
         toast({ title: t("Relationship Manager updated successfully") });
         setShowEditDialog(false);
         setSelectedUser(null);
@@ -581,7 +596,7 @@ export default function BOUserManagementPage() {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : users.length === 0 ? (
+          ) : translatedUsers.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               {t("No users found")}
             </div>
@@ -598,7 +613,7 @@ export default function BOUserManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
+                  {translatedUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium text-primary">
                         {user.fullName}
@@ -658,7 +673,7 @@ export default function BOUserManagementPage() {
             {renderFormContent(false)}
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg" style={{ direction: 'ltr' }}>
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowCreateDialog(false); setFormErrors({}); setFormData(emptyForm); }}>
               {t("Cancel")}
             </Button>
@@ -686,7 +701,7 @@ export default function BOUserManagementPage() {
             {renderFormContent(true)}
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg" style={{ direction: 'ltr' }}>
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowEditDialog(false); setFormErrors({}); setSelectedUser(null); setFormData(emptyForm); }}>
               {t("Cancel")}
             </Button>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -93,6 +94,13 @@ export const POST = withAuth(
           assessmentId: id,
           assessmentCode: assessment.assessmentCode,
           commentPreview: message.trim().substring(0, 100),
+        });
+      }
+
+      // Trigger dynamic translation for user-entered comment text
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'TPRMInternalComment', comment.id, {
+          message: comment.message,
         });
       }
 

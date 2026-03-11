@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { triggerTranslation } from "@/hooks/useTranslatedData";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
@@ -73,6 +74,7 @@ export function RemediationComments({ remediationId, readOnly = false }: Remedia
       if (res.ok) {
         const comment = await res.json();
         setComments(prev => [...prev, comment]);
+        triggerTranslation('TPRMRemediationComment', comment.id, { message: comment.message });
         setNewMessage("");
       }
     } catch {

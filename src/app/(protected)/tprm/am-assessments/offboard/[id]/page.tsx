@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
-import { useTranslatedRecord } from "@/hooks/useTranslatedData";
+import { useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,6 +134,10 @@ export default function AMOffboardQuestionnairePage() {
       [activeQuestionId]: { ...prev[activeQuestionId], questionId: activeQuestionId, comment: commentText } as OffboardResponse,
     }));
     autoSave(activeQuestionId, { comment: commentText } as Partial<OffboardResponse>);
+    // Trigger translation for the comment
+    if (commentText) {
+      triggerTranslation('TPRMOffboardResponse', activeQuestionId, { comment: commentText });
+    }
     setCommentDialogOpen(false);
     setActiveQuestionId(null);
     setCommentText("");
@@ -189,6 +193,12 @@ export default function AMOffboardQuestionnairePage() {
         body: JSON.stringify({ responses: answeredResponses }),
       });
       if (!res.ok) throw new Error("Save failed");
+      // Trigger translation for text-based response fields (comments)
+      for (const r of answeredResponses) {
+        if (r.comment) {
+          triggerTranslation('TPRMOffboardResponse', r.questionId, { comment: r.comment });
+        }
+      }
       toast({ title: t("Success"), description: `${answeredResponses.length} ${t("responses saved successfully")}` });
     } catch {
       toast({ title: t("Error"), description: t("Failed to save responses"), variant: "destructive" });
@@ -212,6 +222,8 @@ export default function AMOffboardQuestionnairePage() {
         return;
       }
       toast({ title: t("Success"), description: t("Offboard assessment submitted successfully") });
+      // Trigger translation for the offboard assessment
+      triggerTranslation('TPRMAssessment', assessmentId, {});
       router.push("/tprm/am-assessments");
     } catch {
       toast({ title: t("Error"), description: t("Failed to submit assessment"), variant: "destructive" });

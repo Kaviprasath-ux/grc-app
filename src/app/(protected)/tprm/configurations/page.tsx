@@ -30,7 +30,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
 
 // ==================== TYPES ====================
@@ -469,11 +469,14 @@ function VendorOnboardingSection() {
         toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
         return;
       }
+      const data = await res.json();
+      triggerTranslation('TPRMOnboardingQuestion', data.id, { title: data.title, question: data.question });
       toast({ title: t("Success"), description: obEditItem ? t("Question updated") : t("Question created") });
       setObDialogOpen(false);
       setObEditItem(null);
       setObForm({ title: "", question: "", score: 0, questionType: "Parent", responseType: "Yes/No", parentId: "" });
       loadObQuestions();
+      setTimeout(() => { clearTranslationCache(); loadObQuestions(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save"), variant: "destructive" });
     }
@@ -691,7 +694,7 @@ function VendorOnboardingSection() {
                 placeholder={t("Enter field name")}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setPfDialogOpen(false)}>{t("Cancel")}</Button>
               <Button onClick={handleSaveProfileField}>{t("Save")}</Button>
             </div>
@@ -789,7 +792,7 @@ function VendorOnboardingSection() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setObDialogOpen(false)}>{t("Cancel")}</Button>
               <Button onClick={handleSaveObQuestion}>{t("Save")}</Button>
             </div>
@@ -806,6 +809,7 @@ function VendorOnboardingSection() {
 const SIMPLE_CRUD_MODEL_MAP: Record<string, string> = {
   'service-categories': 'TPRMServiceCategory',
   'disciplines': 'TPRMDiscipline',
+  'departments': 'TPRMDepartment',
 };
 
 function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: string }) {
@@ -852,11 +856,14 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
         toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
         return;
       }
+      const data = await res.json();
+      triggerTranslation(modelName, data.id, { name: data.name });
       toast({ title: t("Success"), description: editItem ? t("Updated successfully") : t("Created successfully") });
       setDialogOpen(false);
       setEditItem(null);
       setName("");
       loadItems();
+      setTimeout(() => { clearTranslationCache(); loadItems(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save"), variant: "destructive" });
     }
@@ -981,7 +988,7 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
                 placeholder={t("Enter name")}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
               <Button onClick={handleSave}>{t("Save")}</Button>
             </div>
@@ -1276,6 +1283,8 @@ function QuestionnaireManagementSection() {
         return;
       }
       const created = await res.json();
+      triggerTranslation('TPRMQuestionnaireTemplate', created.id, { templateName: created.templateName, frameworkName: created.frameworkName });
+      setTimeout(() => { clearTranslationCache(); loadTemplates(); }, 4000);
 
       // Step 3: Import questions if file selected
       if (importFile) {
@@ -1318,10 +1327,13 @@ function QuestionnaireManagementSection() {
         toast({ title: t("Error"), description: err.error || t("Failed to update"), variant: "destructive" });
         return;
       }
+      const data = await res.json();
+      triggerTranslation('TPRMQuestionnaireTemplate', data.id, { templateName: data.templateName, frameworkName: data.frameworkName });
       toast({ title: t("Success"), description: t("Template updated") });
       setEditDialogOpen(false);
       setEditItem(null);
       loadTemplates();
+      setTimeout(() => { clearTranslationCache(); loadTemplates(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to update"), variant: "destructive" });
     }
@@ -1400,6 +1412,8 @@ function QuestionnaireManagementSection() {
           toast({ title: t("Error"), description: err.error || t("Failed to update"), variant: "destructive" });
           return;
         }
+        const data = await res.json();
+        triggerTranslation('TPRMMasterQuestion', data.id, { questionText: data.questionText, evidence: data.evidence || '', issue: data.issue || '', risk: data.risk || '', recommendation: data.recommendation || '' });
         toast({ title: t("Success"), description: t("Question updated") });
       } else {
         const createRes = await fetch("/api/tprm/master-data/questions", {
@@ -1413,6 +1427,7 @@ function QuestionnaireManagementSection() {
           return;
         }
         const newQ = await createRes.json();
+        triggerTranslation('TPRMMasterQuestion', newQ.id, { questionText: newQ.questionText, evidence: newQ.evidence || '', issue: newQ.issue || '', risk: newQ.risk || '', recommendation: newQ.recommendation || '' });
         if (selectedTemplateId) {
           await fetch("/api/tprm/master-data/questionnaires", {
             method: "POST",
@@ -1425,6 +1440,7 @@ function QuestionnaireManagementSection() {
       setQuestionDialogOpen(false);
       if (selectedTemplateId) loadTemplateData(selectedTemplateId);
       loadReferenceData();
+      setTimeout(() => { clearTranslationCache(); if (selectedTemplateId) loadTemplateData(selectedTemplateId); loadReferenceData(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save question"), variant: "destructive" });
     }
@@ -1620,7 +1636,7 @@ function QuestionnaireManagementSection() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2">
             <Button variant="outline" onClick={() => setQuestionDialogOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleSaveQuestion}>{t("Save")}</Button>
           </div>
@@ -1961,7 +1977,7 @@ function QuestionnaireManagementSection() {
                   </div>
                 )}
               </div>
-              <div className="flex justify-end">
+              <div className="flex ltr:justify-end rtl:justify-start">
                 <Button onClick={() => {
                   if (!wizardForm.templateName.trim()) {
                     toast({ title: t("Error"), description: t("Template name is required"), variant: "destructive" });
@@ -2152,7 +2168,7 @@ function QuestionnaireManagementSection() {
                 ))}
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t("Cancel")}</Button>
               <Button onClick={handleEditSave}>{t("Save")}</Button>
             </div>
@@ -2247,11 +2263,14 @@ function OffboardingSection() {
         toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
         return;
       }
+      const data = await res.json();
+      triggerTranslation('TPRMOffboardingQuestion', data.id, { title: data.title, question: data.question });
       toast({ title: t("Success"), description: editItem ? t("Question updated") : t("Question created") });
       setDialogOpen(false);
       setEditItem(null);
       setForm({ title: "", question: "" });
       loadQuestions();
+      setTimeout(() => { clearTranslationCache(); loadQuestions(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save"), variant: "destructive" });
     }
@@ -2373,7 +2392,7 @@ function OffboardingSection() {
                 rows={3}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
               <Button onClick={handleSave}>{t("Save")}</Button>
             </div>
@@ -2513,10 +2532,13 @@ function ScorecardSection() {
         }),
       });
       if (res.ok) {
+        const data = await res.json();
+        triggerTranslation('TPRMScorecardFactor', data.id, { name: data.name });
         toast({ title: t("Success"), description: t("Factor updated") });
         setEditDialogOpen(false);
         setEditFactor(null);
         loadData();
+        setTimeout(() => { clearTranslationCache(); loadData(); }, 4000);
       } else {
         const err = await res.json();
         toast({ title: t("Error"), description: err.error || t("Failed to update factor"), variant: "destructive" });
@@ -2755,7 +2777,7 @@ function ScorecardSection() {
               </ul>
             </div>
           )}
-          <div className="flex justify-end">
+          <div className="flex ltr:justify-end rtl:justify-start">
             <Button variant="outline" onClick={() => setValidationResults(null)}>{t("Close")}</Button>
           </div>
         </DialogContent>
@@ -2792,7 +2814,7 @@ function ScorecardSection() {
               />
               <Label>{t("Mandatory")}</Label>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex ltr:justify-end rtl:justify-start gap-2">
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t("Cancel")}</Button>
               <Button onClick={handleEditFactor}>{t("Save")}</Button>
             </div>

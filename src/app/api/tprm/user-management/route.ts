@@ -3,6 +3,7 @@ import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth'
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 // TPRM-specific roles that can be assigned by the customer admin (CustomerAdministrator)
 const TPRM_USER_ROLES = [
@@ -162,6 +163,13 @@ export const POST = withAuth(
         },
       });
 
+      // Trigger dynamic translation for user-entered name fields
+      void translateRecord(customerAccountId, 'User', user.id, {
+        fullName: user.fullName,
+        firstName,
+        lastName,
+      });
+
       // Auto-assign UserRole based on tprmRole
       const tprmRoleToSystemRole: Record<string, string> = {
         'Business Owner': 'BusinessOwner',
@@ -297,6 +305,15 @@ export const PATCH = withAuth(
           createdAt: true,
         },
       });
+
+      // Trigger dynamic translation for updated name fields
+      const translationFields: Record<string, string> = {};
+      if (updatedUser.fullName) translationFields.fullName = updatedUser.fullName;
+      if (firstName) translationFields.firstName = firstName;
+      if (lastName) translationFields.lastName = lastName;
+      if (Object.keys(translationFields).length > 0) {
+        void translateRecord(customerAccountId, 'User', updatedUser.id, translationFields);
+      }
 
       // Update UserRole if tprmRole changed
       if (tprmRole !== undefined && tprmRole !== existingUser.tprmRole) {

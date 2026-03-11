@@ -147,7 +147,7 @@ export const POST = withAuth(
             },
             include: { domain: { select: { id: true, name: true } } },
           });
-          void translateRecord(customerAccountId, 'TPRMMasterQuestion', question.id, { questionText: question.questionText });
+          void translateRecord(customerAccountId, 'TPRMMasterQuestion', question.id, { questionText: question.questionText, verifaiPrompt: question.verifaiPrompt || '', evidence: question.evidence || '', issue: question.issue || '', risk: question.risk || '', recommendation: question.recommendation || '' });
           return NextResponse.json(question, { status: 201 });
         }
 
@@ -275,7 +275,7 @@ export const PATCH = withAuth(
             },
             include: { domain: { select: { id: true, name: true } } },
           });
-          void translateRecord(customerAccountId, 'TPRMMasterQuestion', question.id, { questionText: question.questionText });
+          void translateRecord(customerAccountId, 'TPRMMasterQuestion', question.id, { questionText: question.questionText, verifaiPrompt: question.verifaiPrompt || '', evidence: question.evidence || '', issue: question.issue || '', risk: question.risk || '', recommendation: question.recommendation || '' });
           return NextResponse.json(question);
         }
 

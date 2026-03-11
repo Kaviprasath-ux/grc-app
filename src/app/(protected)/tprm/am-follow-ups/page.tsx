@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,7 @@ export default function AMFollowUpsPage() {
   // Dynamic data translation
   const { data: translatedClarifications } = useTranslatedData(clarifications, { modelName: 'TPRMClarification' });
   const { data: translatedRemediations } = useTranslatedData(remediations, { modelName: 'TPRMIssueRemediation' });
+  const { data: translatedVendorIssues } = useTranslatedData(vendorIssues, { modelName: 'TPRMVendorIssue' });
 
   const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
 
@@ -176,6 +177,12 @@ export default function AMFollowUpsPage() {
         body: JSON.stringify({ id: respondId, amResponse: respondText }),
       });
       if (!res.ok) throw new Error("Failed");
+      const result = await res.json();
+      if (respondType === "clarification") {
+        triggerTranslation('TPRMClarification', result.id || respondId, { amResponse: respondText });
+      } else {
+        triggerTranslation('TPRMIssueRemediation', result.id || respondId, { amResponse: respondText });
+      }
       toast({ title: t("Success"), description: t("Response submitted") });
       setRespondDialogOpen(false);
       setRespondText("");
@@ -249,6 +256,10 @@ export default function AMFollowUpsPage() {
         body: JSON.stringify(newIssue),
       });
       if (!res.ok) throw new Error("Failed");
+      const result = await res.json();
+      if (result.id) {
+        triggerTranslation('TPRMVendorIssue', result.id, { title: newIssue.title, description: newIssue.description });
+      }
       toast({ title: t("Success"), description: t("Issue created") });
       setIssueDialogOpen(false);
       setNewIssue({ vendorId: "", title: "", description: "", severity: "Medium", dueDate: "" });
@@ -447,7 +458,7 @@ export default function AMFollowUpsPage() {
                 <div className="flex items-center justify-center p-12">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : vendorIssues.length === 0 ? (
+              ) : translatedVendorIssues.length === 0 ? (
                 <div className="text-center p-12 text-muted-foreground">{t("No vendor issues found")}</div>
               ) : (
                 <Table>
@@ -463,7 +474,7 @@ export default function AMFollowUpsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {vendorIssues.map(i => (
+                    {translatedVendorIssues.map(i => (
                       <TableRow key={i.id}>
                         <TableCell className="font-medium">{i.title}</TableCell>
                         <TableCell>{i.vendor.name}</TableCell>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -110,6 +111,13 @@ export const POST = withAuth(
             comment: rejectComment?.substring(0, 200) || undefined,
           });
         }
+      }
+
+      // Trigger dynamic translation for user-entered text
+      if (customerAccountId && clarification.rejectComment) {
+        void translateRecord(customerAccountId, 'TPRMClarification', clarification.id, {
+          rejectComment: clarification.rejectComment,
+        });
       }
 
       console.log(`[ASR] POST /asr-assessments/${id}/clarification — OK, created clarification id=${clarification.id}`);

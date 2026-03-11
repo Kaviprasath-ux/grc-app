@@ -615,13 +615,13 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
           {/* Fixed Footer */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row justify-between gap-2">
             {hasSubscription ? (
-              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowSubDialog(true)}>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto order-last sm:ltr:order-first sm:rtl:order-last" onClick={() => setShowSubDialog(true)}>
                 {t("Subscription Plan")} {pendingPlans.length > 0 && `(${pendingPlans.length})`}
               </Button>
             ) : (
               <div />
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 ltr:ml-auto rtl:mr-auto">
               <Button onClick={handleSubmit} disabled={saving} size="sm" className="flex-1 sm:flex-none">
                 {saving ? t("Saving...") : t("Save")}
               </Button>
@@ -705,7 +705,7 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2 ltr:justify-end rtl:justify-start">
             <Button onClick={handleAddSubscription} size="sm">{t("Save")}</Button>
             <Button variant="outline" size="sm" onClick={() => { setShowSubDialog(false); resetSubData(); }}>{t("Cancel")}</Button>
           </div>
@@ -1183,13 +1183,13 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
           {!loadingData && (
             <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row justify-between gap-2">
               {hasSubscription ? (
-                <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setShowSubDialog(true)}>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto order-last sm:ltr:order-first sm:rtl:order-last" onClick={() => setShowSubDialog(true)}>
                   {t("Subscription Plan")} {allPlans.length > 0 && `(${allPlans.length})`}
                 </Button>
               ) : (
                 <div />
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 ltr:ml-auto rtl:mr-auto">
                 <Button onClick={handleSubmit} disabled={saving} size="sm" className="flex-1 sm:flex-none">
                   {saving ? t("Saving...") : t("Save")}
                 </Button>
@@ -1274,7 +1274,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2 ltr:justify-end rtl:justify-start">
             <Button onClick={handleAddSubscription} size="sm">{t("Save")}</Button>
             <Button variant="outline" size="sm" onClick={() => { setShowSubDialog(false); resetSubData(); }}>{t("Cancel")}</Button>
           </div>

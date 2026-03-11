@@ -31,7 +31,7 @@ import {
   Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X, Check, Info, Play, AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 // ── Types ──────────────────────────────────────────────
 interface Vendor {
@@ -243,7 +243,13 @@ export default function BOInventoryPage() {
   const [initiatingAssessment, setInitiatingAssessment] = useState(false);
 
   // ── Config data ────────────────────────────────────
-  const [serviceCategories, setServiceCategories] = useState<string[]>(DEFAULT_SERVICE_CATEGORIES);
+  const [rawServiceCategories, setRawServiceCategories] = useState<{ id: string; name: string }[]>([]);
+  const { data: translatedServiceCategories } = useTranslatedData(rawServiceCategories, { modelName: 'TPRMServiceCategory' });
+  const serviceCategories = useMemo(() => {
+    if (translatedServiceCategories.length > 0) return translatedServiceCategories.map((c) => c.name);
+    if (rawServiceCategories.length > 0) return rawServiceCategories.map((c) => c.name);
+    return DEFAULT_SERVICE_CATEGORIES;
+  }, [translatedServiceCategories, rawServiceCategories]);
   const [customProfileFields, setCustomProfileFields] = useState<ProfileField[]>([]);
   const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
   const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number }[]>([]);
@@ -301,7 +307,7 @@ export default function BOInventoryPage() {
       if (catRes.ok) {
         const data = await catRes.json();
         if (Array.isArray(data) && data.length > 0) {
-          setServiceCategories(data.map((c: { name: string }) => c.name));
+          setRawServiceCategories(data.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
         }
       }
       if (fieldRes.ok) {
@@ -515,6 +521,7 @@ export default function BOInventoryPage() {
             body: JSON.stringify({ vendorName: vendorName.trim(), vendorUrl: vendorUrl.trim() }),
           });
         }
+        triggerTranslation('TPRMVendor', created.id, { name: vendorName.trim(), serviceCategory: serviceCategory || undefined });
         setCreatedVendorName(vendorName.trim());
         setCreatedVendorId(created.id);
         setShowCreateDialog(false);
@@ -542,6 +549,7 @@ export default function BOInventoryPage() {
         body: JSON.stringify(buildPayload()),
       });
       if (res.ok) {
+        triggerTranslation('TPRMVendor', selectedVendor.id, { name: vendorName.trim(), serviceCategory: serviceCategory || undefined });
         toast({ title: t("Vendor updated successfully") });
         setShowEditDialog(false);
         setSelectedVendor(null);

@@ -82,14 +82,16 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
 
   // Priority 6 — TPRM Master Data
   { modelName: 'TPRMDomain', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
-  { modelName: 'TPRMMasterQuestion', fields: [{ name: 'questionText' }], priority: 6 },
+  { modelName: 'TPRMMasterQuestion', fields: [{ name: 'questionText' }, { name: 'verifaiPrompt' }, { name: 'evidence' }, { name: 'issue' }, { name: 'risk' }, { name: 'recommendation' }], priority: 6 },
   { modelName: 'TPRMQuestionnaireTemplate', fields: [{ name: 'templateName' }, { name: 'frameworkName' }], priority: 6 },
   { modelName: 'TPRMServiceCategory', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'TPRMDiscipline', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'TPRMDepartment', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'TPRMOnboardingQuestion', fields: [{ name: 'title' }, { name: 'question' }], priority: 6 },
   { modelName: 'TPRMOffboardingQuestion', fields: [{ name: 'title' }, { name: 'question' }], priority: 6 },
   { modelName: 'TPRMScorecardFactor', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'TPRMClarification', fields: [{ name: 'rejectComment' }, { name: 'amResponse' }], priority: 6 },
+  { modelName: 'TPRMInternalComment', fields: [{ name: 'message' }], priority: 6 },
   { modelName: 'TPRMRemediationComment', fields: [{ name: 'message' }], priority: 6 },
 
   // Priority 5 — QPost Compliance (client-specific duplicated module)

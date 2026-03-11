@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -289,6 +289,10 @@ export default function AMResponseQuestionnairePage() {
       [activeQuestionId]: { ...prev[activeQuestionId], questionId: activeQuestionId, comment: commentText } as AssessmentResponse,
     }));
     autoSave(activeQuestionId, { comment: commentText });
+    // Trigger translation for the comment
+    if (commentText) {
+      triggerTranslation('TPRMAssessmentResponse', activeQuestionId, { comment: commentText });
+    }
     setCommentDialogOpen(false);
     setActiveQuestionId(null);
     setCommentText("");
@@ -345,6 +349,12 @@ export default function AMResponseQuestionnairePage() {
         body: JSON.stringify({ responses: answeredResponses }),
       });
       if (!res.ok) throw new Error("Save failed");
+      // Trigger translation for text-based response fields (comments)
+      for (const r of answeredResponses) {
+        if (r.comment) {
+          triggerTranslation('TPRMAssessmentResponse', r.questionId, { comment: r.comment });
+        }
+      }
       toast({ title: t("Success"), description: `${answeredResponses.length} ${t("responses saved successfully")}` });
     } catch {
       toast({ title: t("Error"), description: t("Failed to save responses"), variant: "destructive" });
@@ -371,6 +381,12 @@ export default function AMResponseQuestionnairePage() {
         return;
       }
       toast({ title: t("Success"), description: t("Assessment submitted successfully. AI evaluation has started.") });
+      // Trigger translation for the assessment record
+      if (assessment) {
+        triggerTranslation('TPRMAssessment', assessmentId, {
+          questionnaireTemplate: assessment.questionnaireTemplate || '',
+        });
+      }
       // Navigate back to assessments list
       router.push("/tprm/am-assessments");
     } catch {
@@ -538,6 +554,13 @@ export default function AMResponseQuestionnairePage() {
         }
         return updated;
       });
+
+      // Trigger translation for imported comments
+      for (const r of bulkResponses) {
+        if (r.comment) {
+          triggerTranslation('TPRMAssessmentResponse', r.questionId, { comment: r.comment });
+        }
+      }
 
       toast({
         title: t("Success"),

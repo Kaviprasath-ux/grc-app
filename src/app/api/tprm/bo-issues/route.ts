@@ -259,6 +259,7 @@ export const PATCH = withAuth(
       }
 
       // Add comment if provided
+      let commentId: string | null = null;
       if (addComment && typeof addComment === "string" && addComment.trim()) {
         const comment = await prisma.tPRMRemediationComment.create({
           data: {
@@ -268,10 +269,11 @@ export const PATCH = withAuth(
             message: addComment.trim(),
           },
         });
+        commentId = comment.id;
         void translateRecord(customerAccountId, 'TPRMRemediationComment', comment.id, { message: comment.message });
 
         if (!status) {
-          return NextResponse.json({ success: true });
+          return NextResponse.json({ success: true, commentId });
         }
       }
 
@@ -281,7 +283,7 @@ export const PATCH = withAuth(
           where: { id },
           data: { status },
         });
-        return NextResponse.json(updated);
+        return NextResponse.json({ ...updated, commentId });
       }
 
       return NextResponse.json({ success: true });

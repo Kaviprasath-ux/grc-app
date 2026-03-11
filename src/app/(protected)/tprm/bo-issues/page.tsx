@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 
@@ -262,6 +262,11 @@ export default function BOIssuesPage() {
         }),
       });
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        // Trigger translation for the comment if one was added
+        if (commentText.trim() && data.commentId) {
+          triggerTranslation('TPRMRemediationComment', data.commentId, { message: commentText.trim() });
+        }
         toast({ title: t("Success"), description: t("Issue updated successfully") });
         setCommentAction(null);
         setCommentText("");
@@ -291,14 +296,19 @@ export default function BOIssuesPage() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         // Add comment to the remediation about termination initiation
-        await fetch("/api/tprm/bo-issues", {
+        const terminationComment = `Vendor termination initiated - offboarding assessment ${data.assessmentCode || ""} created`;
+        const commentRes = await fetch("/api/tprm/bo-issues", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: terminateConfirm.remediationId,
-            addComment: `Vendor termination initiated - offboarding assessment ${data.assessmentCode || ""} created`,
+            addComment: terminationComment,
           }),
         });
+        const commentData = await commentRes.json().catch(() => ({}));
+        if (commentData.commentId) {
+          triggerTranslation('TPRMRemediationComment', commentData.commentId, { message: terminationComment });
+        }
         toast({ title: t("Success"), description: t("Offboard assessment created. The vendor will receive the offboarding questionnaire.") });
         setTerminateConfirm(null);
         loadData();

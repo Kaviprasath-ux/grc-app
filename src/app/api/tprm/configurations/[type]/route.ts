@@ -250,6 +250,7 @@ export const POST = withAuth(
           const dept = await prisma.tPRMDepartment.create({
             data: { customerAccountId, name: name.trim() },
           });
+          if (customerAccountId) void translateRecord(customerAccountId, 'TPRMDepartment', dept.id, { name: dept.name });
           return NextResponse.json(dept, { status: 201 });
         }
 
@@ -440,6 +441,7 @@ export const PATCH = withAuth(
             where: { id },
             data: { ...(name !== undefined && { name: name.trim() }) },
           });
+          if (customerAccountId) void translateRecord(customerAccountId, 'TPRMDepartment', dept.id, { name: dept.name });
           return NextResponse.json(dept);
         }
 
@@ -500,6 +502,7 @@ export const PATCH = withAuth(
                 ...(isMandatory !== undefined && { isMandatory }),
               },
             });
+            if (customerAccountId) void translateRecord(customerAccountId, 'TPRMScorecardFactor', factor.id, { name: factor.name });
             return NextResponse.json(factor);
           }
 
@@ -513,6 +516,7 @@ export const PATCH = withAuth(
               ...(isMandatory !== undefined && { isMandatory }),
             },
           });
+          if (customerAccountId) void translateRecord(customerAccountId, 'TPRMScorecardFactor', factor.id, { name: factor.name });
           return NextResponse.json(factor);
         }
 

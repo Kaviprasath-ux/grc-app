@@ -77,6 +77,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasPermission } from "@/hooks/usePermissions";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 // ==================== TYPES ====================
 
@@ -399,7 +400,13 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
 
   // Config data
-  const [serviceCategories, setServiceCategories] = useState<string[]>(DEFAULT_SERVICE_CATEGORIES);
+  const [rawServiceCategories, setRawServiceCategories] = useState<{ id: string; name: string }[]>([]);
+  const { data: translatedServiceCategories } = useTranslatedData(rawServiceCategories, { modelName: 'TPRMServiceCategory' });
+  const serviceCategories = useMemo(() => {
+    if (translatedServiceCategories.length > 0) return translatedServiceCategories.map((c) => c.name);
+    if (rawServiceCategories.length > 0) return rawServiceCategories.map((c) => c.name);
+    return DEFAULT_SERVICE_CATEGORIES;
+  }, [translatedServiceCategories, rawServiceCategories]);
   const [customProfileFields, setCustomProfileFields] = useState<ProfileField[]>([]);
   const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
   const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number }[]>([]);
@@ -500,7 +507,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
         ]);
         if (catRes.ok) {
           const data = await catRes.json();
-          if (Array.isArray(data) && data.length > 0) setServiceCategories(data.map((c: { name: string }) => c.name));
+          if (Array.isArray(data) && data.length > 0) setRawServiceCategories(data.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
         }
         if (fieldRes.ok) {
           const fields: ProfileField[] = await fieldRes.json();
@@ -580,6 +587,12 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
         toast({ title: t("Warning"), description: t("Vendor created but linking failed"), variant: "destructive" });
       }
 
+      // Trigger dynamic translation for the newly created vendor
+      triggerTranslation('TPRMVendor', newVendorId, {
+        name: vendorName.trim(),
+        serviceCategory: serviceCategory || undefined,
+      });
+
       setCreatedVendorId(newVendorId);
       onSuccess(vendor.id, newVendorId);
       onClose();
@@ -642,6 +655,13 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
         }),
       });
       if (res.ok) {
+        const assessmentData = await res.json();
+        const assessmentId = assessmentData?.data?.id || assessmentData?.id;
+        if (assessmentId) {
+          triggerTranslation('TPRMAssessment', assessmentId, {
+            questionnaireTemplate: selectedNames,
+          });
+        }
         toast({ title: t("Assessment initiated successfully") });
         setShowRiskRatingDialog(false);
         setRiskRatingVendor(null);

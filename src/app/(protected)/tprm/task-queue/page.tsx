@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,7 @@ export default function TaskQueuePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("unassigned");
   const [items, setItems] = useState<TaskQueueItem[]>([]);
+  const { data: translatedItems } = useTranslatedData(items, { modelName: 'TPRMAssessment' });
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -353,7 +355,7 @@ export default function TaskQueuePage() {
     return (
       <DataGrid
         columns={getColumns()}
-        data={items}
+        data={translatedItems}
         searchPlaceholder={t("Search...")}
         toolbarExtra={activeTab === "returned" ? returnedFilterToolbar : dateFilterToolbar}
       />
