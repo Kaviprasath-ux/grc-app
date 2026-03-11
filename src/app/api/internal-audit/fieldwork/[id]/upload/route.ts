@@ -46,7 +46,7 @@ export const POST = withAuth(
       for (const file of files) {
         if (file instanceof File) {
           const subDir = `fieldwork/${engagementId}`;
-          const { urlPath, fileName } = await saveUploadedFile(file, subDir);
+          const { urlPath, buffer } = await saveUploadedFile(file, subDir);
           const originalName = file.name;
 
           // For workpapers, we need to create an evidence request first to attach files
@@ -87,6 +87,9 @@ export const POST = withAuth(
                 filePath: urlPath,
               },
             });
+
+            // Store file binary in DB for Vercel persistence
+            await prisma.$executeRaw`UPDATE "FieldworkEvidenceAttachment" SET "fileData" = ${Buffer.from(buffer)} WHERE "id" = ${attachment.id}`;
 
             // Translate file name
             if (session.customerAccountId && isTranslationConfigured()) {
@@ -132,6 +135,9 @@ export const POST = withAuth(
                 filePath: urlPath,
               },
             });
+
+            // Store file binary in DB for Vercel persistence
+            await prisma.$executeRaw`UPDATE "FieldworkEvidenceAttachment" SET "fileData" = ${Buffer.from(buffer)} WHERE "id" = ${attachment.id}`;
 
             // Translate file name
             if (session.customerAccountId && isTranslationConfigured()) {

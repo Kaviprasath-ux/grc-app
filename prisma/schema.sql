@@ -2017,6 +2017,7 @@ CREATE TABLE "FieldworkEvidenceAttachment" (
     "fileType" TEXT,
     "fileSize" INTEGER,
     "filePath" TEXT NOT NULL,
+    "fileData" BYTEA,
     "uploadedBy" TEXT,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

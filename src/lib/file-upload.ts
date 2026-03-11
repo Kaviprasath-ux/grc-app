@@ -16,6 +16,8 @@ export function getUploadBaseDir(): string {
 /**
  * Save a file to disk and return the relative URL path.
  * Handles directory creation automatically.
+ * On Vercel, disk writes are best-effort (files are ephemeral in /tmp).
+ * The returned buffer should be stored in DB for persistence.
  *
  * @param file - The File object from FormData
  * @param subDir - Subdirectory under uploads/ (e.g. 'documents', 'fieldwork/123/evidence')
@@ -25,21 +27,27 @@ export async function saveUploadedFile(
   file: File,
   subDir: string
 ): Promise<{ diskPath: string; urlPath: string; fileName: string; buffer: Buffer }> {
-  const baseDir = getUploadBaseDir();
-  const uploadDir = path.join(baseDir, subDir);
-  await mkdir(uploadDir, { recursive: true });
-
   const timestamp = Date.now();
   const originalName = file.name;
   const ext = path.extname(originalName);
   const baseName = path.basename(originalName, ext);
   const fileName = `${baseName}_${timestamp}${ext}`;
-  const diskPath = path.join(uploadDir, fileName);
 
+  // Read file buffer first (this always works)
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(diskPath, buffer);
 
+  const baseDir = getUploadBaseDir();
+  const uploadDir = path.join(baseDir, subDir);
+  const diskPath = path.join(uploadDir, fileName);
   const urlPath = `/uploads/${subDir}/${fileName}`;
+
+  // Attempt disk write (best-effort on Vercel; buffer is always returned for DB storage)
+  try {
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(diskPath, buffer);
+  } catch (err) {
+    console.warn(`[file-upload] Disk write failed for ${fileName} (non-fatal on serverless):`, err);
+  }
 
   return { diskPath, urlPath, fileName, buffer };
 }
