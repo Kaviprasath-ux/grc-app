@@ -143,6 +143,7 @@ export default function RiskViewPage() {
   const [editControlId, setEditControlId] = useState<string | null>(null);
   const [editControlForm, setEditControlForm] = useState({ startDate: "", targetDate: "", estimatedBudget: "", relativeControlWeighting: "" });
   const [savingControlEdit, setSavingControlEdit] = useState(false);
+  const [editControlErrors, setEditControlErrors] = useState<{ startDate?: string; targetDate?: string }>({});
 
   // Risk Treatment chart calculation
   const treatmentChartData = useMemo(() => {
@@ -289,11 +290,28 @@ export default function RiskViewPage() {
       estimatedBudget: control.estimatedBudget ? String(control.estimatedBudget) : "",
       relativeControlWeighting: control.relativeControlWeighting || "",
     });
+    setEditControlErrors({});
     setEditControlOpen(true);
   };
 
   const handleSaveControlEdit = async () => {
     if (!editControlId) return;
+    const today = new Date().toISOString().split("T")[0];
+    const errors: { startDate?: string; targetDate?: string } = {};
+    if (editControlForm.startDate && editControlForm.startDate < today) {
+      errors.startDate = t("Start Date must be today or a future date");
+    }
+    if (editControlForm.targetDate && editControlForm.startDate && editControlForm.targetDate <= editControlForm.startDate) {
+      errors.targetDate = t("Target Date must be after Start Date");
+    }
+    if (editControlForm.targetDate && !editControlForm.startDate) {
+      errors.startDate = t("Please select a Start Date first");
+    }
+    if (Object.keys(errors).length > 0) {
+      setEditControlErrors(errors);
+      return;
+    }
+    setEditControlErrors({});
     setSavingControlEdit(true);
     try {
       const res = await fetch(`/api/risks/${params.id}/planned-controls`, {
@@ -582,6 +600,38 @@ export default function RiskViewPage() {
     }
   };
 
+  // Calculate days data per planned control for the Days Remaining chart
+  const plannedControlDaysData = useMemo(() => {
+    return plannedControls.map((ctrl) => {
+      const startDate = ctrl.startDate ? new Date(ctrl.startDate) : null;
+      const targetDate = ctrl.targetDate ? new Date(ctrl.targetDate) : null;
+      const now = new Date();
+
+      // Total days = daysBetween(startDate, targetDate)
+      const totalDays = startDate && targetDate
+        ? Math.round((targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      // Remaining days = daysBetween(now, targetDate) — only if targetDate is in the future
+      const remainingDays = targetDate && now < targetDate
+        ? Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      // Overdue days = daysBetween(now, targetDate) — only if targetDate is in the past
+      const overdueDays = targetDate && now > targetDate
+        ? Math.round((now.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      return {
+        name: ctrl.name || ctrl.controlCode || "Control",
+        controlCode: ctrl.controlCode || "",
+        totalDays,
+        remainingDays,
+        overdueDays,
+      };
+    });
+  }, [plannedControls]);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -785,32 +835,83 @@ export default function RiskViewPage() {
           </div>
         </div>
 
-        {/* Days Remaining - Bar Chart */}
+        {/* Days Remaining - Vertical stacked bar per Planned Control */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Days Remaining")}</h3>
-          <div className="h-48 flex items-center justify-center">
-            <div className="w-full">
-              {/* Simple bar representation */}
-              <div className="flex items-end justify-center gap-1 h-32">
-                {[0, 2, 4, 6].map((val, idx) => (
-                  <div
-                    key={idx}
-                    className={cn(
-                      "w-8 bg-primary-500 rounded-t",
-                      daysRemaining >= val ? "opacity-100" : "opacity-30"
-                    )}
-                    style={{ height: `${(val + 1) * 15}%` }}
-                  />
-                ))}
-              </div>
-              <div className="flex justify-center gap-1 mt-2 text-xs text-slate-500">
-                <span className="w-8 text-center">0</span>
-                <span className="w-8 text-center">2</span>
-                <span className="w-8 text-center">4</span>
-                <span className="w-8 text-center">6</span>
-              </div>
+          {plannedControlDaysData.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-sm text-slate-400">
+              {t("No planned controls")}
             </div>
-          </div>
+          ) : (
+            <div className="space-y-5">
+              {plannedControlDaysData.map((ctrl, idx) => {
+                const isOverdue = ctrl.overdueDays > 0;
+                const elapsed = ctrl.totalDays - ctrl.remainingDays;
+                const elapsedPct = ctrl.totalDays > 0 ? Math.min((elapsed / ctrl.totalDays) * 100, 100) : 0;
+                const overduePct = ctrl.totalDays > 0 ? (ctrl.overdueDays / (ctrl.totalDays + ctrl.overdueDays)) * 100 : (ctrl.overdueDays > 0 ? 100 : 0);
+                const basePct = ctrl.totalDays > 0 && ctrl.overdueDays > 0 ? (ctrl.totalDays / (ctrl.totalDays + ctrl.overdueDays)) * 100 : 100;
+
+                return (
+                  <div key={idx} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-slate-700 truncate" title={ctrl.name}>
+                        {ctrl.controlCode ? `${ctrl.controlCode} - ` : ""}{ctrl.name}
+                      </p>
+                      <span className={cn("text-xs font-semibold whitespace-nowrap ltr:ml-2 rtl:mr-2", isOverdue ? "text-red-600" : "text-emerald-600")}>
+                        {isOverdue ? `${ctrl.overdueDays}d ${t("overdue")}` : `${ctrl.remainingDays}d ${t("remaining")}`}
+                      </span>
+                    </div>
+                    {/* Single stacked bar with tooltip */}
+                    <div className="relative group cursor-pointer">
+                      <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden flex">
+                        {isOverdue ? (
+                          <>
+                            <div
+                              className="bg-primary-400 h-3 transition-all"
+                              style={{ width: `${basePct}%` }}
+                            />
+                            <div
+                              className="bg-red-400 h-3 transition-all"
+                              style={{ width: `${overduePct}%` }}
+                            />
+                          </>
+                        ) : (
+                          <div
+                            className="bg-emerald-400 h-3 rounded-full transition-all"
+                            style={{ width: `${elapsedPct}%` }}
+                          />
+                        )}
+                      </div>
+                      {/* Hover tooltip */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-sm bg-primary-400" />
+                            <span>{t("Total Days")}: {ctrl.totalDays}d</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-sm bg-emerald-400" />
+                            <span>{t("Elapsed")}: {elapsed > 0 ? elapsed : 0}d</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-sm bg-slate-400" />
+                            <span>{t("Remaining")}: {ctrl.remainingDays}d</span>
+                          </div>
+                          {isOverdue && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-sm bg-red-400" />
+                              <span>{t("Overdue")}: {ctrl.overdueDays}d</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Residual Risk Rating */}
@@ -1349,19 +1450,36 @@ export default function RiskViewPage() {
                 <Label className="text-sm font-medium text-slate-700">{t("Start Date")}</Label>
                 <Input
                   type="date"
-                  className="mt-1 bg-white"
+                  className={cn("mt-1 bg-white", editControlErrors.startDate && "border-red-500 focus-visible:ring-red-500")}
                   value={editControlForm.startDate}
-                  onChange={(e) => setEditControlForm(prev => ({ ...prev, startDate: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEditControlForm(prev => ({
+                      ...prev,
+                      startDate: val,
+                      targetDate: prev.targetDate && prev.targetDate <= val ? "" : prev.targetDate,
+                    }));
+                    setEditControlErrors(prev => ({ ...prev, startDate: undefined }));
+                  }}
                 />
+                {editControlErrors.startDate && (
+                  <p className="text-xs text-red-500 mt-1">{editControlErrors.startDate}</p>
+                )}
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Target Date")}</Label>
                 <Input
                   type="date"
-                  className="mt-1 bg-white"
+                  className={cn("mt-1 bg-white", editControlErrors.targetDate && "border-red-500 focus-visible:ring-red-500")}
                   value={editControlForm.targetDate}
-                  onChange={(e) => setEditControlForm(prev => ({ ...prev, targetDate: e.target.value }))}
+                  onChange={(e) => {
+                    setEditControlForm(prev => ({ ...prev, targetDate: e.target.value }));
+                    setEditControlErrors(prev => ({ ...prev, targetDate: undefined }));
+                  }}
                 />
+                {editControlErrors.targetDate && (
+                  <p className="text-xs text-red-500 mt-1">{editControlErrors.targetDate}</p>
+                )}
               </div>
             </div>
             <div>
