@@ -58,7 +58,7 @@ import {
   Download,
 } from "lucide-react";
 import Link from "next/link";
-import { triggerTranslation } from "@/hooks/useTranslatedData";
+import { triggerTranslation, useTranslatedRecord, useTranslatedData } from "@/hooks/useTranslatedData";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -524,9 +524,16 @@ export default function QPostRequirementDetailPage() {
     );
   }
 
-  const evidences = requirement.evidences.map((e) => e.evidence);
-  const policies = requirement.policies.map((p) => p.policy);
-  const exceptions = [...(requirement.exceptions || []), ...(requirement.complianceExceptions || [])];
+  const rawEvidences = requirement.evidences.map((e) => e.evidence);
+  const rawPolicies = requirement.policies.map((p) => p.policy);
+  const rawExceptions = [...(requirement.exceptions || []), ...(requirement.complianceExceptions || [])];
+
+  // Translation hooks for display
+  const { data: trReq } = useTranslatedRecord(requirement, { modelName: "QPostRequirement" });
+  const req = (trReq || requirement) as Requirement;
+  const { data: evidences } = useTranslatedData(rawEvidences, { modelName: "QPostEvidence" });
+  const { data: policies } = useTranslatedData(rawPolicies, { modelName: "QPostPolicy" });
+  const { data: exceptions } = useTranslatedData(rawExceptions, { modelName: "QPostException" });
 
   return (
     <div className="p-6 space-y-6">
@@ -540,7 +547,7 @@ export default function QPostRequirementDetailPage() {
           {t("Requirements")}
         </Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-foreground font-medium">{requirement.code}</span>
+        <span className="text-foreground font-medium">{req.code}</span>
       </nav>
 
       {/* Header */}
@@ -550,7 +557,7 @@ export default function QPostRequirementDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{requirement.code} - {requirement.name}</h1>
+            <h1 className="text-2xl font-bold">{req.code} - {req.name}</h1>
             <p className="text-sm text-muted-foreground">
               {requirement.framework?.name || t("No Framework")}
               {requirement.category ? ` / ${requirement.category.name}` : ""}
@@ -572,8 +579,8 @@ export default function QPostRequirementDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <DetailField label={t("Code")} value={requirement.code} />
-            <DetailField label={t("Name")} value={requirement.name} />
+            <DetailField label={t("Code")} value={req.code} />
+            <DetailField label={t("Name")} value={req.name} />
             <DetailField label={t("Framework")} value={requirement.framework?.name} />
             <DetailField label={t("Category")} value={requirement.category?.name} />
             <DetailField label={t("Requirement Type")} value={requirement.requirementType} />
@@ -608,10 +615,10 @@ export default function QPostRequirementDetailPage() {
               <DetailField label={t("Parent Requirement")} value={`${requirement.parent.code} - ${requirement.parent.name}`} />
             )}
           </div>
-          {requirement.description && (
+          {req.description && (
             <div className="mt-4">
               <span className="text-xs text-muted-foreground">{t("Description")}</span>
-              <p className="mt-1 text-sm whitespace-pre-wrap">{requirement.description}</p>
+              <p className="mt-1 text-sm whitespace-pre-wrap">{req.description}</p>
             </div>
           )}
           {requirement.justification && (

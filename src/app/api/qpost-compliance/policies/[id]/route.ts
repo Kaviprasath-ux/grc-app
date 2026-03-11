@@ -5,6 +5,7 @@ import { aiDeleteService } from "@/services/ai-delete-service";
 import { unlink } from "fs/promises";
 import path from "path";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -147,6 +148,13 @@ export const PUT = withAuth(
         },
       });
 
+      // Trigger background translation
+      if (existing.customerAccountId) {
+        void translateRecord(existing.customerAccountId, "QPostPolicy", policy.id, {
+          name: policy.name,
+        });
+      }
+
       // Send notifications for changed assignments
       if (existing.customerAccountId) {
         // Notify new assignee if changed and different from actor
@@ -273,6 +281,13 @@ export const PATCH = withAuth(
           attachments: true,
         },
       });
+
+      // Trigger background translation
+      if (existing.customerAccountId) {
+        void translateRecord(existing.customerAccountId, "QPostPolicy", policy.id, {
+          name: policy.name,
+        });
+      }
 
       // Send notifications for changed assignments
       if (existing.customerAccountId) {

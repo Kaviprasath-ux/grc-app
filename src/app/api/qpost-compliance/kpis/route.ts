@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all QPost KPIs with filters - filtered by customer account
 export const GET = withAuth(
@@ -155,6 +156,16 @@ export const POST = withAuth(
           reviews: true,
         },
       });
+
+      // Trigger background translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, "QPostKPI", kpi.id, {
+          objective: kpi.objective || "",
+          description: kpi.description || "",
+          dataSource: kpi.dataSource || "",
+          calculationFormula: kpi.calculationFormula || "",
+        });
+      }
 
       return NextResponse.json(kpi, { status: 201 });
     } catch (error: unknown) {

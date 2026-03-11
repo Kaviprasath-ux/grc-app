@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -78,6 +79,15 @@ export const POST = withAuth(
           },
         },
       });
+
+      // Trigger background translation
+      if (evidence.customerAccountId) {
+        void translateRecord(evidence.customerAccountId, "QPostEvidenceManualReview", review.id, {
+          comments: review.comments || "",
+          findings: review.findings || "",
+          recommendation: review.recommendation || "",
+        });
+      }
 
       return NextResponse.json(review, { status: 201 });
     } catch (error) {

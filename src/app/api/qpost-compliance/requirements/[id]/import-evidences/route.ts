@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import { parseExcelFile, generateExcelTemplate, ColumnDefinition } from "@/lib/excel-import";
+import { translateRecord } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -192,6 +193,22 @@ export const POST = withAuth(
 
         return { imported, skipped, rowErrors };
       });
+
+      // Trigger background translation for all imported evidences
+      if (importResult.imported > 0 && customerAccountId) {
+        const importedEvidences = await prisma.qPostEvidence.findMany({
+          where: { customerAccountId, requirements: { some: { requirementId } } },
+          orderBy: { createdAt: "desc" },
+          take: importResult.imported,
+          select: { id: true, name: true, description: true },
+        });
+        for (const ev of importedEvidences) {
+          void translateRecord(customerAccountId, "QPostEvidence", ev.id, {
+            name: ev.name,
+            description: ev.description || "",
+          });
+        }
+      }
 
       return NextResponse.json({
         success: true,

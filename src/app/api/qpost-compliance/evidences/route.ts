@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all QPost evidences with filters - filtered by customer account and department for department roles
 export const GET = withAuth(
@@ -174,6 +175,14 @@ export const POST = withAuth(
             // Ignore duplicate errors
           }
         }
+      }
+
+      // Trigger background translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, "QPostEvidence", evidence.id, {
+          name: evidence.name,
+          description: evidence.description || "",
+        });
       }
 
       // Notify assignee if different from creator

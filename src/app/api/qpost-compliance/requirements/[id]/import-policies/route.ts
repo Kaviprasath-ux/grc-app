@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import { parseExcelFile, generateExcelTemplate, ColumnDefinition } from "@/lib/excel-import";
+import { translateRecord } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -197,6 +198,21 @@ export const POST = withAuth(
 
         return { imported, skipped, rowErrors };
       });
+
+      // Trigger background translation for all imported policies
+      if (importResult.imported > 0 && customerAccountId) {
+        const importedPolicies = await prisma.qPostPolicy.findMany({
+          where: { customerAccountId, requirements: { some: { requirementId } } },
+          orderBy: { createdAt: "desc" },
+          take: importResult.imported,
+          select: { id: true, name: true },
+        });
+        for (const pol of importedPolicies) {
+          void translateRecord(customerAccountId, "QPostPolicy", pol.id, {
+            name: pol.name,
+          });
+        }
+      }
 
       return NextResponse.json({
         success: true,

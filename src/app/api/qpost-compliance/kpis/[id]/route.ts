@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -124,6 +125,16 @@ export const PUT = withAuth(
           },
         },
       });
+
+      // Trigger background translation
+      if (existing.customerAccountId) {
+        void translateRecord(existing.customerAccountId, "QPostKPI", kpi.id, {
+          objective: kpi.objective || "",
+          description: kpi.description || "",
+          dataSource: kpi.dataSource || "",
+          calculationFormula: kpi.calculationFormula || "",
+        });
+      }
 
       // Send KPI score update notification if score changed
       const newScore = actualScore !== undefined ? parseFloat(actualScore) : null;

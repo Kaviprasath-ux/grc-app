@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all QPost exceptions with filters - filtered by customer account
 export const GET = withAuth(
@@ -224,6 +225,14 @@ export const POST = withAuth(
           comments: true,
         },
       });
+
+      // Trigger background translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, "QPostException", exception.id, {
+          name: exception.name,
+          description: exception.description || "",
+        });
+      }
 
       // Send notifications for exception
       // Notify approver if assigned and different from actor

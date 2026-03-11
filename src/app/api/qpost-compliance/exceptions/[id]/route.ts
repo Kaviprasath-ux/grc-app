@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -219,6 +220,14 @@ export const PUT = withAuth(
           },
         },
       });
+
+      // Trigger background translation
+      if (existing.customerAccountId) {
+        void translateRecord(existing.customerAccountId, "QPostException", exception.id, {
+          name: exception.name,
+          description: exception.description || "",
+        });
+      }
 
       // Send notifications based on status changes
       if (session.customerAccountId && existing.requesterId && existing.requesterId !== session.id) {

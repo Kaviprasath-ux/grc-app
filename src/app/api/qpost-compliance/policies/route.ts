@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all policies with filters
 export const GET = withAuth(
@@ -165,6 +166,13 @@ export const POST = withAuth(
             // Ignore duplicate errors
           }
         }
+      }
+
+      // Trigger background translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, "QPostPolicy", policy.id, {
+          name: policy.name,
+        });
       }
 
       // Send notifications for policy assignments

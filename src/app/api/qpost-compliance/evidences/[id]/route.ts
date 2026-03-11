@@ -5,6 +5,7 @@ import { unlink } from "fs/promises";
 import path from "path";
 import { withAuth } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET single QPost evidence with all related data
 export async function GET(
@@ -126,6 +127,14 @@ export const PUT = withAuth(
           },
         },
       });
+
+      // Trigger background translation
+      if (session?.customerAccountId) {
+        void translateRecord(session.customerAccountId, "QPostEvidence", updatedEvidence.id, {
+          name: updatedEvidence.name,
+          description: updatedEvidence.description || "",
+        });
+      }
 
       // Get the old evidence to check for status changes
       const oldEvidence = await prisma.qPostEvidence.findUnique({
