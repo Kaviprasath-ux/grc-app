@@ -36,6 +36,7 @@ interface Risk {
   department: { id: string; name: string } | null;
   owner: { id: string; fullName: string } | null;
   impactedAsset: { id: string; assetId: string; name: string } | null;
+  impactedAssetGroup: { id: string; name: string } | null;
   impactedProcess: { id: string; processCode: string; name: string } | null;
   threats: { threat: { id: string; name: string } }[];
   vulnerabilities: { vulnerability: { id: string; name: string } }[];
@@ -315,23 +316,23 @@ export default function RiskDetailPage() {
         <p className="text-sm text-slate-600 mt-1">{displayRisk.description || "-"}</p>
       </div>
 
-      {/* Assets table */}
+      {/* Asset Groups table */}
       <div className="bg-slate-50 rounded-xl p-5">
         <div className="overflow-hidden rounded-lg border border-slate-200">
           <table className="w-full">
             <thead>
               <tr className="bg-[#1a1f4e] text-white">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold">{t("Asset Group")}</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold">{t("Asset ID")}</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold">{t("Name")}</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold">{t("AssetValueScore")}</th>
               </tr>
             </thead>
             <tbody>
-              {risk.impactedAsset ? (
+              {risk.impactedAssetGroup || risk.impactedAsset ? (
                 <tr className="border-t border-slate-100">
-                  <td className="px-4 py-2.5 text-sm text-slate-700">{risk.impactedAsset.assetId}</td>
-                  <td className="px-4 py-2.5 text-sm text-slate-700">{risk.impactedAsset.name}</td>
-                  <td className="px-4 py-2.5 text-sm text-slate-700">-</td>
+                  <td className="px-4 py-2.5 text-sm text-slate-700">{risk.impactedAssetGroup?.name || "-"}</td>
+                  <td className="px-4 py-2.5 text-sm text-slate-700">{risk.impactedAsset?.assetId || "-"}</td>
+                  <td className="px-4 py-2.5 text-sm text-slate-700">{risk.impactedAsset?.name || "-"}</td>
                 </tr>
               ) : (
                 <tr>

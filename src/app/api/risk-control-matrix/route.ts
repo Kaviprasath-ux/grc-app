@@ -146,6 +146,12 @@ export const GET = withAuth(
                     },
                   },
                 },
+                impactedAssetGroup: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
                 impactedProcess: {
                   select: {
                     id: true,

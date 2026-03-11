@@ -99,17 +99,11 @@ export const PUT = withAuth(
       const scoringConfig = await prisma.bIAScoringConfig.findFirst();
       const calculationType = scoringConfig?.calculationType || "High of all";
 
-      // Calculate impact rating based on category ratings
+      // Calculate impact rating - always take the highest score
       let impactRating = 0;
       if (categoryRatings && categoryRatings.length > 0) {
         const scores = categoryRatings.map((r: { ratingScore: number }) => r.ratingScore || 0);
-        if (calculationType === "High of all") {
-          impactRating = Math.max(...scores);
-        } else if (calculationType === "Addition of all") {
-          impactRating = scores.reduce((sum: number, s: number) => sum + s, 0);
-        } else if (calculationType === "Product of all") {
-          impactRating = scores.reduce((prod: number, s: number) => prod * (s || 1), 1);
-        }
+        impactRating = Math.max(...scores);
       }
 
       // Determine process criticality based on scoring ranges

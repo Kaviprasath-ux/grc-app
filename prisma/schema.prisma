@@ -1517,6 +1517,7 @@ model AssetGroup {
   updatedAt               DateTime                 @updatedAt
   assets                  Asset[]
   assetCIAClassifications AssetCIAClassification[]
+  impactedByRisks         Risk[]                   @relation("RiskImpactedAssetGroup")
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
@@ -1848,9 +1849,11 @@ model Risk {
   department          Department?     @relation(fields: [departmentId], references: [id])
   ownerId             String?
   owner               User?           @relation("RiskOwner", fields: [ownerId], references: [id])
-  // Impacted Asset or Process (based on Risk Type selection)
+  // Impacted Asset Group or Process (based on Risk Type selection)
   impactedAssetId     String?
   impactedAsset       Asset?          @relation("RiskImpactedAsset", fields: [impactedAssetId], references: [id])
+  impactedAssetGroupId String?
+  impactedAssetGroup  AssetGroup?     @relation("RiskImpactedAssetGroup", fields: [impactedAssetGroupId], references: [id])
   impactedProcessId   String?
   impactedProcess     Process?        @relation("RiskImpactedProcess", fields: [impactedProcessId], references: [id])
   // Assessment scores

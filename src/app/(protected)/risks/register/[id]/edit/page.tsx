@@ -110,6 +110,7 @@ interface Risk {
   department: { id: string; name: string } | null;
   owner: { id: string; fullName: string } | null;
   impactedAsset?: { id: string } | null;
+  impactedAssetGroup?: { id: string } | null;
   impactedProcess?: { id: string } | null;
   threats?: { threat: { id: string; name: string } }[];
   vulnerabilities?: { vulnerability: { id: string; name: string } }[];
@@ -145,6 +146,7 @@ export default function EditRiskPage() {
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   const [causes, setCauses] = useState<Cause[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [assetGroups, setAssetGroups] = useState<{ id: string; name: string }[]>([]);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [controlStrengths, setControlStrengths] = useState<ControlStrengthOption[]>([]);
@@ -177,6 +179,7 @@ export default function EditRiskPage() {
     departmentId: "",
     ownerId: "",
     impactedAssetId: "",
+    impactedAssetGroupId: "",
     impactedProcessId: "",
     selectedThreats: [] as string[],
     selectedVulnerabilities: [] as string[],
@@ -194,6 +197,7 @@ export default function EditRiskPage() {
         fetchVulnerabilities(),
         fetchCauses(),
         fetchAssets(),
+        fetchAssetGroups(),
         fetchProcesses(),
         fetchControls(),
         fetchControlStrengths(),
@@ -218,6 +222,7 @@ export default function EditRiskPage() {
           departmentId: risk.department?.id || "",
           ownerId: risk.owner?.id || "",
           impactedAssetId: risk.impactedAsset?.id || "",
+          impactedAssetGroupId: risk.impactedAssetGroup?.id || "",
           impactedProcessId: risk.impactedProcess?.id || "",
           selectedThreats: risk.threats?.map(t => t.threat.id) || [],
           selectedVulnerabilities: risk.vulnerabilities?.map(v => v.vulnerability.id) || [],
@@ -352,6 +357,18 @@ export default function EditRiskPage() {
     }
   };
 
+  const fetchAssetGroups = async () => {
+    try {
+      const response = await fetch("/api/asset-groups");
+      if (response.ok) {
+        const data = await response.json();
+        setAssetGroups(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch asset groups:", error);
+    }
+  };
+
   const fetchProcesses = async () => {
     try {
       const response = await fetch("/api/processes");
@@ -407,7 +424,7 @@ export default function EditRiskPage() {
       if (selectedType?.name === "Asset Risk") {
         setFormData((prev) => ({ ...prev, impactedProcessId: "" }));
       } else if (selectedType?.name === "Process Risk") {
-        setFormData((prev) => ({ ...prev, impactedAssetId: "" }));
+        setFormData((prev) => ({ ...prev, impactedAssetId: "", impactedAssetGroupId: "" }));
       }
     }
   };
@@ -488,6 +505,7 @@ export default function EditRiskPage() {
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
           impactedAssetId: formData.impactedAssetId || null,
+          impactedAssetGroupId: formData.impactedAssetGroupId || null,
           impactedProcessId: formData.impactedProcessId || null,
           threats: formData.selectedThreats,
           vulnerabilities: formData.selectedVulnerabilities,
@@ -810,18 +828,18 @@ export default function EditRiskPage() {
                   </div>
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
                     <div>
-                      <Label>{t("impactedAsset")}</Label>
+                      <Label>{t("Asset Groups")}</Label>
                       <Select
-                        value={formData.impactedAssetId || undefined}
-                        onValueChange={(value) => handleInputChange("impactedAssetId", value)}
+                        value={formData.impactedAssetGroupId || undefined}
+                        onValueChange={(value) => handleInputChange("impactedAssetGroupId", value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t("selectImpactedAsset")} />
+                          <SelectValue placeholder={t("Select asset group")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          {assets.map((asset) => (
-                            <SelectItem key={asset.id} value={asset.id}>
-                              {asset.assetId} - {asset.name}
+                          {assetGroups.map((group) => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

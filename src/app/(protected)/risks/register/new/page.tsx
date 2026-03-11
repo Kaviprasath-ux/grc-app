@@ -116,6 +116,7 @@ export default function NewRiskPage() {
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   const [causes, setCauses] = useState<Cause[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [assetGroups, setAssetGroups] = useState<{ id: string; name: string }[]>([]);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [loading, setLoading] = useState(false);
@@ -144,6 +145,7 @@ export default function NewRiskPage() {
     departmentId: "",
     ownerId: "",
     impactedAssetId: "",
+    impactedAssetGroupId: "",
     impactedProcessId: "",
     selectedThreats: [] as string[],
     selectedVulnerabilities: [] as string[],
@@ -159,6 +161,7 @@ export default function NewRiskPage() {
     fetchVulnerabilities();
     fetchCauses();
     fetchAssets();
+    fetchAssetGroups();
     fetchProcesses();
     fetchControls();
     generateRiskId();
@@ -292,6 +295,18 @@ export default function NewRiskPage() {
     }
   };
 
+  const fetchAssetGroups = async () => {
+    try {
+      const response = await fetch("/api/asset-groups");
+      if (response.ok) {
+        const data = await response.json();
+        setAssetGroups(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch asset groups:", error);
+    }
+  };
+
   const fetchProcesses = async () => {
     try {
       const response = await fetch("/api/processes");
@@ -335,7 +350,7 @@ export default function NewRiskPage() {
       if (selectedType?.name === "Asset Risk") {
         setFormData((prev) => ({ ...prev, impactedProcessId: "" }));
       } else if (selectedType?.name === "Process Risk") {
-        setFormData((prev) => ({ ...prev, impactedAssetId: "" }));
+        setFormData((prev) => ({ ...prev, impactedAssetId: "", impactedAssetGroupId: "" }));
       }
     }
   };
@@ -427,6 +442,7 @@ export default function NewRiskPage() {
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
           impactedAssetId: formData.impactedAssetId || null,
+          impactedAssetGroupId: formData.impactedAssetGroupId || null,
           impactedProcessId: formData.impactedProcessId || null,
           threats: formData.selectedThreats,
           vulnerabilities: formData.selectedVulnerabilities,
@@ -762,18 +778,18 @@ export default function NewRiskPage() {
                   </div>
                   {riskTypes.find(rt => rt.id === formData.typeId)?.name === "Asset Risk" && (
                     <div>
-                      <Label>{t("Impacted Asset")}</Label>
+                      <Label>{t("Asset Groups")}</Label>
                       <Select
-                        value={formData.impactedAssetId}
-                        onValueChange={(value) => handleInputChange("impactedAssetId", value)}
+                        value={formData.impactedAssetGroupId}
+                        onValueChange={(value) => handleInputChange("impactedAssetGroupId", value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t("Select Impacted Asset")} />
+                          <SelectValue placeholder={t("Select asset group")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          {assets.map((asset) => (
-                            <SelectItem key={asset.id} value={asset.id}>
-                              {asset.assetId} - {asset.name}
+                          {assetGroups.map((group) => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

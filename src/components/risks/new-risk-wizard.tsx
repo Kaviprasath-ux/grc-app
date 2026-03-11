@@ -67,6 +67,11 @@ interface Asset {
   name: string;
 }
 
+interface AssetGroup {
+  id: string;
+  name: string;
+}
+
 interface Process {
   id: string;
   processCode: string;
@@ -107,6 +112,7 @@ interface EditRiskData {
   vulnerabilities?: { vulnerability: { id: string; name: string } }[];
   causes?: { cause: { id: string; name: string } }[];
   impactedAsset?: { id: string; assetId: string; name: string } | null;
+  impactedAssetGroup?: { id: string; name: string } | null;
   impactedProcess?: { id: string; processCode: string; name: string } | null;
   controlRisks?: { control: { id: string; controlCode: string; name: string; status: string }; controlStrengthId?: string | null; justification?: string | null }[];
 }
@@ -142,6 +148,7 @@ export function NewRiskWizard({
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   const [causes, setCauses] = useState<Cause[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [assetGroups, setAssetGroups] = useState<AssetGroup[]>([]);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [controlStrengths, setControlStrengths] = useState<ControlStrengthOption[]>([]);
@@ -192,6 +199,7 @@ export function NewRiskWizard({
     departmentId: "",
     ownerId: "",
     impactedAssetId: "",
+    impactedAssetGroupId: "",
     impactedProcessId: "",
     selectedThreats: [] as string[],
     selectedVulnerabilities: [] as string[],
@@ -206,6 +214,7 @@ export function NewRiskWizard({
       fetchVulnerabilities();
       fetchCauses();
       fetchAssets();
+      fetchAssetGroups();
       fetchProcesses();
       fetchControls();
       fetchControlStrengths();
@@ -223,6 +232,7 @@ export function NewRiskWizard({
           departmentId: editData.department?.id || "",
           ownerId: editData.owner?.id || "",
           impactedAssetId: editData.impactedAsset?.id || "",
+          impactedAssetGroupId: editData.impactedAssetGroup?.id || "",
           impactedProcessId: editData.impactedProcess?.id || "",
           selectedThreats: editData.threats?.map(t => t.threat.id) || [],
           selectedVulnerabilities: editData.vulnerabilities?.map(v => v.vulnerability.id) || [],
@@ -350,6 +360,18 @@ export function NewRiskWizard({
     }
   };
 
+  const fetchAssetGroups = async () => {
+    try {
+      const response = await fetch("/api/asset-groups");
+      if (response.ok) {
+        const data = await response.json();
+        setAssetGroups(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch asset groups:", error);
+    }
+  };
+
   const fetchProcesses = async () => {
     try {
       const response = await fetch("/api/processes");
@@ -407,7 +429,7 @@ export function NewRiskWizard({
       if (selectedType?.name === "Asset Risk") {
         setFormData((prev) => ({ ...prev, impactedProcessId: "" }));
       } else if (selectedType?.name === "Process Risk") {
-        setFormData((prev) => ({ ...prev, impactedAssetId: "" }));
+        setFormData((prev) => ({ ...prev, impactedAssetId: "", impactedAssetGroupId: "" }));
       }
     }
   };
@@ -514,6 +536,7 @@ export function NewRiskWizard({
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
           impactedAssetId: formData.impactedAssetId || null,
+          impactedAssetGroupId: formData.impactedAssetGroupId || null,
           impactedProcessId: formData.impactedProcessId || null,
           threats: formData.selectedThreats,
           vulnerabilities: formData.selectedVulnerabilities,
@@ -566,6 +589,7 @@ export function NewRiskWizard({
       departmentId: "",
       ownerId: "",
       impactedAssetId: "",
+      impactedAssetGroupId: "",
       impactedProcessId: "",
       selectedThreats: [],
       selectedVulnerabilities: [],
@@ -960,18 +984,18 @@ export function NewRiskWizard({
                   </div>
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
                     <div className="space-y-1.5">
-                      <Label>{t("Impacted Asset")}</Label>
+                      <Label>{t("Asset Groups")}</Label>
                       <Select
-                        value={formData.impactedAssetId}
-                        onValueChange={(value) => handleInputChange("impactedAssetId", value)}
+                        value={formData.impactedAssetGroupId}
+                        onValueChange={(value) => handleInputChange("impactedAssetGroupId", value)}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder={t("Select impacted asset")} />
+                          <SelectValue placeholder={t("Select asset group")} />
                         </SelectTrigger>
                         <SelectContent>
-                          {assets.map((asset) => (
-                            <SelectItem key={asset.id} value={asset.id}>
-                              {asset.assetId} - {asset.name}
+                          {assetGroups.map((group) => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

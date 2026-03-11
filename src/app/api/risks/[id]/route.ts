@@ -44,6 +44,12 @@ export const GET = withAuth(
               name: true,
             },
           },
+          impactedAssetGroup: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           impactedProcess: {
             select: {
               id: true,
@@ -116,6 +122,7 @@ export const PUT = withAuth(
       departmentId,
       ownerId,
       impactedAssetId,
+      impactedAssetGroupId,
       impactedProcessId,
       likelihood,
       impact,
@@ -179,6 +186,7 @@ export const PUT = withAuth(
       departmentId,
       ownerId,
       impactedAssetId,
+      impactedAssetGroupId,
       impactedProcessId,
       likelihood: newLikelihood,
       impact: newImpact,
@@ -310,6 +318,12 @@ export const PUT = withAuth(
             select: {
               id: true,
               assetId: true,
+              name: true,
+            },
+          },
+          impactedAssetGroup: {
+            select: {
+              id: true,
               name: true,
             },
           },

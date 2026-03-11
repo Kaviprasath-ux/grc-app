@@ -42,6 +42,8 @@ interface Risk {
   controlRisks?: { controlId: string; controlStrengthId: string | null; justification: string | null; control: { id: string; controlCode?: string; name: string }; controlStrength: { id: string; name: string; score: number } | null }[];
   riskSources?: string | null;
   assessmentFormData?: string | null;
+  impactedAssetGroupId?: string | null;
+  impactedAssetGroup?: { id: string; name: string } | null;
 }
 
 interface AssessmentFormData {
@@ -115,12 +117,12 @@ export function RiskAssessmentWizardDialog({
   const { canView, canCreate, canEdit } = usePermissions('risk.assessment');
 
   const assessmentSteps = [
-    { id: 1, name: t("Risk Context"), icon: assessmentStepIcons[0] },
-    { id: 2, name: t("Likelihood"), icon: assessmentStepIcons[1] },
-    { id: 3, name: t("Impact"), icon: assessmentStepIcons[2] },
-    { id: 4, name: t("Vulnerability"), icon: assessmentStepIcons[3] },
-    { id: 5, name: t("Risk Rating"), icon: assessmentStepIcons[4] },
-    { id: 6, name: t("Summary"), icon: assessmentStepIcons[5] },
+    { id: 1, key: "context", name: t("Risk Context"), icon: assessmentStepIcons[0] },
+    { id: 2, key: "likelihood", name: t("Likelihood"), icon: assessmentStepIcons[1] },
+    { id: 3, key: "impact", name: t("Impact"), icon: assessmentStepIcons[2] },
+    { id: 4, key: "vulnerability", name: t("Vulnerability"), icon: assessmentStepIcons[3] },
+    { id: 5, key: "rating", name: t("Risk Rating"), icon: assessmentStepIcons[4] },
+    { id: 6, key: "summary", name: t("Summary"), icon: assessmentStepIcons[5] },
   ];
 
   const [risk, setRisk] = useState<Risk | null>(null);
@@ -137,8 +139,19 @@ export function RiskAssessmentWizardDialog({
   const [riskTolerance, setRiskTolerance] = useState<number>(10);
   const [controlStrengths, setControlStrengths] = useState<{ id: string; name: string; score: number }[]>([]);
 
+  // Risk Methodology config flags
+  const [useAssetScore, setUseAssetScore] = useState(false);
+  const [useLikelihood, setUseLikelihood] = useState(true);
+  const [useImpact, setUseImpact] = useState(true);
+  const [useVulnerabilityScore, setUseVulnerabilityScore] = useState(true);
+  const [assetScoreValue, setAssetScoreValue] = useState<number>(0);
+  const [assetScoreLabel, setAssetScoreLabel] = useState<string>("");
+
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Helper to get current step key
+  const currentStepKey = assessmentSteps.find(s => s.id === currentStep)?.key || "context";
 
   // Assessment form data
   const [threatLikelihoods, setThreatLikelihoods] = useState<Record<string, number>>({});
@@ -162,6 +175,8 @@ export function RiskAssessmentWizardDialog({
       setThreatLikelihoods({});
       setThreatImpacts({});
       setVulnerabilityRatingsForm({});
+      setAssetScoreValue(0);
+      setAssetScoreLabel("");
       setRisk(null);
       setLoading(true);
       isInitialLoad.current = true;
@@ -228,7 +243,7 @@ export function RiskAssessmentWizardDialog({
     // Calculate scores
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
+    const riskScoreCalc = (useLikelihood ? avgLikelihood : 1) * (useImpact ? maxImpact : 1) * (useVulnerabilityScore ? (avgVulnerability || 1) : 1) * (useAssetScore ? (assetScoreValue || 1) : 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
     const simpleRiskScore = likelihoodRounded * impactRounded;
 
@@ -375,6 +390,10 @@ export function RiskAssessmentWizardDialog({
       if (scoreConfigRes.ok) {
         const data = await scoreConfigRes.json();
         if (data.riskTolerance) setRiskTolerance(data.riskTolerance);
+        if (data.useAssetScore) setUseAssetScore(true);
+        if (data.useLikelihood !== undefined) setUseLikelihood(data.useLikelihood);
+        if (data.useImpact !== undefined) setUseImpact(data.useImpact);
+        if (data.useVulnerabilityScore !== undefined) setUseVulnerabilityScore(data.useVulnerabilityScore);
       }
       if (controlStrengthsRes.ok) {
         const data = await controlStrengthsRes.json();
@@ -422,7 +441,7 @@ export function RiskAssessmentWizardDialog({
 
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
+    const riskScoreCalc = (useLikelihood ? avgLikelihood : 1) * (useImpact ? maxImpact : 1) * (useVulnerabilityScore ? (avgVulnerability || 1) : 1) * (useAssetScore ? (assetScoreValue || 1) : 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
     const simpleRiskScore = likelihoodRounded * impactRounded;
 
@@ -461,6 +480,19 @@ export function RiskAssessmentWizardDialog({
       if (currentStep >= 2 && currentStep <= 4) {
         await saveProgress();
       }
+      // Fetch asset score when moving from Vulnerability (step 4) to Risk Rating (step 5)
+      if (currentStep === 4 && useAssetScore && risk) {
+        try {
+          const res = await fetch(`/api/risks/${risk.id}/asset-score`);
+          if (res.ok) {
+            const data = await res.json();
+            setAssetScoreValue(data.assetScore || 0);
+            setAssetScoreLabel(data.assetScoreLabel || "");
+          }
+        } catch (error) {
+          console.error("Failed to fetch asset score:", error);
+        }
+      }
       setCurrentStep(currentStep + 1);
     }
   };
@@ -490,7 +522,7 @@ export function RiskAssessmentWizardDialog({
       ? vulnerabilityValues.reduce((a, b) => a + b, 0) / vulnerabilityValues.length
       : 0;
 
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
+    const riskScoreCalc = (useLikelihood ? avgLikelihood : 1) * (useImpact ? maxImpact : 1) * (useVulnerabilityScore ? (avgVulnerability || 1) : 1) * (useAssetScore ? (assetScoreValue || 1) : 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
 
     // Check if Risk Response Strategy is needed:
@@ -531,7 +563,7 @@ export function RiskAssessmentWizardDialog({
 
     const likelihoodRounded = Math.round(avgLikelihood);
     const impactRounded = Math.round(maxImpact);
-    const riskScoreCalc = avgLikelihood * maxImpact * (avgVulnerability || 1);
+    const riskScoreCalc = (useLikelihood ? avgLikelihood : 1) * (useImpact ? maxImpact : 1) * (useVulnerabilityScore ? (avgVulnerability || 1) : 1) * (useAssetScore ? (assetScoreValue || 1) : 1);
     const riskRating = getRiskRatingFromScore(riskScoreCalc);
     const simpleRiskScore = likelihoodRounded * impactRounded;
 
@@ -670,7 +702,7 @@ export function RiskAssessmentWizardDialog({
     ? Math.round(Object.values(vulnerabilityRatingsForm).reduce((a, b) => a + b, 0) / Object.values(vulnerabilityRatingsForm).length)
     : 0;
 
-  const riskScore = calcLikelihood * calcImpact * (calcVulnerability || 1);
+  const riskScore = (useLikelihood ? calcLikelihood : 1) * (useImpact ? calcImpact : 1) * (useVulnerabilityScore ? (calcVulnerability || 1) : 1) * (useAssetScore ? (assetScoreValue || 1) : 1);
   const calculatedRating = getRiskRatingFromScore(riskScore);
 
   // Control Rating calculation
@@ -843,8 +875,8 @@ export function RiskAssessmentWizardDialog({
                   )}
                 </div>
 
-                {/* Step 1: Risk Context */}
-                {currentStep === 1 && (
+                {/* Step: Risk Context */}
+                {currentStepKey === "context" && (
                   <div className="space-y-4">
                     <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t("Risk Context")}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0">
@@ -872,8 +904,8 @@ export function RiskAssessmentWizardDialog({
                   </div>
                 )}
 
-                {/* Step 2: Likelihood */}
-                {currentStep === 2 && (
+                {/* Step: Likelihood */}
+                {currentStepKey === "likelihood" && (
                   <div className="space-y-6">
                     {riskThreats.map((threat, idx) => (
                       <div key={threat.id} className={cn(idx < riskThreats.length - 1 && "pb-6 border-b border-slate-200")}>
@@ -896,8 +928,8 @@ export function RiskAssessmentWizardDialog({
                   </div>
                 )}
 
-                {/* Step 3: Impact */}
-                {currentStep === 3 && (
+                {/* Step: Impact */}
+                {currentStepKey === "impact" && (
                   <div className="space-y-6">
                     {riskThreats.map((threat, idx) => (
                       <div key={threat.id} className={cn(idx < riskThreats.length - 1 && "pb-6 border-b border-slate-200")}>
@@ -942,8 +974,8 @@ export function RiskAssessmentWizardDialog({
                   </div>
                 )}
 
-                {/* Step 4: Vulnerability */}
-                {currentStep === 4 && (
+                {/* Step: Vulnerability */}
+                {currentStepKey === "vulnerability" && (
                   <div className="space-y-6">
                     {riskVulnerabilities.map((vuln, idx) => (
                       <div key={vuln.id} className={cn(idx < riskVulnerabilities.length - 1 && "pb-6 border-b border-slate-200")}>
@@ -966,29 +998,51 @@ export function RiskAssessmentWizardDialog({
                   </div>
                 )}
 
-                {/* Step 5: Risk Rating */}
-                {currentStep === 5 && (
+                {/* Step: Risk Rating */}
+                {currentStepKey === "rating" && (
                   <div className="space-y-5">
                     {/* Risk Calculation */}
                     <div className="pb-5 border-b border-slate-200">
                       <h4 className="font-semibold text-slate-800 mb-4">{t("Inherent Risk Calculation")}</h4>
-                      <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-2 items-center text-center">
-                        <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-0">
-                          <p className="text-[10px] text-slate-500 uppercase truncate">{t("Likelihood")}</p>
-                          <p className="text-xl font-bold text-slate-800">{calcLikelihood}</p>
-                        </div>
-                        <p className="font-bold text-xl text-slate-400 px-1">×</p>
-                        <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-0">
-                          <p className="text-[10px] text-slate-500 uppercase truncate">{t("Impact")}</p>
-                          <p className="text-xl font-bold text-slate-800">{calcImpact}</p>
-                        </div>
-                        <p className="font-bold text-xl text-slate-400 px-1">×</p>
-                        <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-0">
-                          <p className="text-[10px] text-slate-500 uppercase truncate">{t("Vulnerability")}</p>
-                          <p className="text-xl font-bold text-slate-800">{calcVulnerability}</p>
-                        </div>
+                      <div className="flex flex-wrap items-center justify-center gap-2 text-center">
+                        {useLikelihood && (
+                          <>
+                            <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-[70px]">
+                              <p className="text-[10px] text-slate-500 uppercase truncate">{t("Likelihood")}</p>
+                              <p className="text-xl font-bold text-slate-800">{calcLikelihood}</p>
+                            </div>
+                          </>
+                        )}
+                        {useImpact && (
+                          <>
+                            {useLikelihood && <p className="font-bold text-xl text-slate-400 px-1">×</p>}
+                            <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-[70px]">
+                              <p className="text-[10px] text-slate-500 uppercase truncate">{t("Impact")}</p>
+                              <p className="text-xl font-bold text-slate-800">{calcImpact}</p>
+                            </div>
+                          </>
+                        )}
+                        {useVulnerabilityScore && (
+                          <>
+                            {(useLikelihood || useImpact) && <p className="font-bold text-xl text-slate-400 px-1">×</p>}
+                            <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-[70px]">
+                              <p className="text-[10px] text-slate-500 uppercase truncate">{t("Vulnerability")}</p>
+                              <p className="text-xl font-bold text-slate-800">{calcVulnerability}</p>
+                            </div>
+                          </>
+                        )}
+                        {useAssetScore && (
+                          <>
+                            {(useLikelihood || useImpact || useVulnerabilityScore) && <p className="font-bold text-xl text-slate-400 px-1">×</p>}
+                            <div className="p-3 bg-white rounded-lg border border-slate-200 min-w-[70px]">
+                              <p className="text-[10px] text-slate-500 uppercase truncate">{t("Asset")}</p>
+                              <p className="text-xl font-bold text-slate-800">{assetScoreValue || 0}</p>
+                              {assetScoreLabel && <p className="text-[9px] text-slate-400 mt-0.5 capitalize">{assetScoreLabel}</p>}
+                            </div>
+                          </>
+                        )}
                         <p className="font-bold text-xl text-slate-400 px-1">=</p>
-                        <div className="p-3 bg-primary-50 rounded-lg border border-primary-200 min-w-0">
+                        <div className="p-3 bg-primary-50 rounded-lg border border-primary-200 min-w-[70px]">
                           <p className="text-[10px] text-primary-600 uppercase truncate">{t("Score")}</p>
                           <p className="text-xl font-bold text-primary-700">{riskScore.toFixed(2)}</p>
                         </div>
@@ -1012,7 +1066,7 @@ export function RiskAssessmentWizardDialog({
                           </span>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-slate-400">{t("Risk Score = Likelihood × Impact × Vulnerability")}</p>
+                          <p className="text-xs text-slate-400">{t("Risk Score")} = {[useLikelihood && t("Likelihood"), useImpact && t("Impact"), useVulnerabilityScore && t("Vulnerability"), useAssetScore && t("Asset")].filter(Boolean).join(" × ")}</p>
                           <p className="text-xs text-slate-400">{t("Risk Tolerance")} = {riskTolerance}</p>
                         </div>
                       </div>
@@ -1037,8 +1091,8 @@ export function RiskAssessmentWizardDialog({
                   </div>
                 )}
 
-                {/* Step 6: Risk Summary */}
-                {currentStep === 6 && (
+                {/* Step: Summary */}
+                {currentStepKey === "summary" && (
                   <div className="space-y-5">
                     {/* Speedometer Chart */}
                     <div className="pb-5 border-b border-slate-200">
@@ -1093,23 +1147,45 @@ export function RiskAssessmentWizardDialog({
 
                     {/* Risk Calculation Breakdown */}
                     <div className="pb-5 border-b border-slate-200">
-                      <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-2 items-center text-center">
-                        <div className="p-2.5 rounded-lg border border-slate-200 min-w-0">
-                          <p className="text-[10px] text-slate-500 uppercase truncate">{t("Likelihood")}</p>
-                          <p className="text-lg font-bold text-slate-800">{calcLikelihood}</p>
-                        </div>
-                        <p className="font-bold text-lg text-slate-400 px-1">&times;</p>
-                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-0">
-                          <p className="text-[10px] text-slate-500 uppercase truncate">{t("Impact")}</p>
-                          <p className="text-lg font-bold text-slate-800">{calcImpact}</p>
-                        </div>
-                        <p className="font-bold text-lg text-slate-400 px-1">&times;</p>
-                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-0">
-                          <p className="text-[10px] text-slate-500 uppercase truncate">{t("Vulnerability")}</p>
-                          <p className="text-lg font-bold text-slate-800">{calcVulnerability}</p>
-                        </div>
+                      <div className="flex flex-wrap items-center justify-center gap-2 text-center">
+                        {useLikelihood && (
+                          <>
+                            <div className="p-2.5 rounded-lg border border-slate-200 min-w-[65px]">
+                              <p className="text-[10px] text-slate-500 uppercase truncate">{t("Likelihood")}</p>
+                              <p className="text-lg font-bold text-slate-800">{calcLikelihood}</p>
+                            </div>
+                          </>
+                        )}
+                        {useImpact && (
+                          <>
+                            {useLikelihood && <p className="font-bold text-lg text-slate-400 px-1">&times;</p>}
+                            <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-[65px]">
+                              <p className="text-[10px] text-slate-500 uppercase truncate">{t("Impact")}</p>
+                              <p className="text-lg font-bold text-slate-800">{calcImpact}</p>
+                            </div>
+                          </>
+                        )}
+                        {useVulnerabilityScore && (
+                          <>
+                            {(useLikelihood || useImpact) && <p className="font-bold text-lg text-slate-400 px-1">&times;</p>}
+                            <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-[65px]">
+                              <p className="text-[10px] text-slate-500 uppercase truncate">{t("Vulnerability")}</p>
+                              <p className="text-lg font-bold text-slate-800">{calcVulnerability}</p>
+                            </div>
+                          </>
+                        )}
+                        {useAssetScore && (
+                          <>
+                            {(useLikelihood || useImpact || useVulnerabilityScore) && <p className="font-bold text-lg text-slate-400 px-1">&times;</p>}
+                            <div className="p-2.5 bg-white rounded-lg border border-slate-200 min-w-[65px]">
+                              <p className="text-[10px] text-slate-500 uppercase truncate">{t("Asset")}</p>
+                              <p className="text-lg font-bold text-slate-800">{assetScoreValue || 0}</p>
+                              {assetScoreLabel && <p className="text-[9px] text-slate-400 mt-0.5 capitalize">{assetScoreLabel}</p>}
+                            </div>
+                          </>
+                        )}
                         <p className="font-bold text-lg text-slate-400 px-1">=</p>
-                        <div className="p-2.5 bg-primary-50 rounded-lg border border-primary-200 min-w-0">
+                        <div className="p-2.5 bg-primary-50 rounded-lg border border-primary-200 min-w-[65px]">
                           <p className="text-[10px] text-primary-600 uppercase truncate">{t("Score")}</p>
                           <p className="text-lg font-bold text-primary-700">{riskScore.toFixed(2)}</p>
                         </div>

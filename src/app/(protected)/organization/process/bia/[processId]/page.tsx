@@ -140,6 +140,7 @@ export default function BIAPage() {
   const [categories, setCategories] = useState<BIACategory[]>([]);
   const [ratingOptions, setRatingOptions] = useState<BIARatingOption[]>([]);
   const [scoringConfig, setScoringConfig] = useState<BIAScoringConfig | null>(null);
+  const [scoringRanges, setScoringRanges] = useState<{ id: string; label: string; lowValue: number; highValue: number | null; calculationType: string }[]>([]);
   const [bcpLabels, setBcpLabels] = useState<BCPLabel[]>([]);
 
   // Form state
@@ -163,7 +164,7 @@ export default function BIAPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [processRes, deptRes, userRes, catRes, ratingRes, configRes, bcpRes, biaRes] = await Promise.all([
+      const [processRes, deptRes, userRes, catRes, ratingRes, configRes, bcpRes, biaRes, rangesRes] = await Promise.all([
         fetch(`/api/processes/${processId}`),
         fetch("/api/departments"),
         fetch("/api/users"),
@@ -172,6 +173,7 @@ export default function BIAPage() {
         fetch("/api/bia-scoring-config"),
         fetch("/api/bcp-labels"),
         fetch(`/api/process-bia/${processId}`),
+        fetch("/api/bia-scoring-ranges"),
       ]);
 
       // Process data
@@ -218,6 +220,11 @@ export default function BIAPage() {
       if (bcpRes.ok) {
         const labels = await bcpRes.json();
         setBcpLabels(labels.filter((l: BCPLabel) => l.isActive));
+      }
+
+      // Scoring ranges
+      if (rangesRes.ok) {
+        setScoringRanges(await rangesRes.json());
       }
 
       // Existing BIA assessment
@@ -278,6 +285,24 @@ export default function BIAPage() {
     }
   }, [categories, categoryRatings.length]);
 
+  // Reconcile ratingScores from ratingOptions when loaded from DB with missing scores
+  useEffect(() => {
+    if (ratingOptions.length > 0 && categoryRatings.length > 0) {
+      const needsUpdate = categoryRatings.some((cr) => cr.rating && !cr.ratingScore);
+      if (needsUpdate) {
+        setCategoryRatings(
+          categoryRatings.map((cr) => {
+            if (cr.rating && !cr.ratingScore) {
+              const option = ratingOptions.find((r) => r.label === cr.rating);
+              return { ...cr, ratingScore: option?.score || 0 };
+            }
+            return cr;
+          })
+        );
+      }
+    }
+  }, [ratingOptions, categoryRatings]);
+
   // For all roles: Fetch filtered approvers when department changes
   useEffect(() => {
     const fetchFilteredApprovers = async () => {
@@ -323,31 +348,29 @@ export default function BIAPage() {
   };
 
   const calculateImpactRating = () => {
-    const scores = categoryRatings.map((cr) => cr.ratingScore || 0);
+    const scores = categoryRatings.map((cr) => {
+      if (cr.ratingScore) return cr.ratingScore;
+      if (cr.rating) {
+        const option = ratingOptions.find((r) => r.label === cr.rating);
+        return option?.score || 0;
+      }
+      return 0;
+    });
     if (scores.length === 0 || scores.every((s) => s === 0)) return 0;
-
-    const calculationType = scoringConfig?.calculationType || "High of all";
-
-    if (calculationType === "High of all") {
-      return Math.max(...scores);
-    } else if (calculationType === "Addition of all") {
-      return scores.reduce((sum, s) => sum + s, 0);
-    } else if (calculationType === "Product of all") {
-      return scores.filter((s) => s > 0).reduce((prod, s) => prod * s, 1);
-    }
     return Math.max(...scores);
   };
 
-  const getCalculationNote = () => {
+  const getProcessCriticality = () => {
+    const rating = calculateImpactRating();
+    if (rating === 0) return "";
     const calculationType = scoringConfig?.calculationType || "High of all";
-    if (calculationType === "High of all") {
-      return t("Note: The highest rating will be taken");
-    } else if (calculationType === "Addition of all") {
-      return t("Note: Sum of all ratings will be calculated");
-    } else if (calculationType === "Product of all") {
-      return t("Note: Product of all ratings will be calculated");
-    }
-    return "";
+    const ranges = scoringRanges.filter((r) => r.calculationType === calculationType);
+    const matched = ranges.find((r) => rating >= r.lowValue && (r.highValue === null || rating <= r.highValue));
+    return matched?.label || "";
+  };
+
+  const getCalculationNote = () => {
+    return t("Note: The highest rating will be taken");
   };
 
   const handleSave = async () => {
@@ -595,16 +618,18 @@ export default function BIAPage() {
     router.back();
   };
 
-  // Determine if fields should be editable
-  // Reviewer role has same access as CustomerAdmin (not DepartmentReviewer behavior)
-  const isEditable = isDepartmentReviewer && !isReviewer
-    ? status === "Pending Approval" // DeptReviewer can edit when pending
-    : status === "Open" || status === "Sent Back"; // CustomerAdmin, Contributor, Reviewer can edit when open or sent back
+  // BIA form fields (ratings, RTO, RPO, etc.) are non-editable on view page
+  const isEditable = false;
+
+  // Status & Approval section (Department, Approver, Submit) remains editable when Open or Sent Back
+  const canSubmit = status === "Open" || status === "Sent Back";
 
   // Determine what buttons to show
-  // Reviewer role has same access as CustomerAdmin (shows Submit button, not Approve buttons)
-  const showApproveButtons = isDepartmentReviewer && !isReviewer && status === "Pending Approval";
-  const showSubmitButton = (!isDepartmentReviewer || isReviewer) && (status === "Open" || status === "Sent Back");
+  // Approve/Send Back: show when status is Pending Approval AND current user is the assigned approver
+  const isAssignedApprover = !!(currentUserId && selectedApprover && currentUserId === selectedApprover);
+  const showApproveButtons = isAssignedApprover && status === "Pending Approval";
+  // Submit: show when status is Open or Sent Back AND current user is NOT the assigned approver
+  const showSubmitButton = !isAssignedApprover && (status === "Open" || status === "Sent Back");
   const showCommentsIcon = biaComments.length > 0 || status === "Pending Approval" || status === "Approved" || status === "Sent Back";
 
   if (loading) {
@@ -669,7 +694,7 @@ export default function BIAPage() {
         }`}>
           {t(status)}
         </span>
-        <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled={isReviewer ? !(status === "Open" || status === "Sent Back") : !isEditable}>
+        <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled={!canSubmit}>
           <SelectTrigger className="w-full sm:w-[200px] bg-white">
             <SelectValue placeholder={t("Department")} />
           </SelectTrigger>
@@ -685,9 +710,8 @@ export default function BIAPage() {
           value={selectedApprover}
           onValueChange={setSelectedApprover}
           disabled={
-            !isEditable ||
-            (isDepartmentReviewer && !isReviewer) ||
-            !selectedDepartment // For all roles: disabled if no department selected
+            !canSubmit ||
+            !selectedDepartment // disabled if no department selected
           }
         >
           <SelectTrigger className="w-full sm:w-[200px] bg-white">

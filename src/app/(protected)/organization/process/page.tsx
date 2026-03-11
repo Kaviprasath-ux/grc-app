@@ -270,6 +270,8 @@ export default function ProcessPage() {
   const [biaProcess, setBiaProcess] = useState<Process | null>(null);
   const [biaCategories, setBiaCategories] = useState<BIACategory[]>([]);
   const [biaRatingOptions, setBiaRatingOptions] = useState<BIARatingOption[]>([]);
+  const [biaScoringConfig, setBiaScoringConfig] = useState<{ calculationType: string } | null>(null);
+  const [biaScoringRanges, setBiaScoringRanges] = useState<{ id: string; label: string; lowValue: number; highValue: number | null; calculationType: string }[]>([]);
   const [biaRatings, setBiaRatings] = useState<BIARating[]>([]);
   const [biaApprover, setBiaApprover] = useState("");
   const [biaDepartment, setBiaDepartment] = useState("");
@@ -504,7 +506,7 @@ export default function ProcessPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [processRes, deptRes, userRes, biaRes, freqRes, locRes, implRes, assetsRes, biaCatRes, biaRatingsRes] = await Promise.all([
+      const [processRes, deptRes, userRes, biaRes, freqRes, locRes, implRes, assetsRes, biaCatRes, biaRatingsRes, biaScoringConfigRes, biaScoringRangesRes] = await Promise.all([
         fetch("/api/processes"),
         fetch("/api/departments"),
         fetch("/api/users"),
@@ -515,6 +517,8 @@ export default function ProcessPage() {
         fetch("/api/assets"),
         fetch("/api/bia-categories"),
         fetch("/api/bia-ratings"),
+        fetch("/api/bia-scoring-config"),
+        fetch("/api/bia-scoring-ranges"),
       ]);
 
       if (processRes.ok) setProcesses(await processRes.json());
@@ -571,6 +575,14 @@ export default function ProcessPage() {
         const ratingsData = await biaRatingsRes.json();
         setBiaRatingOptions(ratingsData.filter((r: BIARatingOption) => r.isActive));
       }
+      // BIA Scoring config
+      if (biaScoringConfigRes.ok) {
+        setBiaScoringConfig(await biaScoringConfigRes.json());
+      }
+      // BIA Scoring ranges
+      if (biaScoringRangesRes.ok) {
+        setBiaScoringRanges(await biaScoringRangesRes.json());
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -619,26 +631,30 @@ export default function ProcessPage() {
     newRatings[index] = {
       ...newRatings[index],
       rating: ratingLabel as "High" | "Medium" | "Low" | "",
+      ratingScore: ratingOption?.score || 0,
       description: ratingOption?.description || "",
     };
     setBiaRatings(newRatings);
   };
 
   const calculateImpactRating = () => {
-    // Use dynamic scores from rating options
     const scores = biaRatings.map((r) => {
+      if (r.ratingScore) return r.ratingScore;
       const option = biaRatingOptions.find((opt) => opt.label === r.rating);
       return option?.score || 0;
     });
-    return Math.max(...scores, 0);
+    if (scores.length === 0 || scores.every((s) => s === 0)) return 0;
+    return Math.max(...scores);
   };
 
   const getProcessCriticality = () => {
     const rating = calculateImpactRating();
-    if (rating >= 100) return "High";
-    if (rating >= 50) return "Medium";
-    if (rating >= 25) return "Low";
-    return "";
+    if (rating === 0) return "";
+    const calculationType = biaScoringConfig?.calculationType || "High of all";
+    const ranges = biaScoringRanges.filter((r) => r.calculationType === calculationType);
+    // Find the range that matches the rating
+    const matched = ranges.find((r) => rating >= r.lowValue && (r.highValue === null || rating <= r.highValue));
+    return matched?.label || "";
   };
 
   const handleOpenBIAForm = (process: Process) => {

@@ -113,6 +113,12 @@ export const GET = withAuth(
                 name: true,
               },
             },
+            impactedAssetGroup: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             impactedProcess: {
               select: {
                 id: true,
@@ -183,6 +189,7 @@ export const POST = withAuth(
         departmentId,
         ownerId,
         impactedAssetId,
+        impactedAssetGroupId,
         impactedProcessId,
         likelihood = 0,
         impact = 0,
@@ -230,6 +237,7 @@ export const POST = withAuth(
           departmentId,
           ownerId,
           impactedAssetId: impactedAssetId || null,
+          impactedAssetGroupId: impactedAssetGroupId || null,
           impactedProcessId: impactedProcessId || null,
           likelihood,
           impact,

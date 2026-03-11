@@ -495,6 +495,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.users', actions: ['view'], scope: 'department' },
     { resource: 'organization.department', actions: ['view'], scope: 'all' }, // Needed for department dropdowns
     { resource: 'organization.process', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'organization.bia', actions: ['view', 'edit', 'approve'], scope: 'department' },
     // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Settings/Master Data, NO Risk Matrix)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'compliance.framework', actions: ['view'], scope: 'department' },

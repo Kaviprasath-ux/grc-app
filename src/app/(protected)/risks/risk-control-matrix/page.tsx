@@ -54,6 +54,10 @@ interface MatrixEntry {
       description: string | null;
       classification: { name: string } | null;
     } | null;
+    impactedAssetGroup?: {
+      id: string;
+      name: string;
+    } | null;
     impactedProcess?: {
       id: string;
       processCode: string;
