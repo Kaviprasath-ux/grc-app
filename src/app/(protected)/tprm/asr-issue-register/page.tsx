@@ -24,6 +24,7 @@ import {
 import { Loader2, Home, ChevronRight, Download, Search, X, AlertTriangle, ArrowLeft } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 
 interface IssueRegisterEntry {
@@ -106,6 +107,9 @@ export default function AsrIssueRegisterPage() {
   const [vendorRiskLoading, setVendorRiskLoading] = useState(false);
   const [riskDomainSearch, setRiskDomainSearch] = useState("");
   const [viewIssueDetail, setViewIssueDetail] = useState<VendorRiskIssue | null>(null);
+
+  // Dynamic data translation
+  const { data: translatedVendorRiskIssues } = useTranslatedData(vendorRiskIssues, { modelName: 'TPRMIssueRemediation' });
 
   const fetchData = useCallback(async () => {
     try {
@@ -247,7 +251,7 @@ export default function AsrIssueRegisterPage() {
             </Button>
             <Button variant="outline" size="sm" onClick={() => {
               const headers = ["Domain", "Severity", "Issue", "Risk", "Assessment ID", "Due Date", "Status"];
-              const rows = vendorRiskIssues.map((i) => [
+              const rows = translatedVendorRiskIssues.map((i) => [
                 i.domain || "", i.severity, (i.issue || "").replace(/,/g, ";"), (i.risk || "").replace(/,/g, ";"),
                 i.assessmentCode || "", i.dueDate ? new Date(i.dueDate).toLocaleDateString() : "", i.status,
               ]);
@@ -283,7 +287,7 @@ export default function AsrIssueRegisterPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (() => {
-            const filteredRisk = vendorRiskIssues.filter((i) =>
+            const filteredRisk = translatedVendorRiskIssues.filter((i) =>
               !riskDomainSearch || (i.domain && i.domain.toLowerCase().includes(riskDomainSearch.toLowerCase()))
             );
             return filteredRisk.length === 0 ? (

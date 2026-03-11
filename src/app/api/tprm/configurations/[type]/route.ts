@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 // Valid configuration types
 const VALID_TYPES = [
@@ -151,8 +152,7 @@ export const GET = withAuth(
       }
     } catch (error) {
       console.error('Configurations GET error:', error);
-      const msg = error instanceof Error ? error.message : String(error);
-      return NextResponse.json({ error: 'Failed to fetch configuration data', detail: msg }, { status: 500 });
+      return NextResponse.json({ error: 'Unable to load configuration data. Please refresh and try again.' }, { status: 500 });
     }
   },
   { resource: ['tprm.configurations', 'tprm.bo-inventory', 'tprm.rm-inventory', 'tprm.asr-monitoring'], action: 'view' }
@@ -214,6 +214,7 @@ export const POST = withAuth(
               sortOrder: (maxOrder._max.sortOrder || 0) + 1,
             },
           });
+          void translateRecord(customerAccountId, 'TPRMOnboardingQuestion', q.id, { title: q.title, question: q.question });
           return NextResponse.json(q, { status: 201 });
         }
 
@@ -225,6 +226,7 @@ export const POST = withAuth(
           const cat = await prisma.tPRMServiceCategory.create({
             data: { customerAccountId, name: name.trim() },
           });
+          void translateRecord(customerAccountId, 'TPRMServiceCategory', cat.id, { name: cat.name });
           return NextResponse.json(cat, { status: 201 });
         }
 
@@ -236,6 +238,7 @@ export const POST = withAuth(
           const disc = await prisma.tPRMDiscipline.create({
             data: { customerAccountId, name: name.trim() },
           });
+          void translateRecord(customerAccountId, 'TPRMDiscipline', disc.id, { name: disc.name });
           return NextResponse.json(disc, { status: 201 });
         }
 
@@ -265,6 +268,7 @@ export const POST = withAuth(
               vendorProfileQuestionIds: vendorProfileQuestionIds || null,
             },
           });
+          void translateRecord(customerAccountId, 'TPRMQuestionnaireTemplate', template.id, { templateName: template.templateName, frameworkName: template.frameworkName });
           return NextResponse.json(template, { status: 201 });
         }
 
@@ -286,6 +290,7 @@ export const POST = withAuth(
               sortOrder: (maxSeq._max.sequenceNo || 0) + 1,
             },
           });
+          void translateRecord(customerAccountId, 'TPRMOffboardingQuestion', q.id, { title: q.title, question: q.question });
           return NextResponse.json(q, { status: 201 });
         }
 
@@ -312,6 +317,7 @@ export const POST = withAuth(
               sortOrder: (maxOrder._max.sortOrder || 0) + 1,
             },
           });
+          void translateRecord(customerAccountId, 'TPRMScorecardFactor', factor.id, { name: factor.name });
           return NextResponse.json(factor, { status: 201 });
         }
 
@@ -398,6 +404,7 @@ export const PATCH = withAuth(
               ...(parentId !== undefined && { parentId: parentId || null }),
             },
           });
+          void translateRecord(customerAccountId, 'TPRMOnboardingQuestion', q.id, { title: q.title, question: q.question });
           return NextResponse.json(q);
         }
 
@@ -409,6 +416,7 @@ export const PATCH = withAuth(
             where: { id },
             data: { ...(name !== undefined && { name: name.trim() }) },
           });
+          void translateRecord(customerAccountId, 'TPRMServiceCategory', cat.id, { name: cat.name });
           return NextResponse.json(cat);
         }
 
@@ -420,6 +428,7 @@ export const PATCH = withAuth(
             where: { id },
             data: { ...(name !== undefined && { name: name.trim() }) },
           });
+          void translateRecord(customerAccountId, 'TPRMDiscipline', disc.id, { name: disc.name });
           return NextResponse.json(disc);
         }
 
@@ -448,6 +457,7 @@ export const PATCH = withAuth(
               ...(vendorProfileQuestionIds !== undefined && { vendorProfileQuestionIds }),
             },
           });
+          void translateRecord(customerAccountId, 'TPRMQuestionnaireTemplate', template.id, { templateName: template.templateName, frameworkName: template.frameworkName });
           return NextResponse.json(template);
         }
 
@@ -463,6 +473,7 @@ export const PATCH = withAuth(
               ...(sequenceNo !== undefined && { sequenceNo }),
             },
           });
+          void translateRecord(customerAccountId, 'TPRMOffboardingQuestion', q.id, { title: q.title, question: q.question });
           return NextResponse.json(q);
         }
 
@@ -591,10 +602,15 @@ export const DELETE = withAuth(
           const question = await prisma.tPRMOnboardingQuestion.findFirst({ where: { id, customerAccountId } });
           if (!question) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           // Delete children first
+          const children = await prisma.tPRMOnboardingQuestion.findMany({ where: { parentId: id, customerAccountId }, select: { id: true } });
           await prisma.tPRMOnboardingQuestion.deleteMany({
             where: { parentId: id, customerAccountId },
           });
+          for (const child of children) {
+            void deleteRecordTranslations(customerAccountId, 'TPRMOnboardingQuestion', child.id);
+          }
           await prisma.tPRMOnboardingQuestion.delete({ where: { id } });
+          void deleteRecordTranslations(customerAccountId, 'TPRMOnboardingQuestion', id);
           return NextResponse.json({ success: true });
         }
 
@@ -602,6 +618,7 @@ export const DELETE = withAuth(
           const cat = await prisma.tPRMServiceCategory.findFirst({ where: { id, customerAccountId } });
           if (!cat) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMServiceCategory.delete({ where: { id } });
+          void deleteRecordTranslations(customerAccountId, 'TPRMServiceCategory', id);
           return NextResponse.json({ success: true });
         }
 
@@ -609,6 +626,7 @@ export const DELETE = withAuth(
           const disc = await prisma.tPRMDiscipline.findFirst({ where: { id, customerAccountId } });
           if (!disc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMDiscipline.delete({ where: { id } });
+          void deleteRecordTranslations(customerAccountId, 'TPRMDiscipline', id);
           return NextResponse.json({ success: true });
         }
 
@@ -623,6 +641,7 @@ export const DELETE = withAuth(
           const tmpl = await prisma.tPRMQuestionnaireTemplate.findFirst({ where: { id, customerAccountId } });
           if (!tmpl) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMQuestionnaireTemplate.delete({ where: { id } });
+          void deleteRecordTranslations(customerAccountId, 'TPRMQuestionnaireTemplate', id);
           return NextResponse.json({ success: true });
         }
 
@@ -630,6 +649,7 @@ export const DELETE = withAuth(
           const obq = await prisma.tPRMOffboardingQuestion.findFirst({ where: { id, customerAccountId } });
           if (!obq) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           await prisma.tPRMOffboardingQuestion.delete({ where: { id } });
+          void deleteRecordTranslations(customerAccountId, 'TPRMOffboardingQuestion', id);
           return NextResponse.json({ success: true });
         }
 
@@ -640,6 +660,7 @@ export const DELETE = withAuth(
           if (!factor) return NextResponse.json({ error: 'Not found' }, { status: 404 });
           if (factor.isSystem) return NextResponse.json({ error: 'System factors cannot be deleted' }, { status: 403 });
           await prisma.tPRMScorecardFactor.delete({ where: { id } });
+          void deleteRecordTranslations(customerAccountId, 'TPRMScorecardFactor', id);
           return NextResponse.json({ success: true });
         }
 

@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json(
-            { error: err.message || "Failed to extract controls" },
+            { error: "Unable to extract controls. Please try again." },
             { status: err.status || 500 }
         );
     }

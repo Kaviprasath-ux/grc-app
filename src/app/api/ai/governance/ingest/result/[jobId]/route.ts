@@ -108,8 +108,6 @@ export async function GET(
             statusCode: err.response?.status || err.status || 500,
         });
 
-        return errorResponse("Failed to get ingest result", err.response?.status || err.status || 500, {
-            details: err.message,
-        });
+        return errorResponse("Unable to retrieve results. Please try again.", err.response?.status || err.status || 500);
     }
 }

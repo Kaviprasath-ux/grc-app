@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { PageHeader } from "@/components/shared/page-header";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, RotateCcw, UserPlus, Home, ChevronRight } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
 
 interface TaskQueueItem {
   id: string;
@@ -57,23 +58,22 @@ function formatDate(dateStr: string | null | undefined): string {
 export default function TaskQueuePage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("unassigned");
   const [items, setItems] = useState<TaskQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter state
-  const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({ tab: activeTab, limit: "200" });
-      if (search) params.set("search", search);
-      if (dateFrom) params.set("dateFrom", dateFrom);
-      if (dateTo) params.set("dateTo", dateTo);
+      if (dateFrom) params.set("dateFrom", format(dateFrom, "yyyy-MM-dd"));
+      if (dateTo) params.set("dateTo", format(dateTo, "yyyy-MM-dd"));
       if (activeTab === "returned" && statusFilter && statusFilter !== "all") {
         params.set("status", statusFilter);
       }
@@ -88,7 +88,7 @@ export default function TaskQueuePage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, search, dateFrom, dateTo, statusFilter]);
+  }, [activeTab, dateFrom, dateTo, statusFilter]);
 
   useEffect(() => {
     fetchData();
@@ -97,9 +97,8 @@ export default function TaskQueuePage() {
   // Reset filters on tab change
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setSearch("");
-    setDateFrom("");
-    setDateTo("");
+    setDateFrom(undefined);
+    setDateTo(undefined);
     setStatusFilter("all");
   };
 
@@ -117,10 +116,20 @@ export default function TaskQueuePage() {
         return;
       }
       toast({ title: t("Success"), description: t("Assessment claimed successfully") });
-      fetchData(); // Refresh list
+      fetchData();
     } catch {
       toast({ title: t("Error"), description: t("Failed to claim assessment"), variant: "destructive" });
     }
+  };
+
+  // Initiate reassessment handler
+  const handleInitiateReassessment = (assessmentId: string) => {
+    router.push(`/tprm/asr-assessments/${assessmentId}?from=task-queue`);
+  };
+
+  // Navigate to assessment detail
+  const handleViewAssessment = (assessmentId: string) => {
+    router.push(`/tprm/asr-assessments/${assessmentId}?from=task-queue`);
   };
 
   // Unassigned queue columns
@@ -191,9 +200,8 @@ export default function TaskQueuePage() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}>
-          <Eye className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-          {t("View")}
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleViewAssessment(row.original.id)} title={t("View")}>
+          <Eye className="h-4 w-4" />
         </Button>
       ),
     },
@@ -229,8 +237,8 @@ export default function TaskQueuePage() {
     {
       id: "actions",
       header: t("Action"),
-      cell: () => (
-        <Button variant="outline" size="sm">
+      cell: ({ row }) => (
+        <Button variant="outline" size="sm" onClick={() => handleInitiateReassessment(row.original.id)}>
           <RotateCcw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
           {t("Initiate")}
         </Button>
@@ -256,6 +264,13 @@ export default function TaskQueuePage() {
       cell: ({ row }) => row.original.vendor?.name || "-",
     },
     {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => (
+        <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status"))}</Badge>
+      ),
+    },
+    {
       accessorKey: "vendorSubmissionDate",
       header: t("Date of Submission"),
       cell: ({ row }) => formatDate(row.getValue("vendorSubmissionDate")),
@@ -273,9 +288,8 @@ export default function TaskQueuePage() {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => window.open(`/tprm/asr-assessments/${row.original.id}`, "_self")}>
-          <Eye className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-          {t("View")}
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleViewAssessment(row.original.id)} title={t("View")}>
+          <Eye className="h-4 w-4" />
         </Button>
       ),
     },
@@ -296,8 +310,58 @@ export default function TaskQueuePage() {
     }
   };
 
+  // Toolbar extra for date filters (non-returned tabs)
+  const dateFilterToolbar = (
+    <div className="flex items-center gap-2">
+      <DatePicker
+        value={dateFrom}
+        onChange={(date) => setDateFrom(date)}
+        placeholder={t("From")}
+        className="w-[160px] h-9 text-sm"
+      />
+      <DatePicker
+        value={dateTo}
+        onChange={(date) => setDateTo(date)}
+        placeholder={t("To")}
+        className="w-[160px] h-9 text-sm"
+      />
+    </div>
+  );
+
+  // Toolbar extra for returned tab (status filter)
+  const returnedFilterToolbar = (
+    <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <SelectTrigger className="w-[160px] h-9 border-slate-200 text-sm">
+        <SelectValue placeholder={t("All Statuses")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{t("All Statuses")}</SelectItem>
+        <SelectItem value="Returned">{t("Returned")}</SelectItem>
+        <SelectItem value="Rejected">{t("Rejected")}</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-[200px]">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+    return (
+      <DataGrid
+        columns={getColumns()}
+        data={items}
+        searchPlaceholder={t("Search...")}
+        toolbarExtra={activeTab === "returned" ? returnedFilterToolbar : dateFilterToolbar}
+      />
+    );
+  };
+
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -308,7 +372,7 @@ export default function TaskQueuePage() {
         <span className="text-primary-700 font-medium">{t("Task Queue")}</span>
       </nav>
 
-      <PageHeader title={t("Task Queue")} description={t("Manage assessment assignments and workflow")} />
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Task Queue")}</h1>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
@@ -318,94 +382,21 @@ export default function TaskQueuePage() {
           <TabsTrigger value="returned">{t("Returned")}</TabsTrigger>
         </TabsList>
 
-        <div className="mt-4 space-y-4">
-          {/* Filter bar */}
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t("Search...")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            {activeTab !== "returned" ? (
-              <>
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">{t("From")}</label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-[160px]"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">{t("To")}</label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="w-[160px]"
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="w-[200px]">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("Status")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t("All Statuses")}</SelectItem>
-                    <SelectItem value="Returned">{t("Returned")}</SelectItem>
-                    <SelectItem value="Rejected">{t("Rejected")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+        <TabsContent value="unassigned" className="mt-6">
+          {renderContent()}
+        </TabsContent>
 
-          {/* Content */}
-          <TabsContent value="unassigned" className="mt-0">
-            {loading ? (
-              <div className="flex items-center justify-center min-h-[200px]">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <DataGrid columns={getColumns()} data={items} hideSearch />
-            )}
-          </TabsContent>
+        <TabsContent value="my-queue" className="mt-6">
+          {renderContent()}
+        </TabsContent>
 
-          <TabsContent value="my-queue" className="mt-0">
-            {loading ? (
-              <div className="flex items-center justify-center min-h-[200px]">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <DataGrid columns={getColumns()} data={items} hideSearch />
-            )}
-          </TabsContent>
+        <TabsContent value="reassessment" className="mt-6">
+          {renderContent()}
+        </TabsContent>
 
-          <TabsContent value="reassessment" className="mt-0">
-            {loading ? (
-              <div className="flex items-center justify-center min-h-[200px]">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <DataGrid columns={getColumns()} data={items} hideSearch />
-            )}
-          </TabsContent>
-
-          <TabsContent value="returned" className="mt-0">
-            {loading ? (
-              <div className="flex items-center justify-center min-h-[200px]">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <DataGrid columns={getColumns()} data={items} hideSearch />
-            )}
-          </TabsContent>
-        </div>
+        <TabsContent value="returned" className="mt-6">
+          {renderContent()}
+        </TabsContent>
       </Tabs>
     </div>
   );

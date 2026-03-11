@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 import { isValidEmailFormat } from '@/lib/validations/email';
+import { translateRecord } from '@/lib/translation-service';
 
 interface SubscriptionPlanInput {
   startDate: string;
@@ -207,6 +208,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Trigger dynamic translation for the customer account name
+    if (result.customerAccount.id) {
+      void translateRecord(result.customerAccount.id, 'CustomerAccount', result.customerAccount.id, { name: result.customerAccount.name });
+    }
+
+    // Trigger dynamic translation for the user
+    if (result.customerAccount.id && result.newUser.id) {
+      void translateRecord(result.customerAccount.id, 'User', result.newUser.id, {
+        fullName: result.newUser.fullName,
+        firstName: result.newUser.firstName,
+        lastName: result.newUser.lastName,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: "Customer onboarded successfully",
@@ -249,6 +264,6 @@ export async function POST(req: NextRequest) {
 
     // Return the actual error message in development for debugging
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: "Unable to complete the request. Please try again." }, { status: 500 });
   }
 }

@@ -653,6 +653,7 @@ function reorderForTPRMAuditor(items: NavItem[]): NavItem[] {
     '/tprm/asr-inventory',
     '/tprm/asr-issue-register',
     '/tprm/asr-follow-ups',
+    '/tprm/asr-monitoring',
     '/tprm/asr-factory-reports',
     '/tprm/reports',
     '/tprm/asr-template',

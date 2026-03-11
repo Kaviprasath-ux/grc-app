@@ -470,6 +470,28 @@ class NotificationService {
       [NOTIFICATION_EVENTS.TPRM_SUPPORT_REQUEST]: 'TPRM_SUPPORT_REQUEST',
       [NOTIFICATION_EVENTS.TPRM_CONTRACT_EXPIRY]: 'TPRM_CONTRACT_EXPIRY',
       [NOTIFICATION_EVENTS.TPRM_RM_ACCOUNT_CREATED]: 'TPRM_RM_ACCOUNT_CREATED',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_SENT_TO_APPROVER]: 'TPRM_ASSESSMENT_SENT_TO_APPROVER',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_APPROVED]: 'TPRM_ASSESSMENT_APPROVED',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_CREATED]: 'TPRM_REMEDIATION_CREATED',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_SUBMITTED]: 'TPRM_REMEDIATION_SUBMITTED',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_SATISFIED]: 'TPRM_REMEDIATION_SATISFIED',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_UNSATISFIED]: 'TPRM_REMEDIATION_UNSATISFIED',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_SENT_TO_BUSINESS]: 'TPRM_REMEDIATION_SENT_TO_BUSINESS',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_ASSIGNED_TO_IT]: 'TPRM_REMEDIATION_ASSIGNED_TO_IT',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_IT_SUBMITTED]: 'TPRM_REMEDIATION_IT_SUBMITTED',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_IT_APPROVED]: 'TPRM_REMEDIATION_IT_APPROVED',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_IT_RETURNED]: 'TPRM_REMEDIATION_IT_RETURNED',
+      [NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_UPDATED]: 'TPRM_VENDOR_ISSUE_UPDATED',
+      [NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_RESOLVED]: 'TPRM_VENDOR_ISSUE_RESOLVED',
+      [NOTIFICATION_EVENTS.TPRM_OFFBOARD_SUBMITTED]: 'TPRM_OFFBOARD_SUBMITTED',
+      [NOTIFICATION_EVENTS.TPRM_OFFBOARD_ASSESSOR_APPROVED]: 'TPRM_OFFBOARD_ASSESSOR_APPROVED',
+      [NOTIFICATION_EVENTS.TPRM_OFFBOARD_ASSESSOR_SENT_BACK]: 'TPRM_OFFBOARD_ASSESSOR_SENT_BACK',
+      [NOTIFICATION_EVENTS.TPRM_OFFBOARD_RM_APPROVED]: 'TPRM_OFFBOARD_RM_APPROVED',
+      [NOTIFICATION_EVENTS.TPRM_OFFBOARD_RM_SENT_BACK]: 'TPRM_OFFBOARD_RM_SENT_BACK',
+      [NOTIFICATION_EVENTS.TPRM_OFFBOARD_BO_APPROVED]: 'TPRM_OFFBOARD_BO_APPROVED',
+      [NOTIFICATION_EVENTS.TPRM_OFFBOARD_BO_SENT_TO_RM]: 'TPRM_OFFBOARD_BO_SENT_TO_RM',
+      [NOTIFICATION_EVENTS.TPRM_MONITORING_SCAN_COMPLETED]: 'TPRM_MONITORING_SCAN_COMPLETED',
+      [NOTIFICATION_EVENTS.TPRM_MONITORING_CRITICAL_RISK]: 'TPRM_MONITORING_CRITICAL_RISK',
     };
 
     return templateMap[event] || 'GENERIC_NOTIFICATION';
@@ -1319,6 +1341,511 @@ class NotificationService {
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
       metadata: { entityName: params.issueTitle, vendorName: params.vendorName },
+    });
+  }
+
+  // ==================== TPRM ASSESSMENT APPROVAL ====================
+
+  /**
+   * Notify approver when assessment is sent for approval.
+   */
+  async notifyTPRMAssessmentSentToApprover(params: {
+    customerAccountId: string;
+    actorId: string;
+    approverId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.approverId,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_SENT_TO_APPROVER,
+      title: 'Assessment awaiting your approval',
+      message: `Assessment ${params.assessmentCode} for vendor ${params.vendorName} is ready for your approval.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  /**
+   * Notify when assessment is approved by approver.
+   */
+  async notifyTPRMAssessmentApproved(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_APPROVED,
+      title: 'Assessment approved',
+      message: `Assessment ${params.assessmentCode} for vendor ${params.vendorName} has been approved.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/am-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  // ==================== TPRM REMEDIATION WORKFLOW ====================
+
+  /**
+   * Notify when remediation items are auto-created after assessment approval.
+   */
+  async notifyTPRMRemediationCreated(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    count: number;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_CREATED,
+      title: 'Remediation items created',
+      message: `${params.count} remediation item(s) have been created for assessment ${params.assessmentCode} (vendor: ${params.vendorName}).`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/am-follow-ups`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName, count: params.count },
+    });
+  }
+
+  /**
+   * Notify when AM submits remediation response.
+   */
+  async notifyTPRMRemediationSubmitted(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_SUBMITTED,
+      title: 'Remediation response submitted',
+      message: `Remediation response submitted for ${params.vendorName}: ${params.questionTitle || params.issueCode}.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/asr-follow-ups`,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
+    });
+  }
+
+  /**
+   * Notify when remediation is marked satisfactory.
+   */
+  async notifyTPRMRemediationSatisfied(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_SATISFIED,
+      title: 'Remediation marked satisfactory',
+      message: `Remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} has been marked as Satisfactory.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/am-follow-ups`,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
+    });
+  }
+
+  /**
+   * Notify when remediation is marked unsatisfactory.
+   */
+  async notifyTPRMRemediationUnsatisfied(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    reason?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_UNSATISFIED,
+      title: 'Remediation marked unsatisfactory',
+      message: params.reason
+        ? `Remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} marked Unsatisfactory: ${params.reason}`
+        : `Remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} marked Unsatisfactory. Further action required.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/am-follow-ups`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle, reason: params.reason },
+    });
+  }
+
+  /**
+   * Notify when remediation is sent to business (RM).
+   */
+  async notifyTPRMRemediationSentToBusiness(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_SENT_TO_BUSINESS,
+      title: 'Remediation assigned to you',
+      message: `Remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} has been sent to you for business review.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/rm-issues`,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
+    });
+  }
+
+  /**
+   * Notify when remediation is assigned to IT.
+   */
+  async notifyTPRMRemediationAssignedToIT(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_ASSIGNED_TO_IT,
+      title: 'Remediation assigned to you',
+      message: `Remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} has been assigned to you for IT review.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/rm-issues`,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
+    });
+  }
+
+  /**
+   * Notify when IT/RM submits remediation response.
+   */
+  async notifyTPRMRemediationITSubmitted(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_IT_SUBMITTED,
+      title: 'IT remediation response submitted',
+      message: `IT/RM has submitted remediation response for ${params.vendorName}: ${params.questionTitle || params.issueCode}.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/asr-follow-ups`,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
+    });
+  }
+
+  /**
+   * Notify when IT remediation is approved.
+   */
+  async notifyTPRMRemediationITApproved(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_IT_APPROVED,
+      title: 'IT remediation approved',
+      message: `IT remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} has been approved.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/rm-issues`,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
+    });
+  }
+
+  /**
+   * Notify when IT remediation is returned.
+   */
+  async notifyTPRMRemediationITReturned(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    reason?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_IT_RETURNED,
+      title: 'IT remediation returned',
+      message: params.reason
+        ? `IT remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} returned: ${params.reason}`
+        : `IT remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} returned. Please revise.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/rm-issues`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle, reason: params.reason },
+    });
+  }
+
+  // ==================== TPRM VENDOR ISSUES ====================
+
+  /**
+   * Notify when a vendor issue is updated.
+   */
+  async notifyTPRMVendorIssueUpdated(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    issueId: string;
+    issueTitle: string;
+    vendorName: string;
+    newStatus: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_UPDATED,
+      title: 'Vendor issue updated',
+      message: `Vendor issue for ${params.vendorName} has been updated: ${params.issueTitle}. Status: ${params.newStatus}.`,
+      relatedEntityType: 'vendor-issue',
+      relatedEntityId: params.issueId,
+      link: `/tprm/am-follow-ups`,
+      channels: params.channels,
+      metadata: { entityName: params.issueTitle, vendorName: params.vendorName, newStatus: params.newStatus },
+    });
+  }
+
+  /**
+   * Notify when a vendor issue is resolved.
+   */
+  async notifyTPRMVendorIssueResolved(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    issueId: string;
+    issueTitle: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_RESOLVED,
+      title: 'Vendor issue resolved',
+      message: `Vendor issue for ${params.vendorName} has been resolved: ${params.issueTitle}.`,
+      relatedEntityType: 'vendor-issue',
+      relatedEntityId: params.issueId,
+      link: `/tprm/am-follow-ups`,
+      channels: params.channels,
+      metadata: { entityName: params.issueTitle, vendorName: params.vendorName },
+    });
+  }
+
+  // ==================== TPRM OFFBOARDING WORKFLOW ====================
+
+  /**
+   * Generic offboarding notification helper.
+   */
+  private async notifyTPRMOffboard(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    event: NotificationEvent;
+    title: string;
+    message: string;
+    priority?: NotificationPriority;
+    comment?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: params.event,
+      title: params.title,
+      message: params.message,
+      relatedEntityType: 'offboard-assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/offboard-review/${params.assessmentId}`,
+      priority: params.priority || NOTIFICATION_PRIORITIES.NORMAL,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName, reason: params.comment },
+    });
+  }
+
+  async notifyTPRMOffboardSubmitted(params: {
+    customerAccountId: string; actorId: string; recipientIds: string[];
+    assessmentId: string; assessmentCode: string; vendorName: string;
+  }) {
+    return this.notifyTPRMOffboard({
+      ...params,
+      event: NOTIFICATION_EVENTS.TPRM_OFFBOARD_SUBMITTED,
+      title: 'Offboard assessment submitted',
+      message: `Offboard assessment for vendor ${params.vendorName} has been submitted for your review.`,
+    });
+  }
+
+  async notifyTPRMOffboardAssessorApproved(params: {
+    customerAccountId: string; actorId: string; recipientIds: string[];
+    assessmentId: string; assessmentCode: string; vendorName: string;
+  }) {
+    return this.notifyTPRMOffboard({
+      ...params,
+      event: NOTIFICATION_EVENTS.TPRM_OFFBOARD_ASSESSOR_APPROVED,
+      title: 'Offboard assessment: assessor approved',
+      message: `Offboard assessment for vendor ${params.vendorName} has been approved by assessor. Awaiting RM review.`,
+    });
+  }
+
+  async notifyTPRMOffboardAssessorSentBack(params: {
+    customerAccountId: string; actorId: string; recipientIds: string[];
+    assessmentId: string; assessmentCode: string; vendorName: string; comment?: string;
+  }) {
+    return this.notifyTPRMOffboard({
+      ...params,
+      event: NOTIFICATION_EVENTS.TPRM_OFFBOARD_ASSESSOR_SENT_BACK,
+      title: 'Offboard assessment returned by assessor',
+      message: params.comment
+        ? `Offboard assessment for vendor ${params.vendorName} returned by assessor: ${params.comment}`
+        : `Offboard assessment for vendor ${params.vendorName} has been returned by assessor for rework.`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+    });
+  }
+
+  async notifyTPRMOffboardRMApproved(params: {
+    customerAccountId: string; actorId: string; recipientIds: string[];
+    assessmentId: string; assessmentCode: string; vendorName: string;
+  }) {
+    return this.notifyTPRMOffboard({
+      ...params,
+      event: NOTIFICATION_EVENTS.TPRM_OFFBOARD_RM_APPROVED,
+      title: 'Offboard assessment: RM approved',
+      message: `Offboard assessment for vendor ${params.vendorName} has been approved by RM. Awaiting Business Owner approval.`,
+    });
+  }
+
+  async notifyTPRMOffboardRMSentBack(params: {
+    customerAccountId: string; actorId: string; recipientIds: string[];
+    assessmentId: string; assessmentCode: string; vendorName: string; comment?: string;
+  }) {
+    return this.notifyTPRMOffboard({
+      ...params,
+      event: NOTIFICATION_EVENTS.TPRM_OFFBOARD_RM_SENT_BACK,
+      title: 'Offboard assessment returned by RM',
+      message: params.comment
+        ? `Offboard assessment for vendor ${params.vendorName} returned by RM: ${params.comment}`
+        : `Offboard assessment for vendor ${params.vendorName} has been returned by RM.`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+    });
+  }
+
+  async notifyTPRMOffboardBOApproved(params: {
+    customerAccountId: string; actorId: string; recipientIds: string[];
+    assessmentId: string; assessmentCode: string; vendorName: string;
+  }) {
+    return this.notifyTPRMOffboard({
+      ...params,
+      event: NOTIFICATION_EVENTS.TPRM_OFFBOARD_BO_APPROVED,
+      title: 'Vendor offboarding approved',
+      message: `Vendor ${params.vendorName} offboarding has been fully approved. Vendor status set to Offboarded.`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+    });
+  }
+
+  async notifyTPRMOffboardBOSentToRM(params: {
+    customerAccountId: string; actorId: string; recipientIds: string[];
+    assessmentId: string; assessmentCode: string; vendorName: string; comment?: string;
+  }) {
+    return this.notifyTPRMOffboard({
+      ...params,
+      event: NOTIFICATION_EVENTS.TPRM_OFFBOARD_BO_SENT_TO_RM,
+      title: 'Offboard assessment sent back by BO',
+      message: params.comment
+        ? `Offboard assessment for vendor ${params.vendorName} sent back by Business Owner: ${params.comment}`
+        : `Offboard assessment for vendor ${params.vendorName} has been sent back to RM by Business Owner.`,
     });
   }
 

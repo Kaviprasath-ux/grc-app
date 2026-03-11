@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,9 @@ export default function AMAssessmentsPage() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // Translation hooks — must be before any early returns
+  const { data: translatedAssessments } = useTranslatedData(assessments, { modelName: 'TPRMAssessment' });
 
   const fetchAssessments = useCallback(async (tab: string) => {
     setLoading(true);
@@ -136,7 +140,7 @@ export default function AMAssessmentsPage() {
                   <div className="flex items-center justify-center p-12">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : assessments.length === 0 ? (
+                ) : translatedAssessments.length === 0 ? (
                   <div className="text-center p-12 text-muted-foreground">
                     {t("No assessments found")}
                   </div>
@@ -155,7 +159,7 @@ export default function AMAssessmentsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {assessments.map(a => (
+                      {translatedAssessments.map(a => (
                         <TableRow key={a.id}>
                           <TableCell className="font-medium">{a.assessmentCode}</TableCell>
                           <TableCell>{a.vendor.name}</TableCell>

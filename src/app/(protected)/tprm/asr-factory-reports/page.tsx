@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useSession } from "next-auth/react";
 import { Home, ChevronRight, Loader2, Eye, Download, Trash2, ArrowLeft, X } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
@@ -67,6 +68,9 @@ export default function AsrFactoryReportsPage() {
   const [loading, setLoading] = useState(true);
   const [viewReport, setViewReport] = useState<AssessmentReport | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Dynamic data translation (no vendor data on this page, but hook must be called unconditionally)
+  useTranslatedData([], { modelName: 'TPRMVendor' });
 
   // Load from localStorage when session is available
   // Migrate ALL old user-scoped keys to the tenant-scoped key

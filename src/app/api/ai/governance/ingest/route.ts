@@ -203,6 +203,6 @@ export async function POST(req: NextRequest) {
             userId,
         });
 
-        return errorResponse(err.message || "Failed to ingest policy", err.status || 500);
+        return errorResponse("Unable to process document. Please try again.", err.status || 500);
     }
 }

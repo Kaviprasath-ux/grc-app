@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { translateRecord } from '@/lib/translation-service';
 
 interface Finding {
   findingId: string;
@@ -78,6 +79,16 @@ export const POST = withAuth(
           },
         });
         created.push(remediation);
+
+        // Trigger dynamic translation for the created remediation
+        if (customerAccountId) {
+          void translateRecord(customerAccountId, 'TPRMIssueRemediation', remediation.id, {
+            issue: f.statement,
+            risk: null,
+            recommendation: f.recommendation || null,
+            description: null,
+          });
+        }
       }
 
       return NextResponse.json({ count: created.length, data: created }, { status: 201 });

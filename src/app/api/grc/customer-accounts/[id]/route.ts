@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { isValidEmailFormat } from "@/lib/validations/email";
+import { translateRecord } from "@/lib/translation-service";
 
 /**
  * GET /api/grc/customer-accounts/[id]
@@ -151,6 +152,16 @@ export async function PUT(
         isQpostComplianceEnabled !== undefined ? isQpostComplianceEnabled === true : null,
         existingUser.customerAccountId
       );
+    }
+
+    // Trigger dynamic translation for the customer account name
+    if (existingUser.customerAccountId) {
+      void translateRecord(existingUser.customerAccountId, 'CustomerAccount', existingUser.customerAccountId, { name: customerName });
+      void translateRecord(existingUser.customerAccountId, 'User', updatedUser.id, {
+        fullName: updatedUser.fullName,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName || '',
+      });
     }
 
     return NextResponse.json({

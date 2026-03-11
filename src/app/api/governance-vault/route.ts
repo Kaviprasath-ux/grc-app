@@ -168,7 +168,7 @@ export const POST = withAuth(
       console.error("Error uploading vault document:", error);
       const message = error instanceof Error ? error.message : "Failed to upload document";
       return NextResponse.json(
-        { error: message },
+        { error: "Unable to complete the request. Please try again." },
         { status: 500 }
       );
     }

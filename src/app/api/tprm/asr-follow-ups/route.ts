@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET follow-ups data for assessor (clarifications and remediations)
 export const GET = withAuth(
@@ -174,6 +176,16 @@ export const PATCH = withAuth(
         data: updateData,
       });
 
+      // Fire-and-forget translation for remediation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'TPRMIssueRemediation', updated.id, {
+          issue: updated.issue,
+          risk: updated.risk,
+          recommendation: updated.recommendation,
+          description: updated.description,
+        });
+      }
+
       // Save comment as a chat-style remediation comment for all actions
       if (comment?.trim()) {
         const roles = session.roles || [];
@@ -181,7 +193,7 @@ export const PATCH = withAuth(
         if (roles.some((r: string) => r.includes("Approver"))) userRole = "Approver";
         else if (roles.some((r: string) => r.includes("Admin"))) userRole = "Admin";
 
-        await prisma.tPRMRemediationComment.create({
+        const newComment = await prisma.tPRMRemediationComment.create({
           data: {
             remediationId: id,
             userId: session.id,
@@ -189,6 +201,96 @@ export const PATCH = withAuth(
             message: comment.trim(),
           },
         });
+
+        // Fire-and-forget translation for comment
+        if (customerAccountId) {
+          void translateRecord(customerAccountId, 'TPRMRemediationComment', newComment.id, {
+            message: comment.trim(),
+          });
+        }
+      }
+
+      // Send notifications for remediation status changes
+      const remediationWithAssessment = await prisma.tPRMIssueRemediation.findFirst({
+        where: { id, customerAccountId },
+        include: {
+          assessment: {
+            include: { vendor: { select: { name: true, accountManagerEmail: true } } },
+          },
+        },
+      });
+      const vendorName = remediationWithAssessment?.assessment?.vendor?.name || '';
+      const issueCode = remediation.issueCode || id.substring(0, 8);
+      const questionTitle = remediation.questionText || '';
+
+      // Resolve AM user ID
+      const amEmail = remediationWithAssessment?.assessment?.vendor?.accountManagerEmail?.split(';')[0]?.trim();
+      const amUser = amEmail ? await prisma.user.findFirst({
+        where: { customerAccountId, email: { equals: amEmail, mode: 'insensitive' }, isActive: true },
+        select: { id: true },
+      }) : null;
+
+      // Resolve BO/admin user IDs for bulk notifications
+      const boAdmins = await prisma.user.findMany({
+        where: {
+          customerAccountId, isActive: true,
+          OR: [{ role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } }, { tprmRole: 'Business Owner' }],
+        },
+        select: { id: true },
+        take: 10,
+      });
+      const boAdminIds = boAdmins.map(u => u.id);
+      const amAndBoIds = [...new Set([...(amUser ? [amUser.id] : []), ...boAdminIds])];
+
+      switch (action) {
+        case 'satisfied':
+          if (amAndBoIds.length > 0) {
+            void notificationService.notifyTPRMRemediationSatisfied({
+              customerAccountId, actorId: session.id, recipientIds: amAndBoIds,
+              remediationId: id, issueCode, vendorName, questionTitle,
+            });
+          }
+          break;
+        case 'unsatisfied':
+          if (amAndBoIds.length > 0) {
+            void notificationService.notifyTPRMRemediationUnsatisfied({
+              customerAccountId, actorId: session.id, recipientIds: amAndBoIds,
+              remediationId: id, issueCode, vendorName, questionTitle, reason: comment,
+            });
+          }
+          break;
+        case 'send-to-business':
+          if (assignedToUserId) {
+            void notificationService.notifyTPRMRemediationSentToBusiness({
+              customerAccountId, actorId: session.id, recipientId: assignedToUserId,
+              remediationId: id, issueCode, vendorName, questionTitle,
+            });
+          }
+          break;
+        case 'reassign-to-it':
+          if (assignedToUserId) {
+            void notificationService.notifyTPRMRemediationAssignedToIT({
+              customerAccountId, actorId: session.id, recipientId: assignedToUserId,
+              remediationId: id, issueCode, vendorName, questionTitle,
+            });
+          }
+          break;
+        case 'approve-it':
+          if (remediation.assignedToUserId) {
+            void notificationService.notifyTPRMRemediationITApproved({
+              customerAccountId, actorId: session.id, recipientId: remediation.assignedToUserId,
+              remediationId: id, issueCode, vendorName, questionTitle,
+            });
+          }
+          break;
+        case 'return-to-it':
+          if (remediation.assignedToUserId) {
+            void notificationService.notifyTPRMRemediationITReturned({
+              customerAccountId, actorId: session.id, recipientId: remediation.assignedToUserId,
+              remediationId: id, issueCode, vendorName, questionTitle, reason: comment,
+            });
+          }
+          break;
       }
 
       return NextResponse.json(updated);

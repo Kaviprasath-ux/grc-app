@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Home, ChevronRight, Search, Plus, Minus, Info } from "lucide-react";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface Vendor {
   id: string;
@@ -59,16 +60,18 @@ export default function AsrInventoryPage() {
     fetchData();
   }, [fetchData]);
 
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
+
   const filtered = useMemo(() => {
-    if (!search) return vendors;
+    if (!search) return translatedVendors;
     const q = search.toLowerCase();
-    return vendors.filter(
+    return translatedVendors.filter(
       (v) =>
         v.name?.toLowerCase().includes(q) ||
         v.vendorCode?.toLowerCase().includes(q) ||
         v.serviceCategory?.toLowerCase().includes(q)
     );
-  }, [vendors, search]);
+  }, [translatedVendors, search]);
 
   const toggleVendor = (id: string) => {
     setExpandedVendors((prev) => {

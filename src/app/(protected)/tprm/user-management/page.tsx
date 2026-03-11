@@ -3,19 +3,12 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataGrid } from "@/components/shared/data-grid";
+import { ColumnDef } from "@tanstack/react-table";
 import {
   Dialog,
   DialogContent,
@@ -47,12 +40,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Loader2,
-  Search,
   Pencil,
   Trash2,
   Home,
   ChevronRight,
-  Users,
+  Plus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -122,9 +114,7 @@ export default function UserManagementPage() {
   const { canCreate, canEdit, canDelete } = usePermissions("tprm.user-management");
 
   const [users, setUsers] = useState<TPRMUser[]>([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
   // Dialog states
@@ -153,27 +143,20 @@ export default function UserManagementPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (roleFilter && roleFilter !== "all") params.set("role", roleFilter);
-      params.set("limit", "100");
-
-      const res = await fetch(`/api/tprm/user-management?${params}`);
+      const res = await fetch("/api/tprm/user-management?limit=200");
       if (res.ok) {
         const json = await res.json();
         setUsers(json.users);
-        setTotal(json.total);
       }
     } catch (error) {
       console.error("Failed to fetch users:", error);
     } finally {
       setLoading(false);
     }
-  }, [search, roleFilter]);
+  }, []);
 
   useEffect(() => {
-    const timer = setTimeout(fetchUsers, 300);
-    return () => clearTimeout(timer);
+    fetchUsers();
   }, [fetchUsers]);
 
   // ==================== FORM VALIDATION ====================
@@ -639,9 +622,82 @@ export default function UserManagementPage() {
     </div>
   );
 
+  // DataGrid columns
+  const userColumns: ColumnDef<TPRMUser>[] = [
+    {
+      accessorKey: "fullName",
+      header: t("Name"),
+      cell: ({ row }) => <span className="font-medium text-primary">{row.getValue("fullName")}</span>,
+    },
+    {
+      accessorKey: "email",
+      header: t("Email"),
+    },
+    {
+      accessorKey: "tprmRole",
+      header: t("Role"),
+      cell: ({ row }) => {
+        const role = row.getValue("tprmRole") as string | null;
+        return role ? t(role) : "-";
+      },
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+              onClick={() => openEditDialog(row.original)}
+              title={t("Edit")}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {canDeleteUser(row.original) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-red-600"
+              onClick={() => openDeleteDialog(row.original)}
+              title={t("Delete")}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  // Filtered users based on role filter
+  const filteredUsers = useMemo(() => {
+    if (roleFilter === "all") return users;
+    return users.filter((u) => u.tprmRole === roleFilter);
+  }, [users, roleFilter]);
+
+  const roleFilterToolbar = (
+    <Select value={roleFilter} onValueChange={setRoleFilter}>
+      <SelectTrigger className="w-[160px] h-9 border-slate-200 text-sm">
+        <SelectValue placeholder={t("All Roles")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{t("All Roles")}</SelectItem>
+        {ALL_ROLES.map((role) => (
+          <SelectItem key={role} value={role}>
+            {t(role)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   // ==================== RENDER ====================
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -652,126 +708,34 @@ export default function UserManagementPage() {
         <span className="text-primary-700 font-medium">{t("User Management")}</span>
       </nav>
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("User Management")}</h1>
-          <p className="text-sm text-slate-500">{t("Manage TPRM users and their roles")}</p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("User Management")}</h1>
         {canCreate && (
           <Button
-            className="gap-2"
+            size="sm"
             onClick={() => {
               setFormData(emptyForm);
               setFormErrors({});
               setShowCreateDialog(true);
             }}
           >
-            <Users className="h-4 w-4" />
-            {t("Add")}
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New User")}
           </Button>
         )}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder={t("Search by Name")}
-            className="ltr:pl-9 rtl:pr-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder={t("All Roles")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("All Roles")}</SelectItem>
-            {ALL_ROLES.map((role) => (
-              <SelectItem key={role} value={role}>
-                {t(role)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Users Table */}
       {loading ? (
-        <div className="flex items-center justify-center h-[40vh]">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-            </div>
-            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
-          </div>
-        </div>
-      ) : users.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 py-16 text-center">
-          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-            <Users className="h-6 w-6 text-primary-400" />
-          </div>
-          <p className="text-sm font-medium text-slate-600 mb-1">{t("No users found")}</p>
-          <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider ps-5">{t("Name")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Email")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Role")}</TableHead>
-                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider text-right pe-5">{t("Action")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors">
-                    <TableCell className="ps-5 py-3 font-medium text-primary">
-                      {user.fullName}
-                    </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-600">{user.email}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-600">{user.tprmRole ? t(user.tprmRole) : "-"}</TableCell>
-                    <TableCell className="pe-5 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        {canEdit && (
-                          <Button
-                            variant="default"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openEditDialog(user)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDeleteUser(user) && (
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openDeleteDialog(user)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {/* Pagination Footer */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
-            <span className="text-xs text-slate-500">{users.length} {t("of")} {total} {t("users")}</span>
-          </div>
-        </div>
+        <DataGrid
+          columns={userColumns}
+          data={filteredUsers}
+          searchPlaceholder={t("Search users...")}
+          toolbarExtra={roleFilterToolbar}
+        />
       )}
 
       {/* Create User Dialog — matches Organization Users layout */}

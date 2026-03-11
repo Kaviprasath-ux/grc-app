@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -79,6 +80,13 @@ export const PATCH = withAuth<RouteContext>(
           assessor: { select: { id: true, fullName: true } },
           approver: { select: { id: true, fullName: true } },
         },
+      });
+
+      // Trigger translation for updated assessment
+      const customerAccountId = getCustomerAccountId(session);
+      void translateRecord(customerAccountId, 'TPRMAssessment', assessment.id, {
+        questionnaireTemplate: assessment.questionnaireTemplate,
+        approverComment: assessment.approverComment,
       });
 
       return NextResponse.json(assessment);

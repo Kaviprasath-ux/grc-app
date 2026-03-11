@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuthOnly, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET /api/tprm/remediation-comments?remediationId=xxx — Get comments for a remediation
 export const GET = withAuthOnly(
@@ -86,6 +87,7 @@ export const POST = withAuthOnly(
           user: { select: { fullName: true } },
         },
       });
+      void translateRecord(customerAccountId, 'TPRMRemediationComment', comment.id, { message: comment.message });
 
       return NextResponse.json(comment, { status: 201 });
     } catch (error) {

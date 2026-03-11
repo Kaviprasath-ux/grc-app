@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuthOnly, getCustomerAccountId } from "@/lib/api-auth";
+import { translateRecord } from '@/lib/translation-service';
 
 /**
  * POST /api/tprm/offboard-assessments — Create an offboard assessment for a vendor
@@ -111,6 +112,14 @@ export const POST = withAuthOnly(
           initiatedById: session.id,
         },
       });
+
+      // Fire-and-forget translation
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'TPRMAssessment', assessment.id, {
+          questionnaireTemplate: assessment.questionnaireTemplate,
+          approverComment: assessment.approverComment,
+        });
+      }
 
       // Create offboard responses (one per question)
       const responseData = questions.map((q) => ({

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Download, Search, X, FileBarChart, Home, ChevronRight } from "lucide-react";
+import { Upload, Loader2, Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { DataGrid } from "@/components/shared";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -16,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // ==================== TYPES ====================
 
@@ -97,7 +97,6 @@ export default function ReportPage() {
   const { t } = useLanguage();
   const [vendors, setVendors] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [riskFilter, setRiskFilter] = useState("all");
 
   const loadVendors = useCallback(async () => {
@@ -117,13 +116,13 @@ export default function ReportPage() {
 
   useEffect(() => { loadVendors(); }, [loadVendors]);
 
-  const filtered = useMemo(() => vendors.filter((v) => {
-    const matchesSearch = search === "" ||
-      v.name.toLowerCase().includes(search.toLowerCase()) ||
-      (v.serviceCategory || "").toLowerCase().includes(search.toLowerCase());
+  // Dynamic data translation for vendor names/categories
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
+
+  const filtered = useMemo(() => translatedVendors.filter((v) => {
     const matchesRisk = riskFilter === "all" || v.criticalityRating === riskFilter;
-    return matchesSearch && matchesRisk;
-  }), [vendors, search, riskFilter]);
+    return matchesRisk;
+  }), [translatedVendors, riskFilter]);
 
   const columns: ColumnDef<ReportRow>[] = [
     {
@@ -179,7 +178,7 @@ export default function ReportPage() {
   ];
 
   const handleExport = () => {
-    const headers = ["Vendor Name", "Vendor Category", "Security Posture Score", "Threat Exposure Score", "Overall Cybersecurity Risk Score", "Criticality Rating"];
+    const headers = [t("Vendor Name"), t("Vendor Category"), t("Security Posture Score"), t("Threat Exposure Score"), t("Overall Cybersecurity Risk Score"), t("Criticality Rating")];
     const rows = filtered.map((v) => [
       v.name,
       v.serviceCategory || "",
@@ -198,8 +197,22 @@ export default function ReportPage() {
     URL.revokeObjectURL(url);
   };
 
+  const riskFilterToolbar = (
+    <Select value={riskFilter} onValueChange={setRiskFilter}>
+      <SelectTrigger className="w-[160px] h-9 border-slate-200 text-sm">
+        <SelectValue placeholder={t("All Ratings")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{t("All Ratings")}</SelectItem>
+        {["Critical", "High", "Moderate", "Low", "Nominal"].map((r) => (
+          <SelectItem key={r} value={r}>{t(r)}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -210,56 +223,25 @@ export default function ReportPage() {
         <span className="text-primary-700 font-medium">{t("Vendor Reports")}</span>
       </nav>
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Vendor Reports")}</h1>
-          <p className="text-sm text-slate-500">{t("View and generate TPRM reports")}</p>
-        </div>
-        <Button className="gap-2" onClick={handleExport}>
-          <Download className="h-4 w-4" /> {t("Export")}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Vendor Reports")}</h1>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Export")}
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input placeholder={t("Search by Vendor")} value={search} onChange={(e) => setSearch(e.target.value)} className="ltr:pl-9 rtl:pr-9" />
-          {search && <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}><X className="h-3.5 w-3.5 text-slate-400" /></button>}
-        </div>
-        <Select value={riskFilter} onValueChange={setRiskFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder={t("Risk Rating")} /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("All Ratings")}</SelectItem>
-            {["Critical", "High", "Moderate", "Low", "Nominal"].map((r) => (
-              <SelectItem key={r} value={r}>{t(r)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Report Table */}
       {loading ? (
-        <div className="flex items-center justify-center h-[40vh]">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-            </div>
-            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
-          </div>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 py-16 text-center">
-          <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
-            <FileBarChart className="h-6 w-6 text-primary-400" />
-          </div>
-          <p className="text-sm font-medium text-slate-600 mb-1">{t("No vendors found")}</p>
-          <p className="text-xs text-slate-400">{t("Try adjusting your search or filters")}</p>
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <DataGrid columns={columns} data={filtered} hideSearch />
+        <DataGrid
+          columns={columns}
+          data={filtered}
+          searchPlaceholder={t("Search vendors...")}
+          toolbarExtra={riskFilterToolbar}
+        />
       )}
     </div>
   );

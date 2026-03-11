@@ -77,10 +77,20 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   // Priority 5 — TPRM
   { modelName: 'TPRMVendor', fields: [{ name: 'name' }, { name: 'serviceCategory' }], priority: 5 },
   { modelName: 'TPRMAssessment', fields: [{ name: 'questionnaireTemplate' }, { name: 'approverComment' }], priority: 5 },
+  { modelName: 'TPRMVendorIssue', fields: [{ name: 'title' }, { name: 'description' }, { name: 'resolution' }], priority: 5 },
+  { modelName: 'TPRMIssueRemediation', fields: [{ name: 'issue' }, { name: 'risk' }, { name: 'recommendation' }, { name: 'description' }], priority: 5 },
 
   // Priority 6 — TPRM Master Data
   { modelName: 'TPRMDomain', fields: [{ name: 'name' }, { name: 'description' }], priority: 6 },
   { modelName: 'TPRMMasterQuestion', fields: [{ name: 'questionText' }], priority: 6 },
+  { modelName: 'TPRMQuestionnaireTemplate', fields: [{ name: 'templateName' }, { name: 'frameworkName' }], priority: 6 },
+  { modelName: 'TPRMServiceCategory', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'TPRMDiscipline', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'TPRMOnboardingQuestion', fields: [{ name: 'title' }, { name: 'question' }], priority: 6 },
+  { modelName: 'TPRMOffboardingQuestion', fields: [{ name: 'title' }, { name: 'question' }], priority: 6 },
+  { modelName: 'TPRMScorecardFactor', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'TPRMClarification', fields: [{ name: 'rejectComment' }, { name: 'amResponse' }], priority: 6 },
+  { modelName: 'TPRMRemediationComment', fields: [{ name: 'message' }], priority: 6 },
 
   // Priority 5 — QPost Compliance (client-specific duplicated module)
   { modelName: 'QPostFramework', fields: [{ name: 'name' }, { name: 'description' }, { name: 'country' }, { name: 'industry' }], priority: 5 },
@@ -95,7 +105,8 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'QPostPolicyManualReview', fields: [{ name: 'comments' }, { name: 'findings' }, { name: 'recommendation' }], priority: 5 },
   { modelName: 'QPostEvidenceManualReview', fields: [{ name: 'comments' }, { name: 'findings' }, { name: 'recommendation' }], priority: 5 },
 
-  // Priority 5 — Organization & assets
+  // Priority 5 — Organization & accounts
+  { modelName: 'CustomerAccount', fields: [{ name: 'name' }], priority: 5 },
   { modelName: 'User', fields: [{ name: 'fullName' }, { name: 'firstName' }, { name: 'lastName' }, { name: 'designation' }], priority: 5 },
   { modelName: 'Organization', fields: [{ name: 'name' }, { name: 'description' }, { name: 'vision' }, { name: 'mission' }, { name: 'value' }, { name: 'ceoMessage' }, { name: 'headOfficeLocation' }, { name: 'headOfficeAddress' }], priority: 5 },
   { modelName: 'Branch', fields: [{ name: 'location' }, { name: 'address' }], priority: 5 },

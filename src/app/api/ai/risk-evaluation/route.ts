@@ -292,7 +292,7 @@ async function handler(
 
         return NextResponse.json(
             {
-                error: err.message || "Failed to generate risk evaluation",
+                error: "Unable to generate risk evaluation. Please try again.",
                 userError,
                 userMessage,
             },

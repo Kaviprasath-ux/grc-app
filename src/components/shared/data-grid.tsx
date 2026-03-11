@@ -45,6 +45,7 @@ interface DataGridProps<TData, TValue> {
   onRowClick?: (row: TData) => void;
   showColumnSelector?: boolean;
   hideSearch?: boolean;
+  toolbarExtra?: React.ReactNode;
 }
 
 export function DataGrid<TData, TValue>({
@@ -57,6 +58,7 @@ export function DataGrid<TData, TValue>({
   onRowClick,
   showColumnSelector = false,
   hideSearch = false,
+  toolbarExtra,
 }: DataGridProps<TData, TValue>) {
   const { t, isRTL } = useLanguage();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -96,8 +98,8 @@ export function DataGrid<TData, TValue>({
   return (
     <div className={cn("bg-white rounded-xl border border-slate-200 overflow-hidden", className)} style={isRTL ? { direction: 'rtl' } : undefined}>
       {/* Search and Column Selector */}
-      {(!hideSearch || showColumnSelector) && (
-        <div className="flex items-center justify-between gap-4 p-4 border-b border-slate-100">
+      {(!hideSearch || showColumnSelector || toolbarExtra) && (
+        <div className="flex items-center justify-between gap-6 p-4 border-b border-slate-100">
           {!hideSearch && (
             <Input
               placeholder={searchPlaceholder}
@@ -106,36 +108,38 @@ export function DataGrid<TData, TValue>({
               className="max-w-sm h-9 border-slate-200"
             />
           )}
-          {hideSearch && !showColumnSelector && <div />}
-          {showColumnSelector && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings2 className="h-4 w-4 mr-2" />
-                Columns
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          )}
+          <div className="flex items-center gap-3">
+            {toolbarExtra}
+            {showColumnSelector && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings2 className="h-4 w-4 mr-2" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            )}
+          </div>
         </div>
       )}
 

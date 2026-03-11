@@ -83,11 +83,7 @@ export const GET = withAuth(
       } catch (apiError: unknown) {
         const err = apiError as { message?: string; requestId?: string; status?: number };
         console.error(`[Evidence Ingest Result] API error:`, err);
-        return errorResponse(err.message || "Failed to fetch result", err.status || 502, {
-          jobId,
-          currentStatus: "failed",
-          requestId: err.requestId,
-        });
+        return errorResponse("Unable to retrieve results. Please try again.", err.status || 502);
       }
 
       // Response: { "job_id": "...", "status": "completed", "result": { "messages": [...], "status": true } }
@@ -337,9 +333,7 @@ export const GET = withAuth(
     } catch (error: unknown) {
       const err = error as { message?: string; requestId?: string; status?: number };
       console.error("[Evidence Ingest Result] Error:", err);
-      return errorResponse(err.message || "Failed to fetch ingest result", err.status || 500, {
-        requestId: err.requestId,
-      });
+      return errorResponse("Unable to retrieve results. Please try again.", err.status || 500);
     }
   },
   { resource: "compliance.evidence", action: "view" }

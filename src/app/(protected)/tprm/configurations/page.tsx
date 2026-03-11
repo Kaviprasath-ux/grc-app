@@ -30,6 +30,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
 
 // ==================== TYPES ====================
@@ -311,6 +312,8 @@ function VendorOnboardingSection() {
     responseType: "Yes/No",
     parentId: "" as string,
   });
+
+  const { data: translatedObQuestions } = useTranslatedData(obQuestions, { modelName: 'TPRMOnboardingQuestion' });
 
   // VRR config from Control Center (fetched dynamically)
   const [vrrReference, setVrrReference] = useState<{ category: string; score: number }[]>([]);
@@ -653,7 +656,7 @@ function VendorOnboardingSection() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : (
-            <DataGrid columns={obColumns} data={obQuestions} />
+            <DataGrid columns={obColumns} data={translatedObQuestions} />
           )}
 
           {/* VRR Reference Table — fetched dynamically from Control Center */}
@@ -800,6 +803,11 @@ function VendorOnboardingSection() {
 // ==================== SIMPLE CRUD SECTION ====================
 // Used for Service Categories, Disciplines, and Departments
 
+const SIMPLE_CRUD_MODEL_MAP: Record<string, string> = {
+  'service-categories': 'TPRMServiceCategory',
+  'disciplines': 'TPRMDiscipline',
+};
+
 function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -809,6 +817,9 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
   const [editItem, setEditItem] = useState<SimpleItem | null>(null);
   const [name, setName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  const modelName = SIMPLE_CRUD_MODEL_MAP[type] || type;
+  const { data: translatedItems } = useTranslatedData(items, { modelName });
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -880,8 +891,8 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
   };
 
   const filteredItems = searchTerm
-    ? items.filter((i) => i.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    : items;
+    ? translatedItems.filter((i) => i.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    : translatedItems;
 
   const columns: ColumnDef<SimpleItem>[] = [
     {
@@ -994,6 +1005,8 @@ function QuestionnaireManagementSection() {
   // ---- Template list ----
   const [templates, setTemplates] = useState<QuestionnaireTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'TPRMQuestionnaireTemplate' });
 
   // ---- Wizard ----
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -1855,7 +1868,7 @@ function QuestionnaireManagementSection() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <DataGrid columns={templateColumns} data={templates} />
+        <DataGrid columns={templateColumns} data={translatedTemplates} />
       )}
 
       {/* 3-Step Wizard Dialog */}
@@ -2201,6 +2214,8 @@ function OffboardingSection() {
   const [editItem, setEditItem] = useState<OffboardingQuestion | null>(null);
   const [form, setForm] = useState({ title: "", question: "" });
 
+  const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMOffboardingQuestion' });
+
   const loadQuestions = useCallback(async () => {
     setLoading(true);
     try {
@@ -2331,7 +2346,7 @@ function OffboardingSection() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <DataGrid columns={columns} data={questions} />
+        <DataGrid columns={columns} data={translatedQuestions} />
       )}
 
       {/* Add/Edit Dialog */}
@@ -2386,6 +2401,8 @@ function ScorecardSection() {
   const [editForm, setEditForm] = useState({ name: "", weightage: 0, isMandatory: false });
   const [validationResults, setValidationResults] = useState<{ errors: string[]; passed: boolean } | null>(null);
   const [configSaving, setConfigSaving] = useState(false);
+
+  const { data: translatedFactors } = useTranslatedData(factors, { modelName: 'TPRMScorecardFactor' });
 
   // Monitoring schedule state
   const [scheduleRecurrence, setScheduleRecurrence] = useState("none");
@@ -2509,8 +2526,8 @@ function ScorecardSection() {
     }
   };
 
-  const securityPostureFactors = factors.filter((f) => f.scoreType === "SecurityPosture");
-  const threatExposureFactors = factors.filter((f) => f.scoreType === "ThreatExposure");
+  const securityPostureFactors = translatedFactors.filter((f) => f.scoreType === "SecurityPosture");
+  const threatExposureFactors = translatedFactors.filter((f) => f.scoreType === "ThreatExposure");
 
   const factorColumns: ColumnDef<ScorecardFactor>[] = [
     {

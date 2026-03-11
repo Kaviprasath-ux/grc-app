@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -211,7 +212,10 @@ export default function ASRAssessmentDetailPage() {
   const { toast } = useToast();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const assessmentId = params.id as string;
+  const fromPage = searchParams.get("from");
+  const backUrl = fromPage === "task-queue" ? "/tprm/task-queue" : "/tprm/asr-assessments";
 
   // Data
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
@@ -270,6 +274,10 @@ export default function ASRAssessmentDetailPage() {
   const [selectedApproverId, setSelectedApproverId] = useState<string>("");
   const [sendingToApprover, setSendingToApprover] = useState(false);
 
+  // Translation hooks — must be before any early returns
+  const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMMasterQuestion' });
+  const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'TPRMDomain' });
+
   // Role detection — approver sees different buttons than assessor
   const isApprover = useHasRole("TPRMApprover");
   const isAuditor = useHasRole("TPRMAuditor");
@@ -312,7 +320,7 @@ export default function ASRAssessmentDetailPage() {
   const flatQuestions = (() => {
     const result: { question: Question | Question["children"][0]; isChild: boolean; parentIndex: number; questionNo: string; domainName: string; domainId: string | null }[] = [];
     let parentIdx = 0;
-    for (const q of questions) {
+    for (const q of translatedQuestions) {
       parentIdx++;
       // Domain filter
       if (selectedDomain !== "all" && q.domainId !== selectedDomain) continue;
@@ -519,7 +527,7 @@ export default function ASRAssessmentDetailPage() {
       }
       toast({ title: t("Success"), description: t("Assessment approved") });
       setReportOpen(false);
-      router.push("/tprm/asr-assessments");
+      router.push(backUrl);
     } catch (err) {
       toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to approve assessment"), variant: "destructive" });
     } finally {
@@ -542,7 +550,7 @@ export default function ASRAssessmentDetailPage() {
       setReturnOpen(false);
       setReturnComment("");
       setReportOpen(false);
-      router.push("/tprm/asr-assessments");
+      router.push(backUrl);
     } catch {
       toast({ title: t("Error"), description: t("Failed to return assessment"), variant: "destructive" });
     } finally {
@@ -599,7 +607,7 @@ export default function ASRAssessmentDetailPage() {
       const approverName = approvers.find(a => a.id === selectedApproverId)?.fullName || "";
       toast({ title: t("Success"), description: `${t("Assessment sent to approver")} ${approverName}` });
       setSendToApproverOpen(false);
-      router.push("/tprm/asr-assessments");
+      router.push(backUrl);
     } catch (err) {
       toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to send to approver"), variant: "destructive" });
     } finally {
@@ -824,7 +832,7 @@ export default function ASRAssessmentDetailPage() {
     return (
       <div className="p-6 text-center">
         <p className="text-muted-foreground">{t("Assessment not found")}</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push("/tprm/asr-assessments")}>
+        <Button variant="outline" className="mt-4" onClick={() => router.push(backUrl)}>
           <ArrowLeft className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t("Back")}
         </Button>
       </div>
@@ -841,7 +849,7 @@ export default function ASRAssessmentDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button size="sm" onClick={() => router.push("/tprm/asr-assessments")}>
+            <Button size="sm" onClick={() => router.push(backUrl)}>
               <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />{t("Back")}
             </Button>
             <h1 className="text-xl font-semibold">{t("Assessment Summary")}</h1>
@@ -971,7 +979,7 @@ export default function ASRAssessmentDetailPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-3">
-                {domains.map(domain => {
+                {translatedDomains.map(domain => {
                   const domainResps = flatQuestions.filter(fq => fq.domainId === domain.id);
                   const total = domainResps.length;
                   const unsat = domainResps.filter(fq => {
@@ -1105,7 +1113,7 @@ export default function ASRAssessmentDetailPage() {
             <SelectTrigger className="mt-1 h-8 bg-white/80" style={{ borderColor: "var(--primary-200)" }}><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("All Domains")}</SelectItem>
-              {domains.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              {translatedDomains.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>

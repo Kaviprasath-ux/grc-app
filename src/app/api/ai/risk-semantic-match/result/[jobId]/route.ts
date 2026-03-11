@@ -333,9 +333,7 @@ ${shouldPersist ? '⚠️  DEPRECATED: Use /register endpoint for persistence' :
             userId: session.id
         });
 
-        return errorResponse("Failed to get job result", err.status || 500, {
-            details: err.message,
-        });
+        return errorResponse("Something went wrong. Please try again.", err.status || 500);
     }
 }
 

@@ -329,7 +329,7 @@ export const GET = withAuth(
       console.error('Error downloading report:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'Failed to download report', details: errorMessage },
+        { error: "Unable to complete the request. Please try again." },
         { status: 500 }
       );
     }

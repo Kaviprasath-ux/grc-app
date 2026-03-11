@@ -31,6 +31,7 @@ import {
   Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X, Check, Info, Play, AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 // ── Types ──────────────────────────────────────────────
 interface Vendor {
@@ -396,10 +397,13 @@ export default function RMInventoryPage() {
     );
   }, [existingEngagements, engagementSearchText]);
 
+  // ── Dynamic data translation ──
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
+
   // ── Group vendors by name for accordion display ──
   const vendorGroups = useMemo((): VendorGroup[] => {
     const groupMap = new Map<string, Vendor[]>();
-    for (const v of vendors) {
+    for (const v of translatedVendors) {
       const key = v.name.toLowerCase();
       if (!groupMap.has(key)) groupMap.set(key, []);
       groupMap.get(key)!.push(v);
@@ -414,7 +418,7 @@ export default function RMInventoryPage() {
       }, null);
       return { name: vendorList[0].name, vrr: highestVrr, vendors: vendorList };
     });
-  }, [vendors]);
+  }, [translatedVendors]);
 
   // ── Form helpers ───────────────────────────────────
   const resetForm = () => {

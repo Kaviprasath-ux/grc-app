@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Loader2, Home, ChevronRight, FileText, Search, X, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +58,10 @@ export default function AsrTemplatePage() {
     fetchData();
   }, [fetchData]);
 
-  const filtered = templates.filter((tmpl) => {
+  // Dynamic data translation for template names
+  const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'TPRMQuestionnaireTemplate', idField: 'id' });
+
+  const filtered = translatedTemplates.filter((tmpl) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (

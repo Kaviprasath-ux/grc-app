@@ -107,6 +107,9 @@ interface Process {
   recurrence?: string;
   reviewDate?: string;
   biaData?: BIAData;
+  kpiExpectedValue?: number | null;
+  kpiTargetedValue?: number | null;
+  kpiObjective?: string | null;
 }
 
 interface BIARating {
@@ -1088,7 +1091,7 @@ export default function ProcessPage() {
 
     return kpiMonths.map((month) => ({
       month,
-      achievedValue: null,
+      achievedValue: kpiConfig.targetedAchievedValue > 0 ? kpiConfig.targetedAchievedValue : null,
       expectedValue: kpiConfig.expectedValue,
     }));
   };
@@ -1974,12 +1977,36 @@ export default function ProcessPage() {
                 {(() => {
                   const kpiProcesses = departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired);
                   const total = kpiProcesses.length || 1;
-                  // For now, show all as "Achieved" since we don't have KPI status tracking yet
+                  // Calculate KPI status per process by comparing targeted achieved value vs expected value
+                  let achievedCount = 0;
+                  let missedCount = 0;
+                  let scheduledCount = 0;
+                  let overdueCount = 0;
+                  const now = new Date();
+                  kpiProcesses.forEach((p) => {
+                    const expected = p.kpiExpectedValue ?? 0;
+                    const targeted = p.kpiTargetedValue ?? 0;
+                    const reviewDatePassed = p.reviewDate && new Date(p.reviewDate) < now;
+                    if (expected === 0 && targeted === 0) {
+                      // No KPI values configured yet
+                      if (reviewDatePassed) {
+                        overdueCount++; // Review date passed but KPI not configured
+                      } else {
+                        scheduledCount++;
+                      }
+                    } else if (targeted >= expected) {
+                      achievedCount++;
+                    } else if (reviewDatePassed) {
+                      overdueCount++; // Target not met and review date passed
+                    } else {
+                      missedCount++;
+                    }
+                  });
                   const statusData = [
-                    { name: t("Scheduled"), value: 0, color: "#3b82f6" },
-                    { name: t("Missed"), value: 0, color: "#f59e0b" },
-                    { name: t("Overdue"), value: 0, color: "#22c55e" },
-                    { name: t("Achieved"), value: kpiProcesses.length, color: "#1e3a5f" },
+                    { name: t("Scheduled"), value: scheduledCount, color: "#3b82f6" },
+                    { name: t("Missed"), value: missedCount, color: "#f59e0b" },
+                    { name: t("Overdue"), value: overdueCount, color: "#22c55e" },
+                    { name: t("Achieved"), value: achievedCount, color: "#1e3a5f" },
                   ];
                   const hasData = statusData.some(d => d.value > 0);
 

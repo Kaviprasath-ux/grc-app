@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET all vendors with search and pagination
 export const GET = withAuth(
@@ -213,6 +214,8 @@ export const POST = withAuth(
           });
         }
       }
+
+      void translateRecord(customerAccountId, 'TPRMVendor', vendor.id, { name: vendor.name, serviceCategory: vendor.serviceCategory });
 
       return NextResponse.json(vendor, { status: 201 });
     } catch (error) {

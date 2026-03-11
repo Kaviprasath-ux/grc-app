@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/api-auth";
 import bcrypt from "bcryptjs";
+import { translateRecord } from "@/lib/translation-service";
 
 // Helper: generate the next available customer account code
 async function generateNextAccountCode(): Promise<string> {
@@ -624,6 +625,16 @@ export const POST = withAuth(
       // Remove password from response
       const { password: _, ...safeUser } = result.user;
 
+      // Trigger dynamic translation for customer account and user
+      if (result.customerAccount.id) {
+        void translateRecord(result.customerAccount.id, 'CustomerAccount', result.customerAccount.id, { name: result.customerAccount.name });
+        void translateRecord(result.customerAccount.id, 'User', result.user.id, {
+          fullName: result.user.fullName,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName || '',
+        });
+      }
+
       return NextResponse.json({
         success: true,
         user: safeUser,
@@ -765,7 +776,22 @@ export const PATCH = withAuth(
         }
       });
 
-      return NextResponse.json({ success: true });
+      // Trigger dynamic translation for updated fields
+      if (existingUser.customerAccountId) {
+        if (customerName) {
+          void translateRecord(existingUser.customerAccountId, 'CustomerAccount', existingUser.customerAccountId, { name: customerName });
+        }
+        if (fullName) {
+          const nameParts = fullName.trim().split(/\s+/);
+          void translateRecord(existingUser.customerAccountId, 'User', userId, {
+            fullName,
+            firstName: nameParts[0] || fullName,
+            lastName: nameParts.slice(1).join(' ') || '',
+          });
+        }
+      }
+
+      return NextResponse.json({ success: true, customerAccountId: existingUser.customerAccountId });
     } catch (error) {
       console.error("Error updating user:", error);
       if ((error as { code?: string }).code === "P2002") {

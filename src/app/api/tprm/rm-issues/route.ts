@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from "@/lib/notification-service";
+import { translateRecord } from "@/lib/translation-service";
 
 /**
  * GET /api/tprm/rm-issues — Issue Register for RM
@@ -291,6 +292,8 @@ export const POST = withAuth(
         },
       });
 
+      void translateRecord(customerAccountId, 'TPRMVendorIssue', issue.id, { title: issue.title, description: issue.description });
+
       // Notify admins/BO about the new vendor issue
       const admins = await prisma.user.findMany({
         where: {
@@ -347,7 +350,7 @@ export const PATCH = withAuth(
 
       // Add comment if provided
       if (addComment && typeof addComment === "string" && addComment.trim()) {
-        await prisma.tPRMRemediationComment.create({
+        const comment = await prisma.tPRMRemediationComment.create({
           data: {
             remediationId: id,
             userId: session.id,
@@ -355,6 +358,7 @@ export const PATCH = withAuth(
             message: addComment.trim(),
           },
         });
+        void translateRecord(customerAccountId, 'TPRMRemediationComment', comment.id, { message: comment.message });
 
         if (!status) {
           return NextResponse.json({ success: true });
@@ -367,6 +371,39 @@ export const PATCH = withAuth(
           where: { id },
           data: { status },
         });
+
+        // Notify assessors/BO when RM submits IT remediation
+        if (status === 'IT Submitted') {
+          const remWithData = await prisma.tPRMIssueRemediation.findFirst({
+            where: { id, customerAccountId },
+            include: {
+              assessment: { include: { vendor: { select: { name: true } }, assessor: { select: { id: true } } } },
+            },
+          });
+          const recipientIds: string[] = [];
+          if (remWithData?.assessment?.assessor?.id) recipientIds.push(remWithData.assessment.assessor.id);
+          const boUsers = await prisma.user.findMany({
+            where: {
+              customerAccountId, isActive: true,
+              OR: [{ role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } }, { tprmRole: 'Business Owner' }],
+            },
+            select: { id: true },
+            take: 10,
+          });
+          for (const u of boUsers) {
+            if (!recipientIds.includes(u.id)) recipientIds.push(u.id);
+          }
+          if (recipientIds.length > 0) {
+            void notificationService.notifyTPRMRemediationITSubmitted({
+              customerAccountId, actorId: session.id, recipientIds,
+              remediationId: id,
+              issueCode: remediation.issueCode || id.substring(0, 8),
+              vendorName: remWithData?.assessment?.vendor?.name || '',
+              questionTitle: remediation.questionText || '',
+            });
+          }
+        }
+
         return NextResponse.json(updated);
       }
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -266,6 +267,9 @@ export default function VendorDetailPage() {
     }
   }, [vendor, fetchVendor, toast, t]);
 
+  // Dynamic data translation for vendor
+  const { data: translatedVendor } = useTranslatedRecord(vendor, { modelName: 'TPRMVendor' });
+
   const handleExport = useCallback(() => {
     if (!vendor) return;
     const lines = [
@@ -376,12 +380,12 @@ export default function VendorDetailPage() {
               <InfoRow label={t("Code")} value={vendor.vendorCode.split(".")[0]} />
               <InfoRow label={t("Status")} value={vendor.status} />
               <InfoRow label={t("SubCode")} value={vendor.engagementId || vendor.vendorCode} />
-              <InfoRow label={t("Name")} value={vendor.name} />
+              <InfoRow label={t("Name")} value={translatedVendor?.name || vendor.name} />
               <InfoRow label={t("Account Manager Name")} value={vendor.accountManagerName} />
               <InfoRow label={t("Account Manager Email")} value={vendor.accountManagerEmail} />
               <InfoRow label={t("Contact Number")} value={vendor.contactPhone} />
               <InfoRow label={t("Department")} value={vendor.department?.name} />
-              <InfoRow label={t("Service Category")} value={vendor.serviceCategory} />
+              <InfoRow label={t("Service Category")} value={translatedVendor?.serviceCategory || vendor.serviceCategory} />
               <InfoRow label={t("Contract Start Date")} value={formatDate(vendor.contractStartDate)} />
               <InfoRow label={t("Contract End Date")} value={formatDate(vendor.contractEndDate)} />
               <InfoRow label={t("Vendor Certification")} value={vendor.vendorCertification} />

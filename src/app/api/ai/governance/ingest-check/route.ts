@@ -121,7 +121,7 @@ async function handler(
         const err = error as { message?: string };
         console.error('[Governance Ingest Check] Error:', err);
         return NextResponse.json(
-            { error: err.message || 'Failed to check ingest status' },
+            { error: 'Unable to check ingest status. Please try again.' },
             { status: 500 }
         );
     }

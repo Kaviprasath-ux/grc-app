@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -37,9 +37,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName, isAlphanumeric } from "@/lib/validations";
 import { validateEmail } from "@/lib/validations/email";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface CustomerAccount {
   id: string;
+  customerAccountId?: string | null;
   customerCode: string;
   customerName: string;
   email: string;
@@ -252,6 +254,25 @@ export default function CustomerAccountsPage() {
   const [logoUploadStatus, setLogoUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [logoUploadProgress, setLogoUploadProgress] = useState(0);
 
+  // Build CustomerAccount-shaped records for dynamic translation (field: 'name')
+  const customerAccountRecords = useMemo(() =>
+    customers
+      .filter((c) => c.customerAccountId)
+      .map((c) => ({ id: c.customerAccountId!, name: c.customerName })),
+    [customers]
+  );
+  const { data: translatedAccountRecords } = useTranslatedData(customerAccountRecords, { modelName: 'CustomerAccount' });
+
+  // Lookup: given a customerAccountId, return its translated name
+  const tCustomerName = useCallback(
+    (customer: CustomerAccount) => {
+      if (!customer.customerAccountId) return customer.customerName;
+      const found = translatedAccountRecords.find((r) => r.id === customer.customerAccountId);
+      return found?.name || customer.customerName;
+    },
+    [translatedAccountRecords]
+  );
+
   useEffect(() => {
     fetchCustomers();
   }, []);
@@ -456,6 +477,11 @@ export default function CustomerAccountsPage() {
           await uploadCustomerLogo(data.user.id, formData.logoFile);
         }
 
+        // Trigger dynamic translation for customer account name
+        if (data.customerAccount?.id) {
+          triggerTranslation('CustomerAccount', data.customerAccount.id, { name: formData.customerName });
+        }
+
         toast({
           title: t("Success"),
           description: t("Customer onboarded successfully"),
@@ -533,6 +559,11 @@ export default function CustomerAccountsPage() {
         // Upload logo if a file was selected
         if (formData.logoFile && selectedCustomer.id) {
           await uploadCustomerLogo(selectedCustomer.id, formData.logoFile);
+        }
+
+        // Trigger dynamic translation for customer account name
+        if (selectedCustomer.customerAccountId) {
+          triggerTranslation('CustomerAccount', selectedCustomer.customerAccountId, { name: formData.customerName });
         }
 
         toast({
@@ -1143,7 +1174,7 @@ export default function CustomerAccountsPage() {
               customers.map((customer) => (
                 <TableRow key={customer.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{customer.customerName}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{tCustomerName(customer)}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{customer.email}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{customer.isLocalUser ? t("Yes") : t("No")}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{customer.name}</TableCell>
@@ -1996,7 +2027,7 @@ export default function CustomerAccountsPage() {
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
                             plan.status === "Active" ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-600"
                           }`}>
-                            {plan.status}
+                            {t(plan.status)}
                           </span>
                         </TableCell>
                         <TableCell className="py-3 pr-5">

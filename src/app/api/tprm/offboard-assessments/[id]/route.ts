@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuthOnly, getCustomerAccountId } from "@/lib/api-auth";
+import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -155,6 +157,14 @@ export const PATCH = withAuthOnly(
           : `[${timestamp}] ${roleLabel}: ${comment.trim()}`;
       }
 
+      // Fire-and-forget translation (approverComment may have been updated)
+      if (customerAccountId && updateData.approverComment) {
+        void translateRecord(customerAccountId, 'TPRMAssessment', id, {
+          questionnaireTemplate: assessment.questionnaireTemplate,
+          approverComment: updateData.approverComment,
+        });
+      }
+
       // Use transaction to ensure all operations succeed or fail together
       await prisma.$transaction(async (tx) => {
         // Update assessment status + comment
@@ -189,6 +199,102 @@ export const PATCH = withAuthOnly(
           });
         }
       });
+
+      // === Send offboarding notifications ===
+      // Helper: resolve role-based user IDs for notifications
+      const resolveUsersByTPRMRole = async (tprmRole: string) => {
+        const users = await prisma.user.findMany({
+          where: { customerAccountId, isActive: true, tprmRole },
+          select: { id: true },
+          take: 10,
+        });
+        return users.map(u => u.id);
+      };
+
+      const assessorIds = await resolveUsersByTPRMRole('Assessor');
+      const rmIds = await resolveUsersByTPRMRole('Relationship Manager');
+      const boIds = await resolveUsersByTPRMRole('Business Owner');
+      const adminIds = (await prisma.user.findMany({
+        where: { customerAccountId, isActive: true, role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
+        select: { id: true },
+        take: 10,
+      })).map(u => u.id);
+
+      // Also resolve AM from vendor
+      const vendorForNotif = await prisma.tPRMVendor.findUnique({
+        where: { id: assessment.vendor?.id || '' },
+        select: { accountManagerEmail: true },
+      });
+      const amEmail = vendorForNotif?.accountManagerEmail?.split(';')[0]?.trim();
+      const amUser = amEmail ? await prisma.user.findFirst({
+        where: { customerAccountId, email: { equals: amEmail, mode: 'insensitive' }, isActive: true },
+        select: { id: true },
+      }) : null;
+      const amIds = amUser ? [amUser.id] : [];
+
+      const assessmentCode = assessment.assessmentCode || '';
+      const vendorName = assessment.vendor?.name || 'Unknown';
+
+      switch (action) {
+        case 'submit':
+          if (assessorIds.length > 0) {
+            void notificationService.notifyTPRMOffboardSubmitted({
+              customerAccountId, actorId: session.id, recipientIds: assessorIds,
+              assessmentId: id, assessmentCode, vendorName,
+            });
+          }
+          break;
+        case 'assessor-approve':
+          if (rmIds.length > 0) {
+            void notificationService.notifyTPRMOffboardAssessorApproved({
+              customerAccountId, actorId: session.id, recipientIds: rmIds,
+              assessmentId: id, assessmentCode, vendorName,
+            });
+          }
+          break;
+        case 'assessor-send-back':
+          if (amIds.length > 0) {
+            void notificationService.notifyTPRMOffboardAssessorSentBack({
+              customerAccountId, actorId: session.id, recipientIds: amIds,
+              assessmentId: id, assessmentCode, vendorName, comment,
+            });
+          }
+          break;
+        case 'rm-approve':
+          if (boIds.length > 0 || adminIds.length > 0) {
+            void notificationService.notifyTPRMOffboardRMApproved({
+              customerAccountId, actorId: session.id, recipientIds: [...new Set([...boIds, ...adminIds])],
+              assessmentId: id, assessmentCode, vendorName,
+            });
+          }
+          break;
+        case 'rm-send-back':
+          if (amIds.length > 0) {
+            void notificationService.notifyTPRMOffboardRMSentBack({
+              customerAccountId, actorId: session.id, recipientIds: amIds,
+              assessmentId: id, assessmentCode, vendorName, comment,
+            });
+          }
+          break;
+        case 'bo-approve': {
+          const allRecipients = [...new Set([...assessorIds, ...rmIds, ...amIds])];
+          if (allRecipients.length > 0) {
+            void notificationService.notifyTPRMOffboardBOApproved({
+              customerAccountId, actorId: session.id, recipientIds: allRecipients,
+              assessmentId: id, assessmentCode, vendorName,
+            });
+          }
+          break;
+        }
+        case 'bo-send-to-rm':
+          if (rmIds.length > 0) {
+            void notificationService.notifyTPRMOffboardBOSentToRM({
+              customerAccountId, actorId: session.id, recipientIds: rmIds,
+              assessmentId: id, assessmentCode, vendorName, comment,
+            });
+          }
+          break;
+      }
 
       return NextResponse.json({ success: true, status: newStatus });
     } catch (error) {

@@ -289,7 +289,7 @@ export const POST = withAuth(
       // Return more specific error message
       const errorMessage = error instanceof Error ? error.message : "Failed to create exception";
       return NextResponse.json(
-        { error: errorMessage },
+        { error: "Unable to complete the request. Please try again." },
         { status: 500 }
       );
     }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -94,6 +95,10 @@ export default function AsrFollowUpsPage() {
   const [clarifications, setClarifications] = useState<ClarificationItem[]>([]);
   const [remediations, setRemediations] = useState<RemediationItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Dynamic data translation
+  const { data: translatedClarifications } = useTranslatedData(clarifications, { modelName: 'TPRMClarification' });
+  const { data: translatedRemediations } = useTranslatedData(remediations, { modelName: 'TPRMIssueRemediation' });
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
@@ -257,7 +262,7 @@ export default function AsrFollowUpsPage() {
 
   // Clarification sub-tab filtering
   const filteredClarifications = useMemo(() => {
-    let data = clarifications;
+    let data = translatedClarifications;
     if (clarSubTab === "open") data = data.filter((c) => c.status === "Open");
     else if (clarSubTab === "vendor-response") data = data.filter((c) => c.status === "Responded");
     else if (clarSubTab === "closed") data = data.filter((c) => c.status === "Closed");
@@ -272,11 +277,11 @@ export default function AsrFollowUpsPage() {
       );
     }
     return data;
-  }, [clarifications, clarSubTab, search]);
+  }, [translatedClarifications, clarSubTab, search]);
 
   // Remediation sub-tab filtering
   const filteredRemediations = useMemo(() => {
-    let data = remediations;
+    let data = translatedRemediations;
     if (remSubTab === "received") data = data.filter((r) => r.status === "Received");
     else if (remSubTab === "business") data = data.filter((r) => r.status === "Assigned to BO");
     else if (remSubTab === "it") data = data.filter((r) => r.status === "Assigned to IT" || r.status === "IT Submitted");
@@ -301,7 +306,7 @@ export default function AsrFollowUpsPage() {
     }
 
     return data;
-  }, [remediations, remSubTab, search, severityFilter]);
+  }, [translatedRemediations, remSubTab, search, severityFilter]);
 
   // Clarification columns
   const clarificationColumns: ColumnDef<ClarificationItem>[] = [

@@ -2,14 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataGrid } from "@/components/shared/data-grid";
+import { ColumnDef } from "@tanstack/react-table";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +23,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Upload, FileDown, FileUp, Download, RefreshCw, AlertTriangle, Mail } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Copy, Home, ChevronRight, FileText, Lock, Upload, FileDown, FileUp, Download, RefreshCw, AlertTriangle, Mail, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -760,6 +761,128 @@ export default function EmailTemplatesPage() {
     }
   };
 
+  // DataGrid columns
+  const templateColumns: ColumnDef<EmailTemplate>[] = [
+    {
+      accessorKey: "name",
+      header: t("Template"),
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          {row.original.isSystem && (
+            <span title={t("System template")}>
+              <Lock className="h-3.5 w-3.5 text-slate-400" />
+            </span>
+          )}
+          <div>
+            <p className="text-sm font-medium text-slate-900">{row.original.name}</p>
+            {row.original.description && (
+              <p className="text-xs text-slate-500 truncate max-w-xs">{row.original.description}</p>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "code",
+      header: t("Code"),
+      cell: ({ row }) => (
+        <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700">{row.original.code}</code>
+      ),
+    },
+    {
+      accessorKey: "category",
+      header: t("Category"),
+      cell: ({ row }) => (
+        <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(row.original.category)}`}>
+          {t(row.original.category.charAt(0).toUpperCase() + row.original.category.slice(1))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "isActive",
+      header: t("Status"),
+      cell: ({ row }) => (
+        <span className={`px-2 py-1 rounded text-xs font-medium ${
+          row.original.isActive ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-600"
+        }`}>
+          {row.original.isActive ? t("Active") : t("Inactive")}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: t("Actions"),
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            onClick={() => openPreviewDialog(row.original)}
+            title={t("Preview")}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            onClick={() => openEditDialog(row.original)}
+            title={t("Edit")}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-400 hover:text-slate-600"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => handleDuplicateTemplate(row.original)}>
+                <Copy className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Duplicate")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportSingle(row.original)}>
+                <FileDown className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Export")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-600"
+                onClick={() => openDeleteDialog(row.original)}
+              >
+                <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ];
+
+  // Category filter for DataGrid toolbar
+  const categoryFilterToolbar = (
+    <Select value={filterCategory} onValueChange={setFilterCategory}>
+      <SelectTrigger className="w-[180px] h-9 border-slate-200 text-sm">
+        <SelectValue placeholder={t("All Categories")} />
+      </SelectTrigger>
+      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+        <SelectItem value="all">{t("All Categories")}</SelectItem>
+        {TEMPLATE_CATEGORIES.map((cat) => (
+          <SelectItem key={cat.value} value={cat.value}>
+            {t(cat.label)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -885,171 +1008,39 @@ export default function EmailTemplatesPage() {
         </button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {/* Filter Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3 border-b border-slate-100">
-          <div className="ms-auto flex items-center gap-3">
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[180px] h-9 bg-slate-50 border-slate-200">
-                <SelectValue placeholder={t("All Categories")} />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                <SelectItem value="all">{t("All Categories")}</SelectItem>
-                {TEMPLATE_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {t(cat.label)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* Seed CTA when no templates exist */}
+      {templates.length === 0 && filterCategory === "all" && activeModule === "grc" ? (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="py-20 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
+              <Mail className="h-8 w-8 text-primary-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">
+              {t("No Email Templates Configured")}
+            </h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
+              {t("Load the default set of 88 professionally designed email templates for notifications, reminders, approvals, and more.")}
+            </p>
+            <Button
+              size="lg"
+              onClick={handleSeedTemplates}
+              disabled={seeding}
+              className="px-8 py-3 text-base font-semibold shadow-md hover:shadow-lg transition-all"
+            >
+              <Mail className={`h-5 w-5 ltr:mr-2.5 rtl:ml-2.5 ${seeding ? 'animate-pulse' : ''}`} />
+              {seeding ? t("Loading Templates...") : t("Seed Default Templates")}
+            </Button>
           </div>
         </div>
-
-        <div className="overflow-x-auto">
-        <Table className="min-w-[700px]">
-          <TableHeader>
-            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Template")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Code")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Category")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Actions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTemplates.length === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={5}>
-                  {templates.length === 0 && filterCategory === "all" && activeModule === "grc" ? (
-                    <div className="py-20 text-center">
-                      <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
-                        <Mail className="h-8 w-8 text-primary-500" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-800 mb-2">
-                        {t("No Email Templates Configured")}
-                      </h3>
-                      <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-                        {t("Load the default set of 88 professionally designed email templates for notifications, reminders, approvals, and more.")}
-                      </p>
-                      <Button
-                        size="lg"
-                        onClick={handleSeedTemplates}
-                        disabled={seeding}
-                        className="px-8 py-3 text-base font-semibold shadow-md hover:shadow-lg transition-all"
-                      >
-                        <Mail className={`h-5 w-5 ltr:mr-2.5 rtl:ml-2.5 ${seeding ? 'animate-pulse' : ''}`} />
-                        {seeding ? t("Loading Templates...") : t("Seed Default Templates")}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="py-16 text-center">
-                      <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
-                        <FileText className="h-6 w-6 text-primary-500" />
-                      </div>
-                      <h3 className="text-base font-semibold text-slate-800 mb-1">
-                        {t("No Email Templates Found")}
-                      </h3>
-                      <p className="text-sm text-slate-500">
-                        {filterCategory !== "all"
-                          ? t("No templates match the selected category filter.")
-                          : t("Get started by adding your first email template.")}
-                      </p>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredTemplates.map((template) => (
-                <TableRow key={template.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 pl-5">
-                    <div className="flex items-center gap-2">
-                      {template.isSystem && (
-                        <span title={t("System template")}>
-                          <Lock className="h-3.5 w-3.5 text-slate-400" />
-                        </span>
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{template.name}</p>
-                        {template.description && (
-                          <p className="text-xs text-slate-500 truncate max-w-xs">{template.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700">{template.code}</code>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(template.category)}`}>
-                      {t(template.category.charAt(0).toUpperCase() + template.category.slice(1))}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      template.isActive
-                        ? "bg-green-50 text-green-700"
-                        : "bg-slate-100 text-slate-600"
-                    }`}>
-                      {template.isActive ? t("Active") : t("Inactive")}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3 pr-5">
-                    <div className="flex items-center gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-blue-600"
-                        onClick={() => openPreviewDialog(template)}
-                        title={t("Preview")}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => handleDuplicateTemplate(template)}
-                        title={t("Duplicate")}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-green-600"
-                        onClick={() => handleExportSingle(template)}
-                        title={t("Export")}
-                      >
-                        <FileDown className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditDialog(template)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(template)}
-                        title={t("Delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        </div>
-      </div>
+      ) : (
+        <DataGrid
+          columns={templateColumns}
+          data={filteredTemplates}
+          searchPlaceholder={t("Search templates...")}
+          pageSize={10}
+          toolbarExtra={categoryFilterToolbar}
+        />
+      )}
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

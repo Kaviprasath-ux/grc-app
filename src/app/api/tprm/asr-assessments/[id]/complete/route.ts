@@ -82,6 +82,23 @@ export const POST = withAuth(
         data: updateData,
       });
 
+      // Notify approver when assessment is sent to them
+      if (action === 'send_to_approver') {
+        const { approverId } = body;
+        const vendor = await prisma.tPRMVendor.findUnique({
+          where: { id: assessment.vendorId },
+          select: { name: true },
+        });
+        void notificationService.notifyTPRMAssessmentSentToApprover({
+          customerAccountId,
+          actorId: session.id,
+          approverId,
+          assessmentId: id,
+          assessmentCode: assessment.assessmentCode,
+          vendorName: vendor?.name || assessment.vendorId,
+        });
+      }
+
       // When approved, set vendor status to Inactive and create issue remediations
       if (action === 'approve') {
         await prisma.tPRMVendor.update({
@@ -156,6 +173,7 @@ export const POST = withAuth(
             };
           });
 
+        let newIssueCount = 0;
         if (issueData.length > 0) {
           // Remove duplicates: skip if remediation already exists for this assessment+questionNo
           const existingRems = await prisma.tPRMIssueRemediation.findMany({
@@ -164,6 +182,7 @@ export const POST = withAuth(
           });
           const existingQNos = new Set(existingRems.map(r => r.questionNo));
           const newIssueData = issueData.filter(d => !existingQNos.has(d.questionNo));
+          newIssueCount = newIssueData.length;
 
           if (newIssueData.length === 0) {
             console.log(`[ASR] All ${issueData.length} remediations already exist for assessment ${id}, skipping`);
@@ -186,6 +205,47 @@ export const POST = withAuth(
           }
           console.log(`[ASR] Created ${newIssueData.length} issue remediations for assessment ${id}`);
           }
+        }
+
+        // Notify about approval
+        const approvalRecipients: string[] = [];
+        if (assessment.initiatedById) approvalRecipients.push(assessment.initiatedById);
+        // Also resolve AM from vendor
+        const vendorForApproval = await prisma.tPRMVendor.findUnique({
+          where: { id: assessment.vendorId },
+          select: { name: true, accountManagerEmail: true },
+        });
+        if (vendorForApproval?.accountManagerEmail) {
+          const amUser = await prisma.user.findFirst({
+            where: { customerAccountId, email: { equals: vendorForApproval.accountManagerEmail.split(';')[0].trim(), mode: 'insensitive' }, isActive: true },
+            select: { id: true },
+          });
+          if (amUser && !approvalRecipients.includes(amUser.id)) approvalRecipients.push(amUser.id);
+        }
+        if (assessment.assessorId && !approvalRecipients.includes(assessment.assessorId)) approvalRecipients.push(assessment.assessorId);
+
+        if (approvalRecipients.length > 0) {
+          void notificationService.notifyTPRMAssessmentApproved({
+            customerAccountId,
+            actorId: session.id,
+            recipientIds: approvalRecipients,
+            assessmentId: id,
+            assessmentCode: assessment.assessmentCode,
+            vendorName: vendorForApproval?.name || assessment.vendorId,
+          });
+        }
+
+        // Notify about remediations created
+        if (newIssueCount > 0 && approvalRecipients.length > 0) {
+          void notificationService.notifyTPRMRemediationCreated({
+            customerAccountId,
+            actorId: session.id,
+            recipientIds: approvalRecipients,
+            assessmentId: id,
+            assessmentCode: assessment.assessmentCode,
+            vendorName: vendorForApproval?.name || assessment.vendorId,
+            count: newIssueCount,
+          });
         }
       }
 
@@ -210,7 +270,7 @@ export const POST = withAuth(
             assessmentCode: assessment.assessmentCode,
             vendorName: assessment.vendorId, // Will be resolved below
           });
-        } else {
+        } else if (action === 'return' || action === 'return_to_assessor') {
           void notificationService.notifyTPRMAssessmentReturned({
             customerAccountId,
             actorId: session.id,
@@ -249,7 +309,7 @@ export const POST = withAuth(
               assessmentCode: assessment.assessmentCode,
               vendorName: vendor.name,
             });
-          } else {
+          } else if (action === 'return' || action === 'return_to_assessor') {
             void notificationService.notifyTPRMAssessmentReturned({
               customerAccountId,
               actorId: session.id,

@@ -187,10 +187,7 @@ export const POST = withAuth(
     } catch (error: unknown) {
       const err = error as { message?: string; rawResponse?: string; requestId?: string; status?: number; data?: unknown };
       console.error("[Evidence Ingest] Error:", err);
-      return errorResponse(err.message || "Failed to trigger AI ingest", err.status || 500, {
-        details: err.rawResponse?.substring(0, 200) || (err.data ? String(err.data) : undefined),
-        requestId: err.requestId,
-      });
+      return errorResponse("Unable to process evidence. Please try again.", err.status || 500);
     }
   },
   { resource: "compliance.evidence", action: "edit" }
