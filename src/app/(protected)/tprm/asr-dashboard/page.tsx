@@ -25,13 +25,14 @@ interface Assessment {
   vendorRiskRating?: string;
   inherentRisk?: string;
   assessmentResult?: string;
-  vendor?: { name: string; vendorRiskRating?: string };
+  vendor?: { name: string; vrr?: string; vendorRiskRating?: string };
 }
 
 interface IssueEntry {
   id: string;
   status: string;
   severity?: string;
+  domainName?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -58,6 +59,8 @@ const RESULT_COLORS: Record<string, string> = {
   Deficient: "#a78bfa",
 };
 
+const DOMAIN_COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
+
 export default function AsrDashboardPage() {
   const { t } = useLanguage();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -73,7 +76,7 @@ export default function AsrDashboardPage() {
       setLoading(true);
       const [aRes, iRes] = await Promise.all([
         fetch("/api/tprm/assessments?limit=500"),
-        fetch("/api/tprm/asr-issues?limit=500"),
+        fetch("/api/tprm/asr-issues?tab=flat&limit=500"),
       ]);
       if (aRes.ok) {
         const aJson = await aRes.json();
@@ -95,10 +98,15 @@ export default function AsrDashboardPage() {
   }, [fetchData]);
 
   // Issue Status chart data
+  // DB statuses: Pending, Submitted, Assigned to BO, Assigned to IT, Closed, Overdue
+  // Dashboard buckets: Open (all active), Overdue, Closed
   const issueStatusData = useMemo(() => {
     const counts: Record<string, number> = { Open: 0, Overdue: 0, Closed: 0 };
     translatedIssues.forEach((i) => {
-      if (counts[i.status] !== undefined) counts[i.status]++;
+      const s = i.status || "Pending";
+      if (s === "Closed") counts.Closed++;
+      else if (s === "Overdue") counts.Overdue++;
+      else counts.Open++; // Pending, Submitted, Assigned to BO, Assigned to IT
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [translatedIssues]);
@@ -115,23 +123,30 @@ export default function AsrDashboardPage() {
   }, [translatedAssessments]);
 
   // Inherent Risk pie chart
+  // VRR values: Nominal, Low, Moderate, High, Critical → map to High/Medium/Low
   const riskData = useMemo(() => {
+    const VRR_TO_RISK: Record<string, string> = {
+      Critical: "High", High: "High",
+      Moderate: "Medium", Medium: "Medium",
+      Low: "Low", Nominal: "Low",
+    };
     const counts: Record<string, number> = { High: 0, Medium: 0, Low: 0 };
     translatedAssessments.forEach((a) => {
-      const risk = a.inherentRisk || a.vendor?.vendorRiskRating || "Medium";
-      if (counts[risk] !== undefined) counts[risk]++;
+      const raw = a.inherentRisk || a.vendor?.vrr || a.vendor?.vendorRiskRating || "Medium";
+      const risk = VRR_TO_RISK[raw] || "Medium";
+      counts[risk]++;
     });
     return Object.entries(counts)
       .filter(([, v]) => v > 0)
       .map(([name, value]) => ({ name, value }));
   }, [translatedAssessments]);
 
-  // Assessment Result pie chart
+  // Assessment Result pie chart — only count assessments that have a result
   const resultData = useMemo(() => {
     const counts: Record<string, number> = { Satisfactory: 0, Unsatisfactory: 0, Deficient: 0 };
     translatedAssessments.forEach((a) => {
-      const result = a.assessmentResult || "";
-      if (counts[result] !== undefined) counts[result]++;
+      const result = a.assessmentResult;
+      if (result && counts[result] !== undefined) counts[result]++;
     });
     return Object.entries(counts)
       .filter(([, v]) => v > 0)
@@ -140,20 +155,38 @@ export default function AsrDashboardPage() {
 
   // Top 5 Vendors by severity
   const vendorData = useMemo(() => {
+    const VRR_TO_SEV: Record<string, "High" | "Medium" | "Low"> = {
+      Critical: "High", High: "High",
+      Moderate: "Medium", Medium: "Medium",
+      Low: "Low", Nominal: "Low",
+    };
     const vendorMap: Record<string, { High: number; Medium: number; Low: number }> = {};
     translatedAssessments.forEach((a) => {
       const vName = a.vendor?.name || t("Unknown");
       if (!vendorMap[vName]) vendorMap[vName] = { High: 0, Medium: 0, Low: 0 };
-      const sev = a.inherentRisk || "Medium";
-      if (sev === "High") vendorMap[vName].High++;
-      else if (sev === "Low") vendorMap[vName].Low++;
-      else vendorMap[vName].Medium++;
+      const raw = a.inherentRisk || a.vendor?.vrr || a.vendor?.vendorRiskRating || "Medium";
+      const sev = VRR_TO_SEV[raw] || "Medium";
+      vendorMap[vName][sev]++;
     });
     return Object.entries(vendorMap)
       .map(([name, counts]) => ({ name, ...counts }))
       .sort((a, b) => (b.High + b.Medium + b.Low) - (a.High + a.Medium + a.Low))
       .slice(0, 5);
   }, [translatedAssessments]);
+
+  // Domain distribution from issues — strip "CUST." prefix for cleaner labels
+  const domainData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    translatedIssues.forEach((i) => {
+      let domain = i.domainName || "Unspecified";
+      domain = domain.replace(/^CUST\./i, "");
+      counts[domain] = (counts[domain] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+  }, [translatedIssues]);
 
   if (loading) {
     return (
@@ -221,47 +254,59 @@ export default function AsrDashboardPage() {
         {/* Inherent Risk */}
         <div className="rounded-lg border bg-card p-4">
           <h3 className="text-lg font-semibold border-b pb-2 mb-4 text-primary">{t("Inherent Risk")}</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={riskData}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                dataKey="value"
-                label={({ name, value }) => `${value}`}
-              >
-                {riskData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={RISK_COLORS[entry.name] || "#6b7280"} />
-                ))}
-              </Pie>
-              <Tooltip formatter={((value: number, name: string) => [value, t(name)]) as never} />
-              <Legend formatter={(value: string) => t(value)} />
-            </PieChart>
-          </ResponsiveContainer>
+          {riskData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={riskData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  dataKey="value"
+                  label={({ value }) => `${value}`}
+                >
+                  {riskData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={RISK_COLORS[entry.name] || "#6b7280"} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={((value: number, name: string) => [value, t(name)]) as never} />
+                <Legend formatter={(value: string) => t(value)} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              {t("No Data to Display")}
+            </div>
+          )}
         </div>
 
         {/* Assessment Result */}
         <div className="rounded-lg border bg-card p-4">
           <h3 className="text-lg font-semibold border-b pb-2 mb-4 text-primary">{t("Assessment Result")}</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={resultData}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                dataKey="value"
-                label={({ name, value }) => `${value}`}
-              >
-                {resultData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={RESULT_COLORS[entry.name] || "#6b7280"} />
-                ))}
-              </Pie>
-              <Tooltip formatter={((value: number, name: string) => [value, t(name)]) as never} />
-              <Legend formatter={(value: string) => t(value)} />
-            </PieChart>
-          </ResponsiveContainer>
+          {resultData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={resultData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  dataKey="value"
+                  label={({ value }) => `${value}`}
+                >
+                  {resultData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={RESULT_COLORS[entry.name] || "#6b7280"} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={((value: number, name: string) => [value, t(name)]) as never} />
+                <Legend formatter={(value: string) => t(value)} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              {t("No Data to Display")}
+            </div>
+          )}
         </div>
       </div>
 
@@ -270,26 +315,48 @@ export default function AsrDashboardPage() {
         {/* Top 5 Vendors */}
         <div className="rounded-lg border bg-card p-4">
           <h3 className="text-lg font-semibold border-b pb-2 mb-4 text-primary">{t("Vendors")}</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={vendorData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={100} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="High" stackId="a" fill="#dc2626" name={t("High Severity")} />
-              <Bar dataKey="Medium" stackId="a" fill="#f97316" name={t("Medium Severity")} />
-              <Bar dataKey="Low" stackId="a" fill="#16a34a" name={t("Low Severity")} />
-            </BarChart>
-          </ResponsiveContainer>
+          {vendorData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={vendorData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={100} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="High" stackId="a" fill="#dc2626" name={t("High Severity")} />
+                <Bar dataKey="Medium" stackId="a" fill="#f97316" name={t("Medium Severity")} />
+                <Bar dataKey="Low" stackId="a" fill="#16a34a" name={t("Low Severity")} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              {t("No Data to Display")}
+            </div>
+          )}
         </div>
 
         {/* Domains */}
         <div className="rounded-lg border bg-card p-4">
           <h3 className="text-lg font-semibold border-b pb-2 mb-4 text-primary">{t("Domains")}</h3>
-          <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-            {t("Domain risk data will be populated from assessments")}
-          </div>
+          {domainData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={Math.max(300, domainData.length * 36)}>
+              <BarChart data={domainData} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" allowDecimals={false} />
+                <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 12 }} tickFormatter={(v) => t(v)} />
+                <Tooltip formatter={(value) => [value as number, t("Issues")]} labelFormatter={(label) => t(label)} />
+                <Bar dataKey="value" name={t("Issues")} radius={[0, 4, 4, 0]}>
+                  {domainData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={DOMAIN_COLORS[index % DOMAIN_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              {t("No Data to Display")}
+            </div>
+          )}
         </div>
       </div>
     </div>

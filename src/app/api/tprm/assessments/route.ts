@@ -38,7 +38,7 @@ export const GET = withAuth(
         prisma.tPRMAssessment.findMany({
           where,
           include: {
-            vendor: { select: { id: true, name: true, vendorCode: true, serviceCategory: true } },
+            vendor: { select: { id: true, name: true, vendorCode: true, serviceCategory: true, vrr: true } },
             initiatedBy: { select: { id: true, fullName: true } },
             assessor: { select: { id: true, fullName: true } },
             approver: { select: { id: true, fullName: true } },

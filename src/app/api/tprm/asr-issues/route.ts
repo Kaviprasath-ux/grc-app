@@ -11,6 +11,18 @@ export const GET = withAuth(
       const tenantFilter = getTenantFilter(session);
       const customerAccountId = getCustomerAccountId(session);
 
+      // ==================== FLAT LIST (for dashboard charts) ====================
+      if (tab === "flat") {
+        const limit = parseInt(searchParams.get("limit") || "500");
+        const remediations = await prisma.tPRMIssueRemediation.findMany({
+          where: { ...tenantFilter },
+          select: { id: true, status: true, severity: true, domainName: true },
+          take: limit,
+          orderBy: { createdAt: "desc" },
+        });
+        return NextResponse.json({ data: remediations });
+      }
+
       // ==================== TAB 1: ISSUE REGISTER ====================
       if (tab === "register") {
         const limit = parseInt(searchParams.get("limit") || "50");

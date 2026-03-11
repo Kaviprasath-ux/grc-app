@@ -31,16 +31,32 @@ export const GET = withAuth(
       const isEnabled = totalAssessments > 0;
 
       // Per-series microflows (image 25):
-      // For each status → tenant filter → status filter → count → { status, count }
-      // Mirrors: Filter by expression (tenant) → Filter by expression (status) → Count
-      const data = await Promise.all(
-        ASSESSMENT_STATUSES.map(async (status) => {
-          const count = await prisma.tPRMAssessment.count({
-            where: { ...tenantFilter, status },
-          });
-          return { status, count };
-        })
-      );
+      // Map DB statuses to 3 dashboard buckets (same logic as asr-dashboard client-side)
+      const STATUS_MAP: Record<string, string> = {
+        Draft: "Initiated",
+        Initiated: "Initiated",
+        "In Progress": "In Progress",
+        Submitted: "In Progress",
+        "Under Review": "In Progress",
+        Completed: "Completed",
+        Approved: "Completed",
+      };
+
+      const allAssessments = await prisma.tPRMAssessment.findMany({
+        where: tenantFilter,
+        select: { status: true },
+      });
+
+      const counts: Record<string, number> = { Initiated: 0, "In Progress": 0, Completed: 0 };
+      for (const a of allAssessments) {
+        const bucket = STATUS_MAP[a.status] || "In Progress";
+        counts[bucket]++;
+      }
+
+      const data = ASSESSMENT_STATUSES.map((status) => ({
+        status,
+        count: counts[status] || 0,
+      }));
 
       return NextResponse.json({ isEnabled, data });
     } catch (error) {
