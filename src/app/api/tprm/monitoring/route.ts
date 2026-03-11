@@ -88,9 +88,39 @@ export const GET = withAuth(
   async (req, _context, session) => {
     try {
       const tenantFilter = getTenantFilter(session);
+      const customerAccountId = getCustomerAccountId(session);
       const { searchParams } = new URL(req.url);
       const search = searchParams.get("search") || "";
       const vendorId = searchParams.get("vendorId"); // fetch all assessments for a specific vendor
+
+      // Auto-expire stale queued/processing assessments (older than 10 minutes)
+      const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+      const staleDate = new Date(Date.now() - STALE_THRESHOLD_MS);
+      const staleResult = await prisma.tPRMMonitoringAssessment.updateMany({
+        where: {
+          customerAccountId,
+          status: { in: ["queued", "processing"] },
+          createdAt: { lt: staleDate },
+        },
+        data: { status: "error", isLatest: false },
+      });
+
+      // Clean up orphan vendors that have ONLY error/stale assessments (no successful scans)
+      if (staleResult.count > 0) {
+        const orphanVendors = await prisma.tPRMMonitoringVendor.findMany({
+          where: {
+            customerAccountId,
+            assessments: { every: { status: "error" } },
+          },
+          select: { id: true },
+        });
+        if (orphanVendors.length > 0) {
+          const orphanIds = orphanVendors.map((v) => v.id);
+          // Delete assessments first, then vendors
+          await prisma.tPRMMonitoringAssessment.deleteMany({ where: { monitoringVendorId: { in: orphanIds } } });
+          await prisma.tPRMMonitoringVendor.deleteMany({ where: { id: { in: orphanIds } } });
+        }
+      }
 
       if (vendorId) {
         // Return full assessment history for one vendor (exclude placeholder records)
@@ -119,7 +149,6 @@ export const GET = withAuth(
         if (!vendor) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
         // Recalculate scores from current scorecard config on every load
-        const customerAccountId = getCustomerAccountId(session);
         await recalcAssessmentScores(customerAccountId, vendor.assessments);
 
         return NextResponse.json({ data: vendor });
@@ -158,7 +187,6 @@ export const GET = withAuth(
       });
 
       // Recalculate scores for all latest assessments
-      const customerAccountId = getCustomerAccountId(session);
       const allAssessments = vendors.flatMap((v) => v.assessments);
       if (allAssessments.length > 0) {
         await recalcAssessmentScores(customerAccountId, allAssessments);

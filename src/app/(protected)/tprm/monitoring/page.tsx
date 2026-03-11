@@ -221,7 +221,7 @@ export default function MonitoringPage() {
         }
         return prev;
       });
-    }, 60000);
+    }, 10000); // Poll every 10s — OpenAI scans complete in ~20-30s
 
     return () => {
       if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
@@ -291,9 +291,10 @@ export default function MonitoringPage() {
   const queuedVendors = translatedVendors.filter((v) => {
     // Never show a vendor that already appears in the scorecard table
     if (latestVendorIds.has(v.id)) return false;
+    // Vendors with no assessments are orphans from failed scans — don't show
+    if (v.assessments.length === 0) return false;
     const a = v.assessments[0];
-    const isPending = v.assessments.length === 0 ||
-      ["queued", "processing"].includes(a?.status?.toLowerCase() || "");
+    const isPending = ["queued", "processing"].includes(a?.status?.toLowerCase() || "");
     const isTracked = a?.jobID && activeJobIds.has(a.jobID);
     return isPending && !isTracked;
   });

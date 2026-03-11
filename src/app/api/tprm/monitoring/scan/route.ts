@@ -3,8 +3,10 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
-import { getExternalApiUrl, EXTERNAL_API_SECRETS } from "@/config/external-apis";
+// External API imports kept for potential fallback
+// import { getExternalApiUrl, EXTERNAL_API_SECRETS } from "@/config/external-apis";
 import { notificationService } from "@/lib/notification-service";
+import { runVendorScan } from "@/lib/openai-vendor-scan";
 
 // Save scan response JSON to scan-results folder
 async function saveResponseJson(vendorName: string, data: unknown) {
@@ -21,10 +23,10 @@ async function saveResponseJson(vendorName: string, data: unknown) {
   }
 }
 
-// Use the same Python backend URL as all other AI services
-function getScanApiUrl(path: string): string {
-  return getExternalApiUrl('PYTHON_BACKEND', path);
-}
+// Kept for potential fallback to external API
+// function getScanApiUrl(path: string): string {
+//   return getExternalApiUrl('PYTHON_BACKEND', path);
+// }
 
 // ==================== TYPES ====================
 
@@ -87,7 +89,8 @@ function mapExternalToInternal(
   jobId: string
 ): MappedAssessment {
   const vendorName = (raw.vendor_name as string) || "";
-  let vendorURL = (raw.vendor_url as string) || "";
+  // Support both vendor_url (full URL) and vendor_domain (domain only)
+  let vendorURL = (raw.vendor_url as string) || (raw.vendor_domain as string) || "";
   if (vendorURL && !vendorURL.startsWith("http")) {
     vendorURL = `https://${vendorURL}`;
   }
@@ -229,12 +232,17 @@ function mapExternalToInternal(
 
 async function persistAssessment(
   customerAccountId: string,
-  data: MappedAssessment
+  data: MappedAssessment,
+  existingVendorId?: string,
 ): Promise<{ vendorId: string; assessmentId: string }> {
-  // Upsert vendor
-  let monVendor = await prisma.tPRMMonitoringVendor.findFirst({
-    where: { customerAccountId, vendorURL: data.vendorURL },
-  });
+  // Use pre-existing vendor ID if provided (from POST handler), otherwise upsert by URL
+  let monVendor = existingVendorId
+    ? await prisma.tPRMMonitoringVendor.findFirst({
+        where: { id: existingVendorId, customerAccountId },
+      })
+    : await prisma.tPRMMonitoringVendor.findFirst({
+        where: { customerAccountId, vendorURL: data.vendorURL },
+      });
 
   if (monVendor) {
     monVendor = await prisma.tPRMMonitoringVendor.update({
@@ -388,7 +396,7 @@ async function persistAssessment(
 
 // ==================== ROUTE HANDLERS ====================
 
-// POST — submit a scan to the external scanning API
+// POST — submit a vendor scan (OpenAI-powered)
 export const POST = withAuth(
   async (req, _context, session) => {
     try {
@@ -405,41 +413,18 @@ export const POST = withAuth(
         );
       }
 
-      console.log("\n🔵🔵🔵 [SCAN SUBMIT] Sending request to external API:", { vendorName, vendorURL, url: getScanApiUrl('api/risk_score_assess/submit') });
-
-      const res = await fetch(getScanApiUrl('api/risk_score_assess/submit'), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(EXTERNAL_API_SECRETS.PYTHON_API_SECRET ? { auth: EXTERNAL_API_SECRETS.PYTHON_API_SECRET } : {}),
-        },
-        body: JSON.stringify({
-          vendor_name: vendorName || "",
-          vendor_url: vendorURL || "",
-          require_realtime: true,
-          min_intel: 3,
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("❌❌❌ [SCAN SUBMIT] External API error:", res.status, text);
-        return NextResponse.json(
-          { error: "External scanning API error" },
-          { status: 502 }
-        );
-      }
-
-      const data = await res.json();
-      const jobId = data.job_id;
-      console.log("✅✅✅ [SCAN SUBMIT] Got job_id:", jobId, "| status:", data.status);
-
-      // Persist a "queued" record so the scan survives page navigation
+      // Normalize URL
       let normalizedURL = (vendorURL || "").trim();
       if (normalizedURL && !normalizedURL.startsWith("http")) {
         normalizedURL = `https://${normalizedURL}`;
       }
 
+      // Generate a unique job ID
+      const jobId = `openai_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      console.log("\n🔵🔵🔵 [SCAN SUBMIT] Starting OpenAI scan:", { vendorName, vendorURL: normalizedURL, jobId });
+
+      // Upsert monitoring vendor
       let monVendor = normalizedURL
         ? await prisma.tPRMMonitoringVendor.findFirst({
             where: { customerAccountId, vendorURL: normalizedURL },
@@ -467,28 +452,98 @@ export const POST = withAuth(
         data: { isLatest: false },
       });
 
-      // Create a placeholder assessment with "queued" status
-      await prisma.tPRMMonitoringAssessment.create({
+      // Create placeholder assessment with "processing" status
+      const placeholder = await prisma.tPRMMonitoringAssessment.create({
         data: {
           customerAccountId,
           monitoringVendorId: monVendor.id,
           vendorName: vendorName || "",
           vendorURL: normalizedURL,
           jobID: jobId,
-          status: "queued",
+          status: "processing",
           isLatest: true,
         },
       });
 
-      console.log("💾💾💾 [SCAN SUBMIT] Persisted queued record — vendorId:", monVendor.id, "| jobId:", jobId);
+      console.log("💾 [SCAN] Created processing placeholder — vendorId:", monVendor.id, "| jobId:", jobId);
+
+      // Fire-and-forget: run OpenAI scan in background
+      const vendorId = monVendor.id;
+      const sessionId = session.id;
+      void (async () => {
+        try {
+          const raw = await runVendorScan({
+            vendorName: vendorName || "",
+            vendorURL: normalizedURL,
+          });
+
+          // Save raw response JSON
+          await saveResponseJson(vendorName || jobId, raw);
+
+          // Map and persist using existing functions
+          const mapped = mapExternalToInternal(raw as unknown as Record<string, unknown>, jobId);
+          console.log("🟢 [SCAN] Mapped:", { vendorName: mapped.vendorName, overallScore: mapped.overallScore, kpiCount: mapped.kpiDetails.length });
+
+          // Remove the placeholder
+          await prisma.tPRMMonitoringAssessment.delete({ where: { id: placeholder.id } }).catch(() => {});
+
+          // Persist full assessment — pass vendorId so it uses the correct vendor record
+          const { assessmentId } = await persistAssessment(customerAccountId, mapped, vendorId);
+          console.log("✅ [SCAN] Persisted — assessmentId:", assessmentId);
+
+          // Send notifications
+          try {
+            const boAmUsers = await prisma.user.findMany({
+              where: {
+                customerAccountId, isActive: true,
+                OR: [
+                  { role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
+                  { tprmRole: { in: ['Business Owner', 'Account Manager'] } },
+                ],
+              },
+              select: { id: true },
+              take: 20,
+            });
+            const recipientIds = boAmUsers.map(u => u.id).filter(uid => uid !== sessionId);
+
+            if (recipientIds.length > 0) {
+              void notificationService.notifyTPRMMonitoringScanCompleted({
+                customerAccountId,
+                actorId: sessionId,
+                recipientIds,
+                vendorName: mapped.vendorName,
+                riskScore: mapped.overallScore,
+              });
+              if (mapped.overallScore != null && mapped.overallScore <= 40) {
+                void notificationService.notifyTPRMMonitoringCriticalRisk({
+                  customerAccountId,
+                  actorId: sessionId,
+                  recipientIds,
+                  vendorName: mapped.vendorName,
+                  riskScore: mapped.overallScore,
+                });
+              }
+            }
+          } catch (notifErr) {
+            console.error("⚠️ [SCAN] Notification error:", notifErr);
+          }
+        } catch (err) {
+          console.error("❌ [SCAN] Background scan failed:", err);
+          // Mark placeholder as error
+          await prisma.tPRMMonitoringAssessment.update({
+            where: { id: placeholder.id },
+            data: { status: "error", isLatest: false },
+          }).catch(() => {});
+        }
+      })();
 
       return NextResponse.json({
         jobId,
-        vendorId: monVendor.id,
-        status: data.status || "queued",
+        vendorId,
+        status: "processing",
       });
     } catch (err) {
-      console.error("❌❌❌ [SCAN SUBMIT] Exception:", err);
+      console.error("❌ [SCAN SUBMIT] Exception:", err);
       return NextResponse.json(
         { error: "Failed to submit scan" },
         { status: 500 }
@@ -498,7 +553,7 @@ export const POST = withAuth(
   { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "create" }
 );
 
-// GET — poll status; when done, fetch result, map, and persist
+// GET — poll scan status from DB (background OpenAI scan updates the record when done)
 export const GET = withAuth(
   async (req, _context, session) => {
     try {
@@ -507,166 +562,50 @@ export const GET = withAuth(
       const jobId = searchParams.get("jobId");
 
       if (!jobId) {
-        return NextResponse.json(
-          { error: "jobId is required" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "jobId is required" }, { status: 400 });
       }
 
-      // Check status with the external API
-      console.log("\n🟡🟡🟡 [SCAN POLL] Checking status for job:", jobId);
-      const statusRes = await fetch(
-        getScanApiUrl(`api/risk_score_assess/status/${jobId}`),
-        { headers: EXTERNAL_API_SECRETS.PYTHON_API_SECRET ? { auth: EXTERNAL_API_SECRETS.PYTHON_API_SECRET } : {} }
-      );
-      if (!statusRes.ok) {
-        console.error("❌❌❌ [SCAN POLL] Status API error:", statusRes.status, await statusRes.text());
-        return NextResponse.json(
-          { error: "Failed to check scan status" },
-          { status: 502 }
-        );
+      // Check DB for the assessment status
+      const assessment = await prisma.tPRMMonitoringAssessment.findFirst({
+        where: { jobID: jobId, customerAccountId },
+        select: { id: true, status: true, monitoringVendorId: true },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!assessment) {
+        return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
       }
 
-      const statusData = await statusRes.json();
-      const status = statusData.status;
-      console.log("🟡🟡🟡 [SCAN POLL] Job", jobId, "→ status:", status);
+      const status = assessment.status || "processing";
 
-      // If not done yet, update DB status and return for the frontend to keep polling
-      if (status !== "done") {
-        // Update assessment status in DB (e.g., queued → processing)
-        await prisma.tPRMMonitoringAssessment.updateMany({
-          where: { jobID: jobId, status: { not: status } },
-          data: { status },
-        });
+      // If still processing, tell frontend to keep polling
+      if (status === "queued" || status === "processing") {
         return NextResponse.json({ jobId, status });
       }
 
-      // Status is "done" — fetch the full result
-      console.log("\n🟢🟢🟢 [SCAN RESULT] Status is DONE! Fetching full result for job:", jobId);
-      const resultRes = await fetch(
-        getScanApiUrl(`api/risk_score_assess/result/${jobId}`),
-        { headers: EXTERNAL_API_SECRETS.PYTHON_API_SECRET ? { auth: EXTERNAL_API_SECRETS.PYTHON_API_SECRET } : {} }
-      );
-      if (!resultRes.ok) {
-        console.error("❌❌❌ [SCAN RESULT] Result API error:", resultRes.status, await resultRes.text());
-        return NextResponse.json(
-          { error: "Failed to fetch scan result" },
-          { status: 502 }
-        );
-      }
-
-      const raw = (await resultRes.json()) as Record<string, unknown>;
-      console.log("🟢🟢🟢 [SCAN RESULT] Raw response keys:", Object.keys(raw));
-      console.log("🟢🟢🟢 [SCAN RESULT] overall_score:", raw.overall_score, "| kpi_details count:", Array.isArray(raw.kpi_details) ? (raw.kpi_details as unknown[]).length : 0);
-      console.log("🟢🟢🟢 [SCAN RESULT] http_security_headers type:", typeof raw.http_security_headers, "| isArray:", Array.isArray(raw.http_security_headers), "| value:", JSON.stringify(raw.http_security_headers)?.substring(0, 500));
-
-      // Save raw response JSON to scan-results folder
-      await saveResponseJson((raw.vendor_name as string) || jobId, raw);
-
-      // Map + persist — wrapped so mapping errors still return "done" to release the queue
-      try {
-        // Idempotency check — skip if already persisted for this jobId
-        const alreadyDone = await prisma.tPRMMonitoringAssessment.findFirst({
-          where: { jobID: jobId, status: "done" },
-          select: { id: true, monitoringVendorId: true },
-        });
-        if (alreadyDone) {
-          console.log("⏩⏩⏩ [SCAN RESULT] Already persisted for job:", jobId, "— skipping duplicate");
-          // Clean up any leftover placeholders
-          await prisma.tPRMMonitoringAssessment.updateMany({
-            where: { jobID: jobId, status: { in: ["queued", "processing"] } },
-            data: { isLatest: false },
-          });
-          return NextResponse.json({
-            status: "done",
-            vendorId: alreadyDone.monitoringVendorId,
-            assessmentId: alreadyDone.id,
-          });
-        }
-
-        const mapped = mapExternalToInternal(raw, jobId);
-        console.log("🟢🟢🟢 [SCAN RESULT] Mapped:", { vendorName: mapped.vendorName, vendorURL: mapped.vendorURL, overallScore: mapped.overallScore, kpiCount: mapped.kpiDetails.length, headerCount: mapped.httpHeaders.length });
-
-        // Clean up the queued/processing placeholder assessment
-        await prisma.tPRMMonitoringAssessment.updateMany({
-          where: { jobID: jobId, status: { in: ["queued", "processing"] } },
-          data: { isLatest: false },
-        });
-
-        // Persist to database
-        console.log("💾💾💾 [SCAN PERSIST] Saving to database...");
-        const { vendorId, assessmentId } = await persistAssessment(
-          customerAccountId,
-          mapped
-        );
-
-        console.log("✅✅✅ [SCAN PERSIST] Saved successfully — vendorId:", vendorId, "| assessmentId:", assessmentId);
-
-        // Send monitoring notifications
-        try {
-          const boAmUsers = await prisma.user.findMany({
-            where: {
-              customerAccountId, isActive: true,
-              OR: [
-                { role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
-                { tprmRole: { in: ['Business Owner', 'Account Manager'] } },
-              ],
-            },
-            select: { id: true },
-            take: 20,
-          });
-          const recipientIds = boAmUsers.map(u => u.id).filter(uid => uid !== session.id);
-          const overallScore = mapped.overallScore;
-
-          if (recipientIds.length > 0) {
-            // Always notify scan completed
-            void notificationService.notifyTPRMMonitoringScanCompleted({
-              customerAccountId,
-              actorId: session.id,
-              recipientIds,
-              vendorName: mapped.vendorName,
-              riskScore: overallScore,
-            });
-
-            // If critical risk detected (score <= 40 = high risk)
-            if (overallScore != null && overallScore <= 40) {
-              void notificationService.notifyTPRMMonitoringCriticalRisk({
-                customerAccountId,
-                actorId: session.id,
-                recipientIds,
-                vendorName: mapped.vendorName,
-                riskScore: overallScore,
-              });
-            }
-          }
-        } catch (notifErr) {
-          console.error("⚠️ [SCAN NOTIFY] Failed to send scan notifications:", notifErr);
-        }
-
+      // If error, tell frontend to stop polling
+      if (status === "error") {
         return NextResponse.json({
           status: "done",
-          vendorId,
-          assessmentId,
-        });
-      } catch (mappingErr) {
-        console.error("❌❌❌ [SCAN MAPPING/PERSIST] Failed to map or persist result:", mappingErr);
-        // Still return "done" so the frontend removes it from the queue
-        // Clean up the queued placeholder anyway
-        await prisma.tPRMMonitoringAssessment.updateMany({
-          where: { jobID: jobId, status: { in: ["queued", "processing"] } },
-          data: { isLatest: false, status: "error" },
-        }).catch(() => {});
-        return NextResponse.json({
-          status: "done",
-          error: "Scan completed but failed to save results. Please re-trigger.",
+          error: "Scan failed. Please re-trigger.",
         });
       }
+
+      // Status is "done" — the background task already persisted the full result
+      // Find the completed assessment (the background task creates a new record with status "done")
+      const completedAssessment = await prisma.tPRMMonitoringAssessment.findFirst({
+        where: { jobID: jobId, customerAccountId, status: "done" },
+        select: { id: true, monitoringVendorId: true },
+      });
+
+      return NextResponse.json({
+        status: "done",
+        vendorId: completedAssessment?.monitoringVendorId || assessment.monitoringVendorId,
+        assessmentId: completedAssessment?.id || assessment.id,
+      });
     } catch (err) {
-      console.error("❌❌❌ [SCAN POLL] Exception:", err);
-      return NextResponse.json(
-        { error: "Failed to process scan result" },
-        { status: 500 }
-      );
+      console.error("❌ [SCAN POLL] Exception:", err);
+      return NextResponse.json({ error: "Failed to check scan status" }, { status: 500 });
     }
   },
   { resource: ["tprm.monitoring", "tprm.bo-monitoring", "tprm.rm-monitoring", "tprm.asr-monitoring"], action: "view" }
