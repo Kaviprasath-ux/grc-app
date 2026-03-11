@@ -70,6 +70,42 @@ async function main() {
     create: { name: "Reviewer", description: "Reviews and approves content", isSystem: true },
   });
 
+  const auditHeadRole = await prisma.role.upsert({
+    where: { name: "AuditHead" },
+    update: {},
+    create: { name: "AuditHead", description: "Full access to Internal Audit module", isSystem: true },
+  });
+
+  const auditManagerRole = await prisma.role.upsert({
+    where: { name: "AuditManager" },
+    update: {},
+    create: { name: "AuditManager", description: "Manages audits, assigns auditors, reviews findings", isSystem: true },
+  });
+
+  const auditorRole = await prisma.role.upsert({
+    where: { name: "Auditor" },
+    update: {},
+    create: { name: "Auditor", description: "Conducts audits, creates findings", isSystem: true },
+  });
+
+  const auditeeRole = await prisma.role.upsert({
+    where: { name: "Auditee" },
+    update: {},
+    create: { name: "Auditee", description: "Receives audit requests, responds to findings", isSystem: true },
+  });
+
+  const deptReviewerRole = await prisma.role.upsert({
+    where: { name: "DepartmentReviewer" },
+    update: {},
+    create: { name: "DepartmentReviewer", description: "Reviews content within own department", isSystem: true },
+  });
+
+  const deptContributorRole = await prisma.role.upsert({
+    where: { name: "DepartmentContributor" },
+    update: {},
+    create: { name: "DepartmentContributor", description: "Creates/edits content within own department", isSystem: true },
+  });
+
   // ==================== QPOST USERS ====================
 
   // QPost Admin user
@@ -164,6 +200,75 @@ async function main() {
     create: { userId: qpostReviewer.id, roleId: reviewerRole.id },
   });
   console.log("✅ QPost Reviewer user created (qpostreviewer / Baarez@2025)");
+
+  // Additional users - one per remaining role
+  const additionalUsers = [
+    {
+      userId: "QPOST-AH-001", userName: "qpost.audithead", email: "audithead@qpost.qa",
+      firstName: "Khalid", lastName: "Al-Sulaiti", designation: "Head of Internal Audit",
+      role: "AuditHead", function: "Audit", roleId: auditHeadRole.id,
+    },
+    {
+      userId: "QPOST-AM-001", userName: "qpost.auditmgr", email: "auditmgr@qpost.qa",
+      firstName: "Nasser", lastName: "Al-Hajri", designation: "Audit Manager",
+      role: "AuditManager", function: "Audit", roleId: auditManagerRole.id,
+    },
+    {
+      userId: "QPOST-AUD-001", userName: "qpost.auditor", email: "auditor@qpost.qa",
+      firstName: "Youssef", lastName: "Al-Emadi", designation: "Senior Auditor",
+      role: "Auditor", function: "Audit", roleId: auditorRole.id,
+    },
+    {
+      userId: "QPOST-AE-001", userName: "qpost.auditee", email: "auditee@qpost.qa",
+      firstName: "Maryam", lastName: "Al-Kuwari", designation: "Operations Manager",
+      role: "Auditee", function: "Operations", roleId: auditeeRole.id,
+    },
+    {
+      userId: "QPOST-DR-001", userName: "qpost.deptreviewer", email: "deptreviewer@qpost.qa",
+      firstName: "Hassan", lastName: "Al-Marri", designation: "IT Department Reviewer",
+      role: "DepartmentReviewer", function: "IT", roleId: deptReviewerRole.id,
+    },
+    {
+      userId: "QPOST-DC-001", userName: "qpost.deptcontrib", email: "deptcontrib@qpost.qa",
+      firstName: "Noura", lastName: "Al-Naimi", designation: "Compliance Specialist",
+      role: "DepartmentContributor", function: "Compliance", roleId: deptContributorRole.id,
+    },
+  ];
+
+  const createdUserIds: Record<string, string> = {};
+  createdUserIds["qpostadmin"] = qpostAdmin.id;
+  createdUserIds["qpostuser"] = qpostUser.id;
+  createdUserIds["qpostreviewer"] = qpostReviewer.id;
+
+  for (const u of additionalUsers) {
+    const created = await prisma.user.upsert({
+      where: { userId: u.userId },
+      update: { customerAccountId, password: hashedPasswordBaarez },
+      create: {
+        userId: u.userId,
+        userName: u.userName,
+        email: u.email,
+        password: hashedPasswordBaarez,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        fullName: `${u.firstName} ${u.lastName}`,
+        designation: u.designation,
+        role: u.role,
+        function: u.function,
+        isActive: true,
+        isBlocked: false,
+        customerAccountId,
+      },
+    });
+    createdUserIds[u.userName] = created.id;
+
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: created.id, roleId: u.roleId } },
+      update: {},
+      create: { userId: created.id, roleId: u.roleId },
+    });
+  }
+  console.log("✅ Additional users created (6 users, all password: Baarez@2025)");
 
   // ==================== CREATE ORGANIZATION ====================
   console.log("\n🏛️ Creating Organization...");
@@ -270,19 +375,27 @@ async function main() {
   }
   console.log("  ✓ Departments created");
 
-  // Update existing users with department assignments
-  await prisma.user.update({
-    where: { id: qpostAdmin.id },
-    data: { departmentId: createdDepts["Risk & Compliance"] },
-  });
-  await prisma.user.update({
-    where: { id: qpostUser.id },
-    data: { departmentId: createdDepts["Risk & Compliance"] },
-  });
-  await prisma.user.update({
-    where: { id: qpostReviewer.id },
-    data: { departmentId: createdDepts["Information Security"] },
-  });
+  // Update all users with department assignments
+  const userDeptMap: Record<string, string> = {
+    "qpostadmin": "Risk & Compliance",
+    "qpostuser": "Risk & Compliance",
+    "qpostreviewer": "Information Security",
+    "qpost.audithead": "Internal Audit",
+    "qpost.auditmgr": "Internal Audit",
+    "qpost.auditor": "Internal Audit",
+    "qpost.auditee": "Operations & Logistics",
+    "qpost.deptreviewer": "Information Technology",
+    "qpost.deptcontrib": "Risk & Compliance",
+  };
+
+  for (const [userName, deptName] of Object.entries(userDeptMap)) {
+    if (createdUserIds[userName] && createdDepts[deptName]) {
+      await prisma.user.update({
+        where: { id: createdUserIds[userName] },
+        data: { departmentId: createdDepts[deptName] },
+      });
+    }
+  }
   console.log("  ✓ Users assigned to departments");
 
   // ==================== CREATE STAKEHOLDERS ====================
