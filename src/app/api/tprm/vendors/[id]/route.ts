@@ -95,27 +95,99 @@ export const PATCH = withAuth<RouteContext>(
       const customerAccountId = getCustomerAccountId(session);
       void translateRecord(customerAccountId, 'TPRMVendor', vendor.id, { name: vendor.name, serviceCategory: vendor.serviceCategory });
 
-      // Notify account manager if vendor status changed to offboarding
-      const offboardStatuses = ['Offboarding', 'Offboarded', 'Inactive'];
-      if (body.status && offboardStatuses.includes(body.status) && existing.status !== body.status) {
-        const customerAccountId = getCustomerAccountId(session);
-        if (existing.accountManagerEmail) {
-          const am = await prisma.user.findFirst({
+      // Notify on vendor status changes
+      if (body.status && existing.status !== body.status) {
+
+        // Offboarding notifications
+        const offboardStatuses = ['Offboarding', 'Offboarded', 'Inactive'];
+        if (offboardStatuses.includes(body.status)) {
+          if (existing.accountManagerEmail) {
+            const am = await prisma.user.findFirst({
+              where: {
+                customerAccountId,
+                email: { equals: existing.accountManagerEmail.split(";")[0].trim(), mode: "insensitive" },
+                isActive: true,
+              },
+              select: { id: true },
+            });
+            if (am) {
+              void notificationService.notifyTPRMVendorOffboarding({
+                customerAccountId,
+                actorId: session.id,
+                recipientId: am.id,
+                vendorId: vendor.id,
+                vendorName: vendor.name,
+                vendorCode: vendor.vendorCode || '',
+              });
+            }
+          }
+        }
+
+        // Vendor Terminated — notify internal users + send email to vendor contact
+        if (body.status === 'Terminated') {
+          const recipientIds: string[] = [];
+
+          // Resolve AM user
+          const amEmail = existing.accountManagerEmail?.split(';')[0]?.trim();
+          if (amEmail) {
+            const amUser = await prisma.user.findFirst({
+              where: { customerAccountId, email: { equals: amEmail, mode: 'insensitive' }, isActive: true },
+              select: { id: true },
+            });
+            if (amUser) recipientIds.push(amUser.id);
+          }
+
+          // Add BO/Admin users
+          const boAdmins = await prisma.user.findMany({
             where: {
-              customerAccountId,
-              email: { equals: existing.accountManagerEmail.split(";")[0].trim(), mode: "insensitive" },
-              isActive: true,
+              customerAccountId, isActive: true,
+              OR: [
+                { role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
+                { tprmRole: 'Business Owner' },
+              ],
             },
             select: { id: true },
+            take: 10,
           });
-          if (am) {
-            void notificationService.notifyTPRMVendorOffboarding({
+          for (const u of boAdmins) {
+            if (!recipientIds.includes(u.id)) recipientIds.push(u.id);
+          }
+
+          // Add assessors from active assessments for this vendor
+          const activeAssessments = await prisma.tPRMAssessment.findMany({
+            where: {
+              customerAccountId,
+              vendorId: vendor.id,
+              status: { notIn: ['Closed', 'Completed', 'Approved', 'Offboard_Completed'] },
+            },
+            select: { assessorId: true },
+          });
+          for (const a of activeAssessments) {
+            if (a.assessorId && !recipientIds.includes(a.assessorId)) recipientIds.push(a.assessorId);
+          }
+
+          if (recipientIds.length > 0) {
+            void notificationService.notifyTPRMVendorTerminated({
               customerAccountId,
               actorId: session.id,
-              recipientId: am.id,
+              recipientIds,
               vendorId: vendor.id,
               vendorName: vendor.name,
               vendorCode: vendor.vendorCode || '',
+              vendorContactEmail: existing.contactEmail,
+              reason: body.terminationReason,
+            });
+          } else if (existing.contactEmail) {
+            // Even if no internal recipients, still email the vendor
+            void notificationService.notifyTPRMVendorTerminated({
+              customerAccountId,
+              actorId: session.id,
+              recipientIds: [],
+              vendorId: vendor.id,
+              vendorName: vendor.name,
+              vendorCode: vendor.vendorCode || '',
+              vendorContactEmail: existing.contactEmail,
+              reason: body.terminationReason,
             });
           }
         }

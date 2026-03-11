@@ -250,6 +250,32 @@ export const PATCH = withAuth(
               remediationId: id, issueCode, vendorName, questionTitle,
             });
           }
+          // Check if ALL remediations for this assessment are now closed
+          if (remediation.assessmentId) {
+            const openCount = await prisma.tPRMIssueRemediation.count({
+              where: {
+                customerAccountId,
+                assessmentId: remediation.assessmentId,
+                status: { notIn: ['Closed', 'Terminated'] },
+              },
+            });
+            if (openCount === 0) {
+              const assessment = await prisma.tPRMAssessment.findFirst({
+                where: { id: remediation.assessmentId, customerAccountId },
+                select: { assessmentCode: true, vendorId: true },
+              });
+              if (assessment && amAndBoIds.length > 0) {
+                void notificationService.notifyTPRMRemediationAllClosed({
+                  customerAccountId,
+                  actorId: session.id,
+                  recipientIds: amAndBoIds,
+                  assessmentId: remediation.assessmentId,
+                  assessmentCode: assessment.assessmentCode || '',
+                  vendorName,
+                });
+              }
+            }
+          }
           break;
         case 'unsatisfied':
           if (amAndBoIds.length > 0) {

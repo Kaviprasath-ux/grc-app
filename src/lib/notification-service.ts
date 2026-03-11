@@ -456,6 +456,7 @@ class NotificationService {
       [NOTIFICATION_EVENTS.TPRM_ACCOUNT_CREATED]: 'TPRM_ACCOUNT_CREATED',
       [NOTIFICATION_EVENTS.TPRM_VENDOR_ONBOARDED]: 'TPRM_VENDOR_ONBOARDED',
       [NOTIFICATION_EVENTS.TPRM_VENDOR_OFFBOARDING]: 'TPRM_VENDOR_OFFBOARDING',
+      [NOTIFICATION_EVENTS.TPRM_VENDOR_TERMINATED]: 'TPRM_VENDOR_TERMINATED',
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_INITIATED]: 'TPRM_ASSESSMENT_INITIATED',
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_ASSIGNED]: 'TPRM_ASSESSMENT_ASSIGNED',
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_SUBMITTED]: 'TPRM_ASSESSMENT_SUBMITTED',
@@ -492,6 +493,12 @@ class NotificationService {
       [NOTIFICATION_EVENTS.TPRM_OFFBOARD_BO_SENT_TO_RM]: 'TPRM_OFFBOARD_BO_SENT_TO_RM',
       [NOTIFICATION_EVENTS.TPRM_MONITORING_SCAN_COMPLETED]: 'TPRM_MONITORING_SCAN_COMPLETED',
       [NOTIFICATION_EVENTS.TPRM_MONITORING_CRITICAL_RISK]: 'TPRM_MONITORING_CRITICAL_RISK',
+      [NOTIFICATION_EVENTS.TPRM_CLARIFICATION_RESPONDED]: 'TPRM_CLARIFICATION_RESPONDED',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_OVERDUE]: 'TPRM_REMEDIATION_OVERDUE',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_ALL_CLOSED]: 'TPRM_REMEDIATION_ALL_CLOSED',
+      [NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_ESCALATED]: 'TPRM_VENDOR_ISSUE_ESCALATED',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_DUE_REMINDER]: 'TPRM_ASSESSMENT_DUE_REMINDER',
+      [NOTIFICATION_EVENTS.TPRM_SME_ASSIGNMENT_PENDING]: 'TPRM_SME_ASSIGNMENT_PENDING',
     };
 
     return templateMap[event] || 'GENERIC_NOTIFICATION';
@@ -1113,6 +1120,63 @@ class NotificationService {
       channels: params.channels,
       metadata: { entityName: params.vendorName, vendorCode: params.vendorCode },
     });
+  }
+
+  /**
+   * Notify internal users when a vendor is terminated, AND send email to the vendor contact.
+   */
+  async notifyTPRMVendorTerminated(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    vendorId: string;
+    vendorName: string;
+    vendorCode: string;
+    vendorContactEmail?: string | null;
+    reason?: string;
+    channels?: NotificationChannel[];
+  }) {
+    // 1. Send in-app + email notifications to internal users (AM, BO, Assessor, etc.)
+    for (const recipientId of params.recipientIds) {
+      await this.send({
+        customerAccountId: params.customerAccountId,
+        actorId: params.actorId,
+        recipientId,
+        event: NOTIFICATION_EVENTS.TPRM_VENDOR_TERMINATED,
+        title: 'Vendor terminated',
+        message: `Vendor ${params.vendorCode}: ${params.vendorName} has been terminated.${params.reason ? ` Reason: ${params.reason}` : ''}`,
+        relatedEntityType: 'vendor',
+        relatedEntityId: params.vendorId,
+        link: `/tprm/bo-inventory`,
+        priority: NOTIFICATION_PRIORITIES.URGENT,
+        channels: params.channels,
+        metadata: {
+          entityName: params.vendorName,
+          vendorCode: params.vendorCode,
+          reason: params.reason,
+        },
+      });
+    }
+
+    // 2. Send email directly to the vendor's contact email
+    if (params.vendorContactEmail) {
+      try {
+        await sendTemplatedEmail(
+          'TPRM_VENDOR_TERMINATED_EXTERNAL',
+          params.vendorContactEmail,
+          {
+            vendorName: params.vendorName,
+            vendorCode: params.vendorCode,
+            reason: params.reason || 'No reason provided',
+            entityLink: getAppUrl(),
+          },
+          params.vendorName,
+        );
+        console.log(`[NotificationService] Vendor termination email sent to vendor contact: ${params.vendorContactEmail}`);
+      } catch (error) {
+        console.error('[NotificationService] Failed to send vendor termination email to vendor:', error);
+      }
+    }
   }
 
   /**
@@ -1846,6 +1910,259 @@ class NotificationService {
       message: params.comment
         ? `Offboard assessment for vendor ${params.vendorName} sent back by Business Owner: ${params.comment}`
         : `Offboard assessment for vendor ${params.vendorName} has been sent back to RM by Business Owner.`,
+    });
+  }
+
+  // ==================== TPRM CLARIFICATION RESPONSE ====================
+
+  /**
+   * Notify when AM responds to a clarification request.
+   * Notifies the assessor who requested the clarification.
+   */
+  async notifyTPRMClarificationResponded(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_CLARIFICATION_RESPONDED,
+      title: 'Clarification response received',
+      message: `Account Manager has responded to your clarification on assessment ${params.assessmentCode} for vendor ${params.vendorName}.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  // ==================== TPRM MONITORING NOTIFICATIONS ====================
+
+  /**
+   * Notify when a vendor monitoring scan completes.
+   */
+  async notifyTPRMMonitoringScanCompleted(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    vendorName: string;
+    riskScore?: number;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_MONITORING_SCAN_COMPLETED,
+      title: 'Monitoring scan completed',
+      message: params.riskScore != null
+        ? `Monitoring scan completed for vendor ${params.vendorName}. Risk score: ${params.riskScore}.`
+        : `Monitoring scan completed for vendor ${params.vendorName}.`,
+      link: `/tprm/bo-monitoring`,
+      channels: params.channels,
+      metadata: { vendorName: params.vendorName, riskScore: params.riskScore },
+    });
+  }
+
+  /**
+   * Notify when a critical risk is detected during monitoring scan.
+   */
+  async notifyTPRMMonitoringCriticalRisk(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    vendorName: string;
+    riskScore: number;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_MONITORING_CRITICAL_RISK,
+      title: 'Critical risk detected',
+      message: `CRITICAL: Monitoring scan for vendor ${params.vendorName} detected high risk. Score: ${params.riskScore}.`,
+      link: `/tprm/bo-monitoring`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { vendorName: params.vendorName, riskScore: params.riskScore },
+    });
+  }
+
+  // ==================== TPRM REMEDIATION LIFECYCLE ====================
+
+  /**
+   * Notify when remediation is overdue.
+   */
+  async notifyTPRMRemediationOverdue(params: {
+    customerAccountId: string;
+    recipientIds: string[];
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    dueDate: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: 'system',
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_OVERDUE,
+      title: 'Remediation overdue',
+      message: `Remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} is overdue. Due date: ${params.dueDate}.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/asr-follow-ups`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.issueCode, vendorName: params.vendorName, dueDate: params.dueDate },
+    });
+  }
+
+  /**
+   * Notify when all remediation items for an assessment are closed.
+   */
+  async notifyTPRMRemediationAllClosed(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_ALL_CLOSED,
+      title: 'All remediations closed',
+      message: `All remediation items for assessment ${params.assessmentCode} (vendor: ${params.vendorName}) have been closed.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/am-follow-ups`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
+    });
+  }
+
+  // ==================== TPRM VENDOR ISSUE ESCALATION ====================
+
+  /**
+   * Notify when a vendor issue is escalated.
+   */
+  async notifyTPRMVendorIssueEscalated(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    issueId: string;
+    issueTitle: string;
+    vendorName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_ESCALATED,
+      title: 'Vendor issue escalated',
+      message: `Vendor issue for ${params.vendorName} has been escalated: ${params.issueTitle}.`,
+      relatedEntityType: 'vendor-issue',
+      relatedEntityId: params.issueId,
+      link: `/tprm/bo-follow-ups`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.issueTitle, vendorName: params.vendorName },
+    });
+  }
+
+  // ==================== TPRM SCHEDULED REMINDERS ====================
+
+  /**
+   * Notify when TPRM assessment is approaching due date.
+   */
+  async notifyTPRMAssessmentDueReminder(params: {
+    customerAccountId: string;
+    recipientIds: string[];
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    dueDate: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: 'system',
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_DUE_REMINDER,
+      title: 'Assessment due soon',
+      message: `Assessment ${params.assessmentCode} for vendor ${params.vendorName} is due on ${params.dueDate}.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName, dueDate: params.dueDate },
+    });
+  }
+
+  /**
+   * Notify when a vendor contract is approaching expiry.
+   */
+  async notifyTPRMContractExpiry(params: {
+    customerAccountId: string;
+    recipientIds: string[];
+    vendorId: string;
+    vendorName: string;
+    expiryDate: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: 'system',
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_CONTRACT_EXPIRY,
+      title: 'Vendor contract expiring soon',
+      message: `Vendor ${params.vendorName} contract expires on ${params.expiryDate}. Please take action.`,
+      relatedEntityType: 'vendor',
+      relatedEntityId: params.vendorId,
+      link: `/tprm/bo-inventory`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { vendorName: params.vendorName, expiryDate: params.expiryDate },
+    });
+  }
+
+  /**
+   * Notify when SME has a pending assignment.
+   */
+  async notifyTPRMSMEAssignmentPending(params: {
+    customerAccountId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: 'system',
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_SME_ASSIGNMENT_PENDING,
+      title: 'Pending SME assignment',
+      message: `You have a pending SME assignment on assessment ${params.assessmentCode}.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode },
     });
   }
 

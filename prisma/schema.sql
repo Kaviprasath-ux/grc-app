@@ -2467,6 +2467,7 @@ CREATE TABLE "TPRMAssessment" (
     "assessorId" TEXT,
     "approverId" TEXT,
     "questionnaireTemplate" TEXT,
+    "dueDate" TIMESTAMP(3),
     "approverComment" TEXT,
     "rejectedById" TEXT,
     "aiEvaluationStatus" TEXT,

@@ -41,6 +41,10 @@ export async function GET(req: NextRequest) {
     evidence: 0,
     capa: 0,
     review: 0,
+    tprmRemediation: 0,
+    tprmContract: 0,
+    tprmAssessment: 0,
+    tprmSme: 0,
   };
 
   const errors: ReminderError[] = [];
@@ -205,6 +209,239 @@ export async function GET(req: NextRequest) {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
+    }
+
+    // ========== 4. TPRM REMEDIATION OVERDUE ==========
+    try {
+      const overdueRemediations = await prisma.tPRMIssueRemediation.findMany({
+        where: {
+          dueDate: { lt: today },
+          status: { notIn: ['Closed', 'Terminated', 'IT Approved'] },
+        },
+        select: {
+          id: true,
+          customerAccountId: true,
+          issueCode: true,
+          questionText: true,
+          dueDate: true,
+          assessmentId: true,
+          assessment: {
+            select: {
+              assessmentCode: true,
+              assessorId: true,
+              vendor: { select: { name: true, accountManagerEmail: true } },
+            },
+          },
+        },
+      });
+
+      console.log(`[DueReminders] Found ${overdueRemediations.length} overdue TPRM remediations`);
+
+      for (const rem of overdueRemediations) {
+        if (!rem.dueDate || !rem.customerAccountId) continue;
+
+        try {
+          const recipientIds: string[] = [];
+          if (rem.assessment?.assessorId) recipientIds.push(rem.assessment.assessorId);
+
+          // Resolve AM
+          const amEmail = rem.assessment?.vendor?.accountManagerEmail?.split(';')[0]?.trim();
+          if (amEmail) {
+            const amUser = await prisma.user.findFirst({
+              where: { customerAccountId: rem.customerAccountId, email: { equals: amEmail, mode: 'insensitive' }, isActive: true },
+              select: { id: true },
+            });
+            if (amUser && !recipientIds.includes(amUser.id)) recipientIds.push(amUser.id);
+          }
+
+          // Add BO users
+          const boUsers = await prisma.user.findMany({
+            where: { customerAccountId: rem.customerAccountId, isActive: true, tprmRole: 'Business Owner' },
+            select: { id: true },
+            take: 5,
+          });
+          for (const u of boUsers) {
+            if (!recipientIds.includes(u.id)) recipientIds.push(u.id);
+          }
+
+          if (recipientIds.length > 0) {
+            await notificationService.notifyTPRMRemediationOverdue({
+              customerAccountId: rem.customerAccountId,
+              recipientIds,
+              remediationId: rem.id,
+              issueCode: rem.issueCode || rem.id.substring(0, 8),
+              vendorName: rem.assessment?.vendor?.name || '',
+              questionTitle: rem.questionText || '',
+              dueDate: rem.dueDate.toISOString().split('T')[0],
+            });
+            counts.tprmRemediation++;
+          }
+        } catch (error) {
+          errors.push({ entityType: 'tprm-remediation', entityId: rem.id, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+    } catch (error) {
+      console.error('[DueReminders] TPRM remediation overdue check failed:', error);
+    }
+
+    // ========== 5. TPRM CONTRACT EXPIRY REMINDERS ==========
+    try {
+      const expiringVendors = await prisma.tPRMVendor.findMany({
+        where: {
+          contractEndDate: { gte: today, lte: tomorrow },
+          status: { notIn: ['Offboarded', 'Inactive'] },
+        },
+        select: {
+          id: true,
+          customerAccountId: true,
+          name: true,
+          contractEndDate: true,
+          accountManagerEmail: true,
+        },
+      });
+
+      console.log(`[DueReminders] Found ${expiringVendors.length} vendors with expiring contracts`);
+
+      for (const vendor of expiringVendors) {
+        if (!vendor.contractEndDate || !vendor.customerAccountId) continue;
+
+        try {
+          const recipientIds: string[] = [];
+
+          // Resolve AM
+          const amEmail = vendor.accountManagerEmail?.split(';')[0]?.trim();
+          if (amEmail) {
+            const amUser = await prisma.user.findFirst({
+              where: { customerAccountId: vendor.customerAccountId, email: { equals: amEmail, mode: 'insensitive' }, isActive: true },
+              select: { id: true },
+            });
+            if (amUser) recipientIds.push(amUser.id);
+          }
+
+          // Add BO users
+          const boUsers = await prisma.user.findMany({
+            where: { customerAccountId: vendor.customerAccountId, isActive: true, tprmRole: 'Business Owner' },
+            select: { id: true },
+            take: 5,
+          });
+          for (const u of boUsers) {
+            if (!recipientIds.includes(u.id)) recipientIds.push(u.id);
+          }
+
+          if (recipientIds.length > 0) {
+            await notificationService.notifyTPRMContractExpiry({
+              customerAccountId: vendor.customerAccountId,
+              recipientIds,
+              vendorId: vendor.id,
+              vendorName: vendor.name,
+              expiryDate: vendor.contractEndDate.toISOString().split('T')[0],
+            });
+            counts.tprmContract++;
+          }
+        } catch (error) {
+          errors.push({ entityType: 'tprm-contract', entityId: vendor.id, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+    } catch (error) {
+      console.error('[DueReminders] TPRM contract expiry check failed:', error);
+    }
+
+    // ========== 6. TPRM ASSESSMENT DUE REMINDERS ==========
+    try {
+      const dueSoonAssessments = await prisma.tPRMAssessment.findMany({
+        where: {
+          dueDate: { gte: today, lte: tomorrow },
+          status: { notIn: ['Reviewed', 'Approved', 'Completed', 'Closed', 'Offboard_Completed'] },
+        },
+        select: {
+          id: true,
+          customerAccountId: true,
+          assessmentCode: true,
+          assessorId: true,
+          dueDate: true,
+          vendor: { select: { name: true, accountManagerEmail: true } },
+        },
+      });
+
+      console.log(`[DueReminders] Found ${dueSoonAssessments.length} TPRM assessments due soon`);
+
+      for (const assessment of dueSoonAssessments) {
+        if (!assessment.dueDate || !assessment.customerAccountId) continue;
+
+        try {
+          const recipientIds: string[] = [];
+          if (assessment.assessorId) recipientIds.push(assessment.assessorId);
+
+          const amEmail = assessment.vendor?.accountManagerEmail?.split(';')[0]?.trim();
+          if (amEmail) {
+            const amUser = await prisma.user.findFirst({
+              where: { customerAccountId: assessment.customerAccountId, email: { equals: amEmail, mode: 'insensitive' }, isActive: true },
+              select: { id: true },
+            });
+            if (amUser && !recipientIds.includes(amUser.id)) recipientIds.push(amUser.id);
+          }
+
+          if (recipientIds.length > 0) {
+            await notificationService.notifyTPRMAssessmentDueReminder({
+              customerAccountId: assessment.customerAccountId,
+              recipientIds,
+              assessmentId: assessment.id,
+              assessmentCode: assessment.assessmentCode || '',
+              vendorName: assessment.vendor?.name || '',
+              dueDate: assessment.dueDate.toISOString().split('T')[0],
+            });
+            counts.tprmAssessment++;
+          }
+        } catch (error) {
+          errors.push({ entityType: 'tprm-assessment', entityId: assessment.id, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+    } catch (error) {
+      console.error('[DueReminders] TPRM assessment due check failed:', error);
+    }
+
+    // ========== 7. TPRM SME ASSIGNMENT PENDING ==========
+    try {
+      // Find delegated questions that haven't been responded to
+      const pendingSMEResponses = await prisma.tPRMAssessmentResponse.findMany({
+        where: {
+          isDelegated: true,
+          delegatedToId: { not: null },
+          response: null,
+          assessment: {
+            status: { notIn: ['Reviewed', 'Approved', 'Completed', 'Closed'] },
+          },
+        },
+        select: {
+          id: true,
+          assessmentId: true,
+          delegatedToId: true,
+          assessment: {
+            select: { customerAccountId: true, assessmentCode: true },
+          },
+        },
+        take: 100,
+      });
+
+      console.log(`[DueReminders] Found ${pendingSMEResponses.length} pending SME assignments`);
+
+      for (const resp of pendingSMEResponses) {
+        if (!resp.delegatedToId || !resp.assessment?.customerAccountId) continue;
+
+        try {
+          await notificationService.notifyTPRMSMEAssignmentPending({
+            customerAccountId: resp.assessment.customerAccountId,
+            recipientId: resp.delegatedToId!,
+            assessmentId: resp.assessmentId,
+            assessmentCode: resp.assessment.assessmentCode || '',
+          });
+          counts.tprmSme++;
+        } catch (error) {
+          errors.push({ entityType: 'tprm-sme', entityId: resp.id, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+    } catch (error) {
+      console.error('[DueReminders] TPRM SME pending check failed:', error);
     }
 
     console.log('[DueReminders] Processing complete:', counts);

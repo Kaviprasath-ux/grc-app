@@ -4,6 +4,7 @@ import path from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import { getExternalApiUrl } from "@/config/external-apis";
+import { notificationService } from "@/lib/notification-service";
 
 // Save scan response JSON to scan-results folder
 async function saveResponseJson(vendorName: string, data: unknown) {
@@ -595,6 +596,48 @@ export const GET = withAuth(
         );
 
         console.log("✅✅✅ [SCAN PERSIST] Saved successfully — vendorId:", vendorId, "| assessmentId:", assessmentId);
+
+        // Send monitoring notifications
+        try {
+          const boAmUsers = await prisma.user.findMany({
+            where: {
+              customerAccountId, isActive: true,
+              OR: [
+                { role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
+                { tprmRole: { in: ['Business Owner', 'Account Manager'] } },
+              ],
+            },
+            select: { id: true },
+            take: 20,
+          });
+          const recipientIds = boAmUsers.map(u => u.id).filter(uid => uid !== session.id);
+          const overallScore = mapped.overallScore;
+
+          if (recipientIds.length > 0) {
+            // Always notify scan completed
+            void notificationService.notifyTPRMMonitoringScanCompleted({
+              customerAccountId,
+              actorId: session.id,
+              recipientIds,
+              vendorName: mapped.vendorName,
+              riskScore: overallScore,
+            });
+
+            // If critical risk detected (score <= 40 = high risk)
+            if (overallScore != null && overallScore <= 40) {
+              void notificationService.notifyTPRMMonitoringCriticalRisk({
+                customerAccountId,
+                actorId: session.id,
+                recipientIds,
+                vendorName: mapped.vendorName,
+                riskScore: overallScore,
+              });
+            }
+          }
+        } catch (notifErr) {
+          console.error("⚠️ [SCAN NOTIFY] Failed to send scan notifications:", notifErr);
+        }
+
         return NextResponse.json({
           status: "done",
           vendorId,

@@ -208,7 +208,33 @@ export const PATCH = withAuth(
 
         const vendorName = updated.vendor?.name || '';
 
-        if (status === 'Resolved' || status === 'Closed') {
+        if (status === 'Escalated') {
+          // Notify BO and GRC admins about escalation
+          const boAdmins = await prisma.user.findMany({
+            where: {
+              customerAccountId,
+              isActive: true,
+              OR: [
+                { role: { in: ['GRCAdministrator', 'CustomerAdministrator'] } },
+                { tprmRole: 'Business Owner' },
+              ],
+            },
+            select: { id: true },
+            take: 10,
+          });
+          const escalationRecipients = boAdmins.map(a => a.id).filter(rid => !recipientIds.includes(rid));
+          const allEscalationRecipients = [...new Set([...recipientIds, ...escalationRecipients])];
+          if (allEscalationRecipients.length > 0) {
+            void notificationService.notifyTPRMVendorIssueEscalated({
+              customerAccountId,
+              actorId: session.id,
+              recipientIds: allEscalationRecipients,
+              issueId: id,
+              issueTitle: updated.title || issue.title,
+              vendorName,
+            });
+          }
+        } else if (status === 'Resolved' || status === 'Closed') {
           void notificationService.notifyTPRMVendorIssueResolved({
             customerAccountId,
             actorId: session.id,

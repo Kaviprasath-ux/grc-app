@@ -3460,6 +3460,7 @@ model TPRMAssessment {
   approverId            String?
   approver              User?           @relation("TPRMApprover", fields: [approverId], references: [id])
   questionnaireTemplate String?         // Template name used for assessment
+  dueDate               DateTime?       // Assessment due date for reminders
   approverComment       String?
   rejectedById          String?
   rejectedBy            User?           @relation("TPRMRejectedBy", fields: [rejectedById], references: [id])

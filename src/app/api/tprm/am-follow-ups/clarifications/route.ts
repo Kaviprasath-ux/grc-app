@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId, getAMEmail } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { translateRecord } from '@/lib/translation-service';
+import { notificationService } from '@/lib/notification-service';
 
 // GET /api/tprm/am-follow-ups/clarifications — List clarifications for AM's assessments
 export const GET = withAuth(
@@ -91,6 +92,25 @@ export const PATCH = withAuth(
 
       // Fire-and-forget dynamic translation
       if (customerAccountId) void translateRecord(customerAccountId, 'TPRMClarification', updated.id, { rejectComment: updated.rejectComment, amResponse: updated.amResponse });
+
+      // Notify the assessor who requested the clarification
+      if (clarification.requestedById) {
+        const assessment = await prisma.tPRMAssessment.findFirst({
+          where: { id: clarification.assessmentId, customerAccountId },
+          select: { assessmentCode: true, vendorId: true },
+        });
+        const vendor = assessment?.vendorId
+          ? await prisma.tPRMVendor.findUnique({ where: { id: assessment.vendorId }, select: { name: true } })
+          : null;
+        void notificationService.notifyTPRMClarificationResponded({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: clarification.requestedById,
+          assessmentId: clarification.assessmentId,
+          assessmentCode: assessment?.assessmentCode || '',
+          vendorName: vendor?.name || '',
+        });
+      }
 
       return NextResponse.json(updated);
     } catch (error) {
