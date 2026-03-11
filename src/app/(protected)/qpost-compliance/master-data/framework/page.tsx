@@ -286,7 +286,6 @@ export default function FrameworkMasterDataPage() {
         "Requirement code",
         "Requirement",
         "Description",
-        "Requirement mapping",
         "Requirement type",
         "Chapter type",
       ];

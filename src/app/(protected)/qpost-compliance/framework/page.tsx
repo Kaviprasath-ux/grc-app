@@ -81,7 +81,6 @@ const TEMPLATE_COLUMNS = [
   "Requirement code",
   "Requirement",
   "Description",
-  "Control mapping",
   "Requirement type",
   "Chapter type",
 ];
