@@ -165,6 +165,221 @@ async function main() {
   });
   console.log("✅ QPost Reviewer user created (qpostreviewer / Baarez@2025)");
 
+  // ==================== CREATE ORGANIZATION ====================
+  console.log("\n🏛️ Creating Organization...");
+
+  const organization = await prisma.organization.upsert({
+    where: { id: "org-qpost" },
+    update: {},
+    create: {
+      id: "org-qpost",
+      customerAccountId,
+      name: "Qatar Post (QPost)",
+      email: "info@qpost.com.qa",
+      phone: "+974 4440 4440",
+      establishedDate: "1969-01-01",
+      employeeCount: 1500,
+      branchCount: 32,
+      headOfficeLocation: "Doha, Qatar",
+      headOfficeAddress: "P.O. Box 71, Doha, Qatar",
+      website: "https://www.qpost.com.qa",
+      description: "Qatar Post (QPost) is the national postal service of Qatar, providing postal, logistics, and digital services. As a government entity under the Ministry of Communications and Information Technology, QPost ensures secure and reliable mail delivery, e-commerce logistics, and compliance with national information assurance regulations.",
+      vision: "To be a world-class postal and logistics provider, driving Qatar's digital transformation and ensuring secure communication for all citizens and businesses.",
+      mission: "Delivering innovative postal, logistics, and digital solutions that meet the highest standards of quality, security, and regulatory compliance in line with Qatar National Vision 2030.",
+      value: "Excellence, Integrity, Innovation, Customer Focus, National Pride",
+      ceoMessage: "At Qatar Post, we are committed to serving our nation by providing secure, efficient, and innovative postal and logistics services. Our focus on compliance and information assurance ensures that we meet the highest standards of trust and reliability.",
+      facebook: "https://facebook.com/QatarPost",
+      youtube: "https://youtube.com/@QatarPost",
+      twitter: "https://twitter.com/QatarPost",
+      linkedin: "https://linkedin.com/company/qatar-post",
+    },
+  });
+  console.log("  ✓ Organization created");
+
+  // Create Branches
+  await prisma.branch.deleteMany({ where: { organizationId: organization.id } });
+  const branches = [
+    { location: "Al Corniche, Doha", address: "Al Corniche Post Office, West Bay, Doha" },
+    { location: "Al Wakra", address: "Al Wakra Post Office, Al Wakra Main Road" },
+    { location: "Al Khor", address: "Al Khor Post Office, Al Khor Industrial Area" },
+    { location: "Lusail City", address: "Lusail Post Office, Lusail Boulevard" },
+    { location: "Education City", address: "Education City Post Office, Qatar Foundation" },
+  ];
+  for (const branch of branches) {
+    await prisma.branch.create({
+      data: { ...branch, organizationId: organization.id },
+    });
+  }
+  console.log("  ✓ Branch offices created");
+
+  // Create Data Centers
+  await prisma.dataCenter.deleteMany({ where: { organizationId: organization.id } });
+  const dataCenters = [
+    { locationType: "On-Prem", address: "Primary Data Center, Doha, Qatar" },
+    { locationType: "On-Prem", address: "Disaster Recovery Site, Al Khor, Qatar" },
+    { locationType: "Outsourced", vendor: "Microsoft Azure (Qatar Central)" },
+  ];
+  for (const dc of dataCenters) {
+    await prisma.dataCenter.create({
+      data: { ...dc, organizationId: organization.id },
+    });
+  }
+  console.log("  ✓ Data centers created");
+
+  // Create Cloud Providers
+  await prisma.cloudProvider.deleteMany({ where: { organizationId: organization.id } });
+  const cloudProviders = [
+    { name: "Microsoft Azure", serviceType: "IaaS" },
+    { name: "Oracle Cloud", serviceType: "PaaS" },
+    { name: "SAP S/4HANA Cloud", serviceType: "SaaS" },
+    { name: "ServiceNow", serviceType: "SaaS" },
+  ];
+  for (const cp of cloudProviders) {
+    await prisma.cloudProvider.create({
+      data: { ...cp, organizationId: organization.id },
+    });
+  }
+  console.log("  ✓ Cloud providers created");
+
+  // ==================== CREATE DEPARTMENTS ====================
+  console.log("\n🏢 Creating Departments...");
+
+  const departmentData = [
+    { name: "Executive Management", description: "CEO office and senior leadership" },
+    { name: "Information Technology", description: "IT infrastructure, systems, and digital services" },
+    { name: "Information Security", description: "Cybersecurity, NIA compliance, and data protection" },
+    { name: "Risk & Compliance", description: "Enterprise risk management and regulatory compliance" },
+    { name: "Internal Audit", description: "Internal audit and assurance services" },
+    { name: "Finance & Accounting", description: "Financial operations, budgeting, and reporting" },
+    { name: "Human Resources", description: "HR operations, training, and talent management" },
+    { name: "Operations & Logistics", description: "Mail sorting, delivery, and logistics operations" },
+    { name: "Customer Service", description: "Customer support and service delivery" },
+    { name: "Legal & Regulatory Affairs", description: "Legal counsel and regulatory affairs" },
+  ];
+
+  const createdDepts: Record<string, string> = {};
+  for (const dept of departmentData) {
+    const created = await prisma.department.upsert({
+      where: {
+        customerAccountId_name: { customerAccountId, name: dept.name },
+      },
+      update: { description: dept.description },
+      create: { customerAccountId, ...dept },
+    });
+    createdDepts[dept.name] = created.id;
+  }
+  console.log("  ✓ Departments created");
+
+  // Update existing users with department assignments
+  await prisma.user.update({
+    where: { id: qpostAdmin.id },
+    data: { departmentId: createdDepts["Risk & Compliance"] },
+  });
+  await prisma.user.update({
+    where: { id: qpostUser.id },
+    data: { departmentId: createdDepts["Risk & Compliance"] },
+  });
+  await prisma.user.update({
+    where: { id: qpostReviewer.id },
+    data: { departmentId: createdDepts["Information Security"] },
+  });
+  console.log("  ✓ Users assigned to departments");
+
+  // ==================== CREATE STAKEHOLDERS ====================
+  console.log("\n🤝 Creating Stakeholders...");
+
+  const stakeholders = [
+    { name: "Board of Directors", email: "board@qpost.com.qa", type: "Internal", status: "Active" },
+    { name: "Ministry of Communications & IT", email: "info@mcit.gov.qa", type: "External", status: "Active" },
+    { name: "National Cyber Security Agency (NCSA)", email: "info@ncsa.gov.qa", type: "External", status: "Active" },
+    { name: "Qatar Central Bank (QCB)", email: "compliance@qcb.gov.qa", type: "External", status: "Active" },
+    { name: "External Auditors - Deloitte", email: "audit@deloitte.com", type: "External", status: "Active" },
+    { name: "Technology Vendor - Oracle", email: "support@oracle.com", type: "Third Party", status: "Active" },
+    { name: "Cloud Provider - Microsoft Azure", email: "enterprise@microsoft.com", type: "Third Party", status: "Active" },
+  ];
+
+  for (const stakeholder of stakeholders) {
+    await prisma.stakeholder.upsert({
+      where: { id: `qpost-stakeholder-${stakeholder.name.toLowerCase().replace(/\s+/g, "-")}` },
+      update: {},
+      create: {
+        id: `qpost-stakeholder-${stakeholder.name.toLowerCase().replace(/\s+/g, "-")}`,
+        customerAccountId,
+        ...stakeholder,
+      },
+    });
+  }
+  console.log("  ✓ Stakeholders created");
+
+  // ==================== CREATE PROCESSES ====================
+  console.log("\n⚙️ Creating Processes...");
+
+  const processes = [
+    { code: "PRC-OPS-001", name: "Mail Sorting & Processing", type: "Primary", department: "Operations & Logistics", frequency: "Daily", nature: "Manual + Automated" },
+    { code: "PRC-OPS-002", name: "Last-Mile Delivery", type: "Primary", department: "Operations & Logistics", frequency: "Daily", nature: "Manual" },
+    { code: "PRC-IT-001", name: "User Access Management", type: "Supporting", department: "Information Technology", frequency: "Daily", nature: "Manual + Automated" },
+    { code: "PRC-IT-002", name: "Backup & Recovery", type: "Supporting", department: "Information Technology", frequency: "Daily", nature: "Automated" },
+    { code: "PRC-IT-003", name: "Change Management", type: "Supporting", department: "Information Technology", frequency: "Weekly", nature: "Manual" },
+    { code: "PRC-SEC-001", name: "Vulnerability Management", type: "Supporting", department: "Information Security", frequency: "Monthly", nature: "Manual + Automated" },
+    { code: "PRC-SEC-002", name: "Incident Response", type: "Primary", department: "Information Security", frequency: "As needed", nature: "Manual" },
+    { code: "PRC-COM-001", name: "Regulatory Compliance Monitoring", type: "Primary", department: "Risk & Compliance", frequency: "Monthly", nature: "Manual" },
+    { code: "PRC-AUD-001", name: "Internal Audit", type: "Primary", department: "Internal Audit", frequency: "Quarterly", nature: "Manual" },
+    { code: "PRC-CS-001", name: "Customer Complaint Handling", type: "Primary", department: "Customer Service", frequency: "Daily", nature: "Manual" },
+  ];
+
+  for (const process of processes) {
+    await prisma.process.upsert({
+      where: {
+        customerAccountId_processCode: {
+          customerAccountId,
+          processCode: process.code,
+        },
+      },
+      update: {},
+      create: {
+        customerAccountId,
+        processCode: process.code,
+        name: process.name,
+        processType: process.type,
+        departmentId: createdDepts[process.department],
+        ownerId: qpostAdmin.id,
+        status: "Active",
+        processFrequency: process.frequency,
+        natureOfImplementation: process.nature,
+        riskRating: "Medium",
+      },
+    });
+  }
+  console.log("  ✓ Processes created");
+
+  // ==================== CREATE SERVICES ====================
+  console.log("\n🛠️ Creating Services...");
+
+  const services = [
+    { title: "Express Mail Service (EMS)", description: "International express mail delivery service", serviceUser: "External", serviceCategory: "Postal Services" },
+    { title: "E-Commerce Logistics", description: "Last-mile delivery for online retailers", serviceUser: "External", serviceCategory: "Logistics Services" },
+    { title: "PO Box Services", description: "Private and corporate PO box rental services", serviceUser: "External", serviceCategory: "Postal Services" },
+    { title: "Digital Postal Services", description: "Electronic mail and digital document services", serviceUser: "External", serviceCategory: "Digital Services" },
+    { title: "IT Help Desk", description: "Internal IT support and service management", serviceUser: "Internal", serviceCategory: "IT Services" },
+    { title: "HR Self-Service Portal", description: "Employee self-service for HR functions", serviceUser: "Internal", serviceCategory: "HR Services" },
+  ];
+
+  for (const service of services) {
+    await prisma.service.upsert({
+      where: { id: `qpost-svc-${service.title.toLowerCase().replace(/\s+/g, "-")}` },
+      update: {},
+      create: {
+        id: `qpost-svc-${service.title.toLowerCase().replace(/\s+/g, "-")}`,
+        customerAccountId,
+        title: service.title,
+        description: service.description,
+        serviceUser: service.serviceUser,
+        serviceCategory: service.serviceCategory,
+      },
+    });
+  }
+  console.log("  ✓ Services created");
+
   // ==================== QPOST FRAMEWORKS ====================
 
   const niaFramework = await prisma.qPostFramework.upsert({
