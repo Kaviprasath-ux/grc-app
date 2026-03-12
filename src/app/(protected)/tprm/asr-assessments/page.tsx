@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataGrid } from "@/components/shared/data-grid";
@@ -185,6 +185,11 @@ export default function AsrAssessmentsPage() {
         body: JSON.stringify({ assessorId: selectedAssessorId }),
       });
       if (!res.ok) throw new Error("Failed");
+      const result = await res.json();
+      triggerTranslation('TPRMAssessment', assigningAssessment.id, {
+        questionnaireTemplate: result.questionnaireTemplate ?? assigningAssessment.assessmentType,
+        approverComment: result.approverComment ?? null,
+      });
       const assignedName = assessors.find(a => a.id === selectedAssessorId)?.fullName || "";
       toast({ title: t("Success"), description: `${t("Assessment assigned to")} ${assignedName}` });
       setAssignOpen(false);
@@ -225,6 +230,11 @@ export default function AsrAssessmentsPage() {
         body: JSON.stringify(bodyData),
       });
       if (!res.ok) throw new Error("Failed");
+      const result = await res.json();
+      triggerTranslation('TPRMAssessment', reassigningAssessment.id, {
+        questionnaireTemplate: result.questionnaireTemplate ?? reassigningAssessment.assessmentType,
+        approverComment: result.approverComment ?? null,
+      });
       const targetName = reassignTargets.find(a => a.id === selectedReassignId)?.fullName || "";
       toast({ title: t("Success"), description: `${t("Assessment reassigned to")} ${targetName}` });
       setReassignOpen(false);

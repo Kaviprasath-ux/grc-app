@@ -114,10 +114,10 @@ export default function AMAssessmentsPage() {
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={t("Search assessments...")}
-          className="pl-9"
+          className="ltr:pl-9 rtl:pr-9"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />

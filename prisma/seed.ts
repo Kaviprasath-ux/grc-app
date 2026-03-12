@@ -4816,6 +4816,10 @@ async function main() {
     { userId: "TPRM-BO-001", userName: "bowner", email: "bowner@baarez.com", firstName: "Priya", lastName: "Sharma", fullName: "Priya Sharma", designation: "Business Owner", tprmRole: "Business Owner", roleName: "BusinessOwner" },
     { userId: "TPRM-IT-001", userName: "itteam", email: "itteam@baarez.com", firstName: "Amit", lastName: "Patel", fullName: "Amit Patel", designation: "IT Security Lead", tprmRole: "Internal IT Team", roleName: "InternalITTeam" },
     { userId: "TPRM-ASR-001", userName: "assessor1", email: "assessor1@baarez.com", firstName: "Neha", lastName: "Gupta", fullName: "Neha Gupta", designation: "TPRM Assessor", tprmRole: "Assessor", roleName: "TPRMAssessor" },
+    { userId: "TPRM-ASR-002", userName: "as", email: "as@baarez.com", firstName: "Arun", lastName: "Sharma", fullName: "Arun Sharma", designation: "TPRM Assessor", tprmRole: "Assessor", roleName: "TPRMAssessor" },
+    { userId: "TPRM-APR-001", userName: "ap", email: "ap@baarez.com", firstName: "Anita", lastName: "Pillai", fullName: "Anita Pillai", designation: "TPRM Approver", tprmRole: "Approver", roleName: "TPRMApprover" },
+    { userId: "TPRM-IT-002", userName: "it", email: "it@baarez.com", firstName: "Imran", lastName: "Tariq", fullName: "Imran Tariq", designation: "IT Security Analyst", tprmRole: "Internal IT Team", roleName: "InternalITTeam" },
+    { userId: "TPRM-AUD-001", userName: "auditor", email: "auditor@baarez.com", firstName: "Aditya", lastName: "Deshmukh", fullName: "Aditya Deshmukh", designation: "TPRM Auditor", tprmRole: "Auditor", roleName: "TPRMAuditor" },
   ];
 
   const tprmUserIds: Record<string, string> = {};
@@ -4854,7 +4858,7 @@ async function main() {
       create: { userId: user.id, roleId: role.id },
     });
   }
-  console.log("✅ TPRM Role Users created (remm, bowner, itteam, assessor1 / password: 1)");
+  console.log("✅ TPRM Role Users created (remm, bowner, itteam, assessor1, as, ap, it, auditor / password: 1)");
 
   // ==================== TPRM ISSUE REMEDIATIONS (Open issues for RM) ====================
 
@@ -5018,6 +5022,403 @@ async function main() {
     }
   }
   console.log("✅ TPRM Issue Remediations created (8 open issues for RM user 'remm')");
+
+  // ==================== ASSIGN ASSESSOR & APPROVER TO EXISTING ASSESSMENTS ====================
+  // Assign user "as" (TPRMAssessor) and "ap" (TPRMApprover) to assessments
+  // Also assign "auditor" view context by ensuring assessments have full data
+
+  const assessorUserId = tprmUserIds["TPRMAssessor"]; // "as" user (last upserted wins for this key, so this is "as")
+  const approverUserId = tprmUserIds["TPRMApprover"]; // "ap" user
+
+  // We need the IDs for our new users. Since upsert overwrites the map key, let's get them directly.
+  const asUser = await prisma.user.findFirst({ where: { userId: "TPRM-ASR-002" } });
+  const apUser = await prisma.user.findFirst({ where: { userId: "TPRM-APR-001" } });
+  const itUser = await prisma.user.findFirst({ where: { userId: "TPRM-IT-002" } });
+  const auditorUser = await prisma.user.findFirst({ where: { userId: "TPRM-AUD-001" } });
+  const assessor1User = await prisma.user.findFirst({ where: { userId: "TPRM-ASR-001" } });
+
+  if (asUser && apUser && itUser && auditorUser) {
+    // Assign assessor "as" and approver "ap" to various assessments
+    const assessorAssignments: { code: string; assessorId: string; approverId: string }[] = [
+      // Completed assessments - "as" assessed, "ap" approved
+      { code: "ASM001", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM002", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM006", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM008", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM020", assessorId: asUser.id, approverId: apUser.id },
+      // Approved assessment
+      { code: "ASM011", assessorId: asUser.id, approverId: apUser.id },
+      // Under Review - "as" completed assessment, "ap" needs to review
+      { code: "ASM005", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM019", assessorId: asUser.id, approverId: apUser.id },
+      // In Progress - "as" currently assessing
+      { code: "ASM003", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM010", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM014", assessorId: asUser.id, approverId: apUser.id },
+      // Submitted - waiting for assessor pickup
+      { code: "ASM004", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM012", assessorId: asUser.id, approverId: apUser.id },
+      { code: "ASM018", assessorId: asUser.id, approverId: apUser.id },
+      // Returned by approver
+      { code: "ASM009", assessorId: asUser.id, approverId: apUser.id },
+      // Rejected by approver
+      { code: "ASM016", assessorId: asUser.id, approverId: apUser.id },
+      // Some assessments assigned to assessor1 (original assessor) for variety
+      { code: "ASM013", assessorId: assessor1User?.id || asUser.id, approverId: apUser.id },
+      { code: "ASM007", assessorId: assessor1User?.id || asUser.id, approverId: apUser.id },
+    ];
+
+    for (const a of assessorAssignments) {
+      if (createdAssessments[a.code]) {
+        await prisma.tPRMAssessment.update({
+          where: { id: createdAssessments[a.code] },
+          data: { assessorId: a.assessorId, approverId: a.approverId },
+        });
+      }
+    }
+    console.log("✅ Assessor ('as') and Approver ('ap') assigned to assessments");
+
+    // ==================== ASSESSMENT RESPONSES (for assessor "as") ====================
+    // These simulate vendor responses + AI/assessor evaluations for completed/reviewed assessments
+
+    const assessmentResponses = [
+      // ASM001 (IBM - Completed) - 6 responses
+      { assessmentCode: "ASM001", questionId: "Q-ASM001-IS01", domainId: "DOM-IS", questionNo: "IS-01", response: "Yes", comment: "AES-256 encryption confirmed across all storage systems", poScore: 92, poStatus: "Satisfactory", poAnswer: "Vendor implements AES-256 encryption for all data at rest", assessorStatus: "Satisfactory" },
+      { assessmentCode: "ASM001", questionId: "Q-ASM001-IS02", domainId: "DOM-IS", questionNo: "IS-02", response: "Yes", comment: "MFA enabled for all user accounts", poScore: 88, poStatus: "Satisfactory", poAnswer: "Multi-factor authentication is enforced organization-wide", assessorStatus: "Satisfactory" },
+      { assessmentCode: "ASM001", questionId: "Q-ASM001-BC01", domainId: "DOM-BC", questionNo: "BC-01", response: "Yes", comment: "DR plan tested annually with RTO of 4 hours", poScore: 85, poStatus: "Satisfactory", poAnswer: "Comprehensive disaster recovery plan with documented RTO/RPO" },
+      { assessmentCode: "ASM001", questionId: "Q-ASM001-BC02", domainId: "DOM-BC", questionNo: "BC-02", response: "No", comment: "BCP not fully documented for all critical services", poScore: 35, poStatus: "Unsatisfactory", poAnswer: "Business continuity plan has gaps for non-critical services", poIssue: "Incomplete BCP coverage for 3 out of 8 critical services", poRisk: "Service disruption risk during major incidents", poRecommendation: "Complete BCP documentation for all services within 60 days", poSeverity: "Medium", assessorStatus: "Unsatisfactory", assessorIssue: "BCP gaps confirmed - vendor needs to address", assessorRisk: "Moderate service disruption risk", assessorRecommendation: "Mandate full BCP completion within 60 days", assessorSeverity: "Medium" },
+      { assessmentCode: "ASM001", questionId: "Q-ASM001-DP01", domainId: "DOM-DP", questionNo: "DP-01", response: "Yes", comment: "GDPR compliance verified with DPA in place", poScore: 95, poStatus: "Satisfactory", poAnswer: "Full GDPR compliance with active Data Processing Agreement" },
+      { assessmentCode: "ASM001", questionId: "Q-ASM001-DP02", domainId: "DOM-DP", questionNo: "DP-02", response: "NA", comment: "Not applicable - vendor does not process PII in this engagement", poScore: 0, poStatus: "Not_Applicable", poAnswer: "Question not applicable to current engagement scope" },
+
+      // ASM002 (Azure - Approved) - 5 responses
+      { assessmentCode: "ASM002", questionId: "Q-ASM002-CS01", domainId: "DOM-CS", questionNo: "CS-01", response: "Yes", comment: "All data resides in EU region per contractual obligations", poScore: 96, poStatus: "Satisfactory", poAnswer: "Data residency confirmed within contracted geographic boundaries" },
+      { assessmentCode: "ASM002", questionId: "Q-ASM002-CS02", domainId: "DOM-CS", questionNo: "CS-02", response: "Yes", comment: "99.99% uptime SLA with documented performance history", poScore: 94, poStatus: "Satisfactory", poAnswer: "SLA terms meet organizational requirements" },
+      { assessmentCode: "ASM002", questionId: "Q-ASM002-CO01", domainId: "DOM-CO", questionNo: "CO-01", response: "Yes", comment: "SOC 2 Type II report valid through Dec 2025", poScore: 98, poStatus: "Satisfactory", poAnswer: "Current SOC 2 Type II compliance verified" },
+      { assessmentCode: "ASM002", questionId: "Q-ASM002-CS03", domainId: "DOM-CS", questionNo: "CS-03", response: "Partial", comment: "Encryption at rest enabled but key rotation not automated", poScore: 55, poStatus: "Unsatisfactory", poAnswer: "Encryption key management needs improvement", poIssue: "Manual key rotation process creates security gaps", poRisk: "Key compromise risk due to manual rotation delays", poRecommendation: "Implement automated key rotation using Azure Key Vault", poSeverity: "High", assessorStatus: "Unsatisfactory", assessorIssue: "Key rotation must be automated per security policy", assessorRisk: "Elevated risk of key compromise", assessorRecommendation: "Automate key rotation within 30 days", assessorSeverity: "High" },
+      { assessmentCode: "ASM002", questionId: "Q-ASM002-CO02", domainId: "DOM-CO", questionNo: "CO-02", response: "Yes", comment: "ISO 27001 certified, valid until March 2026", poScore: 97, poStatus: "Satisfactory", poAnswer: "ISO 27001 certification current and verified" },
+
+      // ASM005 (IBM Periodic - Under Review) - 4 responses (assessor completed, awaiting approver)
+      { assessmentCode: "ASM005", questionId: "Q-ASM005-IS01", domainId: "DOM-IS", questionNo: "IS-01", response: "Yes", comment: "Annual security review shows improved security posture", poScore: 90, poStatus: "Satisfactory", poAnswer: "Security controls maintained and improved since last review", assessorStatus: "Satisfactory", assessorComment: "Noted improvement in patch management cycle" },
+      { assessmentCode: "ASM005", questionId: "Q-ASM005-RM01", domainId: "DOM-RM", questionNo: "RM-01", response: "Partial", comment: "Risk register updated but missing emerging threats", poScore: 60, poStatus: "Unsatisfactory", poAnswer: "Risk register is incomplete for emerging threat vectors", poIssue: "Missing risk entries for supply chain and AI threats", poRisk: "Unidentified risks may lead to security incidents", poRecommendation: "Update risk register to include supply chain and AI-specific threats", poSeverity: "High", assessorStatus: "Unsatisfactory", assessorIssue: "Risk register gaps confirmed in supply chain area", assessorRisk: "Significant blind spots in risk coverage", assessorRecommendation: "Require risk register update within 45 days", assessorSeverity: "High", assessorComment: "This needs approver attention - vendor risk profile has changed significantly" },
+      { assessmentCode: "ASM005", questionId: "Q-ASM005-IS02", domainId: "DOM-IS", questionNo: "IS-02", response: "Yes", comment: "Penetration testing performed quarterly", poScore: 88, poStatus: "Satisfactory", poAnswer: "Regular penetration testing with remediation of findings" },
+      { assessmentCode: "ASM005", questionId: "Q-ASM005-BC01", domainId: "DOM-BC", questionNo: "BC-01", response: "Yes", comment: "DR test conducted in Q2 2025 successfully", poScore: 91, poStatus: "Satisfactory", poAnswer: "Disaster recovery testing performed as scheduled" },
+
+      // ASM019 (Wipro - Under Review) - 3 responses
+      { assessmentCode: "ASM019", questionId: "Q-ASM019-IT01", domainId: "DOM-IT", questionNo: "IT-01", response: "Yes", comment: "IT outsourcing governance framework in place", poScore: 82, poStatus: "Satisfactory", poAnswer: "Governance framework covers all outsourced IT services" },
+      { assessmentCode: "ASM019", questionId: "Q-ASM019-IT02", domainId: "DOM-IT", questionNo: "IT-02", response: "No", comment: "Service level metrics not tracked systematically", poScore: 30, poStatus: "Unsatisfactory", poAnswer: "No systematic SLA monitoring mechanism", poIssue: "SLA performance not tracked leading to undetected service degradation", poRisk: "Service quality issues may go unnoticed", poRecommendation: "Implement automated SLA monitoring dashboard", poSeverity: "High", assessorStatus: "Unsatisfactory", assessorIssue: "No SLA tracking - critical gap", assessorRisk: "High risk of undetected service degradation", assessorRecommendation: "Require SLA monitoring implementation within 60 days", assessorSeverity: "High" },
+      { assessmentCode: "ASM019", questionId: "Q-ASM019-DP01", domainId: "DOM-DP", questionNo: "DP-01", response: "Yes", comment: "Data protection addendum signed and in effect", poScore: 90, poStatus: "Satisfactory", poAnswer: "Data protection requirements contractually enforced" },
+
+      // ASM006 (SAP - Completed) - 3 responses
+      { assessmentCode: "ASM006", questionId: "Q-ASM006-ERP01", domainId: "DOM-ERP", questionNo: "ERP-01", response: "Yes", comment: "User access review completed for all SAP modules", poScore: 87, poStatus: "Satisfactory", poAnswer: "Quarterly user access review process functioning" },
+      { assessmentCode: "ASM006", questionId: "Q-ASM006-ERP02", domainId: "DOM-ERP", questionNo: "ERP-02", response: "Yes", comment: "All critical patches applied within 72-hour SLA", poScore: 93, poStatus: "Satisfactory", poAnswer: "Patch management SLA consistently met" },
+      { assessmentCode: "ASM006", questionId: "Q-ASM006-CO01", domainId: "DOM-CO", questionNo: "CO-01", response: "Yes", comment: "SOX compliance controls verified", poScore: 95, poStatus: "Satisfactory", poAnswer: "SOX compliance requirements fully met" },
+    ];
+
+    for (const resp of assessmentResponses) {
+      const assessmentId = createdAssessments[resp.assessmentCode];
+      if (!assessmentId) continue;
+      await prisma.tPRMAssessmentResponse.upsert({
+        where: { assessmentId_questionId: { assessmentId, questionId: resp.questionId } },
+        update: {},
+        create: {
+          customerAccountId: grcAdminCustomerAccountId,
+          assessmentId,
+          questionId: resp.questionId,
+          domainId: resp.domainId || null,
+          questionNo: resp.questionNo || null,
+          response: resp.response || null,
+          comment: resp.comment || null,
+          respondedAt: new Date("2025-06-15"),
+          poScore: resp.poScore ?? null,
+          poStatus: resp.poStatus || null,
+          poAnswer: resp.poAnswer || null,
+          poIssue: (resp as Record<string, unknown>).poIssue as string || null,
+          poRisk: (resp as Record<string, unknown>).poRisk as string || null,
+          poRecommendation: (resp as Record<string, unknown>).poRecommendation as string || null,
+          poSeverity: (resp as Record<string, unknown>).poSeverity as string || null,
+          assessorStatus: (resp as Record<string, unknown>).assessorStatus as string || null,
+          assessorIssue: (resp as Record<string, unknown>).assessorIssue as string || null,
+          assessorRisk: (resp as Record<string, unknown>).assessorRisk as string || null,
+          assessorRecommendation: (resp as Record<string, unknown>).assessorRecommendation as string || null,
+          assessorComment: (resp as Record<string, unknown>).assessorComment as string || null,
+          assessorSeverity: (resp as Record<string, unknown>).assessorSeverity as string || null,
+          assessorOverriddenById: (resp as Record<string, unknown>).assessorStatus ? asUser.id : null,
+          assessorOverriddenAt: (resp as Record<string, unknown>).assessorStatus ? new Date("2025-06-20") : null,
+        },
+      });
+    }
+    console.log("✅ TPRM Assessment Responses created (21 responses across 6 assessments for assessor 'as')");
+
+    // ==================== INTERNAL COMMENTS (by assessor "as") ====================
+
+    const internalComments = [
+      { assessmentCode: "ASM001", questionId: "Q-ASM001-BC02", message: "Flagging this question - BCP gaps need vendor attention. Recommending follow-up in 60 days." },
+      { assessmentCode: "ASM001", questionId: "Q-ASM001-IS01", message: "Vendor has significantly improved encryption posture since last assessment. Good progress." },
+      { assessmentCode: "ASM002", questionId: "Q-ASM002-CS03", message: "Key rotation automation is a critical finding. Escalating to approver for visibility." },
+      { assessmentCode: "ASM005", questionId: "Q-ASM005-RM01", message: "Supply chain risks are emerging as a major concern for IBM. Need to discuss with RM team." },
+      { assessmentCode: "ASM005", questionId: "Q-ASM005-IS01", message: "Overall improvement noted. Recommend maintaining current assessment cadence." },
+      { assessmentCode: "ASM019", questionId: "Q-ASM019-IT02", message: "SLA monitoring gap is concerning for an IT outsourcing vendor. This should be a prerequisite for continued engagement." },
+      { assessmentCode: "ASM003", questionId: null, message: "Initial review started. Deloitte has provided preliminary documentation for background checks." },
+      { assessmentCode: "ASM010", questionId: null, message: "Assessment in early stages. Wipro has been responsive with documentation requests so far." },
+    ];
+
+    for (const ic of internalComments) {
+      const assessmentId = createdAssessments[ic.assessmentCode];
+      if (!assessmentId) continue;
+      await prisma.tPRMInternalComment.create({
+        data: {
+          customerAccountId: grcAdminCustomerAccountId,
+          assessmentId,
+          questionId: ic.questionId,
+          message: ic.message,
+          authorId: asUser.id,
+        },
+      });
+    }
+    console.log("✅ TPRM Internal Comments created (8 comments by assessor 'as')");
+
+    // ==================== CLARIFICATION REQUESTS (by assessor "as") ====================
+
+    const clarifications = [
+      { assessmentCode: "ASM001", questionNo: "BC-02", domainName: "Business Continuity", rejectComment: "Please provide the complete BCP document covering all 8 critical services. The submitted document only covers 5 services.", status: "Submitted", amResponse: "We have updated the BCP to include the remaining 3 services. Updated document attached." },
+      { assessmentCode: "ASM002", questionNo: "CS-03", domainName: "Cloud Security", rejectComment: "Please clarify the key rotation schedule. The current manual process is not acceptable per our security policy.", status: "Pending" },
+      { assessmentCode: "ASM005", questionNo: "RM-01", domainName: "Risk Management", rejectComment: "The risk register does not include supply chain and AI-specific threats. Please update and resubmit.", status: "Pending" },
+      { assessmentCode: "ASM009", questionNo: "DB-01", domainName: "Database Security", rejectComment: "Database encryption must be enabled on all systems including legacy. Please provide a remediation timeline.", status: "Submitted", amResponse: "We have initiated a project to encrypt all legacy databases. Target completion: Q3 2025." },
+      { assessmentCode: "ASM019", questionNo: "IT-02", domainName: "IT Outsourcing", rejectComment: "SLA monitoring is a critical requirement. Please provide details on how you plan to implement systematic tracking.", status: "Pending" },
+    ];
+
+    for (const cl of clarifications) {
+      const assessmentId = createdAssessments[cl.assessmentCode];
+      if (!assessmentId) continue;
+      const existing = await prisma.tPRMClarification.findFirst({
+        where: { assessmentId, questionNo: cl.questionNo },
+      });
+      if (!existing) {
+        await prisma.tPRMClarification.create({
+          data: {
+            customerAccountId: grcAdminCustomerAccountId,
+            assessmentId,
+            questionNo: cl.questionNo,
+            domainName: cl.domainName,
+            rejectComment: cl.rejectComment,
+            status: cl.status,
+            amResponse: cl.amResponse || null,
+            requestedById: asUser.id,
+          },
+        });
+      }
+    }
+    console.log("✅ TPRM Clarifications created (5 requests by assessor 'as')");
+
+    // ==================== ISSUE REMEDIATIONS ASSIGNED TO IT USER ====================
+    // Create issues with "Assigned to IT" status for the "it" user
+
+    const itIssueRemediations = [
+      {
+        issueCode: "ISS-IT-001",
+        assessmentCode: "ASM001",
+        questionNo: "BC-02",
+        questionText: "Does the vendor maintain a comprehensive Business Continuity Plan covering all critical services?",
+        questionResponse: "No",
+        domainName: "Business Continuity",
+        severity: "Medium",
+        issue: "BCP gaps identified for 3 critical IT services. Internal IT team needs to verify vendor BCP alignment with our infrastructure dependencies.",
+        risk: "IT service dependencies on vendor may be unprotected during major incidents, leading to extended downtime.",
+        recommendation: "IT team to map vendor BCP gaps against internal infrastructure dependencies and validate failover procedures.",
+        reassignComment: "Assigned to IT team for infrastructure dependency validation.",
+        status: "Assigned to IT",
+        dueDate: new Date("2026-05-01"),
+        requestedDate: new Date("2026-03-01"),
+      },
+      {
+        issueCode: "ISS-IT-002",
+        assessmentCode: "ASM002",
+        questionNo: "CS-03",
+        questionText: "Does the cloud provider implement automated encryption key rotation for all services?",
+        questionResponse: "Partial",
+        domainName: "Cloud Security",
+        severity: "High",
+        issue: "Azure key rotation is manual. IT team needs to configure and test automated key rotation in Azure Key Vault for our tenant.",
+        risk: "Manual key rotation delays create a window of vulnerability. Compromised keys may remain active longer than security policy allows.",
+        recommendation: "Configure automated key rotation policies in Azure Key Vault. Test rotation procedures in staging environment before production deployment.",
+        reassignComment: "IT team to implement automated key rotation in our Azure tenant.",
+        status: "Assigned to IT",
+        dueDate: new Date("2026-04-15"),
+        requestedDate: new Date("2026-03-05"),
+      },
+      {
+        issueCode: "ISS-IT-003",
+        assessmentCode: "ASM009",
+        questionNo: "DB-01",
+        questionText: "Does the vendor implement encryption for all databases including legacy systems?",
+        questionResponse: "No",
+        domainName: "Database Security",
+        severity: "Critical",
+        issue: "Oracle legacy databases lack encryption. IT team must implement compensating controls until vendor completes encryption migration.",
+        risk: "Unencrypted legacy databases expose sensitive data. Any breach could result in regulatory penalties and data loss.",
+        recommendation: "Implement network-level encryption (TLS) for all Oracle database connections. Deploy database activity monitoring as compensating control.",
+        reassignComment: "Critical: IT team to implement compensating controls immediately.",
+        status: "Assigned to IT",
+        dueDate: new Date("2026-03-30"),
+        requestedDate: new Date("2026-02-25"),
+        itArtifactName: "Oracle_Network_TLS_Config.pdf",
+        itArtifactUrl: "/uploads/tprm/it-remediation/oracle-tls-config.pdf",
+      },
+      {
+        issueCode: "ISS-IT-004",
+        assessmentCode: "ASM019",
+        questionNo: "IT-02",
+        questionText: "Does the vendor track and report on Service Level Agreement (SLA) performance metrics systematically?",
+        questionResponse: "No",
+        domainName: "IT Outsourcing",
+        severity: "High",
+        issue: "Wipro lacks systematic SLA tracking. IT team needs to set up internal monitoring to independently track vendor SLA performance.",
+        risk: "Without independent SLA monitoring, service degradation may go undetected, impacting business operations.",
+        recommendation: "Deploy SLA monitoring dashboard using existing monitoring tools. Configure alerts for SLA threshold breaches.",
+        reassignComment: "IT team to set up independent SLA monitoring for Wipro services.",
+        status: "Assigned to IT",
+        dueDate: new Date("2026-04-30"),
+        requestedDate: new Date("2026-03-10"),
+      },
+      {
+        issueCode: "ISS-IT-005",
+        assessmentCode: "ASM005",
+        questionNo: "RM-01",
+        questionText: "Has the vendor updated their risk register to include emerging threats such as supply chain and AI-related risks?",
+        questionResponse: "Partial",
+        domainName: "Risk Management",
+        severity: "Medium",
+        issue: "IBM risk register missing supply chain threat entries. IT team needs to assess impact of IBM supply chain risks on our internal systems.",
+        risk: "Unidentified supply chain risks from IBM could propagate to internal systems through integration points.",
+        recommendation: "Map all IBM integration points and assess supply chain risk exposure. Document findings in internal risk register.",
+        reassignComment: "IT team to perform supply chain risk impact assessment for IBM integrations.",
+        status: "Assigned to IT",
+        dueDate: new Date("2026-05-15"),
+        requestedDate: new Date("2026-03-08"),
+      },
+    ];
+
+    for (const rem of itIssueRemediations) {
+      const assessmentId = createdAssessments[rem.assessmentCode];
+      if (!assessmentId) continue;
+      const existing = await prisma.tPRMIssueRemediation.findFirst({
+        where: { issueCode: rem.issueCode, customerAccountId: grcAdminCustomerAccountId },
+      });
+      if (!existing) {
+        await prisma.tPRMIssueRemediation.create({
+          data: {
+            issueCode: rem.issueCode,
+            customerAccountId: grcAdminCustomerAccountId,
+            assessmentId,
+            questionNo: rem.questionNo,
+            questionText: rem.questionText,
+            questionResponse: rem.questionResponse,
+            domainName: rem.domainName,
+            severity: rem.severity,
+            issue: rem.issue,
+            risk: rem.risk,
+            recommendation: rem.recommendation,
+            reassignComment: rem.reassignComment,
+            status: rem.status,
+            dueDate: rem.dueDate,
+            requestedDate: rem.requestedDate,
+            assignedToUserId: itUser.id,
+            assignedAt: new Date(),
+            itArtifactName: (rem as Record<string, unknown>).itArtifactName as string || null,
+            itArtifactUrl: (rem as Record<string, unknown>).itArtifactUrl as string || null,
+          },
+        });
+      }
+    }
+    console.log("✅ TPRM IT Issue Remediations created (5 issues assigned to IT user 'it')");
+
+    // ==================== REMEDIATION COMMENTS (multi-user conversation threads) ====================
+
+    // Get existing remediation IDs for ISS-001 through ISS-003 (RM issues) and ISS-IT-001 through ISS-IT-003
+    const remISS001 = await prisma.tPRMIssueRemediation.findFirst({ where: { issueCode: "ISS-001", customerAccountId: grcAdminCustomerAccountId } });
+    const remISS002 = await prisma.tPRMIssueRemediation.findFirst({ where: { issueCode: "ISS-002", customerAccountId: grcAdminCustomerAccountId } });
+    const remISSIT001 = await prisma.tPRMIssueRemediation.findFirst({ where: { issueCode: "ISS-IT-001", customerAccountId: grcAdminCustomerAccountId } });
+    const remISSIT002 = await prisma.tPRMIssueRemediation.findFirst({ where: { issueCode: "ISS-IT-002", customerAccountId: grcAdminCustomerAccountId } });
+    const remISSIT003 = await prisma.tPRMIssueRemediation.findFirst({ where: { issueCode: "ISS-IT-003", customerAccountId: grcAdminCustomerAccountId } });
+
+    const remComments: { remediationId: string | undefined; userId: string; userRole: string; message: string; createdAt: Date }[] = [
+      // Conversation on ISS-001 (RM issue - Data encryption)
+      { remediationId: remISS001?.id, userId: asUser.id, userRole: "Assessor", message: "This encryption gap was identified during assessment. The vendor needs to implement AES-256 across all storage tiers.", createdAt: new Date("2026-03-02") },
+      { remediationId: remISS001?.id, userId: tprmUserIds["RelationshipManager"], userRole: "Relationship Manager", message: "I've contacted the vendor. They have committed to a 90-day remediation timeline. Will follow up weekly.", createdAt: new Date("2026-03-03") },
+      { remediationId: remISS001?.id, userId: apUser.id, userRole: "Approver", message: "Please ensure the vendor provides evidence of encryption implementation before closing this issue.", createdAt: new Date("2026-03-04") },
+
+      // Conversation on ISS-002 (RM issue - MFA)
+      { remediationId: remISS002?.id, userId: asUser.id, userRole: "Assessor", message: "MFA is only on admin accounts. This is a critical finding - all production users need MFA.", createdAt: new Date("2026-03-01") },
+      { remediationId: remISS002?.id, userId: apUser.id, userRole: "Approver", message: "Agreed this is critical. We should consider blocking vendor access until MFA is fully deployed.", createdAt: new Date("2026-03-02") },
+
+      // Conversation on ISS-IT-001 (IT issue - BCP)
+      { remediationId: remISSIT001?.id, userId: asUser.id, userRole: "Assessor", message: "Reassigning to IT team - need infrastructure dependency mapping to validate BCP coverage.", createdAt: new Date("2026-03-01") },
+      { remediationId: remISSIT001?.id, userId: itUser.id, userRole: "Internal IT Team", message: "Acknowledged. Starting infrastructure dependency analysis for the 3 uncovered services.", createdAt: new Date("2026-03-02") },
+      { remediationId: remISSIT001?.id, userId: itUser.id, userRole: "Internal IT Team", message: "Initial analysis complete. Found 2 critical integration points that are not covered by vendor BCP. Preparing detailed report.", createdAt: new Date("2026-03-08") },
+
+      // Conversation on ISS-IT-002 (IT issue - Key rotation)
+      { remediationId: remISSIT002?.id, userId: asUser.id, userRole: "Assessor", message: "Azure Key Vault automation needs to be configured in our tenant. Assigning to IT team.", createdAt: new Date("2026-03-05") },
+      { remediationId: remISSIT002?.id, userId: itUser.id, userRole: "Internal IT Team", message: "Will set up automated key rotation in staging first. Need 2 weeks for testing before production deployment.", createdAt: new Date("2026-03-06") },
+      { remediationId: remISSIT002?.id, userId: apUser.id, userRole: "Approver", message: "Good plan. Please ensure rotation policy aligns with our 90-day key lifecycle requirement.", createdAt: new Date("2026-03-07") },
+
+      // Conversation on ISS-IT-003 (IT issue - Oracle DB encryption - Critical)
+      { remediationId: remISSIT003?.id, userId: asUser.id, userRole: "Assessor", message: "CRITICAL: Oracle legacy DBs are unencrypted. IT team must implement compensating controls immediately.", createdAt: new Date("2026-02-25") },
+      { remediationId: remISSIT003?.id, userId: itUser.id, userRole: "Internal IT Team", message: "Implementing TLS for all Oracle connections as immediate compensating control. Network ACLs already tightened.", createdAt: new Date("2026-02-26") },
+      { remediationId: remISSIT003?.id, userId: itUser.id, userRole: "Internal IT Team", message: "TLS configuration complete for production Oracle instances. Database activity monitoring enabled. Uploading evidence.", createdAt: new Date("2026-03-01") },
+      { remediationId: remISSIT003?.id, userId: apUser.id, userRole: "Approver", message: "Reviewed the compensating controls. Acceptable as interim solution. Vendor must still complete full encryption by Q3.", createdAt: new Date("2026-03-02") },
+      { remediationId: remISSIT003?.id, userId: auditorUser.id, userRole: "Auditor", message: "Audit note: Compensating controls documented and verified. Will include in quarterly TPRM audit report.", createdAt: new Date("2026-03-05") },
+    ];
+
+    for (const rc of remComments) {
+      if (!rc.remediationId) continue;
+      await prisma.tPRMRemediationComment.create({
+        data: {
+          remediationId: rc.remediationId,
+          userId: rc.userId,
+          userRole: rc.userRole,
+          message: rc.message,
+          createdAt: rc.createdAt,
+        },
+      });
+    }
+    console.log("✅ TPRM Remediation Comments created (16 conversation messages across 5 issues)");
+
+    // ==================== VENDOR ISSUES (reported by assessor "as") ====================
+
+    const vendorIssues = [
+      { vendorCode: "VEN001", title: "IBM Data Center Access Control Weakness", description: "During assessment ASM001, identified that IBM data center physical access logs are not reviewed monthly as required by policy. Badge access records show 3 instances of unauthorized after-hours access in Q4 2024.", severity: "High", status: "Open", dueDate: new Date("2026-04-30") },
+      { vendorCode: "VEN002", title: "Azure Configuration Drift Detected", description: "Monitoring identified configuration drift in Azure security groups. Firewall rules do not match approved baseline. 5 unauthorized ingress rules found.", severity: "Critical", status: "Open", dueDate: new Date("2026-03-31") },
+      { vendorCode: "VEN008", title: "Oracle Support Response SLA Breach", description: "Oracle support response times have exceeded contractual SLA for 3 consecutive months. Average response time: 48 hours vs 4-hour SLA for critical issues.", severity: "Medium", status: "Submitted", dueDate: new Date("2026-04-15") },
+      { vendorCode: "VEN009", title: "Wipro Staff Turnover Impacting Service Quality", description: "High staff turnover at Wipro (40% in last quarter) is affecting service quality. Key personnel replacements lack required certifications.", severity: "Medium", status: "Open", dueDate: new Date("2026-05-01") },
+      { vendorCode: "VEN005", title: "SAP Custom Code Vulnerabilities", description: "Factory assessment ASM013 identified 12 critical vulnerabilities in custom ABAP code. 4 are SQL injection risks in customer-facing interfaces.", severity: "Critical", status: "Open", dueDate: new Date("2026-03-25") },
+    ];
+
+    for (const vi of vendorIssues) {
+      const vendorId = createdVendors[vi.vendorCode];
+      if (!vendorId) continue;
+      const existing = await prisma.tPRMVendorIssue.findFirst({
+        where: { vendorId, title: vi.title, customerAccountId: grcAdminCustomerAccountId },
+      });
+      if (!existing) {
+        await prisma.tPRMVendorIssue.create({
+          data: {
+            customerAccountId: grcAdminCustomerAccountId,
+            vendorId,
+            title: vi.title,
+            description: vi.description,
+            severity: vi.severity,
+            status: vi.status,
+            dueDate: vi.dueDate,
+            reportedById: asUser.id,
+          },
+        });
+      }
+    }
+    console.log("✅ TPRM Vendor Issues created (5 issues reported by assessor 'as')");
+
+  } else {
+    console.log("⚠️ Skipping TPRM dummy data - could not find one or more TPRM users (as, ap, it, auditor)");
+  }
 
   // ==================== EMAIL TEMPLATES (GLOBAL - SYSTEM DEFAULT) ====================
   // Seed all 73 English email templates as system defaults

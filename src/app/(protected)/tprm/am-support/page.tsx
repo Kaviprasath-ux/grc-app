@@ -182,12 +182,12 @@ export default function AMSupportPage() {
         <TabsContent value="nav-help">
           <div className="grid grid-cols-12 gap-6 min-h-[60vh]">
             {/* Left sidebar */}
-            <div className="col-span-4 border-r pr-4">
+            <div className="col-span-4 ltr:border-r rtl:border-l ltr:pr-4 rtl:pl-4">
               {NAV_HELP_SECTIONS.map(section => (
                 <div key={section.id} className="mb-2">
                   <button
                     onClick={() => toggleSection(section.id)}
-                    className="flex items-center gap-2 w-full text-left font-medium text-sm py-2 hover:text-primary"
+                    className="flex items-center gap-2 w-full ltr:text-left rtl:text-right font-medium text-sm py-2 hover:text-primary"
                   >
                     {expandedSections.has(section.id) ? (
                       <ChevronDown className="h-4 w-4" />
@@ -202,7 +202,7 @@ export default function AMSupportPage() {
                         <button
                           key={item.id}
                           onClick={() => setSelectedItem(item.id)}
-                          className={`block w-full text-left text-sm py-1.5 px-2 rounded ${
+                          className={`block w-full ltr:text-left rtl:text-right text-sm py-1.5 px-2 rounded ${
                             selectedItem === item.id
                               ? "bg-primary/10 text-primary font-medium"
                               : "hover:bg-muted text-muted-foreground"

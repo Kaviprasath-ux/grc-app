@@ -94,6 +94,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'TPRMClarification', fields: [{ name: 'rejectComment' }, { name: 'amResponse' }], priority: 6 },
   { modelName: 'TPRMInternalComment', fields: [{ name: 'message' }], priority: 6 },
   { modelName: 'TPRMRemediationComment', fields: [{ name: 'message' }], priority: 6 },
+  { modelName: 'TPRMMonitoringVendor', fields: [{ name: 'vendorName' }, { name: 'vendorURL' }], priority: 6 },
 
   // Priority 5 — QPost Compliance (client-specific duplicated module)
   { modelName: 'QPostFramework', fields: [{ name: 'name' }, { name: 'code' }, { name: 'description' }, { name: 'type' }, { name: 'country' }, { name: 'industry' }], priority: 5 },

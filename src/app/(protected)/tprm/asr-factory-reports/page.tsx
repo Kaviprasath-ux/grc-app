@@ -281,11 +281,11 @@ export default function AsrFactoryReportsPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="text-left px-4 py-3 text-sm font-semibold">{t("Assessment")}</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold">{t("Date")}</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold">{t("Questions")}</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold">{t("Compliance")}</th>
-                <th className="text-right px-4 py-3 text-sm font-semibold">{t("Actions")}</th>
+                <th className="ltr:text-left rtl:text-right px-4 py-3 text-sm font-semibold">{t("Assessment")}</th>
+                <th className="ltr:text-left rtl:text-right px-4 py-3 text-sm font-semibold">{t("Date")}</th>
+                <th className="ltr:text-left rtl:text-right px-4 py-3 text-sm font-semibold">{t("Questions")}</th>
+                <th className="ltr:text-left rtl:text-right px-4 py-3 text-sm font-semibold">{t("Compliance")}</th>
+                <th className="ltr:text-right rtl:text-left px-4 py-3 text-sm font-semibold">{t("Actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -303,8 +303,8 @@ export default function AsrFactoryReportsPage() {
                         </Badge>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="px-4 py-3 ltr:text-right rtl:text-left">
+                      <div className="flex items-center ltr:justify-end rtl:justify-start gap-1">
                         <Button variant="ghost" size="sm" onClick={() => setViewReport(report)} title={t("View")}>
                           <Eye className="h-4 w-4" />
                         </Button>

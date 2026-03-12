@@ -328,7 +328,7 @@ export default function RMSupportPage() {
                 <div className="w-72 shrink-0 p-4 space-y-2">
                   {NAV_HELP_SECTIONS.map((section) => (
                     <div key={section.id}>
-                      <button onClick={() => toggleSection(section.id)} className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-base hover:bg-slate-50 transition-colors">
+                      <button onClick={() => toggleSection(section.id)} className="w-full flex items-center justify-between px-4 py-3 ltr:text-left rtl:text-right font-semibold text-base hover:bg-slate-50 transition-colors">
                         <span>{t(section.title)}</span>
                         {expandedSections[section.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                       </button>
@@ -336,7 +336,7 @@ export default function RMSupportPage() {
                         <div className="border rounded-md ltr:ml-2 rtl:mr-2">
                           {section.items.map((item, idx) => (
                             <button key={item.id} onClick={() => setSelectedId(item.id)}
-                              className={`w-full text-left px-4 py-2.5 text-sm text-primary-700 hover:bg-slate-50 transition-colors ${idx < section.items.length - 1 ? "border-b" : ""} ${selectedId === item.id ? "bg-slate-100 font-medium" : ""}`}>
+                              className={`w-full ltr:text-left rtl:text-right px-4 py-2.5 text-sm text-primary-700 hover:bg-slate-50 transition-colors ${idx < section.items.length - 1 ? "border-b" : ""} ${selectedId === item.id ? "bg-slate-100 font-medium" : ""}`}>
                               {t(item.title)}
                             </button>
                           ))}

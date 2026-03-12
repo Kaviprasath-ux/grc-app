@@ -125,7 +125,7 @@ function StatusBadge({ status }: { status: string | null | undefined }) {
     case "Not_Applicable":
       return <Badge className="bg-gray-100 text-gray-600 gap-1"><ShieldOff className="h-3 w-3" />{t("N/A")}</Badge>;
     default:
-      return <Badge variant="outline">{status}</Badge>;
+      return <Badge variant="outline">{t(status)}</Badge>;
   }
 }
 
@@ -136,7 +136,7 @@ function SeverityBadge({ severity }: { severity: string | null | undefined }) {
     case "High": return <Badge className="bg-red-100 text-red-700">{t("High")}</Badge>;
     case "Medium": return <Badge className="bg-amber-100 text-amber-700">{t("Medium")}</Badge>;
     case "Low": return <Badge className="bg-blue-100 text-blue-700">{t("Low")}</Badge>;
-    default: return <Badge variant="outline">{severity}</Badge>;
+    default: return <Badge variant="outline">{t(severity)}</Badge>;
   }
 }
 
@@ -147,7 +147,7 @@ function ResponseBadge({ response }: { response: string | null }) {
     case "Yes": return <Badge className="bg-green-100 text-green-700">{t("Yes")}</Badge>;
     case "No": return <Badge className="bg-red-100 text-red-700">{t("No")}</Badge>;
     case "NA": return <Badge className="bg-gray-100 text-gray-600">{t("N/A")}</Badge>;
-    default: return <Badge variant="outline">{response}</Badge>;
+    default: return <Badge variant="outline">{t(response)}</Badge>;
   }
 }
 
@@ -163,7 +163,7 @@ function AssessmentStatusBadge({ status }: { status: string }) {
     case "In-Progress":
       return <Badge className="bg-amber-100 text-amber-700">{t(status)}</Badge>;
     default:
-      return <Badge variant="outline">{status}</Badge>;
+      return <Badge variant="outline">{t(status)}</Badge>;
   }
 }
 
@@ -428,6 +428,13 @@ export default function ASRAssessmentDetailPage() {
       if (!res.ok) throw new Error("Failed");
       toast({ title: t("Success"), description: t("Override saved") });
       setOverrideOpen(false);
+      // Trigger translation for the override fields
+      triggerTranslation('TPRMAssessmentResponse', selectedResp.id, {
+        assessorIssue: overrideIssue,
+        assessorRisk: overrideRisk,
+        assessorRecommendation: overrideRec,
+        assessorComment: overrideComment,
+      });
       // Update local state
       setResponses(prev => ({
         ...prev,
@@ -640,7 +647,7 @@ export default function ASRAssessmentDetailPage() {
     };
 
     // Build CSV content
-    const headers = ["Sr", "Issue", "Risk", "Severity", "Due By", "Recommendation"];
+    const headers = [t("Sr"), t("Issue"), t("Risk"), t("Severity"), t("Due By"), t("Recommendation")];
     const rows = issueRows.map((row, idx) => [
       idx + 1,
       `"${(row.issue !== "—" ? row.issue : "").replace(/"/g, '""')}"`,
@@ -651,12 +658,12 @@ export default function ASRAssessmentDetailPage() {
     ]);
 
     const csvContent = [
-      `Assessment Report - ${assessment.vendor.name}`,
-      `Assessment Code: ${assessment.assessmentCode}`,
-      `Status: ${assessment.status}`,
-      `Vendor: ${assessment.vendor.name}`,
-      `Submission Date: ${assessment.vendorSubmissionDate ? new Date(assessment.vendorSubmissionDate).toLocaleDateString() : "—"}`,
-      `High: ${summary?.highCount || 0}, Medium: ${summary?.mediumCount || 0}, Low: ${summary?.lowCount || 0}`,
+      `${t("Assessment Report")} - ${assessment.vendor.name}`,
+      `${t("Assessment Code")}: ${assessment.assessmentCode}`,
+      `${t("Status")}: ${t(assessment.status)}`,
+      `${t("Vendor")}: ${assessment.vendor.name}`,
+      `${t("Submission Date")}: ${assessment.vendorSubmissionDate ? new Date(assessment.vendorSubmissionDate).toLocaleDateString() : "—"}`,
+      `${t("High")}: ${summary?.highCount || 0}, ${t("Medium")}: ${summary?.mediumCount || 0}, ${t("Low")}: ${summary?.lowCount || 0}`,
       "",
       headers.join(","),
       ...rows.map(r => r.join(",")),
@@ -773,47 +780,47 @@ export default function ASRAssessmentDetailPage() {
 <body>
   <div class="header">
     <div class="verifai">Verif<span>AI</span></div>
-    <h1>Assessment Report</h1>
+    <h1>${t("Assessment Report")}</h1>
     <h2>- ${assessment.vendor.name}</h2>
   </div>
   <div class="meta">
     <span>${today}</span>
-    <span>Version: Draft</span>
+    <span>${t("Version")}: ${t("Draft")}</span>
   </div>
 
   <p class="summary">
-    <strong>Third Party Risk Management Team conducted a due diligence review of ${assessment.vendor.name} from ${submissionDate} till ${todayFmt}. The control environment was found to be:- &nbsp;${reportResult}</strong>
+    <strong>${t("Third Party Risk Management Team conducted a due diligence review of")} ${assessment.vendor.name} ${t("from")} ${submissionDate} ${t("till")} ${todayFmt}. ${t("The control environment was found to be")}:- &nbsp;${reportResult}</strong>
   </p>
   ${monitoringScores ? `<div class="scores">
-    <div>Overall Cybersecurity Score : ${monitoringScores.overallScore != null ? Math.round(monitoringScores.overallScore) : ""}</div>
-    <div>Security Posture Score : ${monitoringScores.securityPostureScore != null ? Math.round(monitoringScores.securityPostureScore) : ""}</div>
-    <div>Threat Exposure Score : ${monitoringScores.threatExposureScore != null ? Math.round(monitoringScores.threatExposureScore) : ""}</div>
+    <div>${t("Overall Cybersecurity Score")} : ${monitoringScores.overallScore != null ? Math.round(monitoringScores.overallScore) : ""}</div>
+    <div>${t("Security Posture Score")} : ${monitoringScores.securityPostureScore != null ? Math.round(monitoringScores.securityPostureScore) : ""}</div>
+    <div>${t("Threat Exposure Score")} : ${monitoringScores.threatExposureScore != null ? Math.round(monitoringScores.threatExposureScore) : ""}</div>
   </div>` : ""}
 
   <table class="issue-table">
     <thead>
       <tr>
-        <th style="width:40px;">Sr</th>
-        <th>Issue</th>
-        <th>Risk</th>
-        <th style="width:70px;">Severity</th>
-        <th style="width:90px;">Due By</th>
-        <th>Recommendation</th>
+        <th style="width:40px;">${t("Sr")}</th>
+        <th>${t("Issue")}</th>
+        <th>${t("Risk")}</th>
+        <th style="width:70px;">${t("Severity")}</th>
+        <th style="width:90px;">${t("Due By")}</th>
+        <th>${t("Recommendation")}</th>
       </tr>
     </thead>
     <tbody>
-      ${tableRows.length > 0 ? tableRows : '<tr><td colspan="6" style="padding:20px;text-align:center;border:1px solid #e0e0e0;">No issues found</td></tr>'}
+      ${tableRows.length > 0 ? tableRows : `<tr><td colspan="6" style="padding:20px;text-align:center;border:1px solid #e0e0e0;">${t("No issues found")}</td></tr>`}
     </tbody>
   </table>
 
   <div class="footer">
-    <p>For any further questions or follow-ups on this report, please reach out to us.</p>
-    <p style="text-align:right;">Sincerely,<br/><strong>${assessment.vendor.name}</strong></p>
+    <p>${t("For any further questions or follow-ups on this report, please reach out to us.")}</p>
+    <p style="text-align:right;">${t("Sincerely")},<br/><strong>${assessment.vendor.name}</strong></p>
   </div>
 
   <div class="footer-sign">
-    <span>Prepared By : ${assessment.assessor?.fullName || "Assessor"}</span>
-    <span>Third Party Risk Management Team.</span>
+    <span>${t("Prepared By")} : ${assessment.assessor?.fullName || t("Assessor")}</span>
+    <span>${t("Third Party Risk Management Team")}.</span>
   </div>
 
 </body>
@@ -1136,7 +1143,7 @@ export default function ASRAssessmentDetailPage() {
         </div>
         <div className="rounded-lg border p-4" style={{ borderColor: "var(--primary-200)", backgroundColor: "var(--primary-50)" }}>
           <span className="text-xs font-semibold" style={{ color: "var(--primary-600)" }}>{t("Status")}</span>
-          <p className="mt-1 text-sm font-medium">{assessment.status}</p>
+          <p className="mt-1 text-sm font-medium">{t(assessment.status)}</p>
         </div>
       </div>
 
@@ -1385,7 +1392,7 @@ export default function ASRAssessmentDetailPage() {
                     onClick={() => setOverrideStatus(s)}
                     className={overrideStatus === s ? (s === "Satisfactory" ? "bg-green-600 hover:bg-green-700" : s === "Unsatisfactory" ? "bg-red-600 hover:bg-red-700" : "") : ""}
                   >
-                    {s === "Not_Applicable" ? "N/A" : t(s)}
+                    {s === "Not_Applicable" ? t("N/A") : t(s)}
                   </Button>
                 ))}
               </div>
@@ -1446,7 +1453,7 @@ export default function ASRAssessmentDetailPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{clr.requestedBy?.fullName || "—"}</span>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">{clr.status}</Badge>
+                        <Badge variant="outline" className="text-xs">{t(clr.status)}</Badge>
                         <span className="text-xs text-muted-foreground">{new Date(clr.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>

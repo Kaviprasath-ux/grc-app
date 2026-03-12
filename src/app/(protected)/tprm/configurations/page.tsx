@@ -196,7 +196,7 @@ export default function ConfigurationsPage() {
             <Home className="h-4 w-4" />
             <span>{t("TPRM")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <span className="text-primary-700 font-medium">{t("Configurations")}</span>
         </nav>
         <div className="flex flex-col gap-1">
@@ -211,7 +211,7 @@ export default function ConfigurationsPage() {
             return (
               <button
                 key={card.id}
-                className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 text-left hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
+                className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 ltr:text-left rtl:text-right hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
                 onClick={() => setActiveCard(card.id)}
               >
                 <div className="flex items-start gap-3">
@@ -249,14 +249,14 @@ export default function ConfigurationsPage() {
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <button
           onClick={() => setActiveCard(null)}
           className="text-slate-500 hover:text-primary transition-colors"
         >
           {t("Configurations")}
         </button>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t(cardTitle)}</span>
       </nav>
 
@@ -559,7 +559,7 @@ function VendorOnboardingSection() {
             ? "bg-blue-100 text-blue-800"
             : "bg-purple-100 text-purple-800"
         }`}>
-          {row.original.questionType}
+          {t(row.original.questionType)}
         </span>
       ),
     },
@@ -572,7 +572,7 @@ function VendorOnboardingSection() {
       header: t("Response Type"),
       cell: ({ row }) => (
         <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800">
-          {row.original.responseType}
+          {row.original.responseType === "FreeText" ? t("Free Text") : t(row.original.responseType)}
         </span>
       ),
     },
@@ -619,14 +619,14 @@ function VendorOnboardingSection() {
   return (
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="ltr:justify-start rtl:justify-end">
           <TabsTrigger value="profile-fields">{t("Vendor Profile Fields")}</TabsTrigger>
           <TabsTrigger value="onboarding-questions">{t("Onboarding Questions")}</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Profile Fields */}
         <TabsContent value="profile-fields" className="mt-4">
-          <div className="flex items-center justify-end mb-4">
+          <div className="flex items-center ltr:justify-end rtl:justify-start mb-4">
             <Button size="sm" onClick={() => { setPfEditItem(null); setPfFieldName(""); setPfDialogOpen(true); }}>
               <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
             </Button>
@@ -941,12 +941,12 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
     <>
       <div className="flex items-center justify-between mb-4">
         <div className="relative w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("Search...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            className="ltr:pl-9 rtl:pr-9"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -1657,9 +1657,9 @@ function QuestionnaireManagementSection() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder={t("Search questions...")} value={linkSearch}
-                onChange={(e) => setLinkSearch(e.target.value)} className="pl-9" />
+                onChange={(e) => setLinkSearch(e.target.value)} className="ltr:pl-9 rtl:pr-9" />
             </div>
             <div className="max-h-[40vh] overflow-y-auto space-y-2 border rounded-md p-2">
               {available.length === 0 ? (
@@ -1826,7 +1826,7 @@ function QuestionnaireManagementSection() {
             : row.original.templateCategory === "ISMS" ? "bg-green-100 text-green-800"
             : "bg-purple-100 text-purple-800"
         }`}>
-          {row.original.templateCategory}
+          {t(row.original.templateCategory)}
         </span>
       ),
     },
@@ -1962,7 +1962,7 @@ function QuestionnaireManagementSection() {
                   <div className="mt-2 relative inline-block">
                     <img src={wizardImagePreview} alt="Preview" className="h-32 w-auto rounded-lg border object-cover" />
                     <button onClick={() => { setWizardImage(null); setWizardImagePreview(null); if (imageInputRef.current) imageInputRef.current.value = ""; }}
-                      className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-0.5 hover:bg-destructive/80">
+                      className="absolute -top-2 ltr:-right-2 rtl:-left-2 bg-destructive text-white rounded-full p-0.5 hover:bg-destructive/80">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -2027,7 +2027,7 @@ function QuestionnaireManagementSection() {
                         <div className="text-xs space-y-1">
                           <p className="text-muted-foreground">{t("Total rows")}: {importPreview.totalRows} | {t("Valid")}: {importPreview.validRows}</p>
                           {importPreview.errors.length > 0 && (
-                            <div className="bg-destructive/10 rounded p-2 max-h-24 overflow-y-auto text-left">
+                            <div className="bg-destructive/10 rounded p-2 max-h-24 overflow-y-auto ltr:text-left rtl:text-right">
                               {importPreview.errors.slice(0, 5).map((err, i) => (
                                 <p key={i} className="text-destructive text-[10px]">
                                   {err.row > 0 ? `${t("Row")} ${err.row}: ` : ""}{err.message}
@@ -2633,7 +2633,7 @@ function ScorecardSection() {
   return (
     <div className="space-y-6">
       {/* Header with Validate button */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center ltr:justify-end rtl:justify-start">
         <Button onClick={handleValidate} variant="outline">
           <CheckSquare className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Validate Configuration")}
         </Button>

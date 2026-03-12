@@ -286,12 +286,12 @@ export default function BOAssessmentsPage() {
         <CardContent className="p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("Filter") + "..."}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="ltr:pl-9 rtl:pr-9"
               />
             </div>
           </div>
@@ -375,7 +375,7 @@ export default function BOAssessmentsPage() {
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">{t("Status")}</label>
-                <div><Badge variant={getStatusVariant(selectedAssessment.status)}>{t(selectedAssessment.status)}</Badge></div>
+                <div><Badge variant={getStatusVariant(selectedAssessment.status)}>{t(formatStatusLabel(selectedAssessment.status))}</Badge></div>
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">{t("Assessment Result")}</label>

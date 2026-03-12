@@ -370,14 +370,14 @@ export default function TaskQueuePage() {
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Task Queue")}</span>
       </nav>
 
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Task Queue")}</h1>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList>
+        <TabsList className="ltr:justify-start rtl:justify-end">
           <TabsTrigger value="unassigned">{t("Unassigned")}</TabsTrigger>
           <TabsTrigger value="my-queue">{t("My Queue")}</TabsTrigger>
           <TabsTrigger value="reassessment">{t("Initiate Reassessment")}</TabsTrigger>

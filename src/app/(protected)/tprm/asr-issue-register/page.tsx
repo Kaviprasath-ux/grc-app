@@ -269,12 +269,12 @@ export default function AsrIssueRegisterPage() {
           <h2 className="text-xl font-bold">{t("Risk Register For")} {selectedVendor.name}</h2>
 
           <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t("Search Domain")}
               value={riskDomainSearch}
               onChange={(e) => setRiskDomainSearch(e.target.value)}
-              className="pl-9"
+              className="ltr:pl-9 rtl:pr-9"
             />
             {riskDomainSearch && (
               <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRiskDomainSearch("")}>
@@ -339,12 +339,12 @@ export default function AsrIssueRegisterPage() {
 
           <div className="flex flex-wrap gap-3 items-end">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("Vendor Name")}
                 value={vendorSearch}
                 onChange={(e) => setVendorSearch(e.target.value)}
-                className="pl-9"
+                className="ltr:pl-9 rtl:pr-9"
               />
               {vendorSearch && (
                 <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setVendorSearch("")}>

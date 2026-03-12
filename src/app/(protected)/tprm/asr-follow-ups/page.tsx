@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { DataGrid } from "@/components/shared/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -164,6 +164,12 @@ export default function AsrFollowUpsPage() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Failed");
+      // Trigger client-side translation for the updated remediation
+      triggerTranslation('TPRMIssueRemediation', viewRemediation.id, {
+        issue: viewRemediation.issue,
+        risk: viewRemediation.risk,
+        recommendation: viewRemediation.recommendation,
+      });
       toast({ title: t("Success"), description: `${t("Remediation marked as")} ${label}` });
       setViewRemediation(null);
       setShowUnsatisfiedComment(false);
@@ -219,6 +225,15 @@ export default function AsrFollowUpsPage() {
         }),
       });
       if (!res.ok) throw new Error("Failed");
+      // Trigger client-side translation for the reassigned remediation
+      const assignedRem = remediations.find(r => r.id === assigningRemediationId);
+      if (assignedRem) {
+        triggerTranslation('TPRMIssueRemediation', assigningRemediationId, {
+          issue: assignedRem.issue,
+          risk: assignedRem.risk,
+          recommendation: assignedRem.recommendation,
+        });
+      }
       const label = reassignAction === "send-to-business" ? t("Business") : t("IT");
       toast({ title: t("Success"), description: `${t("Issue assigned to RM for")} ${label}` });
       setReassignStep(0);

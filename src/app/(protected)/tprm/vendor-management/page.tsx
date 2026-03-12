@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useHasRole } from "@/hooks/usePermissions";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -125,7 +126,7 @@ function VendorAccordionItem({
       {/* ── Accordion Header ── */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
+        className="w-full flex items-center justify-between px-4 py-3 ltr:text-left rtl:text-right"
       >
         <span className="font-medium text-sm text-slate-800">
           {vendor.name}{vendor.vrr ? ` - ${vendor.vrr}` : ""}
@@ -161,7 +162,7 @@ function VendorAccordionItem({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-left">
+                <tr className="bg-slate-50 border-b border-slate-200 ltr:text-left rtl:text-right">
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Vendor Name")}</th>
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Engagement ID")}</th>
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Department")}</th>
@@ -288,6 +289,7 @@ function VendorAccordionItem({
 export default function VendorManagementPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isTPRMAdmin = useHasRole("TPRMAdmin");
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -414,6 +416,12 @@ export default function VendorManagementPage() {
         toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
         return;
       }
+      const savedVendor = await res.json();
+      triggerTranslation('TPRMVendor', savedVendor.id, {
+        name: form.name.trim(),
+        serviceDescription: form.serviceDescription.trim() || '',
+        businessJustification: form.businessJustification.trim() || '',
+      });
       // Trigger monitoring assessment for new vendors if toggle is on and vendor URL is provided
       if (!editItem && performMonitoring && form.vendorUrl.trim()) {
         void fetch("/api/tprm/monitoring/scan", {
@@ -480,10 +488,12 @@ export default function VendorManagementPage() {
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Bulk Export")}
           </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Onboard New Vendor")}
-          </Button>
+          {!isTPRMAdmin && (
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Onboard New Vendor")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -499,15 +509,15 @@ export default function VendorManagementPage() {
         {/* Search — inside group box, matches Mendix */}
         <div className="px-4 py-3 border-b border-slate-100">
           <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t("Search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-8 text-sm"
+              className="ltr:pl-9 rtl:pr-9 h-8 text-sm"
             />
             {search && (
-              <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
+              <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             )}
@@ -715,7 +725,7 @@ export default function VendorManagementPage() {
             )}
           </div>
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ltr:justify-end rtl:justify-start">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleSave} disabled={!form.name.trim()}>{t("Save")}</Button>
           </div>

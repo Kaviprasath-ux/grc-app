@@ -121,7 +121,6 @@ function LogDetailDialog({
   onRefresh: () => void;
   t: (key: string) => string;
 }) {
-  const { isRTL } = useLanguage();
   const [logPage, setLogPage] = useState(0);
   const LOGS_PER_PAGE = 10;
 
@@ -222,7 +221,7 @@ function LogDetailDialog({
         </div>
 
         {/* Fixed Footer — pagination left, Close right */}
-        <div className={`flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-between ${isRTL ? "flex-row-reverse" : ""}`}>
+        <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-between">
           {totalRows > LOGS_PER_PAGE ? (
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-500">
@@ -236,7 +235,7 @@ function LogDetailDialog({
                   onClick={() => setLogPage((p) => Math.max(0, p - 1))}
                   disabled={logPage === 0}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -245,7 +244,7 @@ function LogDetailDialog({
                   onClick={() => setLogPage((p) => Math.min(totalLogPages - 1, p + 1))}
                   disabled={logPage >= totalLogPages - 1}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 rtl:rotate-180" />
                 </Button>
               </div>
             </div>
@@ -340,7 +339,7 @@ export default function AssessmentWorkspacePage() {
 
   const handleExportLogs = () => {
     if (!selectedLogAssessment?.data?.length) return;
-    const headers = ["Domain Name", "Question No", "Question Title", "Log Date", "Log Message", "API URL", "Document Name"];
+    const headers = [t("Domain Name"), t("Question No"), t("Question Title"), t("Log Date"), t("Log Message"), t("API URL"), t("Document Name")];
     const rows = selectedLogAssessment.data.map((log) => [
       log.domainName || "",
       log.questionNo || "",
@@ -512,7 +511,7 @@ export default function AssessmentWorkspacePage() {
             <Home className="h-4 w-4" />
             <span>{t("TPRM")}</span>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Assessment Workspace")}</span>
         </nav>
         <div className="flex items-center justify-center min-h-[200px]">
@@ -533,14 +532,14 @@ export default function AssessmentWorkspacePage() {
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Assessment Workspace")}</span>
       </nav>
 
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Assessment Workspace")}</h1>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="ltr:justify-start rtl:justify-end">
           <TabsTrigger value="overview">{t("Assessment Overview")}</TabsTrigger>
           <TabsTrigger value="logs">{t("Assessment Logs")}</TabsTrigger>
         </TabsList>
@@ -658,7 +657,7 @@ export default function AssessmentWorkspacePage() {
           )}
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex justify-end">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex ltr:justify-end rtl:justify-start">
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
               {t("Close")}
             </Button>

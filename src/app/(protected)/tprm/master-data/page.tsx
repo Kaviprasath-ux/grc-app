@@ -133,7 +133,7 @@ export default function MasterDataManagementPage() {
             return (
               <button
                 key={card.id}
-                className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 text-left hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
+                className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 ltr:text-left rtl:text-right hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
                 onClick={() => setActiveCard(card.id)}
               >
                 <div className="flex items-start gap-3">
@@ -334,15 +334,15 @@ function DomainsSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("Search domains...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ltr:pl-9 rtl:pr-9"
           />
           {search && (
-            <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
+            <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
               <X className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           )}
@@ -609,15 +609,15 @@ function QuestionsSection() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t("Search questions...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="ltr:pl-9 rtl:pr-9"
             />
             {search && (
-              <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
+              <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             )}
@@ -922,15 +922,15 @@ function QuestionnairesSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("Search templates...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ltr:pl-9 rtl:pr-9"
           />
           {search && (
-            <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
+            <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
               <X className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           )}
@@ -958,7 +958,7 @@ function QuestionnairesSection() {
               <div key={tmpl.id} className="border rounded-lg bg-white">
                 {/* Header */}
                 <button
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
+                  className="w-full flex items-center justify-between p-4 ltr:text-left rtl:text-right hover:bg-muted/30 transition-colors"
                   onClick={() => setExpandedId(isExpanded ? null : tmpl.id)}
                 >
                   <div className="flex items-center gap-3">
@@ -1039,12 +1039,12 @@ function QuestionnairesSection() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("Search questions...")}
                 value={questionSearch}
                 onChange={(e) => setQuestionSearch(e.target.value)}
-                className="pl-9"
+                className="ltr:pl-9 rtl:pr-9"
               />
             </div>
             <div className="max-h-[40vh] overflow-y-auto space-y-2 border rounded-md p-2">

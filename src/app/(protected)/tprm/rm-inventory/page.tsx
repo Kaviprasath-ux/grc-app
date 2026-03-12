@@ -139,7 +139,7 @@ function VendorAccordionItem({
   return (
     <div className="border border-slate-200 rounded-md bg-white overflow-hidden">
       {/* Accordion Header */}
-      <button onClick={onToggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left">
+      <button onClick={onToggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors ltr:text-left rtl:text-right">
         <span className="font-medium text-sm text-slate-800">{group.name}{headerVrr ? ` - ${headerVrr}` : ""}</span>
         <span className="text-slate-500 flex-shrink-0">{isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span>
       </button>
@@ -161,7 +161,7 @@ function VendorAccordionItem({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-left">
+                <tr className="bg-slate-50 border-b border-slate-200 ltr:text-left rtl:text-right">
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Vendor Name")}</th>
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Engagement ID")}</th>
                   <th className="px-4 py-2.5 font-medium text-slate-600 whitespace-nowrap">{t("Department")}</th>
@@ -885,7 +885,7 @@ export default function RMInventoryPage() {
                 <button
                   key={name}
                   type="button"
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 hover:text-primary-700 transition-colors"
+                  className="w-full ltr:text-left rtl:text-right px-3 py-2 text-sm hover:bg-primary-50 hover:text-primary-700 transition-colors"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => selectExistingVendor(name)}
                 >
@@ -913,7 +913,7 @@ export default function RMInventoryPage() {
                   <button
                     key={eng.id}
                     type="button"
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-50 transition-colors ${selectedEngagementId === eng.id ? "bg-primary-50 text-primary-700 font-medium" : ""}`}
+                    className={`w-full ltr:text-left rtl:text-right px-3 py-2 text-sm hover:bg-primary-50 transition-colors ${selectedEngagementId === eng.id ? "bg-primary-50 text-primary-700 font-medium" : ""}`}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectEngagement(eng.id)}
                   >

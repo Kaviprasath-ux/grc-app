@@ -32,7 +32,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 // ==================== TYPES ====================
 
@@ -142,7 +142,7 @@ export default function MonitoringPage() {
   const [activeScans, setActiveScans] = useState<{ jobId: string; vendorName: string; vendorURL: string; status: string }[]>([]);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
+  const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMMonitoringVendor' });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -208,6 +208,13 @@ export default function MonitoringPage() {
                   toast({ title: t("Scan Error"), description: `${scan.vendorName}: ${data.error}`, variant: "destructive" });
                 } else {
                   toast({ title: t("Scan Complete"), description: `${scan.vendorName} ${t("assessment has been saved successfully")}` });
+                  // Trigger translation for the monitoring vendor record
+                  if (data.vendorId) {
+                    triggerTranslation('TPRMMonitoringVendor', data.vendorId, {
+                      vendorName: scan.vendorName,
+                      vendorURL: scan.vendorURL,
+                    });
+                  }
                 }
                 loadData();
               } else if (data.status === "error") {
@@ -244,7 +251,7 @@ export default function MonitoringPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to submit scan");
+        throw new Error(err.error || t("Failed to submit scan"));
       }
 
       const { jobId } = await res.json();
@@ -328,7 +335,7 @@ export default function MonitoringPage() {
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Continuous Monitoring")}</span>
       </nav>
 
@@ -376,7 +383,7 @@ export default function MonitoringPage() {
                 {!isAuditor && (
                   <button
                     onClick={() => handleCancelScan(scan.jobId, scan.vendorName)}
-                    className="ml-0.5 p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
+                    className="ltr:ml-0.5 rtl:mr-0.5 p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
                     title={t("Cancel scan")}
                   >
                     <X className="h-3.5 w-3.5" />
@@ -394,7 +401,7 @@ export default function MonitoringPage() {
                   {!isAuditor && qJobId && (
                     <button
                       onClick={() => handleCancelScan(qJobId, v.vendorName)}
-                      className="ml-0.5 p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
+                      className="ltr:ml-0.5 rtl:mr-0.5 p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
                       title={t("Cancel scan")}
                     >
                       <X className="h-3.5 w-3.5" />
@@ -443,7 +450,7 @@ export default function MonitoringPage() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b bg-slate-50/60">
-                      <th className="text-left px-4 py-3 font-semibold whitespace-nowrap sticky left-0 bg-slate-50/60 z-10">{t("Company")}</th>
+                      <th className="ltr:text-left rtl:text-right px-4 py-3 font-semibold whitespace-nowrap sticky ltr:left-0 rtl:right-0 bg-slate-50/60 z-10">{t("Company")}</th>
                       <th className="text-center px-3 py-3 font-semibold whitespace-nowrap">{t("Security Score")}</th>
                       {KPI_COLUMNS.map((col) => (
                         <th key={col} className="text-center px-2 py-3 font-semibold whitespace-nowrap text-xs text-slate-600">{t(col)}</th>
@@ -460,7 +467,7 @@ export default function MonitoringPage() {
                           className="border-b last:border-b-0 cursor-pointer"
                           onClick={() => router.push(`/tprm/monitoring/${v.id}`)}
                         >
-                          <td className="px-4 py-3 min-w-[180px] sticky left-0 bg-white z-10">
+                          <td className="px-4 py-3 min-w-[180px] sticky ltr:left-0 rtl:right-0 bg-white z-10">
                             <div className="flex items-center gap-2">
                               <div className="font-semibold text-sm text-slate-800">{v.vendorName}</div>
                               {v.vendorOnboarded && (

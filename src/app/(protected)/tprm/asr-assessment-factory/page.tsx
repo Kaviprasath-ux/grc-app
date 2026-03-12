@@ -641,7 +641,7 @@ export default function AsrAssessmentFactoryPage() {
             {artifactFiles.map((f, i) => (
               <div key={i} className="flex items-center justify-between text-sm bg-muted/30 rounded px-3 py-1.5">
                 <span className="truncate">{f.name}</span>
-                <button onClick={() => removeArtifact(i)} className="text-muted-foreground hover:text-destructive ml-2">
+                <button onClick={() => removeArtifact(i)} className="text-muted-foreground hover:text-destructive ltr:ml-2 rtl:mr-2">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>

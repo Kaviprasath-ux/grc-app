@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 
@@ -232,6 +232,19 @@ export default function ITIssuesPage() {
         body: formData,
       });
       if (res.ok) {
+        const savedData = await res.json().catch(() => ({}));
+        const savedId = savedData?.id || viewRemediation.id;
+        triggerTranslation('TPRMIssueRemediation', savedId, {
+          issue: viewRemediation.issue || '',
+          risk: viewRemediation.risk || '',
+          recommendation: viewRemediation.recommendation || '',
+          description: viewRemediation.description || '',
+        });
+        if (submitComment.trim()) {
+          triggerTranslation('TPRMRemediationComment', savedId, {
+            comment: submitComment.trim(),
+          });
+        }
         toast({ title: t("Success"), description: t("Response submitted successfully") });
         setViewRemediation(null);
         setSubmitComment("");
@@ -523,10 +536,10 @@ export default function ITIssuesPage() {
               <h2 className="text-xl font-bold">{t("Risk Register For")} {selectedVendor.name}</h2>
 
               <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder={t("Search Domain")} value={riskDomainSearch} onChange={(e) => setRiskDomainSearch(e.target.value)} className="pl-9" />
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder={t("Search Domain")} value={riskDomainSearch} onChange={(e) => setRiskDomainSearch(e.target.value)} className="ltr:pl-9 rtl:pr-9" />
                 {riskDomainSearch && (
-                  <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRiskDomainSearch("")}>
+                  <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setRiskDomainSearch("")}>
                     <X className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
                 )}
@@ -587,10 +600,10 @@ export default function ITIssuesPage() {
               <h2 className="text-xl font-bold">{t("Issue Register")}</h2>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder={t("Search")} value={regVendorSearch} onChange={(e) => setRegVendorSearch(e.target.value)} className="pl-9" />
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder={t("Search")} value={regVendorSearch} onChange={(e) => setRegVendorSearch(e.target.value)} className="ltr:pl-9 rtl:pr-9" />
                   {regVendorSearch && (
-                    <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRegVendorSearch("")}>
+                    <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setRegVendorSearch("")}>
                       <X className="h-3.5 w-3.5 text-muted-foreground" />
                     </button>
                   )}
@@ -892,7 +905,7 @@ export default function ITIssuesPage() {
               )}
             </div>
           )}
-          <DialogFooter className="flex-wrap gap-2">
+          <DialogFooter className="flex-wrap gap-2 ltr:justify-end rtl:justify-start">
             {canSubmit && (
               <Button onClick={handleSubmitResponse} disabled={actionLoading} className="bg-green-100 text-green-800 hover:bg-green-200 border border-green-200">
                 {actionLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}

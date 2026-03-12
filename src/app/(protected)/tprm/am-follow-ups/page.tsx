@@ -444,7 +444,7 @@ export default function AMFollowUpsPage() {
 
         {/* Vendor Issues Tab */}
         <TabsContent value="vendor-issues">
-          <div className="flex justify-end mb-4">
+          <div className="flex ltr:justify-end rtl:justify-start mb-4">
             {subTab === "Pending" && (
               <Button onClick={() => setIssueDialogOpen(true)}>
                 <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />

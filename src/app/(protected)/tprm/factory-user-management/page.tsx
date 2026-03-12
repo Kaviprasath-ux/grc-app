@@ -460,12 +460,12 @@ export default function FactoryUserManagementPage() {
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("Search users...")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="ltr:pl-9 rtl:pr-9"
               />
             </div>
             <span className="text-sm text-muted-foreground">{total} {t("users")}</span>
@@ -484,7 +484,7 @@ export default function FactoryUserManagementPage() {
                 <TableHead>{t("Email")}</TableHead>
                 <TableHead>{t("Role")}</TableHead>
                 <TableHead>{t("Status")}</TableHead>
-                <TableHead className="text-right">{t("Actions")}</TableHead>
+                <TableHead className="ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -506,9 +506,9 @@ export default function FactoryUserManagementPage() {
                         {user.isActive ? t("Active") : t("Inactive")}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="ltr:text-right rtl:text-left">
                       <TooltipProvider>
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center ltr:justify-end rtl:justify-start gap-1">
                           {canEdit && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -547,7 +547,7 @@ export default function FactoryUserManagementPage() {
             <DialogTitle>{t("Add Factory Assessor")}</DialogTitle>
           </DialogHeader>
           {renderFormContent(false)}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>{t("Cancel")}</Button>
             <Button onClick={handleCreate} disabled={submitting}>
               {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
@@ -564,7 +564,7 @@ export default function FactoryUserManagementPage() {
             <DialogTitle>{t("Edit User")}</DialogTitle>
           </DialogHeader>
           {renderFormContent(true)}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex ltr:justify-end rtl:justify-start gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>{t("Cancel")}</Button>
             <Button onClick={handleEdit} disabled={submitting}>
               {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
@@ -583,10 +583,10 @@ export default function FactoryUserManagementPage() {
               {t("Are you sure you want to delete")} <strong>{selectedUser?.fullName}</strong>? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="ltr:justify-end rtl:justify-start">
             <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={submitting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {submitting && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
               {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>

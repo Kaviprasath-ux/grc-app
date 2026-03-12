@@ -609,7 +609,7 @@ export default function BOUserManagementPage() {
                     <TableHead>{t("Username")}</TableHead>
                     <TableHead>{t("Function")}</TableHead>
                     <TableHead>{t("Department")}</TableHead>
-                    <TableHead className="text-right">{t("Action")}</TableHead>
+                    <TableHead className="ltr:text-right rtl:text-left">{t("Action")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -621,7 +621,7 @@ export default function BOUserManagementPage() {
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.tprmFunctionCategory ? t(user.tprmFunctionCategory) : "-"}</TableCell>
                       <TableCell>{user.department?.name || "-"}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="ltr:text-right rtl:text-left">
                         <div className="flex justify-end gap-1">
                           {canEdit && (
                             <Button

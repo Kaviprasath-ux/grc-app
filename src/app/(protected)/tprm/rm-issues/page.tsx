@@ -626,12 +626,12 @@ export default function RMIssuesPage() {
               <h2 className="text-xl font-bold">{t("Risk Register For")} {selectedVendor.name}</h2>
 
               <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t("Search Domain")}
                   value={riskDomainSearch}
                   onChange={(e) => setRiskDomainSearch(e.target.value)}
-                  className="pl-9"
+                  className="ltr:pl-9 rtl:pr-9"
                 />
                 {riskDomainSearch && (
                   <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRiskDomainSearch("")}>
@@ -694,12 +694,12 @@ export default function RMIssuesPage() {
             <>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={t("Search")}
                     value={regVendorSearch}
                     onChange={(e) => setRegVendorSearch(e.target.value)}
-                    className="pl-9"
+                    className="ltr:pl-9 rtl:pr-9"
                   />
                   {regVendorSearch && (
                     <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRegVendorSearch("")}>
@@ -758,12 +758,12 @@ export default function RMIssuesPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("Search")}
                 value={remSearch}
                 onChange={(e) => setRemSearch(e.target.value)}
-                className="pl-9"
+                className="ltr:pl-9 rtl:pr-9"
               />
               {remSearch && (
                 <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setRemSearch("")}>

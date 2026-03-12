@@ -565,7 +565,7 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
                     <Table className="min-w-[500px]">
                       <TableHeader>
                         <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Accounts Available")}</TableHead>
+                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Accounts Available")}</TableHead>
                           <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assessment Limit")}</TableHead>
                           {tab === "customers" && (
                             <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Vendor Limit")}</TableHead>
@@ -575,13 +575,13 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
                           )}
                           <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Expiry date")}</TableHead>
                           <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
+                          <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5">{t("Action")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {pendingPlans.map((plan) => (
                           <TableRow key={plan.id} className="border-b border-slate-100 last:border-0">
-                            <TableCell className="py-3 pl-5 text-sm text-slate-700">{plan.maxAccounts}</TableCell>
+                            <TableCell className="py-3 ltr:pl-5 rtl:pr-5 text-sm text-slate-700">{plan.maxAccounts}</TableCell>
                             <TableCell className="py-3 text-sm text-slate-700">{plan.assessmentLimit}</TableCell>
                             {tab === "customers" && (
                               <TableCell className="py-3 text-sm text-slate-700">{plan.vendorLimit}</TableCell>
@@ -597,7 +597,7 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
                                 {t(plan.status)}
                               </span>
                             </TableCell>
-                            <TableCell className="py-3 pr-5">
+                            <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => handleDeletePlan(plan.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -644,14 +644,14 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
 
           <div className="px-6 py-5 space-y-4">
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Start date")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Start date")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <Input type="date" value={subData.startDate} onChange={(e) => { setSubData({ ...subData, startDate: e.target.value }); setSubErrors(prev => { const { startDate, ...rest } = prev; return rest; }); }} className={subErrors.startDate ? "border-red-400" : ""} />
                 {subErrors.startDate && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.startDate}</div>}
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Expiry date")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Expiry date")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <Input type="date" value={subData.expiryDate} onChange={(e) => { setSubData({ ...subData, expiryDate: e.target.value }); setSubErrors(prev => { const { expiryDate, ...rest } = prev; return rest; }); }} className={subErrors.expiryDate ? "border-red-400" : ""} />
                 {subErrors.expiryDate && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.expiryDate}</div>}
@@ -659,7 +659,7 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
             </div>
             {formData.isGrcAdded && (
               <div className="grid grid-cols-4 gap-4">
-                <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
+                <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
                 <div className="col-span-3 space-y-1.5">
                   <Input type="number" min="0" value={subData.maxFrameworks} onChange={(e) => { setSubData({ ...subData, maxFrameworks: parseInt(e.target.value) || 0 }); setSubErrors(prev => { const { maxFrameworks, ...rest } = prev; return rest; }); }} className={subErrors.maxFrameworks ? "border-red-400" : ""} />
                   {subErrors.maxFrameworks && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.maxFrameworks}</div>}
@@ -667,14 +667,14 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
               </div>
             )}
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max accounts")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Max accounts")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <Input type="number" min="0" value={subData.maxAccounts} onChange={(e) => { setSubData({ ...subData, maxAccounts: parseInt(e.target.value) || 0 }); setSubErrors(prev => { const { maxAccounts, ...rest } = prev; return rest; }); }} className={subErrors.maxAccounts ? "border-red-400" : ""} />
                 {subErrors.maxAccounts && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.maxAccounts}</div>}
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Assessment limit")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Assessment limit")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <Input type="number" min="0" value={subData.assessmentLimit} onChange={(e) => { setSubData({ ...subData, assessmentLimit: parseInt(e.target.value) || 0 }); setSubErrors(prev => { const { assessmentLimit, ...rest } = prev; return rest; }); }} className={subErrors.assessmentLimit ? "border-red-400" : ""} />
                 {subErrors.assessmentLimit && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.assessmentLimit}</div>}
@@ -682,7 +682,7 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
             </div>
             {tab === "customers" && (
               <div className="grid grid-cols-4 gap-4">
-                <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Vendor limit")}</Label>
+                <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Vendor limit")}</Label>
                 <div className="col-span-3 space-y-1.5">
                   <Input type="number" min="0" value={subData.vendorLimit} onChange={(e) => { setSubData({ ...subData, vendorLimit: parseInt(e.target.value) || 0 }); setSubErrors(prev => { const { vendorLimit, ...rest } = prev; return rest; }); }} className={subErrors.vendorLimit ? "border-red-400" : ""} />
                   {subErrors.vendorLimit && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.vendorLimit}</div>}
@@ -690,7 +690,7 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
               </div>
             )}
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Status")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Status")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <div className="flex gap-4 h-9 items-center">
                   <label className="flex items-center gap-2 text-sm">
@@ -1123,7 +1123,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
                       <Table className="min-w-[500px]">
                         <TableHeader>
                           <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Accounts Available")}</TableHead>
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Accounts Available")}</TableHead>
                             <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assessment Limit")}</TableHead>
                             {tab === "customers" && (
                               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Vendor Limit")}</TableHead>
@@ -1133,7 +1133,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
                             )}
                             <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Expiry date")}</TableHead>
                             <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
+                            <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5">{t("Action")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1141,7 +1141,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
                             const isPending = plan.id.startsWith("pending-");
                             return (
                               <TableRow key={plan.id} className="border-b border-slate-100 last:border-0">
-                                <TableCell className="py-3 pl-5 text-sm text-slate-700">{plan.maxAccounts}</TableCell>
+                                <TableCell className="py-3 ltr:pl-5 rtl:pr-5 text-sm text-slate-700">{plan.maxAccounts}</TableCell>
                                 <TableCell className="py-3 text-sm text-slate-700">{plan.assessmentLimit}</TableCell>
                                 {tab === "customers" && (
                                   <TableCell className="py-3 text-sm text-slate-700">{plan.vendorLimit}</TableCell>
@@ -1157,7 +1157,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
                                     {t(plan.status)}
                                   </span>
                                 </TableCell>
-                                <TableCell className="py-3 pr-5">
+                                <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -1213,14 +1213,14 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
 
           <div className="px-6 py-5 space-y-4">
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Start date")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Start date")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <Input type="date" value={subData.startDate} onChange={(e) => { setSubData({ ...subData, startDate: e.target.value }); setSubErrors((prev) => { const { startDate, ...rest } = prev; return rest; }); }} className={subErrors.startDate ? "border-red-400" : ""} />
                 {subErrors.startDate && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.startDate}</div>}
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Expiry date")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Expiry date")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <Input type="date" value={subData.expiryDate} onChange={(e) => { setSubData({ ...subData, expiryDate: e.target.value }); setSubErrors((prev) => { const { expiryDate, ...rest } = prev; return rest; }); }} className={subErrors.expiryDate ? "border-red-400" : ""} />
                 {subErrors.expiryDate && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.expiryDate}</div>}
@@ -1228,7 +1228,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
             </div>
             {formData.isGrcAdded && (
               <div className="grid grid-cols-4 gap-4">
-                <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
+                <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Max frameworks")}</Label>
                 <div className="col-span-3 space-y-1.5">
                   <Input type="number" min="0" value={subData.maxFrameworks} onChange={(e) => { setSubData({ ...subData, maxFrameworks: parseInt(e.target.value) || 0 }); setSubErrors((prev) => { const { maxFrameworks, ...rest } = prev; return rest; }); }} className={subErrors.maxFrameworks ? "border-red-400" : ""} />
                   {subErrors.maxFrameworks && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.maxFrameworks}</div>}
@@ -1236,14 +1236,14 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
               </div>
             )}
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Max accounts")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Max accounts")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <Input type="number" min="0" value={subData.maxAccounts} onChange={(e) => { setSubData({ ...subData, maxAccounts: parseInt(e.target.value) || 0 }); setSubErrors((prev) => { const { maxAccounts, ...rest } = prev; return rest; }); }} className={subErrors.maxAccounts ? "border-red-400" : ""} />
                 {subErrors.maxAccounts && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.maxAccounts}</div>}
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Assessment limit")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Assessment limit")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <Input type="number" min="0" value={subData.assessmentLimit} onChange={(e) => { setSubData({ ...subData, assessmentLimit: parseInt(e.target.value) || 0 }); setSubErrors((prev) => { const { assessmentLimit, ...rest } = prev; return rest; }); }} className={subErrors.assessmentLimit ? "border-red-400" : ""} />
                 {subErrors.assessmentLimit && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.assessmentLimit}</div>}
@@ -1251,7 +1251,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
             </div>
             {tab === "customers" && (
               <div className="grid grid-cols-4 gap-4">
-                <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Vendor limit")}</Label>
+                <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Vendor limit")}</Label>
                 <div className="col-span-3 space-y-1.5">
                   <Input type="number" min="0" value={subData.vendorLimit} onChange={(e) => { setSubData({ ...subData, vendorLimit: parseInt(e.target.value) || 0 }); setSubErrors((prev) => { const { vendorLimit, ...rest } = prev; return rest; }); }} className={subErrors.vendorLimit ? "border-red-400" : ""} />
                   {subErrors.vendorLimit && <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-3 py-1.5 rounded">{subErrors.vendorLimit}</div>}
@@ -1259,7 +1259,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
               </div>
             )}
             <div className="grid grid-cols-4 gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700 pt-2">{t("Status")}</Label>
+              <Label className="ltr:text-right rtl:text-left text-sm font-medium text-slate-700 pt-2">{t("Status")}</Label>
               <div className="col-span-3 space-y-1.5">
                 <div className="flex gap-4 h-9 items-center">
                   <label className="flex items-center gap-2 text-sm">
@@ -1461,7 +1461,7 @@ function CustomerAccountsTab() {
               onClick={handleDeleteAccount}
               disabled={deleting}
             >
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : null}
               {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1657,7 +1657,7 @@ function VendorAccountsTab() {
           onClick={() => fetchVendors(false)}
           className="w-full py-3 text-sm text-primary-600 hover:bg-primary-50 border border-slate-200 rounded-xl transition-colors"
         >
-          {t("Load more")}...
+          {t("Load more...")}
         </button>
       )}
       <EditAccountDialog
@@ -1836,7 +1836,7 @@ function AssessmentFactoryTab() {
               onClick={handleDeleteAccount}
               disabled={deleting}
             >
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : null}
               {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -2011,7 +2011,7 @@ function SuperAdminTab() {
               onClick={handleDeleteUser}
               disabled={deleting}
             >
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : null}
               {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -2041,7 +2041,7 @@ export default function AccountOverviewPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Account Overview")}</h1>
 
       <Tabs defaultValue="customers">
-        <TabsList>
+        <TabsList className="ltr:justify-start rtl:justify-end">
           <TabsTrigger value="customers">{t("Customer Accounts")}</TabsTrigger>
           <TabsTrigger value="vendors">{t("Vendor Accounts")}</TabsTrigger>
           <TabsTrigger value="factory">{t("Assessment Factory")}</TabsTrigger>

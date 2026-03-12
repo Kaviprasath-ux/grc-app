@@ -171,7 +171,7 @@ export default function ControlCenterPage() {
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Control Center")}</span>
       </nav>
 
@@ -202,7 +202,7 @@ export default function ControlCenterPage() {
         </div>
       ) : (
         <Tabs defaultValue="due-diligence">
-          <TabsList>
+          <TabsList className="ltr:justify-start rtl:justify-end">
             <TabsTrigger value="due-diligence" className="gap-1.5">
               <Shield className="h-3.5 w-3.5" />
               {t("Due Diligence")}
@@ -220,7 +220,7 @@ export default function ControlCenterPage() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/80">
-                      <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[200px]">
+                      <th className="ltr:text-left rtl:text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[200px]">
                         {t("Parameter")}
                       </th>
                       {DD_CATEGORIES.map((cat) => {
@@ -268,7 +268,7 @@ export default function ControlCenterPage() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/80">
-                      <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[200px]">
+                      <th className="ltr:text-left rtl:text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-[200px]">
                         {t("Parameter")}
                       </th>
                       {SC_CATEGORIES.map((cat) => {
