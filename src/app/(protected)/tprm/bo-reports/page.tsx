@@ -207,7 +207,7 @@ export default function BOReportsPage() {
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
       <div className="flex items-center justify-between">

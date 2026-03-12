@@ -615,8 +615,8 @@ export default function BOInventoryPage() {
 
   const handleExport = () => {
     const headers = [
-      "Vendor Code", "Vendor Name", "Status", "Service Category",
-      "Account Manager", "Account Manager Email", "Contact Phone", "Created At",
+      t("Vendor Code"), t("Vendor Name"), t("Status"), t("Service Category"),
+      t("Account Manager"), t("Account Manager Email"), t("Contact Phone"), t("Created At"),
     ];
     const rows = vendors.map((v) => [
       v.vendorCode, v.name, v.status, v.serviceCategory || "",
@@ -683,11 +683,11 @@ export default function BOInventoryPage() {
 
   const getVrrDescription = (levelName: string) => {
     const descriptions: Record<string, string> = {
-      Nominal: "This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting.",
-      Low: "This vendor is low risk. Basic due-diligence review is recommended.",
-      Moderate: "This vendor is medium risk. Standard due-diligence assessment is required.",
-      High: "This vendor is high risk. Enhanced due-diligence assessment is required.",
-      Critical: "This vendor is critical risk. Comprehensive due-diligence and executive approval is required.",
+      Nominal: t("This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting."),
+      Low: t("This vendor is low risk. Basic due-diligence review is recommended."),
+      Moderate: t("This vendor is medium risk. Standard due-diligence assessment is required."),
+      High: t("This vendor is high risk. Enhanced due-diligence assessment is required."),
+      Critical: t("This vendor is critical risk. Comprehensive due-diligence and executive approval is required."),
     };
     return descriptions[levelName] || "";
   };
@@ -1058,7 +1058,7 @@ export default function BOInventoryPage() {
                 isExpanded={expandedVendor === group.name}
                 onToggle={() => setExpandedVendor(expandedVendor === group.name ? null : group.name)}
                 onExport={(v) => {
-                  const headers = ["Vendor Code", "Vendor Name", "Engagement ID", "Status", "Service Category", "Account Manager", "Account Manager Email", "Contact Phone", "Created At"];
+                  const headers = [t("Vendor Code"), t("Vendor Name"), t("Engagement ID"), t("Status"), t("Service Category"), t("Account Manager"), t("Account Manager Email"), t("Contact Phone"), t("Created At")];
                   const rows = group.vendors.map((gv) => [gv.vendorCode, gv.name, gv.engagementId || gv.vendorCode, gv.status, gv.serviceCategory || "", gv.accountManagerName || "", gv.accountManagerEmail || "", gv.contactPhone || "", new Date(gv.createdAt).toLocaleDateString()]);
                   const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
                   const blob = new Blob([csv], { type: "text/csv" });
@@ -1081,7 +1081,7 @@ export default function BOInventoryPage() {
             <span className="text-xs text-slate-400">{t("Showing")} {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, total)} {t("of")} {total}</span>
             {totalPages > 1 && (
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+                <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}><ChevronLeft className="h-4 w-4 rtl:rotate-180" /></Button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
                   .map((page, idx, arr) => (
@@ -1090,7 +1090,7 @@ export default function BOInventoryPage() {
                       <Button variant={page === currentPage ? "default" : "outline"} size="sm" className="w-8" onClick={() => setCurrentPage(page)}>{page}</Button>
                     </span>
                   ))}
-                <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+                <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}><ChevronRight className="h-4 w-4 rtl:rotate-180" /></Button>
               </div>
             )}
           </div>
@@ -1299,7 +1299,7 @@ export default function BOInventoryPage() {
                   {/* Description */}
                   <div className="bg-slate-50 rounded-lg p-4 space-y-2">
                     <h4 className="text-sm font-semibold text-slate-800">{t("Vendor Risk Rating")}</h4>
-                    <p className="text-sm text-slate-600 leading-relaxed">{t(getVrrDescription(level.name))}</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{getVrrDescription(level.name)}</p>
                   </div>
                 </div>
 

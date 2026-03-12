@@ -482,12 +482,12 @@ export default function BOIssuesPage() {
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Issue Management")}</span>
       </nav>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setRemSearch(""); }}>
-        <TabsList>
+        <TabsList className="ltr:justify-start rtl:justify-end">
           <TabsTrigger value="register">{t("Issue Register")}</TabsTrigger>
           <TabsTrigger value="remediation">{t("Issue Remediation")}</TabsTrigger>
           <TabsTrigger value="vendor-issues">{t("Vendor Issues")}</TabsTrigger>
@@ -759,7 +759,7 @@ export default function BOIssuesPage() {
                     viewRemediation.questionResponse === "Yes" ? "bg-green-50 text-green-700 border-green-300" :
                     viewRemediation.questionResponse === "No" ? "bg-red-50 text-red-700 border-red-300" :
                     "bg-gray-50 text-gray-700 border-gray-300"
-                  }`}>{viewRemediation.questionResponse}</Badge>
+                  }`}>{t(viewRemediation.questionResponse)}</Badge>
                 </div>
               )}
 
