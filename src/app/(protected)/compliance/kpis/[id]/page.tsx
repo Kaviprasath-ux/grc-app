@@ -34,7 +34,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Upload, Plus, Calendar, Home, ChevronRight, Save } from "lucide-react";
+import { Pencil, Trash2, Upload, Plus, Calendar, Home, ChevronRight, Save, Eye } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -61,6 +61,8 @@ interface KPIActionPlan {
   percentageCompleted: number;
   startDate: string | null;
   status: string;
+  approvalStatus: string; // Draft, Submitted, Approved, Sent Back
+  approvalComments: string | null;
 }
 
 interface KPIReview {
@@ -185,6 +187,7 @@ export default function KPIDetailPage({
     actualScore: "",
     reviewId: "",
   });
+  const [updateFile, setUpdateFile] = useState<File | null>(null);
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -193,6 +196,12 @@ export default function KPIDetailPage({
   // Action Plan dialog state
   const [actionPlanDialogOpen, setActionPlanDialogOpen] = useState(false);
   const [actionPlanReviewId, setActionPlanReviewId] = useState<string | null>(null);
+  const [viewActionPlanDialogOpen, setViewActionPlanDialogOpen] = useState(false);
+  const [viewActionPlans, setViewActionPlans] = useState<KPIActionPlan[]>([]);
+  const [viewActionPlanReviewId, setViewActionPlanReviewId] = useState<string | null>(null);
+  const [sendBackDialogOpen, setSendBackDialogOpen] = useState(false);
+  const [sendBackPlanId, setSendBackPlanId] = useState<string | null>(null);
+  const [sendBackComment, setSendBackComment] = useState("");
   const [actionPlanForm, setActionPlanForm] = useState({
     plannedAction: "",
     description: "",
@@ -206,6 +215,7 @@ export default function KPIDetailPage({
   const [addScoreForm, setAddScoreForm] = useState({
     actualScore: "",
   });
+  const [addScoreFile, setAddScoreFile] = useState<File | null>(null);
   const [addingScore, setAddingScore] = useState(false);
 
   // Inline actual score save state
@@ -323,10 +333,9 @@ export default function KPIDetailPage({
         date: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
         fullDate: review.reviewDate,
         actualScore: review.actualScore,
-        expectedScore: expectedScore,
       };
     });
-  }, [filteredReviews, expectedScore]);
+  }, [filteredReviews]);
 
   // Handle adding new actual score entry
   const handleAddActualScore = async () => {
@@ -337,6 +346,21 @@ export default function KPIDetailPage({
       const actualScoreValue = parseFloat(addScoreForm.actualScore);
       const calculatedStatus = calculateStatus(actualScoreValue, expectedScore);
 
+      let documentPath: string | undefined;
+      let documentName: string | undefined;
+
+      // Upload file if selected
+      if (addScoreFile) {
+        const formData = new FormData();
+        formData.append("file", addScoreFile);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          documentPath = uploadData.file?.filePath;
+          documentName = addScoreFile.name;
+        }
+      }
+
       const response = await fetch(`/api/kpis/${id}/reviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -344,12 +368,15 @@ export default function KPIDetailPage({
           reviewDate: nextDueReviewDate.toISOString(),
           actualScore: actualScoreValue,
           status: calculatedStatus,
+          ...(documentPath && { documentPath }),
+          ...(documentName && { documentName }),
         }),
       });
 
       if (response.ok) {
         setAddScoreDialogOpen(false);
         setAddScoreForm({ actualScore: "" });
+        setAddScoreFile(null);
         toast({
           title: t("Success"),
           description: t("KPI actual score saved successfully."),
@@ -412,8 +439,12 @@ export default function KPIDetailPage({
       const newExpectedScore = formData.expectedScore !== ""
         ? parseFloat(formData.expectedScore)
         : null;
+      const newActualScore = formData.actualScore !== ""
+        ? parseFloat(formData.actualScore)
+        : null;
+      const calculatedStatus = calculateStatus(newActualScore, newExpectedScore);
 
-      // Update KPI details
+      // Update KPI details with calculated status
       const response = await fetch(`/api/kpis/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -423,9 +454,8 @@ export default function KPIDetailPage({
           dataSource: formData.dataSource,
           calculationFormula: formData.calculationFormula,
           expectedScore: newExpectedScore,
-          actualScore: formData.actualScore !== ""
-            ? parseFloat(formData.actualScore)
-            : null,
+          actualScore: newActualScore,
+          status: calculatedStatus,
         }),
       });
 
@@ -436,6 +466,19 @@ export default function KPIDetailPage({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             kpiExpectedScore: newExpectedScore,
+          }),
+        });
+      }
+
+      // If actual score is provided, also create a review record for history
+      if (response.ok && newActualScore !== null) {
+        await fetch(`/api/kpis/${id}/reviews`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reviewDate: new Date().toISOString(),
+            actualScore: newActualScore,
+            status: calculatedStatus,
           }),
         });
       }
@@ -534,6 +577,7 @@ export default function KPIDetailPage({
       actualScore: review.actualScore?.toString() || "",
       reviewId: review.id,
     });
+    setUpdateFile(null);
     setUpdateDialogOpen(true);
   };
 
@@ -544,6 +588,27 @@ export default function KPIDetailPage({
         : null;
       const calculatedStatus = calculateStatus(actualScoreValue, expectedScore);
 
+      let documentPath: string | undefined;
+      let documentName: string | undefined;
+
+      // Upload file if selected
+      if (updateFile) {
+        const formData = new FormData();
+        formData.append("file", updateFile);
+        formData.append("subDir", "kpi-reviews");
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          documentPath = uploadData.file?.filePath;
+          documentName = updateFile.name;
+        }
+      }
+
       const response = await fetch(
         `/api/kpis/${id}/reviews/${updateForm.reviewId}`,
         {
@@ -552,12 +617,15 @@ export default function KPIDetailPage({
           body: JSON.stringify({
             actualScore: actualScoreValue,
             status: calculatedStatus,
+            ...(documentPath && { documentPath }),
+            ...(documentName && { documentName }),
           }),
         }
       );
 
       if (response.ok) {
         setUpdateDialogOpen(false);
+        setUpdateFile(null);
         toast({
           title: t("Success"),
           description: t("Review updated successfully."),
@@ -639,6 +707,48 @@ export default function KPIDetailPage({
     } catch (error) {
       console.error("Error creating action plan:", error);
     }
+  };
+
+  // Update action plan fields (editable in Draft/Sent Back state)
+  const handleUpdateActionPlan = async (planId: string, data: Record<string, unknown>) => {
+    if (!viewActionPlanReviewId) return;
+    try {
+      const response = await fetch(
+        `/api/kpis/${id}/reviews/${viewActionPlanReviewId}/action-plans/${planId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        }
+      );
+      if (response.ok) {
+        fetchKPI();
+        // Refresh view action plans
+        const updatedPlan = await response.json();
+        setViewActionPlans(prev => prev.map(p => p.id === planId ? { ...p, ...updatedPlan } : p));
+      }
+    } catch (error) {
+      console.error("Error updating action plan:", error);
+    }
+  };
+
+  const handleSubmitForApproval = async (planId: string) => {
+    await handleUpdateActionPlan(planId, { approvalStatus: "Submitted" });
+  };
+
+  const handleApproveActionPlan = async (planId: string) => {
+    await handleUpdateActionPlan(planId, { approvalStatus: "Approved" });
+  };
+
+  const handleSendBack = async () => {
+    if (!sendBackPlanId || !sendBackComment.trim()) return;
+    await handleUpdateActionPlan(sendBackPlanId, {
+      approvalStatus: "Sent Back",
+      approvalComments: sendBackComment.trim(),
+    });
+    setSendBackDialogOpen(false);
+    setSendBackPlanId(null);
+    setSendBackComment("");
   };
 
   if (loading) {
@@ -857,7 +967,8 @@ export default function KPIDetailPage({
               placeholder={t("Enter expected score")}
               value={formData.expectedScore}
               onChange={(e) => handleFieldChange("expectedScore", e.target.value)}
-              className={`h-9 ${formErrors.expectedScore ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : "border-slate-200"}`}
+              disabled={expectedScore !== null}
+              className={`h-9 ${expectedScore !== null ? "bg-slate-100 cursor-not-allowed" : ""} ${formErrors.expectedScore ? "border-red-400 bg-red-50 focus-visible:ring-red-300" : "border-slate-200"}`}
             />
             {formErrors.expectedScore && (
               <p className="text-sm text-red-500 bg-red-50 px-3 py-1.5 rounded">{formErrors.expectedScore}</p>
@@ -1009,15 +1120,31 @@ export default function KPIDetailPage({
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                       {review.status === "Missed" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={t("Add Action Plan")}
-                          className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
-                          onClick={() => handleOpenActionPlanDialog(review.id)}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
+                        review.actionPlans?.length > 0 ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("View Action Plan")}
+                            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                            onClick={() => {
+                              setViewActionPlans(review.actionPlans);
+                              setViewActionPlanReviewId(review.id);
+                              setViewActionPlanDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("Add Action Plan")}
+                            className="h-7 w-7 text-slate-400 hover:text-primary-600 hover:bg-primary-50"
+                            onClick={() => handleOpenActionPlanDialog(review.id)}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </Button>
+                        )
                       )}
                     </div>
                   </TableCell>
@@ -1054,12 +1181,29 @@ export default function KPIDetailPage({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Upload document")}</Label>
-              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
-                <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                <p className="text-sm text-slate-500">
-                  {t("Drag and drop or select file.")}
-                </p>
-              </div>
+              <label className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-colors block">
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setUpdateFile(file);
+                  }}
+                />
+                {updateFile ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Upload className="h-5 w-5 text-primary-500" />
+                    <p className="text-sm text-primary-700 font-medium">{updateFile.name}</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                    <p className="text-sm text-slate-500">
+                      {t("Drag and drop or select file.")}
+                    </p>
+                  </>
+                )}
+              </label>
             </div>
           </div>
           <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
@@ -1206,6 +1350,202 @@ export default function KPIDetailPage({
         </DialogContent>
       </Dialog>
 
+      {/* View Action Plan Dialog */}
+      <Dialog open={viewActionPlanDialogOpen} onOpenChange={setViewActionPlanDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Action Plan Details")}</DialogTitle>
+          </div>
+          <div className="px-4 sm:px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+            {viewActionPlans.map((plan, idx) => {
+              const isEditable = !plan.approvalStatus || plan.approvalStatus === "Draft" || plan.approvalStatus === "Sent Back";
+              const isSubmitted = plan.approvalStatus === "Submitted";
+              const isApproved = plan.approvalStatus === "Approved";
+
+              return (
+                <div key={plan.id} className="bg-slate-50 rounded-lg p-4 space-y-3">
+                  {viewActionPlans.length > 1 && (
+                    <p className="text-xs font-semibold text-slate-400 uppercase">{t("Action")} {idx + 1}</p>
+                  )}
+                  {/* Approval Status Badge */}
+                  <div className="flex items-center gap-2">
+                    <Badge className={
+                      isApproved ? "bg-green-100 text-green-800" :
+                      isSubmitted ? "bg-blue-100 text-blue-800" :
+                      plan.approvalStatus === "Sent Back" ? "bg-red-100 text-red-800" :
+                      "bg-slate-100 text-slate-600"
+                    }>
+                      {t(plan.approvalStatus || "Draft")}
+                    </Badge>
+                  </div>
+                  {/* Sent Back Comments */}
+                  {plan.approvalStatus === "Sent Back" && plan.approvalComments && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                      <p className="text-xs font-medium text-red-600 uppercase tracking-wider mb-1">{t("Send Back Comments")}</p>
+                      <p className="text-sm text-red-800">{plan.approvalComments}</p>
+                    </div>
+                  )}
+                  {/* Fields */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Planned Action")}</Label>
+                    <Input
+                      value={plan.plannedAction}
+                      disabled={!isEditable}
+                      onChange={(e) => setViewActionPlans(prev => prev.map(p => p.id === plan.id ? { ...p, plannedAction: e.target.value } : p))}
+                      className={`h-9 ${!isEditable ? "bg-slate-100 cursor-not-allowed" : "border-slate-200"}`}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
+                    <Textarea
+                      value={plan.description || ""}
+                      disabled={!isEditable}
+                      onChange={(e) => setViewActionPlans(prev => prev.map(p => p.id === plan.id ? { ...p, description: e.target.value } : p))}
+                      className={!isEditable ? "bg-slate-100 cursor-not-allowed" : "border-slate-200"}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Progress")} (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={plan.percentageCompleted}
+                        disabled={!isEditable}
+                        onChange={(e) => setViewActionPlans(prev => prev.map(p => p.id === plan.id ? { ...p, percentageCompleted: parseFloat(e.target.value) || 0 } : p))}
+                        className={`h-9 ${!isEditable ? "bg-slate-100 cursor-not-allowed" : "border-slate-200"}`}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Start Date")}</Label>
+                      <Input
+                        type="date"
+                        value={plan.startDate ? new Date(plan.startDate).toISOString().split("T")[0] : ""}
+                        disabled={!isEditable}
+                        onChange={(e) => setViewActionPlans(prev => prev.map(p => p.id === plan.id ? { ...p, startDate: e.target.value } : p))}
+                        className={`h-9 ${!isEditable ? "bg-slate-100 cursor-not-allowed" : "border-slate-200"}`}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Status")}</Label>
+                      <Select
+                        value={plan.status}
+                        disabled={!isEditable}
+                        onValueChange={(value) => setViewActionPlans(prev => prev.map(p => p.id === plan.id ? { ...p, status: value } : p))}
+                      >
+                        <SelectTrigger className={`w-full h-9 ${!isEditable ? "bg-slate-100 cursor-not-allowed" : "bg-white border-slate-200"}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          <SelectItem value="Open">{t("Open")}</SelectItem>
+                          <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+                          <SelectItem value="Completed">{t("Completed")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                    {/* Save button - only when editable */}
+                    {isEditable && (
+                      <Button
+                        size="sm"
+                        className="bg-primary-600 hover:bg-primary-700"
+                        onClick={() => handleUpdateActionPlan(plan.id, {
+                          plannedAction: plan.plannedAction,
+                          description: plan.description,
+                          percentageCompleted: plan.percentageCompleted,
+                          startDate: plan.startDate,
+                          status: plan.status,
+                        })}
+                      >
+                        {t("Save")}
+                      </Button>
+                    )}
+                    {/* Submit for Approval - visible in Draft or Sent Back */}
+                    {isEditable && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                        onClick={() => handleSubmitForApproval(plan.id)}
+                      >
+                        {t("Submit for Approval")}
+                      </Button>
+                    )}
+                    {/* Approve - visible only when Submitted */}
+                    {isSubmitted && (
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => handleApproveActionPlan(plan.id)}
+                      >
+                        {t("Approve")}
+                      </Button>
+                    )}
+                    {/* Send Back - visible only when Submitted */}
+                    {isSubmitted && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          setSendBackPlanId(plan.id);
+                          setSendBackComment("");
+                          setSendBackDialogOpen(true);
+                        }}
+                      >
+                        {t("Send Back")}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" onClick={() => setViewActionPlanDialogOpen(false)} className="border-slate-200">
+              {t("Close")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Back Comment Dialog */}
+      <Dialog open={sendBackDialogOpen} onOpenChange={setSendBackDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+            <DialogTitle className="text-base font-semibold text-slate-800">{t("Send Back Action Plan")}</DialogTitle>
+          </div>
+          <div className="px-4 sm:px-6 py-4 space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {t("Comments")} <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                placeholder={t("Enter reason for sending back...")}
+                value={sendBackComment}
+                onChange={(e) => setSendBackComment(e.target.value)}
+                className="border-slate-200 min-h-[100px]"
+              />
+            </div>
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" onClick={() => setSendBackDialogOpen(false)} className="border-slate-200">
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleSendBack}
+              disabled={!sendBackComment.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {t("Send Back")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Actual Score Dialog */}
       <Dialog open={addScoreDialogOpen} onOpenChange={setAddScoreDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-lg p-0 gap-0 overflow-hidden">
@@ -1276,12 +1616,29 @@ export default function KPIDetailPage({
             {/* Upload Document (optional) */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Upload Document (Optional)")}</Label>
-              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
-                <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                <p className="text-sm text-slate-500">
-                  {t("Drag and drop or select file.")}
-                </p>
-              </div>
+              <label className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-colors block">
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setAddScoreFile(file);
+                  }}
+                />
+                {addScoreFile ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Upload className="h-5 w-5 text-primary-500" />
+                    <p className="text-sm text-primary-700 font-medium">{addScoreFile.name}</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                    <p className="text-sm text-slate-500">
+                      {t("Drag and drop or select file.")}
+                    </p>
+                  </>
+                )}
+              </label>
             </div>
           </div>
           <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">

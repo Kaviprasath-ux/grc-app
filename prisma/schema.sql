@@ -870,6 +870,8 @@ CREATE TABLE "KPIActionPlan" (
     "percentageCompleted" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "startDate" TIMESTAMP(3),
     "status" TEXT NOT NULL DEFAULT 'In-Progress',
+    "approvalStatus" TEXT NOT NULL DEFAULT 'Draft',
+    "approvalComments" TEXT,
     "kpiReviewId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

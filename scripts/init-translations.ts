@@ -5134,6 +5134,9 @@ const translations: [string, string, string][] = [
   ['Returned', 'تم الإرجاع', 'Atgriezts'],
   ['In-Progress(approver)', 'قيد التنفيذ (الموافق)', 'Procesā (apstiprinātājs)'],
   ['Deficient', 'ناقص', 'Nepietiekams'],
+  ['Action Plan Details', 'تفاصيل خطة العمل', 'Darbības plāna detaļas'],
+  ['Send Back Action Plan', 'إرجاع خطة العمل', 'Nosūtīt atpakaļ darbības plānu'],
+  ['Send Back Comments', 'تعليقات الإرجاع', 'Atpakaļnosūtīšanas komentāri'],
 ];
 
 function createExcelFile(): void {

@@ -38,7 +38,7 @@ export async function PUT(
   try {
     const { planId } = await params;
     const body = await request.json();
-    const { plannedAction, description, percentageCompleted, startDate, status } = body;
+    const { plannedAction, description, percentageCompleted, startDate, status, approvalStatus, approvalComments } = body;
 
     const actionPlan = await prisma.kPIActionPlan.update({
       where: { id: planId },
@@ -50,6 +50,8 @@ export async function PUT(
           : undefined,
         startDate: startDate ? new Date(startDate) : undefined,
         status: status !== undefined ? status : undefined,
+        approvalStatus: approvalStatus !== undefined ? approvalStatus : undefined,
+        approvalComments: approvalComments !== undefined ? approvalComments : undefined,
       },
     });
 

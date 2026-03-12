@@ -1355,6 +1355,8 @@ model KPIActionPlan {
   percentageCompleted Float     @default(0) // Required: 0-100
   startDate           DateTime? // Required: When the action starts
   status              String    @default("In-Progress") // Open, In-Progress, Completed
+  approvalStatus      String    @default("Draft") // Draft, Submitted, Approved, Sent Back
+  approvalComments    String? // Comments when sent back
   kpiReviewId         String
   kpiReview           KPIReview @relation(fields: [kpiReviewId], references: [id], onDelete: Cascade)
   createdAt           DateTime  @default(now())
