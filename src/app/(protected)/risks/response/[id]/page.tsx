@@ -567,6 +567,47 @@ export default function RiskViewPage() {
     return total;
   }, [risk?.controlRisks]);
 
+  // Planned Residual Risk Rating calculation
+  // Formula: If planned controls exist, loop over existing-only controls (exclude planned),
+  // sum controlStrength.score as totalControlStrength.
+  // If totalControlStrength != 0 → residualRiskScore / totalControlStrength
+  // If totalControlStrength == 0 → inherentRiskScore
+  // If no planned controls → use residualRiskScore directly
+  const plannedResidualRiskScore = useMemo(() => {
+    if (!risk) return 0;
+    // If no planned controls, use residual score directly
+    if (plannedControls.length === 0) {
+      return risk.residualRiskScore ?? risk.riskScore ?? 0;
+    }
+    // Get planned control codes to exclude from existing controls
+    const plannedControlCodes = new Set(plannedControls.map(pc => pc.controlCode));
+    // Loop only over existing controls (exclude planned)
+    const linkedControls = risk.controlRisks || [];
+    let totalCtrlStrength = 0;
+    for (const cr of linkedControls) {
+      // Skip controls that are in planned controls
+      if (plannedControlCodes.has(cr.control?.controlCode)) continue;
+      const weight = cr.controlStrength?.score ?? 0;
+      if (weight !== 0) {
+        totalCtrlStrength += weight;
+      }
+    }
+    // Calculate planned residual score
+    if (totalCtrlStrength !== 0) {
+      return (risk.residualRiskScore ?? risk.riskScore ?? 0) / totalCtrlStrength;
+    }
+    return risk.inherentRiskScore ?? risk.riskScore ?? 0;
+  }, [risk, plannedControls]);
+
+  // Derive rating label from planned residual score
+  const plannedResidualRiskRating = useMemo(() => {
+    const score = plannedResidualRiskScore;
+    if (score >= 20) return "Catastrophic";
+    if (score >= 15) return "Very high";
+    if (score >= 10) return "High";
+    return "Low Risk";
+  }, [plannedResidualRiskScore]);
+
   // Calculate days remaining
   const getDaysRemaining = (dueDate: string | null) => {
     if (!dueDate) return 0;
@@ -932,11 +973,21 @@ export default function RiskViewPage() {
             <div className="border-t border-slate-100 pt-4">
               <p className="text-xs font-semibold text-slate-800 uppercase tracking-wide mb-2">{t("Planned Residual Risk Rating")}</p>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full border-4 border-orange-500 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                <div className={cn("w-12 h-12 rounded-full border-4 flex items-center justify-center",
+                  plannedResidualRiskRating === "Low Risk" ? "border-green-500" :
+                  plannedResidualRiskRating === "High" ? "border-orange-500" :
+                  plannedResidualRiskRating === "Very high" ? "border-red-500" :
+                  "border-red-800"
+                )}>
+                  <div className={cn("w-2 h-2 rounded-full",
+                    plannedResidualRiskRating === "Low Risk" ? "bg-green-500" :
+                    plannedResidualRiskRating === "High" ? "bg-orange-500" :
+                    plannedResidualRiskRating === "Very high" ? "bg-red-500" :
+                    "bg-red-800"
+                  )}></div>
                 </div>
-                <span className={cn("font-semibold", getRiskRatingColor(risk.riskRating))}>
-                  {risk.riskRating} ({(risk.residualRiskScore ?? risk.riskScore ?? 0).toFixed(2)})
+                <span className={cn("font-semibold", getRiskRatingColor(plannedResidualRiskRating))}>
+                  {t(plannedResidualRiskRating)} ({plannedResidualRiskScore.toFixed(2)})
                 </span>
               </div>
             </div>
@@ -1008,7 +1059,7 @@ export default function RiskViewPage() {
       {/* Existing Controls */}
       <div>
         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide mb-3">{t("Existing Controls")}</h3>
-        {controls.length === 0 ? (
+        {controls.filter(c => !plannedControls.some(pc => pc.controlCode === c.controlId)).length === 0 ? (
           <div className="bg-white rounded-xl border border-slate-200">
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
@@ -1020,7 +1071,7 @@ export default function RiskViewPage() {
           </div>
         ) : (
         <div className="space-y-2">
-          {controls.map((control) => (
+          {controls.filter(c => !plannedControls.some(pc => pc.controlCode === c.controlId)).map((control) => (
             <div key={control.id} className="bg-white rounded-xl border border-slate-200">
               <Collapsible
                 open={expandedControls.includes(control.id)}
