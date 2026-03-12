@@ -35,6 +35,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -309,6 +319,8 @@ export default function FieldworkDetailsPage() {
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
   const [evidenceForAttachment, setEvidenceForAttachment] = useState<EvidenceRequest | null>(null);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [deleteAttachmentId, setDeleteAttachmentId] = useState<string | null>(null);
+  const [deletingAttachment, setDeletingAttachment] = useState(false);
 
   // View Finding Dialog states
   const [viewFindingDialogOpen, setViewFindingDialogOpen] = useState(false);
@@ -4170,10 +4182,7 @@ export default function FieldworkDetailsPage() {
                       <button
                         className="p-1 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         title={t("Delete")}
-                        onClick={() => {
-                          // TODO: Implement delete attachment
-                          toast.info(t("Delete attachment functionality coming soon"));
-                        }}
+                        onClick={() => setDeleteAttachmentId(att.id)}
                         disabled={isReadOnly}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
@@ -4351,6 +4360,48 @@ export default function FieldworkDetailsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Attachment Confirmation */}
+      <AlertDialog open={!!deleteAttachmentId} onOpenChange={(open) => { if (!open) setDeleteAttachmentId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete Attachment")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to delete this attachment?")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAttachment}>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deletingAttachment}
+              onClick={async (e) => {
+                e.preventDefault();
+                setDeletingAttachment(true);
+                try {
+                  const res = await fetch(
+                    `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${selectedEvidence?.id}/attachments/${deleteAttachmentId}`,
+                    { method: 'DELETE' }
+                  );
+                  if (!res.ok) throw new Error('Failed to delete');
+                  setSelectedEvidence((prev: EvidenceRequest | null) => prev ? {
+                    ...prev,
+                    attachments: prev.attachments?.filter((a: { id: string }) => a.id !== deleteAttachmentId) || [],
+                  } : null);
+                  toast.success(t("Attachment deleted successfully"));
+                } catch {
+                  toast.error(t("Failed to delete attachment"));
+                } finally {
+                  setDeletingAttachment(false);
+                  setDeleteAttachmentId(null);
+                }
+              }}
+            >
+              {deletingAttachment ? t("Deleting...") : t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Need Clarification Dialog */}
       <Dialog open={clarificationDialogOpen} onOpenChange={setClarificationDialogOpen}>

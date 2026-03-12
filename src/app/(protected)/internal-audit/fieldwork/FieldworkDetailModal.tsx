@@ -35,6 +35,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   FileText,
@@ -277,6 +287,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
   const [evidenceForAttachment, setEvidenceForAttachment] = useState<EvidenceRequest | null>(null);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [deleteAttachmentId, setDeleteAttachmentId] = useState<string | null>(null);
+  const [deletingAttachment, setDeletingAttachment] = useState(false);
 
   // AI Review states
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([]);
@@ -2395,7 +2407,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Number of Samples")}</Label>{isEditingEvidence ? <Input type="number" min="1" value={editEvidence.numberOfSamples} onChange={(e) => setEditEvidence({ ...editEvidence, numberOfSamples: e.target.value })} placeholder={t("Enter number of samples")} /> : <div className="p-3 bg-slate-50 rounded-md border">{selectedEvidence?.numberOfSamples || "-"}</div>}</div>
             <div className="space-y-2"><Label className="text-slate-700 font-medium">{t("Description")}</Label>{isEditingEvidence ? <Textarea value={editEvidence.description} onChange={(e) => setEditEvidence({ ...editEvidence, description: e.target.value })} placeholder={t("Enter description")} rows={4} /> : <div className="p-3 bg-slate-50 rounded-md border min-h-[80px]">{selectedEvidence?.description || "-"}</div>}</div>
             {isEditingEvidence && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && (
-              <div className="space-y-2">{selectedEvidence.attachments.map((att) => (<div key={att.id} className="flex items-center justify-between py-2 border-b"><div className="flex items-center gap-3">{att.fileType?.includes('image') ? <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center"><FileText className="h-5 w-5 text-primary-600" /></div> : att.fileName?.endsWith('.docx') || att.fileName?.endsWith('.doc') ? <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center"><FileSpreadsheet className="h-5 w-5 text-blue-800" /></div> : <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center"><FileText className="h-5 w-5 text-slate-600" /></div>}<span className="text-sm text-primary-600">{att.fileName}</span></div><div className="flex items-center gap-2"><a href={`/api${att.filePath}`} download className="p-1 hover:bg-slate-100 rounded" title={t("Download")}><Download className="h-4 w-4 text-slate-600" /></a><a href={`/api${att.filePath}`} target="_blank" rel="noopener noreferrer" className="p-1 hover:bg-slate-100 rounded" title={t("View")}><Eye className="h-4 w-4 text-slate-600" /></a><button className="p-1 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed" title={t("Delete")} onClick={() => toast.info(t("Delete attachment functionality coming soon"))} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-500" /></button></div></div>))}</div>
+              <div className="space-y-2">{selectedEvidence.attachments.map((att) => (<div key={att.id} className="flex items-center justify-between py-2 border-b"><div className="flex items-center gap-3">{att.fileType?.includes('image') ? <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center"><FileText className="h-5 w-5 text-primary-600" /></div> : att.fileName?.endsWith('.docx') || att.fileName?.endsWith('.doc') ? <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center"><FileSpreadsheet className="h-5 w-5 text-blue-800" /></div> : <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center"><FileText className="h-5 w-5 text-slate-600" /></div>}<span className="text-sm text-primary-600">{att.fileName}</span></div><div className="flex items-center gap-2"><a href={`/api${att.filePath}`} download className="p-1 hover:bg-slate-100 rounded" title={t("Download")}><Download className="h-4 w-4 text-slate-600" /></a><a href={`/api${att.filePath}`} target="_blank" rel="noopener noreferrer" className="p-1 hover:bg-slate-100 rounded" title={t("View")}><Eye className="h-4 w-4 text-slate-600" /></a><button className="p-1 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed" title={t("Delete")} onClick={() => setDeleteAttachmentId(att.id)} disabled={isReadOnly}><Trash2 className="h-4 w-4 text-red-500" /></button></div></div>))}</div>
             )}
             {!isEditingEvidence && (
               <>
@@ -2426,6 +2438,48 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Attachment Confirmation */}
+      <AlertDialog open={!!deleteAttachmentId} onOpenChange={(open) => { if (!open) setDeleteAttachmentId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete Attachment")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to delete this attachment?")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAttachment}>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deletingAttachment}
+              onClick={async (e) => {
+                e.preventDefault();
+                setDeletingAttachment(true);
+                try {
+                  const res = await fetch(
+                    `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${selectedEvidence?.id}/attachments/${deleteAttachmentId}`,
+                    { method: 'DELETE' }
+                  );
+                  if (!res.ok) throw new Error('Failed to delete');
+                  setSelectedEvidence((prev: EvidenceRequest | null) => prev ? {
+                    ...prev,
+                    attachments: prev.attachments?.filter((a: { id: string }) => a.id !== deleteAttachmentId) || [],
+                  } : null);
+                  toast.success(t("Attachment deleted successfully"));
+                } catch {
+                  toast.error(t("Failed to delete attachment"));
+                } finally {
+                  setDeletingAttachment(false);
+                  setDeleteAttachmentId(null);
+                }
+              }}
+            >
+              {deletingAttachment ? t("Deleting...") : t("Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Need Clarification Dialog */}
       <Dialog open={clarificationDialogOpen} onOpenChange={setClarificationDialogOpen}>

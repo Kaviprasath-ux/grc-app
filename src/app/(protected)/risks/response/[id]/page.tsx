@@ -843,73 +843,73 @@ export default function RiskViewPage() {
               {t("No planned controls")}
             </div>
           ) : (
-            <div className="space-y-5">
-              {plannedControlDaysData.map((ctrl, idx) => {
-                const isOverdue = ctrl.overdueDays > 0;
-                const elapsed = ctrl.totalDays - ctrl.remainingDays;
-                const elapsedPct = ctrl.totalDays > 0 ? Math.min((elapsed / ctrl.totalDays) * 100, 100) : 0;
-                const overduePct = ctrl.totalDays > 0 ? (ctrl.overdueDays / (ctrl.totalDays + ctrl.overdueDays)) * 100 : (ctrl.overdueDays > 0 ? 100 : 0);
-                const basePct = ctrl.totalDays > 0 && ctrl.overdueDays > 0 ? (ctrl.totalDays / (ctrl.totalDays + ctrl.overdueDays)) * 100 : 100;
+            <div>
+              {/* Legend */}
+              <div className="flex items-center gap-4 mb-3 text-[10px] text-slate-600">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-slate-200" />
+                  <span>{t("Total Days")}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-red-400" />
+                  <span>{t("Overdue Days")}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
+                  <span>{t("Remaining Days")}</span>
+                </div>
+              </div>
+              {/* Horizontal bars */}
+              <div className="space-y-3">
+                {plannedControlDaysData.map((ctrl, idx) => {
+                  const isOverdue = ctrl.overdueDays > 0;
+                  const totalWidth = isOverdue ? ctrl.totalDays + ctrl.overdueDays : ctrl.totalDays;
+                  const remainingPct = totalWidth > 0 ? (ctrl.remainingDays / totalWidth) * 100 : 0;
+                  const overduePct = totalWidth > 0 ? (ctrl.overdueDays / totalWidth) * 100 : 0;
 
-                return (
-                  <div key={idx} className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-slate-700 truncate" title={ctrl.name}>
-                        {ctrl.controlCode ? `${ctrl.controlCode} - ` : ""}{ctrl.name}
-                      </p>
-                      <span className={cn("text-xs font-semibold whitespace-nowrap ltr:ml-2 rtl:mr-2", isOverdue ? "text-red-600" : "text-emerald-600")}>
-                        {isOverdue ? `${ctrl.overdueDays}d ${t("overdue")}` : `${ctrl.remainingDays}d ${t("remaining")}`}
-                      </span>
-                    </div>
-                    {/* Single stacked bar with tooltip */}
-                    <div className="relative group cursor-pointer">
-                      <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden flex">
-                        {isOverdue ? (
-                          <>
-                            <div
-                              className="bg-primary-400 h-3 transition-all"
-                              style={{ width: `${basePct}%` }}
-                            />
-                            <div
-                              className="bg-red-400 h-3 transition-all"
-                              style={{ width: `${overduePct}%` }}
-                            />
-                          </>
-                        ) : (
-                          <div
-                            className="bg-emerald-400 h-3 rounded-full transition-all"
-                            style={{ width: `${elapsedPct}%` }}
-                          />
-                        )}
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-slate-700 truncate" title={ctrl.name}>
+                          {ctrl.controlCode ? `${ctrl.controlCode} - ` : ""}{ctrl.name}
+                        </p>
+                        <span className={cn("text-xs font-semibold whitespace-nowrap ltr:ml-2 rtl:mr-2", isOverdue ? "text-red-600" : "text-emerald-600")}>
+                          {isOverdue ? `${ctrl.overdueDays}d ${t("overdue")}` : `${ctrl.remainingDays}d ${t("remaining")}`}
+                        </span>
                       </div>
-                      {/* Hover tooltip */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-sm bg-primary-400" />
-                            <span>{t("Total Days")}: {ctrl.totalDays}d</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-sm bg-emerald-400" />
-                            <span>{t("Elapsed")}: {elapsed > 0 ? elapsed : 0}d</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-sm bg-slate-400" />
-                            <span>{t("Remaining")}: {ctrl.remainingDays}d</span>
-                          </div>
-                          {isOverdue && (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-sm bg-red-400" />
-                              <span>{t("Overdue")}: {ctrl.overdueDays}d</span>
-                            </div>
+                      <div className="relative group cursor-pointer">
+                        <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden flex flex-row-reverse">
+                          {isOverdue ? (
+                            <div className="bg-red-400 h-3 transition-all" style={{ width: `${overduePct}%` }} />
+                          ) : (
+                            <div className="bg-emerald-400 h-3 transition-all" style={{ width: `${remainingPct}%` }} />
                           )}
                         </div>
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                        {/* Hover tooltip */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1.5 bg-slate-800 text-white text-[10px] rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-sm bg-slate-300" />
+                              <span>{t("Total Days")}: {ctrl.totalDays}d</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-sm bg-emerald-400" />
+                              <span>{t("Remaining")}: {ctrl.remainingDays}d</span>
+                            </div>
+                            {isOverdue && (
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-sm bg-red-400" />
+                                <span>{t("Overdue")}: {ctrl.overdueDays}d</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
