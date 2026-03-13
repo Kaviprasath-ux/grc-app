@@ -5067,6 +5067,7 @@ const translations: [string, string, string][] = [
   ['Failed to validate subscription', 'فشل في التحقق من الاشتراك', 'Neizdevās validēt abonementu'],
   ['Back To Vendor Inventory', 'العودة إلى جرد الموردين', 'Atpakaļ uz piegādātāju inventāru'],
   ['Contact Phone', 'هاتف الاتصال', 'Kontakttālrunis'],
+  ['Configure TPRM module settings and parameters', 'تكوين إعدادات ومعايير وحدة إدارة مخاطر الطرف الثالث', 'Konfigurēt TPRM moduļa iestatījumus un parametrus'],
   ['This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting.', 'هذا المورد ذو مخاطر اسمية وبالتالي لا يلزم إجراء مزيد من العناية الواجبة. يرجى المتابعة مع التعاقد.', 'Šis piegādātājs ir ar nominālu risku, tāpēc turpmāka pienācīga pārbaude nav nepieciešama. Lūdzu, turpiniet ar līguma slēgšanu.'],
   ['This vendor is low risk. Basic due-diligence review is recommended.', 'هذا المورد منخفض المخاطر. يوصى بمراجعة العناية الواجبة الأساسية.', 'Šis piegādātājs ir ar zemu risku. Ieteicama pamata pienācīgas pārbaudes veikšana.'],
   ['This vendor is medium risk. Standard due-diligence assessment is required.', 'هذا المورد متوسط المخاطر. يلزم إجراء تقييم العناية الواجبة القياسي.', 'Šis piegādātājs ir ar vidēju risku. Nepieciešams standarta pienācīgas pārbaudes novērtējums.'],

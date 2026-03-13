@@ -88,6 +88,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'TPRMServiceCategory', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'TPRMDiscipline', fields: [{ name: 'name' }], priority: 6 },
   { modelName: 'TPRMDepartment', fields: [{ name: 'name' }], priority: 6 },
+  { modelName: 'TPRMVendorProfileField', fields: [{ name: 'fieldName' }], priority: 6 },
   { modelName: 'TPRMOnboardingQuestion', fields: [{ name: 'title' }, { name: 'question' }], priority: 6 },
   { modelName: 'TPRMOffboardingQuestion', fields: [{ name: 'title' }, { name: 'question' }], priority: 6 },
   { modelName: 'TPRMScorecardFactor', fields: [{ name: 'name' }], priority: 6 },

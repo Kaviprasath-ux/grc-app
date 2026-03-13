@@ -313,6 +313,7 @@ function VendorOnboardingSection() {
     parentId: "" as string,
   });
 
+  const { data: translatedProfileFields } = useTranslatedData(profileFields.filter(f => !f.isSystem), { modelName: 'TPRMVendorProfileField' });
   const { data: translatedObQuestions } = useTranslatedData(obQuestions, { modelName: 'TPRMOnboardingQuestion' });
 
   // VRR config from Control Center (fetched dynamically)
@@ -407,11 +408,14 @@ function VendorOnboardingSection() {
         toast({ title: t("Error"), description: err.error || t("Failed to save"), variant: "destructive" });
         return;
       }
+      const data = await res.json();
+      triggerTranslation('TPRMVendorProfileField', data.id, { fieldName: data.fieldName });
       toast({ title: t("Success"), description: pfEditItem ? t("Field updated") : t("Field created") });
       setPfDialogOpen(false);
       setPfEditItem(null);
       setPfFieldName("");
       loadProfileFields();
+      setTimeout(() => { clearTranslationCache(); loadProfileFields(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save"), variant: "destructive" });
     }
@@ -507,7 +511,7 @@ function VendorOnboardingSection() {
     {
       accessorKey: "fieldName",
       header: t("Question Fields"),
-      cell: ({ row }) => <span className="font-medium">{row.original.fieldName}</span>,
+      cell: ({ row }) => <span className="font-medium">{row.original.isSystem ? t(row.original.fieldName) : row.original.fieldName}</span>,
     },
     {
       id: "actions",
@@ -636,7 +640,7 @@ function VendorOnboardingSection() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : (
-            <DataGrid columns={pfColumns} data={profileFields} />
+            <DataGrid columns={pfColumns} data={profileFields.map(f => f.isSystem ? f : (translatedProfileFields.find(tf => tf.id === f.id) || f))} />
           )}
         </TabsContent>
 

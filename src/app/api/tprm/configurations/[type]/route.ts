@@ -190,6 +190,7 @@ export const POST = withAuth(
               sortOrder: (maxOrder._max.sortOrder || 0) + 1,
             },
           });
+          void translateRecord(customerAccountId, 'TPRMVendorProfileField', field.id, { fieldName: field.fieldName });
           return NextResponse.json(field, { status: 201 });
         }
 
@@ -387,6 +388,7 @@ export const PATCH = withAuth(
             where: { id },
             data: { ...(fieldName !== undefined && { fieldName: fieldName.trim() }) },
           });
+          void translateRecord(customerAccountId, 'TPRMVendorProfileField', field.id, { fieldName: field.fieldName });
           return NextResponse.json(field);
         }
 
