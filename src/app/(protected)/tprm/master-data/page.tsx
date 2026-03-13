@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Pencil, Trash2, ChevronRight, Home,
   HelpCircle, ClipboardList, Globe, ArrowLeft, Search, X,
@@ -537,6 +537,10 @@ function QuestionsSection() {
   };
 
   const activeDomains = translatedQSDomains.filter((d) => d.isActive);
+  const tDomainName = useCallback((id: string | null) => {
+    if (!id) return null;
+    return translatedQSDomains.find((d) => d.id === id)?.name || null;
+  }, [translatedQSDomains]);
   const parentQuestions = questions.filter((q) => q.isParentQuestion && q.id !== editItem?.id);
 
   const filtered = translatedQuestions.filter((q) => {
@@ -557,7 +561,7 @@ function QuestionsSection() {
         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
           row.original.domain ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"
         }`}>
-          {row.original.domain?.name || t("Unassigned")}
+          {(row.original.domain ? tDomainName(row.original.domain.id) || row.original.domain.name : null) || t("Unassigned")}
         </span>
       ),
     },
@@ -809,6 +813,32 @@ function QuestionnairesSection() {
 
   const { data: translatedTemplates } = useTranslatedData(templates, { modelName: 'TPRMQuestionnaireTemplate' });
   const { data: translatedAllQuestions } = useTranslatedData(allQuestions, { modelName: 'TPRMMasterQuestion' });
+
+  // Build a lookup map for translated question text (used for nested link.question display)
+  const tqMap = useMemo(() => {
+    const m = new Map<string, MasterQuestion>();
+    for (const q of translatedAllQuestions) m.set(q.id, q);
+    return m;
+  }, [translatedAllQuestions]);
+  const tq = useCallback((id: string, field: keyof MasterQuestion) => {
+    const translated = tqMap.get(id);
+    return translated ? String(translated[field] || '') : '';
+  }, [tqMap]);
+
+  // Extract unique domains from allQuestions for translation
+  const questionnaireDomains = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    for (const q of allQuestions) {
+      if (q.domain && !map.has(q.domain.id)) map.set(q.domain.id, q.domain);
+    }
+    return Array.from(map.values());
+  }, [allQuestions]);
+  const { data: translatedQDomains } = useTranslatedData(questionnaireDomains, { modelName: 'TPRMDomain' });
+  const tQDomain = useCallback((id: string | null) => {
+    if (!id) return null;
+    return translatedQDomains.find((d) => d.id === id)?.name || null;
+  }, [translatedQDomains]);
+
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkTemplateId, setLinkTemplateId] = useState<string | null>(null);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set());
@@ -969,7 +999,7 @@ function QuestionnairesSection() {
                         {tmpl.frameworkName && (
                           <Badge variant="outline" className="text-xs">{tmpl.frameworkName}</Badge>
                         )}
-                        <Badge variant="secondary" className="text-xs">{tmpl.templateCategory}</Badge>
+                        <Badge variant="secondary" className="text-xs">{t(tmpl.templateCategory)}</Badge>
                         <span className="text-xs text-muted-foreground">
                           {tmpl.masterQuestionLinks.length} {t("questions")}
                         </span>
@@ -1002,11 +1032,11 @@ function QuestionnairesSection() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium text-muted-foreground w-6">{idx + 1}.</span>
-                                <span className="text-sm">{link.question.questionText}</span>
+                                <span className="text-sm">{tq(link.question.id, 'questionText') || link.question.questionText}</span>
                               </div>
                               {link.question.domain && (
                                 <Badge variant="outline" className="text-xs mt-1 ltr:ml-8 rtl:mr-8">
-                                  {link.question.domain.name}
+                                  {tQDomain(link.question.domain.id) || link.question.domain.name}
                                 </Badge>
                               )}
                             </div>
@@ -1066,7 +1096,7 @@ function QuestionnairesSection() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm">{q.questionText}</p>
                       {q.domain && (
-                        <Badge variant="outline" className="text-xs mt-1">{q.domain.name}</Badge>
+                        <Badge variant="outline" className="text-xs mt-1">{tQDomain(q.domain.id) || q.domain.name}</Badge>
                       )}
                     </div>
                   </label>

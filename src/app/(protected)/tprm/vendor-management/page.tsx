@@ -31,6 +31,7 @@ import { Home, ChevronRight } from "lucide-react";
 // ==================== TYPES ====================
 
 interface Department { id: string; name: string; }
+interface AccountManager { name: string; email: string; contactNo: string; }
 
 interface MonitoringAssessmentSummary {
   overallScore: number | null;
@@ -311,14 +312,22 @@ export default function VendorManagementPage() {
   const [importing, setImporting] = useState(false);
 
   const [form, setForm] = useState({
-    name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
-    accountManagerEmail: "", serviceCategory: "", departmentId: "",
-    status: "Onboarding", engagementId: "", vrr: "", serviceDescription: "",
+    name: "", contactEmail: "", serviceCategory: "", departmentId: "",
+    status: "Onboarding", vrr: "", serviceDescription: "",
     vendorUrl: "", contractStartDate: "", contractEndDate: "",
     accessToNetwork: false, cloud: false, accessToData: false, pii: false,
     businessJustification: "", vendorCertification: "",
   });
+  const [managers, setManagers] = useState<AccountManager[]>([{ name: "", email: "", contactNo: "" }]);
   const [performMonitoring, setPerformMonitoring] = useState(false);
+
+  const addManager = () => setManagers([...managers, { name: "", email: "", contactNo: "" }]);
+  const removeManager = (index: number) => setManagers(managers.filter((_, i) => i !== index));
+  const updateManager = (index: number, field: keyof AccountManager, value: string) => {
+    const updated = [...managers];
+    updated[index] = { ...updated[index], [field]: value };
+    setManagers(updated);
+  };
 
   const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMVendor' });
 
@@ -352,14 +361,16 @@ export default function VendorManagementPage() {
     (v.serviceCategory || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const resetForm = () => setForm({
-    name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
-    accountManagerEmail: "", serviceCategory: "", departmentId: "",
-    status: "Onboarding", engagementId: "", vrr: "", serviceDescription: "",
-    vendorUrl: "", contractStartDate: "", contractEndDate: "",
-    accessToNetwork: false, cloud: false, accessToData: false, pii: false,
-    businessJustification: "", vendorCertification: "",
-  });
+  const resetForm = () => {
+    setForm({
+      name: "", contactEmail: "", serviceCategory: "", departmentId: "",
+      status: "Onboarding", vrr: "", serviceDescription: "",
+      vendorUrl: "", contractStartDate: "", contractEndDate: "",
+      accessToNetwork: false, cloud: false, accessToData: false, pii: false,
+      businessJustification: "", vendorCertification: "",
+    });
+    setManagers([{ name: "", email: "", contactNo: "" }]);
+  };
 
   const openCreate = () => { setEditItem(null); resetForm(); setPerformMonitoring(false); setDialogOpen(true); };
 
@@ -368,13 +379,9 @@ export default function VendorManagementPage() {
     setForm({
       name: vendor.name,
       contactEmail: vendor.contactEmail || "",
-      contactPhone: vendor.contactPhone || "",
-      accountManagerName: vendor.accountManagerName || "",
-      accountManagerEmail: vendor.accountManagerEmail || "",
       serviceCategory: vendor.serviceCategory || "",
       departmentId: vendor.departmentId || "",
       status: vendor.status,
-      engagementId: vendor.engagementId || "",
       vrr: vendor.vrr || "",
       serviceDescription: vendor.serviceDescription || "",
       vendorUrl: vendor.vendorUrl || "",
@@ -387,6 +394,16 @@ export default function VendorManagementPage() {
       businessJustification: vendor.businessJustification || "",
       vendorCertification: vendor.vendorCertification || "",
     });
+    // Parse semicolon-separated manager fields into array
+    const names = (vendor.accountManagerName || "").split("; ").filter(Boolean);
+    const emails = (vendor.accountManagerEmail || "").split("; ").filter(Boolean);
+    const phones = (vendor.contactPhone || "").split("; ").filter(Boolean);
+    const count = Math.max(names.length, emails.length, phones.length, 1);
+    setManagers(Array.from({ length: count }, (_, i) => ({
+      name: names[i] || "",
+      email: emails[i] || "",
+      contactNo: phones[i] || "",
+    })));
     setDialogOpen(true);
   };
 
@@ -395,19 +412,21 @@ export default function VendorManagementPage() {
     try {
       const url = editItem ? `/api/tprm/vendors/${editItem.id}` : "/api/tprm/vendors";
       const method = editItem ? "PATCH" : "POST";
+      const mgrNames = managers.map((m) => m.name).filter(Boolean);
+      const mgrEmails = managers.map((m) => m.email).filter(Boolean);
+      const mgrPhones = managers.map((m) => m.contactNo).filter(Boolean);
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(),
           contactEmail: form.contactEmail.trim() || null,
-          contactPhone: form.contactPhone.trim() || null,
-          accountManagerName: form.accountManagerName.trim() || null,
-          accountManagerEmail: form.accountManagerEmail.trim() || null,
+          contactPhone: mgrPhones.join("; ") || null,
+          accountManagerName: mgrNames.join("; ") || null,
+          accountManagerEmail: mgrEmails.join("; ") || null,
           serviceCategory: form.serviceCategory || null,
           departmentId: form.departmentId || null,
           status: form.status,
-          engagementId: form.engagementId.trim() || null,
           vrr: form.vrr || null,
           serviceDescription: form.serviceDescription.trim() || null,
           contractStartDate: form.contractStartDate || null,
@@ -701,10 +720,6 @@ export default function VendorManagementPage() {
                   <Input className="mt-1.5 bg-white" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("Enter vendor name")} />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Engagement ID")}</Label>
-                  <Input className="mt-1.5 bg-white" value={form.engagementId} onChange={(e) => setForm({ ...form, engagementId: e.target.value })} />
-                </div>
-                <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Service Category")}</Label>
                   <Select value={form.serviceCategory || "none"} onValueChange={(v) => setForm({ ...form, serviceCategory: v === "none" ? "" : v })}>
                     <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select category")} /></SelectTrigger>
@@ -738,24 +753,36 @@ export default function VendorManagementPage() {
             {/* Contact Details */}
             <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Contact Details")}</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Account Manager Name")}</Label>
-                  <Input className="mt-1.5 bg-white" value={form.accountManagerName} onChange={(e) => setForm({ ...form, accountManagerName: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Account Manager Email")}</Label>
-                  <Input className="mt-1.5 bg-white" type="email" value={form.accountManagerEmail} onChange={(e) => setForm({ ...form, accountManagerEmail: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Contact Email")}</Label>
-                  <Input className="mt-1.5 bg-white" type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Contact Number")}</Label>
-                  <Input className="mt-1.5 bg-white" value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} />
-                </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Contact Email")}</Label>
+                <Input className="mt-1.5 bg-white" type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} />
               </div>
+              {managers.map((manager, index) => (
+                <div key={index} className="space-y-3 border rounded-md p-3 relative">
+                  {index > 0 && (
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-1 ltr:right-1 rtl:left-1 h-6 w-6 text-destructive" onClick={() => removeManager(index)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1 space-y-1.5">
+                      <Label className="text-sm font-medium text-slate-700">{t("Account Manager Name")}</Label>
+                      <Input className="bg-white" value={manager.name} onChange={(e) => updateManager(index, "name", e.target.value)} placeholder={t("Enter account manager name")} />
+                    </div>
+                    {index === 0 && (
+                      <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={addManager}><Plus className="h-4 w-4" /></Button>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Account Manager Email")}</Label>
+                    <Input className="bg-white" type="email" value={manager.email} onChange={(e) => updateManager(index, "email", e.target.value)} placeholder={t("Enter account manager email")} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Contact Number")}</Label>
+                    <Input className="bg-white" value={manager.contactNo} onChange={(e) => updateManager(index, "contactNo", e.target.value)} placeholder={t("e.g. +0919898989898")} />
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Contract & Classification */}
