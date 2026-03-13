@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <SessionProvider>
+        <SessionProvider refetchOnWindowFocus={false}>
           <LanguageProvider>
             {children}
           </LanguageProvider>
