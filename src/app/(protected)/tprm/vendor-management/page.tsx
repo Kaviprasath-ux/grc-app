@@ -111,6 +111,7 @@ function VendorAccordionItem({
   onDelete,
   onExport,
   t,
+  hideEditDelete,
 }: {
   vendor: Vendor;
   isExpanded: boolean;
@@ -119,6 +120,7 @@ function VendorAccordionItem({
   onDelete: (id: string) => void;
   onExport: (v: Vendor) => void;
   t: (s: string) => string;
+  hideEditDelete?: boolean;
 }) {
   const a = vendor.monitoringVendor?.assessments[0];
   const effOverall = a?.calculatedOverallScore ?? a?.overallScore ?? null;
@@ -152,14 +154,18 @@ function VendorAccordionItem({
               <Upload className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
               {t("Export")}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onEdit(vendor)}>
-              <Pencil className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
-              {t("Edit")}
-            </Button>
-            <Button size="sm" variant="destructive" onClick={() => onDelete(vendor.id)}>
-              <Trash2 className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
-              {t("Delete")}
-            </Button>
+            {!hideEditDelete && (
+              <>
+                <Button size="sm" variant="outline" onClick={() => onEdit(vendor)}>
+                  <Pencil className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+                  {t("Edit")}
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => onDelete(vendor.id)}>
+                  <Trash2 className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+                  {t("Delete")}
+                </Button>
+              </>
+            )}
           </div>
 
           {/* ── DataGrid table — mirrors Mendix columns ── */}
@@ -685,6 +691,7 @@ export default function VendorManagementPage() {
                 onDelete={handleDelete}
                 onExport={handleExport}
                 t={t}
+                hideEditDelete={isCustomerAdmin}
               />
             ))}
           </div>

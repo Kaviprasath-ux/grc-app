@@ -67,6 +67,7 @@ export const GET = withAuth(
         Onboarded: 0,
         Offboarding: 0,
         Offboarded: 0,
+        Inactive: 0,
       };
       let totalVendors = 0;
       for (const item of vendorCounts) {

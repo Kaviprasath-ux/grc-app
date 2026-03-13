@@ -2454,7 +2454,8 @@ function ScorecardSection() {
     } finally {
       setLoading(false);
     }
-  }, [toast, t]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -2671,8 +2672,10 @@ function ScorecardSection() {
               value={config.securityPostureWeight}
               onChange={(e) => {
                 const val = parseInt(e.target.value) || 0;
-                saveConfig({ securityPostureWeight: val, threatExposureWeight: 100 - val });
+                setConfig((prev) => ({ ...prev, securityPostureWeight: val, threatExposureWeight: 100 - val }));
               }}
+              onBlur={() => saveConfig({ securityPostureWeight: config.securityPostureWeight, threatExposureWeight: config.threatExposureWeight })}
+              onKeyDown={(e) => { if (e.key === "Enter") saveConfig({ securityPostureWeight: config.securityPostureWeight, threatExposureWeight: config.threatExposureWeight }); }}
             />
           </div>
           <div>
@@ -2684,8 +2687,10 @@ function ScorecardSection() {
               value={config.threatExposureWeight}
               onChange={(e) => {
                 const val = parseInt(e.target.value) || 0;
-                saveConfig({ threatExposureWeight: val, securityPostureWeight: 100 - val });
+                setConfig((prev) => ({ ...prev, threatExposureWeight: val, securityPostureWeight: 100 - val }));
               }}
+              onBlur={() => saveConfig({ securityPostureWeight: config.securityPostureWeight, threatExposureWeight: config.threatExposureWeight })}
+              onKeyDown={(e) => { if (e.key === "Enter") saveConfig({ securityPostureWeight: config.securityPostureWeight, threatExposureWeight: config.threatExposureWeight }); }}
             />
           </div>
         </div>

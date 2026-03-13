@@ -536,11 +536,12 @@ export const POST = withAuth(
             console.error("⚠️ [SCAN] Notification error:", notifErr);
           }
         } catch (err) {
-          console.error("❌ [SCAN] Background scan failed:", err);
-          // Mark placeholder as error
+          const errMsg = err instanceof Error ? err.message : String(err);
+          console.error("❌ [SCAN] Background scan failed:", errMsg, err);
+          // Mark placeholder as error and store error message
           await prisma.tPRMMonitoringAssessment.update({
             where: { id: placeholder.id },
-            data: { status: "error", isLatest: false },
+            data: { status: "error", isLatest: false, overallSummary: `Scan error: ${errMsg}` },
           }).catch(() => {});
         }
       })();
@@ -576,7 +577,7 @@ export const GET = withAuth(
       // Check DB for the assessment status
       const assessment = await prisma.tPRMMonitoringAssessment.findFirst({
         where: { jobID: jobId, customerAccountId },
-        select: { id: true, status: true, monitoringVendorId: true },
+        select: { id: true, status: true, monitoringVendorId: true, overallSummary: true },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -591,11 +592,14 @@ export const GET = withAuth(
         return NextResponse.json({ jobId, status });
       }
 
-      // If error, tell frontend to stop polling
+      // If error, tell frontend to stop polling — include the actual error message
       if (status === "error") {
+        const errorDetail = assessment.overallSummary?.startsWith("Scan error:")
+          ? assessment.overallSummary.replace("Scan error: ", "")
+          : "Scan failed. Please re-trigger.";
         return NextResponse.json({
           status: "done",
-          error: "Scan failed. Please re-trigger.",
+          error: errorDetail,
         });
       }
 

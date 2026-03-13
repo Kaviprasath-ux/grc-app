@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home, ChevronRight, ClipboardList, Building2, Loader2, Factory, UserCheck, Clock, Zap, LogIn, CheckCircle2, LogOut, Archive } from "lucide-react";
+import { Home, ChevronRight, ClipboardList, Building2, Loader2, Factory, UserCheck, Clock, Zap, LogIn, CheckCircle2, LogOut, Archive, Ban } from "lucide-react";
 
 interface ProgramData {
   assessments: {
@@ -113,6 +113,7 @@ export default function ProgramMonitorPage() {
     { label: "Onboarded", count: data.vendors.breakdown.Onboarded, dot: "border-green-400", bg: "bg-green-50", iconColor: "text-green-600", icon: CheckCircle2 },
     { label: "Offboarding", count: data.vendors.breakdown.Offboarding, dot: "border-amber-400", bg: "bg-amber-50", iconColor: "text-amber-600", icon: LogOut },
     { label: "Offboarded", count: data.vendors.breakdown.Offboarded, dot: "border-slate-400", bg: "bg-slate-50", iconColor: "text-slate-600", icon: Archive },
+    { label: "Inactive", count: data.vendors.breakdown.Inactive, dot: "border-red-400", bg: "bg-red-50", iconColor: "text-red-600", icon: Ban },
   ] : [];
 
   const getUsageColor = (ratio: number) => {
