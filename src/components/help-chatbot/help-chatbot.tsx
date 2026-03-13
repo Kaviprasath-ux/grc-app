@@ -57,8 +57,9 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    sendMessage(inputValue);
+    const value = inputValue;
     setInputValue("");
+    void sendMessage(value);
   };
 
   // Find module name for active module
@@ -133,6 +134,11 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
               content={msg.content}
               article={msg.article}
               results={msg.results}
+              sources={msg.sources}
+              confidence={msg.confidence}
+              blocked={msg.blocked}
+              isRAG={msg.isRAG}
+              isDataQuery={msg.isDataQuery}
               onSelectArticle={selectArticle}
             />
           ))}

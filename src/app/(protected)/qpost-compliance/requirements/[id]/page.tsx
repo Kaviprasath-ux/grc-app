@@ -501,6 +501,20 @@ export default function QPostRequirementDetailPage() {
   };
 
   // ---------------------------------------------------------------------------
+  // Translation hooks (must be called before any early returns)
+  // ---------------------------------------------------------------------------
+
+  const rawEvidences = requirement ? requirement.evidences.map((e) => e.evidence) : [];
+  const rawPolicies = requirement ? requirement.policies.map((p) => p.policy) : [];
+  const rawExceptions = requirement ? [...(requirement.exceptions || []), ...(requirement.complianceExceptions || [])] : [];
+
+  const { data: trReq } = useTranslatedRecord(requirement, { modelName: "QPostRequirement" });
+  const req = (trReq || requirement) as Requirement;
+  const { data: evidences } = useTranslatedData(rawEvidences, { modelName: "QPostEvidence" });
+  const { data: policies } = useTranslatedData(rawPolicies, { modelName: "QPostPolicy" });
+  const { data: exceptions } = useTranslatedData(rawExceptions, { modelName: "QPostException" });
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
 
@@ -523,17 +537,6 @@ export default function QPostRequirementDetailPage() {
       </div>
     );
   }
-
-  const rawEvidences = requirement.evidences.map((e) => e.evidence);
-  const rawPolicies = requirement.policies.map((p) => p.policy);
-  const rawExceptions = [...(requirement.exceptions || []), ...(requirement.complianceExceptions || [])];
-
-  // Translation hooks for display
-  const { data: trReq } = useTranslatedRecord(requirement, { modelName: "QPostRequirement" });
-  const req = (trReq || requirement) as Requirement;
-  const { data: evidences } = useTranslatedData(rawEvidences, { modelName: "QPostEvidence" });
-  const { data: policies } = useTranslatedData(rawPolicies, { modelName: "QPostPolicy" });
-  const { data: exceptions } = useTranslatedData(rawExceptions, { modelName: "QPostException" });
 
   return (
     <div className="p-6 space-y-6">

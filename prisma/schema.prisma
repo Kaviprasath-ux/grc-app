@@ -158,6 +158,8 @@ model CustomerAccount {
   qpostExceptions            QPostException[]
   qpostKpis                  QPostKPI[]
   qpostGovernanceVaultDocuments QPostGovernanceVaultDocument[]
+  // Chatbot relations
+  chatbotAuditLogs               ChatbotAuditLog[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -466,6 +468,8 @@ model User {
   tprmRemediationComments    TPRMRemediationComment[] @relation("TPRMRemediationComments")
   tprmRemediationAssignments TPRMIssueRemediation[]  @relation("TPRMRemediationAssignee")
   tprmOffboardDelegations    TPRMOffboardResponse[]  @relation("TPRMOffboardDelegatee")
+  // Chatbot relations
+  chatbotAuditLogs           ChatbotAuditLog[]     @relation("ChatbotAuditLogs")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -4804,4 +4808,56 @@ model QPostEvidenceManualReview {
 
 // ============================================================
 // QPOST COMPLIANCE MODULE - END
+// ============================================================
+
+// ============================================================
+// AI CHATBOT - KB RAG + GUARDRAILS
+// ============================================================
+
+// KB article embeddings for RAG search (pgvector)
+model ChatbotKBArticle {
+  id                String   @id @default(cuid())
+  articleKey         String   // matches helpArticles id (e.g., "gen-login")
+  module             String   // e.g., "general", "compliance", "risk-management"
+  category           String
+  productScope       String   // "grc", "tprm", "audit", "both"
+  roles              String[] // empty = all roles, ["AuditHead"] = restricted
+  question           String   @db.Text
+  content            String   @db.Text // concatenated: question + answer + steps + notes
+  embedding          Float[]  // 1536-dim vector from text-embedding-3-small
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([articleKey])
+  @@index([module])
+  @@index([productScope])
+}
+
+// Audit log for all chatbot interactions (compliance + security monitoring)
+model ChatbotAuditLog {
+  id                String   @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation("ChatbotAuditLogs", fields: [userId], references: [id])
+  userRole          String   // primary role at time of query
+  query             String   @db.Text // original user question
+  queryRedacted     String   @db.Text // PII-redacted version
+  intent            String   // kb_search, data_query, general_chat
+  guardrailFlags    Json?    // which guardrails triggered { inputBlocked, piiDetected, queryBlocked }
+  responsePreview   String?  @db.Text // first 300 chars of response
+  piiDetected       Boolean  @default(false)
+  blocked           Boolean  @default(false)
+  blockReason       String?
+  tokensUsed        Int      @default(0)
+  latencyMs         Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  @@index([customerAccountId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// AI CHATBOT - END
 // ============================================================

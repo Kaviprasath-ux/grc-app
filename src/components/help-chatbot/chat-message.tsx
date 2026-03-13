@@ -5,13 +5,18 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { HelpArticle } from "@/data/help-knowledge-base";
 import type { ScoredResult } from "@/lib/help-search";
-import { ExternalLink, User, Bot } from "lucide-react";
+import { ExternalLink, User, Bot, ShieldAlert, Sparkles, BookOpen, Database } from "lucide-react";
 
 interface ChatMessageProps {
   role: "user" | "bot";
   content: string;
   article?: HelpArticle;
   results?: ScoredResult[];
+  sources?: { articleKey: string; question: string; similarity: number }[];
+  confidence?: "high" | "medium" | "low";
+  blocked?: boolean;
+  isRAG?: boolean;
+  isDataQuery?: boolean;
   onSelectArticle?: (article: HelpArticle) => void;
 }
 
@@ -20,6 +25,11 @@ export function ChatMessage({
   content,
   article,
   results,
+  sources,
+  confidence,
+  blocked,
+  isRAG,
+  isDataQuery,
   onSelectArticle,
 }: ChatMessageProps) {
   const { t } = useLanguage();
@@ -47,8 +57,21 @@ export function ChatMessage({
         <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-500 flex items-center justify-center">
           <Bot className="w-3.5 h-3.5 text-white" />
         </div>
-        <div className="rounded-2xl rounded-bl-sm bg-slate-50 border border-slate-200 px-4 py-2.5 text-sm space-y-3">
-          {/* Overview */}
+        <div className={cn(
+          "rounded-2xl rounded-bl-sm border px-4 py-2.5 text-sm space-y-3",
+          blocked
+            ? "bg-red-50 border-red-200"
+            : "bg-slate-50 border-slate-200"
+        )}>
+          {/* Blocked indicator */}
+          {blocked && (
+            <div className="flex items-center gap-1.5 text-red-600 text-xs font-medium">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              {t("Request blocked by security policy")}
+            </div>
+          )}
+
+          {/* Article-based response (Phase 1 style) */}
           {article ? (
             <div>
               <p className="font-medium text-slate-800 mb-1">
@@ -113,10 +136,75 @@ export function ChatMessage({
               )}
             </div>
           ) : (
-            <p className="text-slate-700">{content}</p>
+            /* RAG or plain text response */
+            <div>
+              {/* AI badge for RAG responses */}
+              {isRAG && (
+                <div className="flex items-center gap-1 mb-1.5">
+                  <Sparkles className="w-3 h-3 text-purple-500" />
+                  <span className="text-[10px] font-medium text-purple-600 uppercase tracking-wider">
+                    {t("AI Generated")}
+                  </span>
+                </div>
+              )}
+              {/* Data query badge */}
+              {isDataQuery && (
+                <div className="flex items-center gap-1 mb-1.5">
+                  <Database className="w-3 h-3 text-blue-500" />
+                  <span className="text-[10px] font-medium text-blue-600 uppercase tracking-wider">
+                    {t("Data Query")}
+                  </span>
+                </div>
+              )}
+              <div
+                className="text-slate-700 chatbot-markdown"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+              />
+            </div>
           )}
 
-          {/* Other matching results */}
+          {/* Source citations (RAG) */}
+          {sources && sources.length > 0 && !article && (
+            <div className="mt-2 border-t border-slate-200 pt-2">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                <BookOpen className="w-3 h-3" />
+                {t("Sources")}
+              </p>
+              <div className="space-y-0.5">
+                {sources.slice(0, 3).map((source) => (
+                  <div
+                    key={source.articleKey}
+                    className="text-xs text-slate-500 flex items-center gap-1"
+                  >
+                    <span className="text-primary-600">{source.question}</span>
+                    <span className="text-slate-300">
+                      ({Math.round(source.similarity * 100)}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Confidence indicator (RAG or Data Query) */}
+          {confidence && (isRAG || isDataQuery) && (
+            <div className="mt-1">
+              <span
+                className={cn(
+                  "inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                  confidence === "high" && "bg-green-100 text-green-700",
+                  confidence === "medium" && "bg-amber-100 text-amber-700",
+                  confidence === "low" && "bg-red-100 text-red-700"
+                )}
+              >
+                {confidence === "high" && t("High confidence")}
+                {confidence === "medium" && t("Medium confidence")}
+                {confidence === "low" && t("Low confidence")}
+              </span>
+            </div>
+          )}
+
+          {/* Other matching results (Phase 1 related questions) */}
           {results && results.length > 1 && (
             <div className="mt-2 border-t border-slate-200 pt-2">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
@@ -152,6 +240,70 @@ function formatBold(text: string): string {
     /\*\*(.*?)\*\*/g,
     '<strong class="font-semibold text-slate-900">$1</strong>'
   );
+}
+
+/**
+ * Lightweight markdown renderer for chatbot responses.
+ * Handles: bold, bullet lists, numbered lists, headings, paragraphs.
+ */
+function renderMarkdown(text: string): string {
+  // Sanitize HTML entities first (prevent XSS)
+  let safe = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Split into lines for block-level processing
+  const lines = safe.split("\n");
+  const htmlParts: string[] = [];
+  let inUl = false;
+  let inOl = false;
+
+  const applyInline = (s: string) =>
+    s.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-slate-900">$1</strong>');
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+
+    // Check for numbered list: "1. text" or "1) text"
+    const olMatch = raw.match(/^\s*(\d+)[.)]\s+(.+)/);
+    if (olMatch) {
+      if (inUl) { htmlParts.push("</ul>"); inUl = false; }
+      if (!inOl) { htmlParts.push('<ol class="list-decimal list-inside space-y-0.5 my-1 text-slate-700">'); inOl = true; }
+      htmlParts.push(`<li>${applyInline(olMatch[2])}</li>`);
+      continue;
+    }
+
+    // Check for bullet list: "- text" or "• text"
+    const ulMatch = raw.match(/^\s*[-•]\s+(.+)/);
+    if (ulMatch) {
+      if (inOl) { htmlParts.push("</ol>"); inOl = false; }
+      if (!inUl) { htmlParts.push('<ul class="list-disc list-inside space-y-0.5 my-1 text-slate-700">'); inUl = true; }
+      htmlParts.push(`<li>${applyInline(ulMatch[1])}</li>`);
+      continue;
+    }
+
+    const line = applyInline(raw);
+
+    // Close any open list
+    if (inUl) { htmlParts.push("</ul>"); inUl = false; }
+    if (inOl) { htmlParts.push("</ol>"); inOl = false; }
+
+    // Empty line → spacing
+    if (line.trim() === "") {
+      htmlParts.push('<div class="h-1.5"></div>');
+      continue;
+    }
+
+    // Regular paragraph
+    htmlParts.push(`<p class="my-0.5">${line}</p>`);
+  }
+
+  // Close any remaining open list
+  if (inUl) htmlParts.push("</ul>");
+  if (inOl) htmlParts.push("</ol>");
+
+  return htmlParts.join("");
 }
 
 /**

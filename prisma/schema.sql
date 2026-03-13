@@ -3585,6 +3585,44 @@ CREATE TABLE "QPostEvidenceManualReview" (
 );
 
 -- CreateTable
+CREATE TABLE "ChatbotKBArticle" (
+    "id" TEXT NOT NULL,
+    "articleKey" TEXT NOT NULL,
+    "module" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "productScope" TEXT NOT NULL,
+    "roles" TEXT[],
+    "question" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "embedding" DOUBLE PRECISION[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ChatbotKBArticle_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ChatbotAuditLog" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "userRole" TEXT NOT NULL,
+    "query" TEXT NOT NULL,
+    "queryRedacted" TEXT NOT NULL,
+    "intent" TEXT NOT NULL,
+    "guardrailFlags" JSONB,
+    "responsePreview" TEXT,
+    "piiDetected" BOOLEAN NOT NULL DEFAULT false,
+    "blocked" BOOLEAN NOT NULL DEFAULT false,
+    "blockReason" TEXT,
+    "tokensUsed" INTEGER NOT NULL DEFAULT 0,
+    "latencyMs" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ChatbotAuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_EngagementTeamMembers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
@@ -4612,6 +4650,24 @@ CREATE INDEX "QPostPolicyManualReview_policyId_idx" ON "QPostPolicyManualReview"
 
 -- CreateIndex
 CREATE INDEX "QPostEvidenceManualReview_evidenceId_idx" ON "QPostEvidenceManualReview"("evidenceId");
+
+-- CreateIndex
+CREATE INDEX "ChatbotKBArticle_module_idx" ON "ChatbotKBArticle"("module");
+
+-- CreateIndex
+CREATE INDEX "ChatbotKBArticle_productScope_idx" ON "ChatbotKBArticle"("productScope");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ChatbotKBArticle_articleKey_key" ON "ChatbotKBArticle"("articleKey");
+
+-- CreateIndex
+CREATE INDEX "ChatbotAuditLog_customerAccountId_idx" ON "ChatbotAuditLog"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "ChatbotAuditLog_userId_idx" ON "ChatbotAuditLog"("userId");
+
+-- CreateIndex
+CREATE INDEX "ChatbotAuditLog_createdAt_idx" ON "ChatbotAuditLog"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
@@ -5824,6 +5880,12 @@ ALTER TABLE "QPostEvidenceManualReview" ADD CONSTRAINT "QPostEvidenceManualRevie
 
 -- AddForeignKey
 ALTER TABLE "QPostEvidenceManualReview" ADD CONSTRAINT "QPostEvidenceManualReview_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ChatbotAuditLog" ADD CONSTRAINT "ChatbotAuditLog_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ChatbotAuditLog" ADD CONSTRAINT "ChatbotAuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
