@@ -588,7 +588,9 @@ export default function ExceptionsPage() {
     pending: translatedExceptions.filter((e) => e.status === "Pending").length,
     approved: translatedExceptions.filter((e) => e.status === "Approved").length,
     authorised: translatedExceptions.filter((e) => e.status === "Authorised").length,
+    submittedForClosure: translatedExceptions.filter((e) => e.status === "Submitted for Closure").length,
     overdue: translatedExceptions.filter((e) => e.status === "Overdue").length,
+    riskAccepted: translatedExceptions.filter((e) => e.status === "RiskAccepted").length,
     closed: translatedExceptions.filter((e) => e.status === "Closed").length,
   };
 
@@ -1059,7 +1061,9 @@ export default function ExceptionsPage() {
                       { name: t("Pending"), value: statusCounts.pending, color: "#f59e0b" },
                       { name: t("Approved"), value: statusCounts.approved, color: "#22c55e" },
                       { name: t("Authorised"), value: statusCounts.authorised, color: "#3b82f6" },
+                      { name: t("Submitted for Closure"), value: statusCounts.submittedForClosure, color: "#7c3aed" },
                       { name: t("Overdue"), value: statusCounts.overdue, color: "#ef4444" },
+                      { name: t("Risk Accepted"), value: statusCounts.riskAccepted, color: "#f97316" },
                       { name: t("Closed"), value: statusCounts.closed, color: "#64748b" },
                     ].filter(item => item.value > 0)}
                     cx="50%"
@@ -1073,7 +1077,9 @@ export default function ExceptionsPage() {
                       { name: t("Pending"), value: statusCounts.pending, color: "#f59e0b" },
                       { name: t("Approved"), value: statusCounts.approved, color: "#22c55e" },
                       { name: t("Authorised"), value: statusCounts.authorised, color: "#3b82f6" },
+                      { name: t("Submitted for Closure"), value: statusCounts.submittedForClosure, color: "#7c3aed" },
                       { name: t("Overdue"), value: statusCounts.overdue, color: "#ef4444" },
+                      { name: t("Risk Accepted"), value: statusCounts.riskAccepted, color: "#f97316" },
                       { name: t("Closed"), value: statusCounts.closed, color: "#64748b" },
                     ].filter(item => item.value > 0).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />

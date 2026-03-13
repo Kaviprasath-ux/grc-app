@@ -74,6 +74,7 @@ import {
   X,
   Eye,
   Loader2,
+  Bot,
 } from "lucide-react";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -2227,7 +2228,7 @@ export default function GovernanceDetailPage() {
             /* Customer Admin: 3 Card Options */
             <div className="space-y-6">
               {/* 3 Option Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {/* Option 1: Upload Existing File */}
                 {(() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
@@ -2242,13 +2243,13 @@ export default function GovernanceDetailPage() {
                     }}>
                       <DialogTrigger asChild disabled={hasDocument}>
                         <div
-                          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                          className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
                             hasDocument
                               ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
                               : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
                           }`}
                         >
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${
                             hasDocument ? "bg-slate-100" : "bg-primary-50"
                           }`}>
                             <Upload className={`h-6 w-6 ${hasDocument ? "text-slate-400" : "text-primary-500"}`} />
@@ -2369,19 +2370,19 @@ export default function GovernanceDetailPage() {
                     }}>
                       <DialogTrigger asChild disabled={isDisabled}>
                         <div
-                          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                          className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
                             isDisabled
                               ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
                               : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
                           }`}
                         >
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${
                             isDisabled ? "bg-slate-100" : "bg-purple-100"
                           }`}>
                             <Sparkles className={`h-6 w-6 ${isDisabled ? "text-slate-400" : "text-purple-600"}`} />
                           </div>
                           <h3 className={`font-medium ${isDisabled ? "text-slate-400" : "text-slate-800"}`}>
-                            {t("Generate Policy Using AI")}
+                            {t("Compliance Policy Composer")}
                           </h3>
                           <p className={`text-sm mt-1 ${isDisabled ? "text-slate-300" : "text-slate-500"}`}>
                             {hasDocument
@@ -2394,7 +2395,7 @@ export default function GovernanceDetailPage() {
                       </DialogTrigger>
                       <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                         <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
-                          <DialogTitle className="text-base font-semibold text-slate-800">{t("Generate Policy Using AI")}</DialogTitle>
+                          <DialogTitle className="text-base font-semibold text-slate-800">{t("Compliance Policy Composer")}</DialogTitle>
                         </DialogHeader>
                         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2572,13 +2573,13 @@ export default function GovernanceDetailPage() {
                     }}>
                       <DialogTrigger asChild disabled={hasDocument}>
                         <div
-                          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                          className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
                             hasDocument
                               ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
                               : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
                           }`}
                         >
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${
                             hasDocument ? "bg-slate-100" : "bg-green-100"
                           }`}>
                             <Link2 className={`h-6 w-6 ${hasDocument ? "text-slate-400" : "text-green-600"}`} />
@@ -2706,6 +2707,34 @@ export default function GovernanceDetailPage() {
                     </div>
                   </DialogContent>
                     </Dialog>
+                  );
+                })()}
+
+                {/* Option 4: AI Policy Generator */}
+                {(() => {
+                  const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
+                  return (
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                        hasDocument
+                          ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
+                          : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                        hasDocument ? "bg-slate-100" : "bg-blue-100"
+                      }`}>
+                        <Bot className={`h-6 w-6 ${hasDocument ? "text-slate-400" : "text-blue-600"}`} />
+                      </div>
+                      <h3 className={`font-medium ${hasDocument ? "text-slate-400" : "text-slate-800"}`}>
+                        {t("AI Policy Generator")}
+                      </h3>
+                      <p className={`text-sm mt-1 ${hasDocument ? "text-slate-300" : "text-slate-500"}`}>
+                        {hasDocument
+                          ? t("Delete existing file first")
+                          : t("Auto-generate policy with AI")}
+                      </p>
+                    </div>
                   );
                 })()}
               </div>
