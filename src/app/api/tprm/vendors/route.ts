@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from "@/lib/notification-service";
 import { translateRecord } from "@/lib/translation-service";
+import { checkVendorLimit } from "@/lib/tprm-subscription";
 
 // GET all vendors with search and pagination
 export const GET = withAuth(
@@ -114,6 +115,12 @@ export const POST = withAuth(
     try {
       const body = await req.json();
       const customerAccountId = getCustomerAccountId(session);
+
+      // Check subscription plan vendor limit
+      const vendorCheck = await checkVendorLimit(customerAccountId);
+      if (!vendorCheck.allowed) {
+        return NextResponse.json({ error: vendorCheck.message }, { status: 403 });
+      }
 
       // Generate vendor code - reuse existing code for same vendor name, or create new
       let vendorCode: string;

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from "@/lib/notification-service";
 import { translateRecord } from "@/lib/translation-service";
+import { checkAssessmentLimit, checkFactoryAssessmentLimit } from "@/lib/tprm-subscription";
 
 // GET assessments with search, filters, pagination
 export const GET = withAuth(
@@ -76,6 +77,14 @@ export const POST = withAuth(
     try {
       const body = await req.json();
       const customerAccountId = getCustomerAccountId(session);
+
+      // Check subscription plan assessment limit (factory vs customer)
+      const assessmentCheck = body.assessmentType === "Assessment Factory"
+        ? await checkFactoryAssessmentLimit(customerAccountId)
+        : await checkAssessmentLimit(customerAccountId);
+      if (!assessmentCheck.allowed) {
+        return NextResponse.json({ error: assessmentCheck.message }, { status: 403 });
+      }
 
       // Generate assessment code
       const count = await prisma.tPRMAssessment.count({

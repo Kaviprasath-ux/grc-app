@@ -7,6 +7,7 @@ import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 // import { getExternalApiUrl, EXTERNAL_API_SECRETS } from "@/config/external-apis";
 import { notificationService } from "@/lib/notification-service";
 import { runVendorScan } from "@/lib/openai-vendor-scan";
+import { checkAssessmentLimit } from "@/lib/tprm-subscription";
 
 // Save scan response JSON to scan-results folder
 async function saveResponseJson(vendorName: string, data: unknown) {
@@ -401,6 +402,13 @@ export const POST = withAuth(
   async (req, _context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
+
+      // Check subscription plan assessment limit
+      const assessmentCheck = await checkAssessmentLimit(customerAccountId);
+      if (!assessmentCheck.allowed) {
+        return NextResponse.json({ error: assessmentCheck.message }, { status: 403 });
+      }
+
       const { vendorName, vendorURL } = (await req.json()) as {
         vendorName?: string;
         vendorURL?: string;
