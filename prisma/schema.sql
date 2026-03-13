@@ -2435,6 +2435,7 @@ CREATE TABLE "TPRMVendor" (
     "offboardedDate" TIMESTAMP(3),
     "contractDocumentName" TEXT,
     "contractDocumentPath" TEXT,
+    "onboardingAnswers" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Minus, Pencil, Trash2, Search, X, Info,
-  Download, Building2, Shield, Activity, AlertTriangle, Loader2,Upload,
+  Download, Building2, Shield, Activity, AlertTriangle, Loader2, Upload, ChevronDown, FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
@@ -290,6 +293,7 @@ export default function VendorManagementPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const isTPRMAdmin = useHasRole("TPRMAdmin");
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -299,6 +303,12 @@ export default function VendorManagementPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [rawServiceCategories, setRawServiceCategories] = useState<{ id: string; name: string }[]>([]);
   const { data: serviceCategories } = useTranslatedData(rawServiceCategories, { modelName: 'TPRMServiceCategory' });
+
+  // Import dialog state
+  const [importVendorOpen, setImportVendorOpen] = useState(false);
+  const [importQuestionsOpen, setImportQuestionsOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const [form, setForm] = useState({
     name: "", contactEmail: "", contactPhone: "", accountManagerName: "",
@@ -454,6 +464,91 @@ export default function VendorManagementPage() {
     }
   };
 
+  // ── Export/Import handlers ──
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await fetch("/api/tprm/vendor-management/export-template");
+      if (!res.ok) throw new Error("Failed to download");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Vendor_Profile_Template.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to download template"), variant: "destructive" });
+    }
+  };
+
+  const handleExportQuestions = async () => {
+    try {
+      const res = await fetch("/api/tprm/vendor-management/export-questions");
+      if (!res.ok) throw new Error("Failed to export");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Vendor_Risk_Rating_Questions.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to export questions"), variant: "destructive" });
+    }
+  };
+
+  const handleImportVendors = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", importFile);
+      const res = await fetch("/api/tprm/vendor-management/import-vendors", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: t("Error"), description: data.error || t("Import failed"), variant: "destructive" });
+        return;
+      }
+      toast({
+        title: t("Import Complete"),
+        description: `${data.created} ${t("vendors created")}${data.skipped ? `, ${data.skipped} ${t("skipped")}` : ""}`,
+      });
+      setImportVendorOpen(false);
+      setImportFile(null);
+      loadVendors();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to import vendors"), variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleImportQuestions = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", importFile);
+      const res = await fetch("/api/tprm/vendor-management/import-questions", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: t("Error"), description: data.error || t("Import failed"), variant: "destructive" });
+        return;
+      }
+      toast({
+        title: t("Import Complete"),
+        description: `${data.responsesUpdated} ${t("responses updated")}, ${data.ratingsUpdated} ${t("ratings updated")}`,
+      });
+      setImportQuestionsOpen(false);
+      setImportFile(null);
+      loadVendors();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to import responses"), variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleExport = (vendor?: Vendor) => {
     const rows = vendor ? [vendor] : filteredVendors;
     const headers = ["Vendor Name", "Engagement ID", "Status", "Department", "Service Category", "VRR"];
@@ -484,10 +579,35 @@ export default function VendorManagementPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Vendor Inventory")}</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleExport()}>
-            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Bulk Export")}
-          </Button>
+          {isCustomerAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <FileUp className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Export/Import")}
+                  <ChevronDown className="h-3.5 w-3.5 ltr:ml-1 rtl:mr-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem onClick={handleDownloadTemplate}>
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Download Vendor Profile Template")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setImportFile(null); setImportVendorOpen(true); }}>
+                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Import Vendor Profile")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportQuestions}>
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Export Vendor Risk Rating Questions")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setImportFile(null); setImportQuestionsOpen(true); }}>
+                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Import Responses for Questions")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {!isTPRMAdmin && (
             <Button size="sm" onClick={openCreate}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -728,6 +848,64 @@ export default function VendorManagementPage() {
           <div className="flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg ltr:justify-end rtl:justify-start">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleSave} disabled={!form.name.trim()}>{t("Save")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Import Vendor Profile Dialog ── */}
+      <Dialog open={importVendorOpen} onOpenChange={(v) => { setImportVendorOpen(v); if (!v) setImportFile(null); }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Vendor Profile")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm text-slate-600">{t("Upload the filled vendor profile template (.xlsx or .xls)")}</p>
+            <Input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              className="cursor-pointer"
+            />
+            {importFile && (
+              <p className="text-sm text-slate-500">{importFile.name}</p>
+            )}
+          </div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2 ltr:justify-end rtl:justify-start">
+            <Button onClick={handleImportVendors} disabled={!importFile || importing} size="sm">
+              {importing ? <><Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />{t("Importing...")}</> : t("Import")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { setImportVendorOpen(false); setImportFile(null); }}>{t("Cancel")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Import Responses for Questions Dialog ── */}
+      <Dialog open={importQuestionsOpen} onOpenChange={(v) => { setImportQuestionsOpen(v); if (!v) setImportFile(null); }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Responses for Questions")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <p className="text-sm text-slate-600">{t("Upload the filled vendor questionnaire with responses (.xlsx or .xls)")}</p>
+            <Input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              className="cursor-pointer"
+            />
+            {importFile && (
+              <p className="text-sm text-slate-500">{importFile.name}</p>
+            )}
+          </div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2 ltr:justify-end rtl:justify-start">
+            <Button onClick={handleImportQuestions} disabled={!importFile || importing} size="sm">
+              {importing ? <><Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />{t("Importing...")}</> : t("Import")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { setImportQuestionsOpen(false); setImportFile(null); }}>{t("Cancel")}</Button>
           </div>
         </DialogContent>
       </Dialog>

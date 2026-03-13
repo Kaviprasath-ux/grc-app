@@ -86,6 +86,7 @@ export const PATCH = withAuth<RouteContext>(
           contractEndDate: body.contractEndDate ? new Date(body.contractEndDate) : undefined,
           onboardedDate: body.onboardedDate ? new Date(body.onboardedDate) : undefined,
           offboardedDate: body.offboardedDate ? new Date(body.offboardedDate) : undefined,
+          onboardingAnswers: body.onboardingAnswers !== undefined ? JSON.stringify(body.onboardingAnswers) : undefined,
         },
         include: {
           department: { select: { id: true, name: true } },

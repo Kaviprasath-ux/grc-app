@@ -50,6 +50,7 @@ interface Vendor {
   engagementId: string | null;
   createdAt: string;
   department: { id: string; name: string } | null;
+  onboardingAnswers: string | null;
   _count?: { assessments: number };
 }
 
@@ -473,6 +474,7 @@ export default function BOInventoryPage() {
       serviceCategory: serviceCategory || null,
       serviceDescription: serviceDescription || null,
       vendorUrl: vendorUrl.trim() || null,
+      onboardingAnswers: questionAnswers,
     };
   };
 
@@ -609,7 +611,17 @@ export default function BOInventoryPage() {
     setManagers(parseManagers(vendor));
     setFormErrors({});
     setProfileAnswers({});
-    setQuestionAnswers({});
+    // Load existing onboarding answers if available
+    if (vendor.onboardingAnswers) {
+      try {
+        const parsed = JSON.parse(vendor.onboardingAnswers);
+        setQuestionAnswers(parsed);
+      } catch {
+        setQuestionAnswers({});
+      }
+    } else {
+      setQuestionAnswers({});
+    }
     setShowEditDialog(true);
   };
 

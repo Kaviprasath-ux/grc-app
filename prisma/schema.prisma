@@ -3421,6 +3421,7 @@ model TPRMVendor {
   offboardedDate      DateTime?
   contractDocumentName String?
   contractDocumentPath String?
+  onboardingAnswers   String?         @db.Text // JSON: { questionId: answer } for onboarding question responses
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
   assessments         TPRMAssessment[]

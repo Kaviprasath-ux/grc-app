@@ -54,7 +54,17 @@ interface VendorDetail {
   offboardedDate: string | null;
   contractDocumentName: string | null;
   contractDocumentPath: string | null;
+  onboardingAnswers: string | null;
   assessments: Assessment[];
+}
+
+interface OnboardingQuestion {
+  id: string;
+  title: string;
+  responseType: string;
+  questionType: string;
+  isActive: boolean;
+  children: OnboardingQuestion[];
 }
 
 interface DocFile {
@@ -87,6 +97,17 @@ export default function VendorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<DocFile[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
+
+  const fetchOnboardingQuestions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/tprm/configurations/onboarding-questions");
+      if (res.ok) {
+        const questions: OnboardingQuestion[] = await res.json();
+        setOnboardingQuestions(questions.filter((q) => q.isActive && q.questionType === "Parent"));
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const fetchVendor = useCallback(async () => {
     try {
@@ -120,7 +141,8 @@ export default function VendorDetailPage() {
   useEffect(() => {
     fetchVendor();
     fetchDocuments();
-  }, [fetchVendor, fetchDocuments]);
+    fetchOnboardingQuestions();
+  }, [fetchVendor, fetchDocuments, fetchOnboardingQuestions]);
 
   const handleDownloadContract = useCallback(async () => {
     if (!vendor) return;
@@ -408,6 +430,35 @@ export default function VendorDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Onboarding Answers */}
+      {vendor.onboardingAnswers && onboardingQuestions.length > 0 && (() => {
+        let answers: Record<string, string> = {};
+        try { answers = JSON.parse(vendor.onboardingAnswers!); } catch { /* ignore */ }
+        if (Object.keys(answers).length === 0) return null;
+        const renderQuestion = (q: OnboardingQuestion, indent = false) => {
+          const answer = answers[q.id];
+          if (!answer) return null;
+          return (
+            <InfoRow key={q.id} label={indent ? `└ ${q.title}` : q.title} value={answer} />
+          );
+        };
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("Onboarding Questions")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {onboardingQuestions.map((pq) => (
+                <div key={pq.id}>
+                  {renderQuestion(pq)}
+                  {pq.children?.filter((c) => c.isActive).map((child) => renderQuestion(child, true))}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Legal Contract */}
       <DocumentSection
         title={t("Legal Contract")}
@@ -587,8 +638,8 @@ export default function VendorDetailPage() {
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-sm text-slate-400 min-w-[180px] flex-shrink-0">{label} :</span>
-      <span className="text-sm font-medium text-slate-800">{value || "—"}</span>
+      <span className="text-sm text-slate-400 min-w-[180px] flex-shrink-0">{label}</span>
+      <span className="text-sm font-medium text-slate-800">: {value || "—"}</span>
     </div>
   );
 }

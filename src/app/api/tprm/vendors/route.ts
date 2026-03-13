@@ -194,6 +194,7 @@ export const POST = withAuth(
           contractStartDate: body.contractStartDate ? new Date(body.contractStartDate) : null,
           contractEndDate: body.contractEndDate ? new Date(body.contractEndDate) : null,
           onboardedDate: body.onboardedDate ? new Date(body.onboardedDate) : null,
+          onboardingAnswers: body.onboardingAnswers ? JSON.stringify(body.onboardingAnswers) : null,
         },
         include: {
           department: { select: { id: true, name: true } },

@@ -560,6 +560,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
           serviceDescription: serviceDescription || null,
           vendorUrl: vendorUrl.trim() || null,
           status: "Onboarding",
+          onboardingAnswers: questionAnswers,
         }),
       });
       if (!createRes.ok) {

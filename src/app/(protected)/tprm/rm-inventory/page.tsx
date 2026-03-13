@@ -50,6 +50,7 @@ interface Vendor {
   engagementId: string | null;
   createdAt: string;
   department: { id: string; name: string } | null;
+  onboardingAnswers: string | null;
   _count?: { assessments: number };
 }
 
@@ -482,6 +483,7 @@ export default function RMInventoryPage() {
       serviceCategory: serviceCategory || null,
       serviceDescription: serviceDescription || null,
       vendorUrl: vendorUrl.trim() || null,
+      onboardingAnswers: questionAnswers,
     };
   };
 
@@ -619,7 +621,16 @@ export default function RMInventoryPage() {
     setManagers(parseManagers(vendor));
     setFormErrors({});
     setProfileAnswers({});
-    setQuestionAnswers({});
+    if (vendor.onboardingAnswers) {
+      try {
+        const parsed = JSON.parse(vendor.onboardingAnswers);
+        setQuestionAnswers(parsed);
+      } catch {
+        setQuestionAnswers({});
+      }
+    } else {
+      setQuestionAnswers({});
+    }
     setShowEditDialog(true);
   };
 
