@@ -24,6 +24,7 @@ interface ProgramData {
       Onboarded: number;
       Offboarding: number;
       Offboarded: number;
+      Inactive: number;
     };
   };
 }

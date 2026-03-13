@@ -33,6 +33,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
 
+// ── Field Validation ──────────────────────────────────
+// General fields: alphabets, numbers, spaces, hyphens, dots, colons, parentheses, slashes
+const GENERAL_FIELD_REGEX = /^[a-zA-Z0-9\s\-.:()\/]*$/;
+const sanitizeGeneral = (value: string): string =>
+  value.split("").filter((ch) => GENERAL_FIELD_REGEX.test(ch)).join("");
+
 // ==================== TYPES ====================
 
 interface ProfileField {
@@ -694,7 +700,7 @@ function VendorOnboardingSection() {
               <Label>{t("Field Title")}</Label>
               <Input
                 value={pfFieldName}
-                onChange={(e) => setPfFieldName(e.target.value)}
+                onChange={(e) => setPfFieldName(sanitizeGeneral(e.target.value))}
                 placeholder={t("Enter field name")}
               />
             </div>
@@ -717,7 +723,7 @@ function VendorOnboardingSection() {
               <Label>{t("Title")}</Label>
               <Input
                 value={obForm.title}
-                onChange={(e) => setObForm({ ...obForm, title: e.target.value })}
+                onChange={(e) => setObForm({ ...obForm, title: sanitizeGeneral(e.target.value) })}
                 placeholder={t("Enter question title")}
               />
             </div>
@@ -725,7 +731,7 @@ function VendorOnboardingSection() {
               <Label>{t("Question")}</Label>
               <Textarea
                 value={obForm.question}
-                onChange={(e) => setObForm({ ...obForm, question: e.target.value })}
+                onChange={(e) => setObForm({ ...obForm, question: sanitizeGeneral(e.target.value) })}
                 placeholder={t("Enter question text")}
                 rows={3}
               />
@@ -988,7 +994,7 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
               <Label>{t(nameLabel)}</Label>
               <Input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(sanitizeGeneral(e.target.value))}
                 placeholder={t("Enter name")}
               />
             </div>
@@ -1542,13 +1548,13 @@ function QuestionnaireManagementSection() {
           {/* Question Title */}
           <div>
             <Label>{t("Question Title")} *</Label>
-            <Textarea value={qForm.questionText} onChange={(e) => setQForm({ ...qForm, questionText: e.target.value })}
+            <Textarea value={qForm.questionText} onChange={(e) => setQForm({ ...qForm, questionText: sanitizeGeneral(e.target.value) })}
               placeholder={t("Enter question text")} rows={3} />
           </div>
           {/* VerifAI Prompt */}
           <div>
             <Label>{t("VerifAI Prompt Question")}</Label>
-            <Textarea value={qForm.verifaiPrompt} onChange={(e) => setQForm({ ...qForm, verifaiPrompt: e.target.value })}
+            <Textarea value={qForm.verifaiPrompt} onChange={(e) => setQForm({ ...qForm, verifaiPrompt: sanitizeGeneral(e.target.value) })}
               placeholder={t("Enter VerifAI prompt")} rows={2} />
           </div>
           {/* Domain */}
@@ -1612,19 +1618,19 @@ function QuestionnaireManagementSection() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>{t("Evidence")}</Label>
-              <Input value={qForm.evidence} onChange={(e) => setQForm({ ...qForm, evidence: e.target.value })} placeholder={t("Enter evidence")} />
+              <Input value={qForm.evidence} onChange={(e) => setQForm({ ...qForm, evidence: sanitizeGeneral(e.target.value) })} placeholder={t("Enter evidence")} />
             </div>
             <div>
               <Label>{t("Issue")}</Label>
-              <Input value={qForm.issue} onChange={(e) => setQForm({ ...qForm, issue: e.target.value })} placeholder={t("Enter issue")} />
+              <Input value={qForm.issue} onChange={(e) => setQForm({ ...qForm, issue: sanitizeGeneral(e.target.value) })} placeholder={t("Enter issue")} />
             </div>
             <div>
               <Label>{t("Risk")}</Label>
-              <Input value={qForm.risk} onChange={(e) => setQForm({ ...qForm, risk: e.target.value })} placeholder={t("Enter risk")} />
+              <Input value={qForm.risk} onChange={(e) => setQForm({ ...qForm, risk: sanitizeGeneral(e.target.value) })} placeholder={t("Enter risk")} />
             </div>
             <div>
               <Label>{t("Recommendation")}</Label>
-              <Input value={qForm.recommendation} onChange={(e) => setQForm({ ...qForm, recommendation: e.target.value })} placeholder={t("Enter recommendation")} />
+              <Input value={qForm.recommendation} onChange={(e) => setQForm({ ...qForm, recommendation: sanitizeGeneral(e.target.value) })} placeholder={t("Enter recommendation")} />
             </div>
           </div>
           {/* Severity */}
@@ -1934,13 +1940,13 @@ function QuestionnaireManagementSection() {
               <div>
                 <Label>{t("Template Name")} *</Label>
                 <Input value={wizardForm.templateName}
-                  onChange={(e) => setWizardForm({ ...wizardForm, templateName: e.target.value })}
+                  onChange={(e) => setWizardForm({ ...wizardForm, templateName: sanitizeGeneral(e.target.value) })}
                   placeholder={t("Enter template name")} />
               </div>
               <div>
                 <Label>{t("Framework")}</Label>
                 <Input value={wizardForm.frameworkName}
-                  onChange={(e) => setWizardForm({ ...wizardForm, frameworkName: e.target.value })}
+                  onChange={(e) => setWizardForm({ ...wizardForm, frameworkName: sanitizeGeneral(e.target.value) })}
                   placeholder={t("Enter framework name")} />
               </div>
               <div>
@@ -2151,12 +2157,12 @@ function QuestionnaireManagementSection() {
             <div>
               <Label>{t("Template Name")}</Label>
               <Input value={editForm.templateName}
-                onChange={(e) => setEditForm({ ...editForm, templateName: e.target.value })} />
+                onChange={(e) => setEditForm({ ...editForm, templateName: sanitizeGeneral(e.target.value) })} />
             </div>
             <div>
               <Label>{t("Framework")}</Label>
               <Input value={editForm.frameworkName}
-                onChange={(e) => setEditForm({ ...editForm, frameworkName: e.target.value })} />
+                onChange={(e) => setEditForm({ ...editForm, frameworkName: sanitizeGeneral(e.target.value) })} />
             </div>
             <div>
               <Label>{t("Template Category")}</Label>
@@ -2383,7 +2389,7 @@ function OffboardingSection() {
               <Label>{t("Title")}</Label>
               <Input
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                onChange={(e) => setForm({ ...form, title: sanitizeGeneral(e.target.value) })}
                 placeholder={t("Enter title")}
               />
             </div>
@@ -2391,7 +2397,7 @@ function OffboardingSection() {
               <Label>{t("Question")}</Label>
               <Textarea
                 value={form.question}
-                onChange={(e) => setForm({ ...form, question: e.target.value })}
+                onChange={(e) => setForm({ ...form, question: sanitizeGeneral(e.target.value) })}
                 placeholder={t("Enter question")}
                 rows={3}
               />
@@ -2803,7 +2809,7 @@ function ScorecardSection() {
               <Label>{t("Name")}</Label>
               <Input
                 value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                onChange={(e) => setEditForm({ ...editForm, name: sanitizeGeneral(e.target.value) })}
               />
             </div>
             <div>
