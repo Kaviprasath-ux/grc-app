@@ -37,6 +37,7 @@ interface RawVendor {
   id: string;
   name: string;
   serviceCategory: string | null;
+  status: string;
   vrr: string | null;
   monitoringVendor: MonitoringVendor | null;
 }
@@ -45,6 +46,7 @@ interface ReportRow {
   id: string;
   name: string;
   serviceCategory: string | null;
+  status: string;
   securityPostureScore: number | null;
   threatExposureScore: number | null;
   overallCybersecurityScore: number | null;
@@ -83,6 +85,7 @@ function mapVendorToRow(v: RawVendor): ReportRow {
     id: v.id,
     name: v.name,
     serviceCategory: v.serviceCategory,
+    status: v.status,
     securityPostureScore: ma?.calculatedSecurityPosture ?? ma?.securityPostureScore ?? null,
     threatExposureScore: ma?.calculatedThreatExposure ?? ma?.threatExposureScore ?? null,
     overallCybersecurityScore: ma?.calculatedOverallScore ?? ma?.overallScore ?? null,
@@ -136,6 +139,21 @@ export default function ReportPage() {
       cell: ({ row }) => <span className="text-sm">{row.original.serviceCategory || "-"}</span>,
     },
     {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => {
+        const s = row.original.status;
+        const colors: Record<string, string> = {
+          Onboarding: "border-blue-300 bg-blue-50 text-blue-700",
+          Onboarded: "border-green-300 bg-green-50 text-green-700",
+          Offboarding: "border-amber-300 bg-amber-50 text-amber-700",
+          Offboarded: "border-slate-300 bg-slate-50 text-slate-700",
+          Inactive: "border-red-300 bg-red-50 text-red-700",
+        };
+        return <Badge variant="outline" className={`${colors[s] || ""} font-medium`}>{t(s)}</Badge>;
+      },
+    },
+    {
       accessorKey: "securityPostureScore",
       header: t("Security Posture Score"),
       cell: ({ row }) => (
@@ -178,10 +196,11 @@ export default function ReportPage() {
   ];
 
   const handleExport = () => {
-    const headers = [t("Vendor Name"), t("Vendor Category"), t("Security Posture Score"), t("Threat Exposure Score"), t("Overall Cybersecurity Risk Score"), t("Criticality Rating")];
+    const headers = [t("Vendor Name"), t("Vendor Category"), t("Status"), t("Security Posture Score"), t("Threat Exposure Score"), t("Overall Cybersecurity Risk Score"), t("Criticality Rating")];
     const rows = filtered.map((v) => [
       v.name,
       v.serviceCategory || "",
+      v.status,
       v.securityPostureScore ?? "",
       v.threatExposureScore ?? "",
       v.overallCybersecurityScore ?? "",

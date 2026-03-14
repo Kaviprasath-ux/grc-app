@@ -148,17 +148,53 @@ export default function ControlCenterPage() {
     field: keyof DueDiligenceConfig,
     value: string
   ) => {
+    const num = Math.max(0, parseInt(value) || 0);
     const updated = [...dueDiligence];
-    updated[catIndex] = { ...updated[catIndex], [field]: parseInt(value) || 0 };
+    updated[catIndex] = { ...updated[catIndex], [field]: num };
     setDueDiligence(updated);
-    scheduleAutoSave(updated, scorecard);
+  };
+
+  const handleDDCommit = (
+    catIndex: number,
+    field: keyof DueDiligenceConfig,
+  ) => {
+    // VRR validation on commit: Critical(0) >= High(1) >= Moderate(2) >= Low(3) >= Nominal(4)
+    if (field === "vrr") {
+      const num = dueDiligence[catIndex]?.vrr ?? 0;
+      const prev = dueDiligence[catIndex - 1]?.vrr;
+      const next = dueDiligence[catIndex + 1]?.vrr;
+      if (prev !== undefined && num > prev) {
+        toast({ title: t("Validation"), description: t("VRR value cannot exceed the category above"), variant: "destructive" });
+        return;
+      }
+      if (next !== undefined && num < next) {
+        toast({ title: t("Validation"), description: t("VRR value cannot be less than the category below"), variant: "destructive" });
+        return;
+      }
+    }
+    scheduleAutoSave(dueDiligence, scorecard);
   };
 
   const handleSCChange = (catIndex: number, value: string) => {
     const updated = [...scorecard];
-    updated[catIndex] = { ...updated[catIndex], securityScore: parseInt(value) || 0 };
+    updated[catIndex] = { ...updated[catIndex], securityScore: Math.max(0, Math.min(10, parseInt(value) || 0)) };
     setScorecard(updated);
-    scheduleAutoSave(dueDiligence, updated);
+  };
+
+  const handleSCCommit = (catIndex: number) => {
+    // Scorecard validation: Excellent(0) >= Good(1) >= Moderate(2) >= Low(3) >= Nominal(4)
+    const num = scorecard[catIndex]?.securityScore ?? 0;
+    const prev = scorecard[catIndex - 1]?.securityScore;
+    const next = scorecard[catIndex + 1]?.securityScore;
+    if (prev !== undefined && num > prev) {
+      toast({ title: t("Validation"), description: t("Score cannot exceed the category above"), variant: "destructive" });
+      return;
+    }
+    if (next !== undefined && num < next) {
+      toast({ title: t("Validation"), description: t("Score cannot be less than the category below"), variant: "destructive" });
+      return;
+    }
+    scheduleAutoSave(dueDiligence, scorecard);
   };
 
   const getCatStyle = (cat: string) => CATEGORY_COLORS[cat] || { bg: "bg-slate-50", text: "text-slate-700", dot: "bg-slate-500" };
@@ -250,6 +286,8 @@ export default function ControlCenterPage() {
                               onChange={(e) =>
                                 handleDDChange(catIndex, field.key, e.target.value)
                               }
+                              onBlur={() => handleDDCommit(catIndex, field.key)}
+                              onKeyDown={(e) => { if (e.key === "Enter") handleDDCommit(catIndex, field.key); }}
                             />
                           </td>
                         ))}
@@ -298,6 +336,8 @@ export default function ControlCenterPage() {
                             onChange={(e) =>
                               handleSCChange(catIndex, e.target.value)
                             }
+                            onBlur={() => handleSCCommit(catIndex)}
+                            onKeyDown={(e) => { if (e.key === "Enter") handleSCCommit(catIndex); }}
                           />
                         </td>
                       ))}

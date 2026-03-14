@@ -1075,9 +1075,9 @@ export default function RMInventoryPage() {
         <h1 className="text-2xl font-bold">{t("Vendor Inventory")}</h1>
         <div className="flex items-center gap-2">
           {canCreate && (
-            <Button variant="outline" onClick={openCreate}><Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Onboard New Vendor")}</Button>
+            <Button onClick={openCreate}><Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Onboard New Vendor")}</Button>
           )}
-          <Button onClick={handleExport}><Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Bulk Export")}</Button>
+          <Button variant="outline" onClick={handleExport}><Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Bulk Export")}</Button>
         </div>
       </div>
 
