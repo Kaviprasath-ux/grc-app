@@ -24,7 +24,7 @@ export const GET = withAuth<RouteContext>(
       }
 
       const docs = await prisma.tPRMVendorDocument.findMany({
-        where: { vendorId: id, customerAccountId: getCustomerAccountId(session) },
+        where: { vendorId: id, customerAccountId: getCustomerAccountId(session), isDeleted: false },
         orderBy: { createdAt: "desc" },
       });
 

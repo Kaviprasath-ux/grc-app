@@ -53,12 +53,25 @@ export const POST = withAuth<RouteContext>(
         }
       }
 
+      const customerAccountId = getCustomerAccountId(session);
+
       // Update vendor with contract document info
       const updated = await prisma.tPRMVendor.update({
         where: { id },
         data: {
           contractDocumentName: originalName,
           contractDocumentPath: filePath,
+        },
+      });
+
+      // Also create a TPRMVendorDocument record so it appears in the documents list
+      await prisma.tPRMVendorDocument.create({
+        data: {
+          customerAccountId,
+          vendorId: id,
+          docType: "contract",
+          fileName: originalName,
+          filePath,
         },
       });
 

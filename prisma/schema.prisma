@@ -128,6 +128,7 @@ model CustomerAccount {
   tprmConfiguration          TPRMConfiguration?
   tprmVendorProfileFields    TPRMVendorProfileField[]
   tprmVendorDocuments        TPRMVendorDocument[]
+  tprmContractDeletionRequests TPRMContractDeletionRequest[]
   tprmOnboardingQuestions    TPRMOnboardingQuestion[]
   tprmServiceCategories      TPRMServiceCategory[]
   tprmDisciplines            TPRMDiscipline[]
@@ -470,6 +471,10 @@ model User {
   tprmOffboardDelegations    TPRMOffboardResponse[]  @relation("TPRMOffboardDelegatee")
   // Chatbot relations
   chatbotAuditLogs           ChatbotAuditLog[]     @relation("ChatbotAuditLogs")
+  // Contract deletion relations
+  deletedDocuments           TPRMVendorDocument[]   @relation("DocumentDeletedBy")
+  contractDeletionRequests   TPRMContractDeletionRequest[] @relation("DeletionRequestedBy")
+  contractDeletionReviews    TPRMContractDeletionRequest[] @relation("DeletionReviewedBy")
 
   // Multi-tenant: userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userName])
@@ -3428,6 +3433,7 @@ model TPRMVendor {
   monitoringVendor    TPRMMonitoringVendor? @relation("MonitoringToVendor")
   vendorIssues        TPRMVendorIssue[]
   vendorDocuments     TPRMVendorDocument[]
+  contractDeletionRequests TPRMContractDeletionRequest[]
 
   @@unique([customerAccountId, vendorCode])
   @@index([customerAccountId])
@@ -3444,9 +3450,39 @@ model TPRMVendorDocument {
   docType           String      @default("document") // "legal", "report", "document", "contract"
   fileName          String
   filePath          String
+  isDeleted         Boolean     @default(false)
+  deletedAt         DateTime?
+  deletedBy         String?
+  deletedByUser     User?       @relation("DocumentDeletedBy", fields: [deletedBy], references: [id])
+  deletionReason    String?
   createdAt         DateTime    @default(now())
+  deletionRequests  TPRMContractDeletionRequest[]
 
   @@index([customerAccountId, vendorId])
+}
+
+// TPRMContractDeletionRequest — RM/BO requests superadmin to delete a vendor contract
+model TPRMContractDeletionRequest {
+  id                String      @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  documentId        String
+  document          TPRMVendorDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  vendorId          String
+  vendor            TPRMVendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  reason            String
+  status            String      @default("Pending") // Pending, Approved, Rejected
+  requestedBy       String
+  requestedByUser   User        @relation("DeletionRequestedBy", fields: [requestedBy], references: [id])
+  requestedAt       DateTime    @default(now())
+  reviewedBy        String?
+  reviewedByUser    User?       @relation("DeletionReviewedBy", fields: [reviewedBy], references: [id])
+  reviewedAt        DateTime?
+  reviewNote        String?
+  createdAt         DateTime    @default(now())
+
+  @@index([customerAccountId])
+  @@index([status])
 }
 
 // TPRMAssessment — Vendor risk assessments

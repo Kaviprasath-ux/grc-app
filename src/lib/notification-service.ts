@@ -499,6 +499,12 @@ class NotificationService {
       [NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_ESCALATED]: 'TPRM_VENDOR_ISSUE_ESCALATED',
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_DUE_REMINDER]: 'TPRM_ASSESSMENT_DUE_REMINDER',
       [NOTIFICATION_EVENTS.TPRM_SME_ASSIGNMENT_PENDING]: 'TPRM_SME_ASSIGNMENT_PENDING',
+
+      // ===================== TPRM CONTRACT DELETION =====================
+      [NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_REQUESTED]: 'TPRM_CONTRACT_DELETION_REQUESTED',
+      [NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_APPROVED]: 'TPRM_CONTRACT_DELETION_APPROVED',
+      [NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_REJECTED]: 'TPRM_CONTRACT_DELETION_REJECTED',
+      [NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETED_BY_ADMIN]: 'TPRM_CONTRACT_DELETED_BY_ADMIN',
     };
 
     return templateMap[event] || 'GENERIC_NOTIFICATION';
@@ -2190,6 +2196,97 @@ class NotificationService {
       console.error('[NotificationService] Cleanup error:', error);
       throw error;
     }
+  }
+
+  // ==================== TPRM CONTRACT DELETION ====================
+
+  async notifyTPRMContractDeletionRequested(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    vendorName: string;
+    fileName: string;
+    reason: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_REQUESTED,
+      title: 'Contract deletion requested',
+      message: `A deletion request has been submitted for contract "${params.fileName}" of vendor ${params.vendorName}. Reason: ${params.reason}`,
+      link: `/tprm/vendor-management`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { vendorName: params.vendorName, fileName: params.fileName, reason: params.reason },
+    });
+  }
+
+  async notifyTPRMContractDeletionApproved(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    vendorName: string;
+    fileName: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_APPROVED,
+      title: 'Contract deletion approved',
+      message: `Your request to delete contract "${params.fileName}" of vendor ${params.vendorName} has been approved. The document has been archived.`,
+      link: `/tprm/rm-inventory`,
+      channels: params.channels,
+      metadata: { vendorName: params.vendorName, fileName: params.fileName },
+    });
+  }
+
+  async notifyTPRMContractDeletionRejected(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    vendorName: string;
+    fileName: string;
+    reviewNote?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_REJECTED,
+      title: 'Contract deletion rejected',
+      message: `Your request to delete contract "${params.fileName}" of vendor ${params.vendorName} has been rejected.${params.reviewNote ? ` Note: ${params.reviewNote}` : ''}`,
+      link: `/tprm/rm-inventory`,
+      channels: params.channels,
+      metadata: { vendorName: params.vendorName, fileName: params.fileName, reviewNote: params.reviewNote },
+    });
+  }
+
+  async notifyTPRMContractDeletedByAdmin(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientIds: string[];
+    vendorName: string;
+    fileName: string;
+    reason?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETED_BY_ADMIN,
+      title: 'Contract deleted by administrator',
+      message: `Contract "${params.fileName}" of vendor ${params.vendorName} has been deleted by the administrator.${params.reason ? ` Reason: ${params.reason}` : ''}`,
+      link: `/tprm/rm-inventory`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { vendorName: params.vendorName, fileName: params.fileName, reason: params.reason },
+    });
   }
 }
 

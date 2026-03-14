@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
-  Plus, Minus, Pencil, Trash2, Search, X, Info,
+  Plus, Minus, Pencil, Trash2, Search, X, Info, Eye,
   Download, Building2, Shield, Activity, AlertTriangle, Loader2, Upload, ChevronDown, FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ interface Vendor {
   businessJustification: string | null;
   vendorCertification: string | null;
   monitoringVendor: MonitoringVendorSummary | null;
+  customerAccount?: { id: string; name: string };
   _count?: { assessments: number };
 }
 
@@ -110,8 +112,10 @@ function VendorAccordionItem({
   onEdit,
   onDelete,
   onExport,
+  onView,
   t,
   hideEditDelete,
+  isAdmin,
 }: {
   vendor: Vendor;
   isExpanded: boolean;
@@ -119,8 +123,10 @@ function VendorAccordionItem({
   onEdit: (v: Vendor) => void;
   onDelete: (id: string) => void;
   onExport: (v: Vendor) => void;
+  onView?: (v: Vendor) => void;
   t: (s: string) => string;
   hideEditDelete?: boolean;
+  isAdmin?: boolean;
 }) {
   const a = vendor.monitoringVendor?.assessments[0];
   const effOverall = a?.calculatedOverallScore ?? a?.overallScore ?? null;
@@ -136,6 +142,9 @@ function VendorAccordionItem({
       >
         <span className="font-medium text-sm text-slate-800">
           {vendor.name}{vendor.vrr ? ` - ${vendor.vrr}` : ""}
+          {isAdmin && vendor.customerAccount && (
+            <span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({vendor.customerAccount.name})</span>
+          )}
         </span>
         <span className="text-slate-500 flex-shrink-0">
           {isExpanded
@@ -150,6 +159,12 @@ function VendorAccordionItem({
 
           {/* Action buttons — mirrors Mendix Export + Report Issue */}
           <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+            {onView && (
+              <Button size="sm" variant="outline" onClick={() => onView(vendor)}>
+                <Eye className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
+                {t("View")}
+              </Button>
+            )}
             <Button size="sm" variant="default" onClick={() => onExport(vendor)}>
               <Upload className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />
               {t("Export")}
@@ -299,7 +314,10 @@ function VendorAccordionItem({
 export default function VendorManagementPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
+  const router = useRouter();
   const isTPRMAdmin = useHasRole("TPRMAdmin");
+  const isGRCAdmin = useHasRole("GRCAdministrator");
+  const isSuperAdmin = isTPRMAdmin || isGRCAdmin;
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -340,12 +358,17 @@ export default function VendorManagementPage() {
   const loadVendors = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/tprm/vendors?limit=500");
-      if (res.ok) { const data = await res.json(); setVendors(data.data || []); }
+      if (isSuperAdmin) {
+        const res = await fetch("/api/tprm/admin/vendors");
+        if (res.ok) { setVendors(await res.json()); }
+      } else {
+        const res = await fetch("/api/tprm/vendors?limit=500");
+        if (res.ok) { const data = await res.json(); setVendors(data.data || []); }
+      }
     } catch {
       toast({ title: t("Error"), description: t("Failed to load vendors"), variant: "destructive" });
     } finally { setLoading(false); }
-  }, [toast, t]);
+  }, [toast, t, isSuperAdmin]);
 
   const loadLookups = useCallback(async () => {
     try {
@@ -633,7 +656,7 @@ export default function VendorManagementPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {!isTPRMAdmin && !isCustomerAdmin && (
+          {!isSuperAdmin && !isCustomerAdmin && (
             <Button size="sm" onClick={openCreate}>
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Onboard New Vendor")}
@@ -690,8 +713,10 @@ export default function VendorManagementPage() {
                 onEdit={openEdit}
                 onDelete={handleDelete}
                 onExport={handleExport}
+                onView={isSuperAdmin ? (v) => router.push(`/tprm/admin-vendor-detail/${v.id}`) : undefined}
                 t={t}
-                hideEditDelete={isCustomerAdmin}
+                hideEditDelete={isCustomerAdmin || isSuperAdmin}
+                isAdmin={isSuperAdmin}
               />
             ))}
           </div>

@@ -2450,9 +2450,31 @@ CREATE TABLE "TPRMVendorDocument" (
     "docType" TEXT NOT NULL DEFAULT 'document',
     "fileName" TEXT NOT NULL,
     "filePath" TEXT NOT NULL,
+    "isDeleted" BOOLEAN NOT NULL DEFAULT false,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
+    "deletionReason" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TPRMVendorDocument_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TPRMContractDeletionRequest" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "documentId" TEXT NOT NULL,
+    "vendorId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'Pending',
+    "requestedBy" TEXT NOT NULL,
+    "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "reviewedBy" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "reviewNote" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TPRMContractDeletionRequest_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -4341,6 +4363,12 @@ CREATE UNIQUE INDEX "TPRMVendor_customerAccountId_vendorCode_key" ON "TPRMVendor
 CREATE INDEX "TPRMVendorDocument_customerAccountId_vendorId_idx" ON "TPRMVendorDocument"("customerAccountId", "vendorId");
 
 -- CreateIndex
+CREATE INDEX "TPRMContractDeletionRequest_customerAccountId_idx" ON "TPRMContractDeletionRequest"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TPRMContractDeletionRequest_status_idx" ON "TPRMContractDeletionRequest"("status");
+
+-- CreateIndex
 CREATE INDEX "TPRMAssessment_customerAccountId_idx" ON "TPRMAssessment"("customerAccountId");
 
 -- CreateIndex
@@ -5503,6 +5531,24 @@ ALTER TABLE "TPRMVendorDocument" ADD CONSTRAINT "TPRMVendorDocument_customerAcco
 
 -- AddForeignKey
 ALTER TABLE "TPRMVendorDocument" ADD CONSTRAINT "TPRMVendorDocument_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "TPRMVendor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMVendorDocument" ADD CONSTRAINT "TPRMVendorDocument_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMContractDeletionRequest" ADD CONSTRAINT "TPRMContractDeletionRequest_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMContractDeletionRequest" ADD CONSTRAINT "TPRMContractDeletionRequest_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "TPRMVendorDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMContractDeletionRequest" ADD CONSTRAINT "TPRMContractDeletionRequest_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "TPRMVendor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMContractDeletionRequest" ADD CONSTRAINT "TPRMContractDeletionRequest_requestedBy_fkey" FOREIGN KEY ("requestedBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TPRMContractDeletionRequest" ADD CONSTRAINT "TPRMContractDeletionRequest_reviewedBy_fkey" FOREIGN KEY ("reviewedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TPRMAssessment" ADD CONSTRAINT "TPRMAssessment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

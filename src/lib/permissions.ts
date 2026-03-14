@@ -296,6 +296,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.domain', actions: ['*'], scope: 'all' },
     // TPRM module - GRCAdministrator only has access to admin-level pages
     { resource: 'tprm.account-overview', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.vendor-management', actions: ['view', 'delete'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
     // NOTE: GRCAdministrator does NOT have access to: Configuration, Master Data, Organization, Asset Management, Risk Management, Internal Audit

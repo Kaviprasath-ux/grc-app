@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Home, ChevronRight, ArrowLeft, Download, Loader2, Upload, FileText, Trash2, Plus, X,
+  Home, ChevronRight, ArrowLeft, Download, Loader2, Upload, FileText, Trash2, Plus, X, Send,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
@@ -98,6 +99,17 @@ export default function VendorDetailPage() {
   const [documents, setDocuments] = useState<DocFile[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
+  const [artifactDocs, setArtifactDocs] = useState<DocFile[]>([]);
+
+  const fetchArtifacts = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/tprm/vendors/${vendorId}/artifacts`);
+      if (res.ok) {
+        const data = await res.json();
+        setArtifactDocs(data.data || []);
+      }
+    } catch { /* ignore */ }
+  }, [vendorId]);
 
   const fetchOnboardingQuestions = useCallback(async () => {
     try {
@@ -142,7 +154,8 @@ export default function VendorDetailPage() {
     fetchVendor();
     fetchDocuments();
     fetchOnboardingQuestions();
-  }, [fetchVendor, fetchDocuments, fetchOnboardingQuestions]);
+    fetchArtifacts();
+  }, [fetchVendor, fetchDocuments, fetchOnboardingQuestions, fetchArtifacts]);
 
   const handleDownloadContract = useCallback(async () => {
     if (!vendor) return;
@@ -196,6 +209,66 @@ export default function VendorDetailPage() {
       toast({ title: t("Error"), description: t("Failed to delete"), variant: "destructive" });
     }
   }, [vendorId, fetchDocuments, toast, t]);
+
+  // ── Request Contract Deletion state ─────────────────
+  const [deletionRequestDoc, setDeletionRequestDoc] = useState<DocFile | null>(null);
+  const [deletionReason, setDeletionReason] = useState("");
+  const [submittingDeletion, setSubmittingDeletion] = useState(false);
+
+  const handleRequestDeletion = async () => {
+    if (!deletionRequestDoc || !deletionReason.trim()) return;
+    setSubmittingDeletion(true);
+    try {
+      let docId = deletionRequestDoc.id;
+
+      // For legacy contracts stored only on vendor record, create a document record first
+      if (docId === "legacy-contract" && vendor) {
+        const formData = new FormData();
+        // Fetch the contract file and re-upload as a document record
+        const contractRes = await fetch(`/api/tprm/vendors/${vendorId}/contract`);
+        if (contractRes.ok) {
+          const blob = await contractRes.blob();
+          formData.append("file", blob, vendor.contractDocumentName || "contract");
+          formData.append("docType", "contract");
+          const uploadRes = await fetch(`/api/tprm/vendors/${vendorId}/documents`, {
+            method: "POST",
+            body: formData,
+          });
+          if (uploadRes.ok) {
+            const newDoc = await uploadRes.json();
+            docId = newDoc.id;
+            fetchDocuments();
+          } else {
+            toast({ title: t("Error"), description: t("Failed to register contract document"), variant: "destructive" });
+            setSubmittingDeletion(false);
+            return;
+          }
+        } else {
+          toast({ title: t("Error"), description: t("Contract file not found"), variant: "destructive" });
+          setSubmittingDeletion(false);
+          return;
+        }
+      }
+
+      const res = await fetch(`/api/tprm/vendors/${vendorId}/documents/${docId}/request-deletion`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: deletionReason.trim() }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Deletion request submitted to superadmin") });
+        setDeletionRequestDoc(null);
+        setDeletionReason("");
+      } else {
+        const err = await res.json();
+        toast({ title: t("Error"), description: err.error || t("Failed to submit request"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to submit request"), variant: "destructive" });
+    } finally {
+      setSubmittingDeletion(false);
+    }
+  };
 
   // ── Add Contract dialog state ─────────────────────
   const [showAddContractDialog, setShowAddContractDialog] = useState(false);
@@ -264,6 +337,7 @@ export default function VendorDetailPage() {
         toast({ title: t("Success"), description: t("Contract saved successfully") });
         setShowAddContractDialog(false);
         fetchVendor();
+        fetchDocuments();
       } else {
         toast({ title: t("Error"), description: t("Failed to update vendor"), variant: "destructive" });
       }
@@ -338,7 +412,7 @@ export default function VendorDetailPage() {
 
   if (!vendor) return null;
 
-  const legalDocs = documents.filter(d => d.type === "legal");
+  const legalDocs = documents.filter(d => d.type === "legal" || d.type === "contract");
   const reportDocs = documents.filter(d => d.type === "report");
   const generalDocs = documents.filter(d => d.type === "document");
 
@@ -462,28 +536,25 @@ export default function VendorDetailPage() {
       {/* Legal Contract */}
       <DocumentSection
         title={t("Legal Contract")}
-        docs={vendor.contractDocumentName ? [{
-          id: "contract",
+        docs={legalDocs.length > 0 ? legalDocs : (vendor.contractDocumentName ? [{
+          id: "legacy-contract",
           name: vendor.contractDocumentName,
           path: "",
           type: "contract",
           createdAt: "",
-        }] : legalDocs}
-        onUpload={(file) => handleUploadDocument(file, vendor.contractDocumentName ? "legal" : "contract")}
+        }] : [])}
+        onUpload={(file) => handleUploadDocument(file, legalDocs.length > 0 ? "legal" : "contract")}
         onDownload={(doc) => {
-          if (doc.id === "contract") {
+          if (doc.id === "legacy-contract") {
             handleDownloadContract();
           } else {
             window.open(`/api/tprm/vendors/${vendorId}/documents/${doc.id}/download`, "_blank");
           }
         }}
-        onDelete={(doc) => {
-          if (doc.id === "contract") {
-            handleDeleteContract();
-          } else {
-            handleDeleteDocument(doc.id);
-          }
-        }}
+        onDelete={(doc) => handleDeleteDocument(doc.id)}
+        onRequestDeletion={(doc) => { setDeletionRequestDoc(doc); setDeletionReason(""); }}
+        hideDelete
+        hideUpload
         uploading={uploadingDoc}
         t={t}
         extraAction={vendor.status === "Inactive" ? (
@@ -505,14 +576,16 @@ export default function VendorDetailPage() {
         t={t}
       />
 
-      {/* Document Library */}
+      {/* Document Library — assessment artifacts */}
       <DocumentSection
         title={t("Document Library")}
-        docs={generalDocs}
-        onUpload={(file) => handleUploadDocument(file, "document")}
-        onDownload={(doc) => window.open(`/api/tprm/vendors/${vendorId}/documents/${doc.id}/download`, "_blank")}
-        onDelete={(doc) => handleDeleteDocument(doc.id)}
-        uploading={uploadingDoc}
+        docs={artifactDocs}
+        onUpload={() => {}}
+        onDownload={(doc) => window.open(doc.path, "_blank")}
+        onDelete={() => {}}
+        hideUpload
+        hideDelete
+        uploading={false}
         t={t}
       />
 
@@ -629,6 +702,36 @@ export default function VendorDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Request Contract Deletion Dialog */}
+      <Dialog open={!!deletionRequestDoc} onOpenChange={(open) => { if (!open) setDeletionRequestDoc(null); }}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>{t("Request Contract Deletion")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-slate-600">
+              {t("File")}: <span className="font-medium">{deletionRequestDoc?.name}</span>
+            </p>
+            <div>
+              <Label>{t("Reason for deletion")} *</Label>
+              <Textarea
+                value={deletionReason}
+                onChange={(e) => setDeletionReason(e.target.value)}
+                placeholder={t("e.g. Uploaded by mistake, vendor terminated, etc.")}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletionRequestDoc(null)}>{t("Cancel")}</Button>
+            <Button onClick={handleRequestDeletion} disabled={submittingDeletion || !deletionReason.trim()}>
+              {submittingDeletion && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              {t("Submit Request")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -656,16 +759,19 @@ function ProfileRow({ label, value }: { label: string; value: boolean }) {
 }
 
 function DocumentSection({
-  title, docs, onUpload, onDownload, onDelete, uploading, t, extraAction,
+  title, docs, onUpload, onDownload, onDelete, onRequestDeletion, uploading, t, extraAction, hideDelete, hideUpload,
 }: {
   title: string;
   docs: DocFile[];
   onUpload: (file: File) => void;
   onDownload: (doc: DocFile) => void;
   onDelete: (doc: DocFile) => void;
+  onRequestDeletion?: (doc: DocFile) => void;
   uploading: boolean;
   t: (s: string) => string;
   extraAction?: React.ReactNode;
+  hideDelete?: boolean;
+  hideUpload?: boolean;
 }) {
   return (
     <Card>
@@ -686,32 +792,41 @@ function DocumentSection({
                   <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => onDownload(doc)}>
                     <Download className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-red-500 hover:text-red-700" onClick={() => onDelete(doc)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  {!hideDelete && (
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-red-500 hover:text-red-700" onClick={() => onDelete(doc)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {onRequestDeletion && (
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-amber-600 hover:text-amber-800" onClick={() => onRequestDeletion(doc)} title={t("Request Deletion")}>
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         ) : null}
-        <div className="flex justify-center pt-3">
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onUpload(file);
-                e.target.value = "";
-              }}
-            />
-            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {t("Upload Document")}
-            </span>
-          </label>
-        </div>
+        {!hideUpload && (
+          <div className="flex justify-center pt-3">
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onUpload(file);
+                  e.target.value = "";
+                }}
+              />
+              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {t("Upload Document")}
+              </span>
+            </label>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
