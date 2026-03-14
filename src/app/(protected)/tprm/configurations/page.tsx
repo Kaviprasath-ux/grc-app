@@ -1965,7 +1965,7 @@ function QuestionnaireManagementSection() {
               </div>
               {/* Image Upload */}
               <div>
-                <Label>{t("Cover Image")}</Label>
+                <Label>{t("Cover Image")} *</Label>
                 <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { if (e.target.files?.[0]) handleImageSelect(e.target.files[0]); }} />
                 {wizardImagePreview ? (
@@ -1991,6 +1991,10 @@ function QuestionnaireManagementSection() {
                 <Button onClick={() => {
                   if (!wizardForm.templateName.trim()) {
                     toast({ title: t("Error"), description: t("Template name is required"), variant: "destructive" });
+                    return;
+                  }
+                  if (!wizardImage) {
+                    toast({ title: t("Error"), description: t("Cover image is required"), variant: "destructive" });
                     return;
                   }
                   setWizardStep(2);
