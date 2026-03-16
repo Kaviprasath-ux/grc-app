@@ -4374,6 +4374,17 @@ const translations: [string, string, string][] = [
   // TPRM — VENDOR MANAGEMENT
   // ==========================================
   ['Vendor Management', 'إدارة الموردين', 'Piegādātāju pārvaldība'],
+  ['TPRM Platform', 'منصة إدارة مخاطر الطرف الثالث', 'TPRM platforma'],
+  ['Export/Import', 'تصدير/استيراد', 'Eksportēt/Importēt'],
+  ['Download Vendor Profile Template', 'تنزيل قالب ملف المورد', 'Lejupielādēt piegādātāja profila veidni'],
+  ['Import Vendor Profile', 'استيراد ملف المورد', 'Importēt piegādātāja profilu'],
+  ['Export Vendor Risk Rating Questions', 'تصدير أسئلة تقييم مخاطر المورد', 'Eksportēt piegādātāja riska novērtējuma jautājumus'],
+  ['Import Responses for Questions', 'استيراد إجابات الأسئلة', 'Importēt atbildes uz jautājumiem'],
+  ['Vendor Information', 'معلومات المورد', 'Piegādātāja informācija'],
+  ['Contact Details', 'تفاصيل الاتصال', 'Kontaktinformācija'],
+  ['Contract & Classification', 'العقد والتصنيف', 'Līgums un klasifikācija'],
+  ['Upload the filled vendor profile template (.xlsx or .xls)', 'قم بتحميل قالب ملف المورد المعبأ (.xlsx أو .xls)', 'Augšupielādējiet aizpildīto piegādātāja profila veidni (.xlsx vai .xls)'],
+  ['Upload the filled vendor questionnaire with responses (.xlsx or .xls)', 'قم بتحميل استبيان المورد المعبأ مع الإجابات (.xlsx أو .xls)', 'Augšupielādējiet aizpildīto piegādātāja anketu ar atbildēm (.xlsx vai .xls)'],
   ['Manage and monitor your vendor portfolio', 'إدارة ومراقبة محفظة الموردين', 'Pārvaldiet un uzraugiet savu piegādātāju portfeli'],
   ['Onboard New Vendor', 'تسجيل مورد جديد', 'Pievienot jaunu piegādātāju'],
   ['Onboard Vendor', 'تسجيل مورد', 'Pievienot piegādātāju'],
