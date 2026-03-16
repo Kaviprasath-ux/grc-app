@@ -509,6 +509,26 @@ async function main() {
   });
   console.log("✅ TPRM Admin user created (tadm / Baarez@2025)");
 
+  // Create subscription plan for TPRM Admin account
+  await prisma.subscriptionPlan.upsert({
+    where: { id: "subscription-plan-tprm-admin-1" },
+    update: {
+      expiryDate: new Date("2030-12-31"),
+      status: "Active",
+    },
+    create: {
+      id: "subscription-plan-tprm-admin-1",
+      customerAccountId: tprmAdminCustomerAccountId,
+      status: "Active",
+      startDate: new Date("2024-01-01"),
+      expiryDate: new Date("2030-12-31"),
+      maxAccountsAllowed: 50,
+      vendorLimit: 500,
+      assessmentLimit: 1000,
+    },
+  });
+  console.log("✅ Subscription Plan for TPRM Admin created");
+
   // Create Stakeholders
   const stakeholders = [
     { name: "John Smith", email: "john.smith@example.com", type: "Internal", status: "Active" },

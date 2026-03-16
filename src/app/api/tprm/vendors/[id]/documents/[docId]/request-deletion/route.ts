@@ -79,5 +79,5 @@ export const POST = withAuth<RouteContext>(
       return NextResponse.json({ error: "Failed to create deletion request" }, { status: 500 });
     }
   },
-  { resource: ["tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
+  { resource: ["tprm.vendor-management", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
 );

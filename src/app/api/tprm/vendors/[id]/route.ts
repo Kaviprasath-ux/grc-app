@@ -42,7 +42,7 @@ export const GET = withAuth<RouteContext>(
       );
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory", "tprm.asr-inventory", "tprm.reports"], action: "view" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory", "tprm.asr-inventory", "tprm.reports"], action: "view" }
 );
 
 // PATCH update vendor
@@ -203,7 +203,7 @@ export const PATCH = withAuth<RouteContext>(
       );
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
 );
 
 // DELETE vendor
@@ -235,5 +235,5 @@ export const DELETE = withAuth<RouteContext>(
       );
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "delete" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "delete" }
 );

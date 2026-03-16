@@ -40,5 +40,5 @@ export const DELETE = withAuth<RouteContext>(
       return NextResponse.json({ error: "Failed to delete document" }, { status: 500 });
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "delete" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "delete" }
 );

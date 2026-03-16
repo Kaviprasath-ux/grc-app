@@ -42,7 +42,7 @@ export const GET = withAuth<RouteContext>(
       return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
 );
 
 // POST /api/tprm/vendors/[id]/documents — Upload a document
@@ -111,5 +111,5 @@ export const POST = withAuth<RouteContext>(
       return NextResponse.json({ error: "Failed to upload document" }, { status: 500 });
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
 );

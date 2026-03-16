@@ -89,5 +89,5 @@ export const GET = withAuth<RouteContext>(
       return NextResponse.json({ error: "Failed to fetch artifacts" }, { status: 500 });
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
 );

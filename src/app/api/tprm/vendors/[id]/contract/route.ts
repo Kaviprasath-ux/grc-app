@@ -84,7 +84,7 @@ export const POST = withAuth<RouteContext>(
       return NextResponse.json({ error: "Failed to upload contract" }, { status: 500 });
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "edit" }
 );
 
 // DELETE /api/tprm/vendors/[id]/contract — Delete contract document
@@ -127,7 +127,7 @@ export const DELETE = withAuth<RouteContext>(
       return NextResponse.json({ error: "Failed to delete contract" }, { status: 500 });
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "delete" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "delete" }
 );
 
 // GET /api/tprm/vendors/[id]/contract — Download contract document
@@ -176,5 +176,5 @@ export const GET = withAuth<RouteContext>(
       return NextResponse.json({ error: "Failed to download contract" }, { status: 500 });
     }
   },
-  { resource: ["tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
+  { resource: ["tprm.vendor-management", "tprm.assessments", "tprm.bo-inventory", "tprm.rm-inventory"], action: "view" }
 );
