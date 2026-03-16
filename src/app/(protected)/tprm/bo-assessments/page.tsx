@@ -73,10 +73,10 @@ function formatDate(dateStr: string | null | undefined): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-const ONGOING_STATUSES = ["Initiated", "Awaiting_Response", "In-Progress", "In-Progress(approver)"];
+const ONGOING_STATUSES = ["Draft", "Initiated", "Submitted", "In Progress", "In_Progress", "In-Progress", "Awaiting_Response", "Under Review", "In-Progress(approver)", "In_Progress_approver_", "Returned", "Rejected"];
 const COMPLETED_STATUSES = ["Completed", "Approved"];
-const AWAITING_STATUSES = ["Awaiting_Response"];
-const PENDING_ASSESSOR_STATUSES = ["In-Progress", "In-Progress(approver)"];
+const AWAITING_STATUSES = ["Awaiting_Response", "Submitted", "Under Review"];
+const PENDING_ASSESSOR_STATUSES = ["Draft", "Initiated", "In Progress", "In_Progress", "In-Progress", "In-Progress(approver)", "In_Progress_approver_", "Returned", "Rejected"];
 const OFFBOARD_STATUSES = ["Offboard_In_Progress", "Offboard_Completed", "Offboard_Awaiting_Response", "Offboard_Approve_Assessor", "Offboard_Approve_RM", "Offboard_Approve_BO"];
 
 // ── Main Component ──────────────────────────────────────
