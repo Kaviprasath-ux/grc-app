@@ -2436,7 +2436,7 @@ export default function GovernanceDetailPage() {
                 {/* Option 2: Generate Policy Using AI — HIDDEN for QPost (kept for future use) */}
                 {false && (() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
-                  const hasLinkedRequirements = policy?.requirements && policy?.requirements?.length > 0;
+                  const hasLinkedRequirements = (policy?.requirements?.length ?? 0) > 0;
                   const isDisabled = hasDocument || !hasLinkedRequirements;
                   return (
                     <Dialog open={generatePolicyDialogOpen} onOpenChange={(open) => {
