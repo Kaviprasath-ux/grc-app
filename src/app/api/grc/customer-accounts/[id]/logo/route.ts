@@ -7,7 +7,7 @@ import { existsSync } from "fs";
 
 /**
  * GET /api/grc/customer-accounts/[id]/logo
- * Get the logo URL for a customer
+ * Get the logo URL for a customer account
  */
 export async function GET(
   req: NextRequest,
@@ -22,18 +22,18 @@ export async function GET(
 
     const { id } = await params;
 
-    const customer = await prisma.user.findUnique({
+    const account = await prisma.customerAccount.findUnique({
       where: { id },
-      select: { id: true, logoUrl: true, fullName: true },
+      select: { id: true, logoUrl: true, name: true },
     });
 
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    if (!account) {
+      return NextResponse.json({ error: "Customer account not found" }, { status: 404 });
     }
 
     return NextResponse.json({
-      logoUrl: customer.logoUrl,
-      customerName: customer.fullName,
+      logoUrl: account.logoUrl,
+      customerName: account.name,
     });
   } catch (error) {
     console.error("Error fetching logo:", error);
@@ -63,13 +63,13 @@ export async function POST(
 
     const { id } = await params;
 
-    // Verify the customer exists
-    const customer = await prisma.user.findUnique({
+    // Verify the customer account exists
+    const account = await prisma.customerAccount.findUnique({
       where: { id },
     });
 
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    if (!account) {
+      return NextResponse.json({ error: "Customer account not found" }, { status: 404 });
     }
 
     // Parse the form data
@@ -99,8 +99,8 @@ export async function POST(
     }
 
     // Delete old logo if exists
-    if (customer.logoUrl) {
-      const oldFilePath = path.join(process.cwd(), "public", customer.logoUrl);
+    if (account.logoUrl) {
+      const oldFilePath = path.join(process.cwd(), "public", account.logoUrl);
       if (existsSync(oldFilePath)) {
         try {
           await unlink(oldFilePath);
@@ -119,9 +119,9 @@ export async function POST(
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
 
-    // Update the customer's logoUrl in the database
+    // Update the customer account's logoUrl in the database
     const logoUrl = `/uploads/logos/${filename}`;
-    await prisma.user.update({
+    await prisma.customerAccount.update({
       where: { id },
       data: { logoUrl },
     });
@@ -159,18 +159,18 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Get the customer
-    const customer = await prisma.user.findUnique({
+    // Get the customer account
+    const account = await prisma.customerAccount.findUnique({
       where: { id },
     });
 
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    if (!account) {
+      return NextResponse.json({ error: "Customer account not found" }, { status: 404 });
     }
 
     // Delete the logo file if it exists
-    if (customer.logoUrl) {
-      const filePath = path.join(process.cwd(), "public", customer.logoUrl);
+    if (account.logoUrl) {
+      const filePath = path.join(process.cwd(), "public", account.logoUrl);
       if (existsSync(filePath)) {
         try {
           await unlink(filePath);
@@ -181,7 +181,7 @@ export async function DELETE(
     }
 
     // Clear the logoUrl in the database
-    await prisma.user.update({
+    await prisma.customerAccount.update({
       where: { id },
       data: { logoUrl: null },
     });

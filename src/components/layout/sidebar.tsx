@@ -260,11 +260,17 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
           }
           className="flex items-center gap-3 group shrink-0"
         >
-          <img src="/logo 3.png" alt="Platform" className="h-6 w-6 object-contain shrink-0" />
-          {!collapsed && (
-            <span className="text-base font-semibold text-slate-800 tracking-tight whitespace-nowrap">
-              {session?.user?.isTprmAdded && !session?.user?.isGrcAdded ? t("TPRM Platform") : t("GRC Platform")}
-            </span>
+          {session?.user?.customerLogoUrl ? (
+            <img src={session.user.customerLogoUrl} alt={session.user.customerAccountName || "Logo"} className={collapsed ? "h-9 w-9 rounded object-cover shrink-0" : "h-10 max-w-[180px] object-contain shrink-0"} />
+          ) : (
+            <>
+              <img src="/logo 3.png" alt="Platform" className="h-6 w-6 object-contain shrink-0" />
+              {!collapsed && (
+                <span className="text-base font-semibold text-slate-800 tracking-tight whitespace-nowrap">
+                  {session?.user?.isTprmAdded && !session?.user?.isGrcAdded ? t("TPRM Platform") : t("GRC Platform")}
+                </span>
+              )}
+            </>
           )}
         </Link>
       </div>
@@ -296,7 +302,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
       {!collapsed && (
         <div className="absolute bottom-0 inset-x-0 p-4 border-t border-slate-200 bg-white">
           <div className="flex items-center justify-between text-[10px] text-slate-400">
-            <span>© 2025 {session?.user?.isTprmAdded && !session?.user?.isGrcAdded ? t("TPRM Platform") : t("GRC Platform")}</span>
+            <span>© 2025 {session?.user?.customerAccountName || (session?.user?.isTprmAdded && !session?.user?.isGrcAdded ? t("TPRM Platform") : t("GRC Platform"))}</span>
             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{t("v2.0")}</span>
           </div>
         </div>

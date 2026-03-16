@@ -14,6 +14,7 @@ declare module "next-auth" {
       customerAccountId: string | null;
       customerAccountCode: string | null;
       customerAccountName: string | null;
+      customerLogoUrl: string | null;
       // Audit Head isolation: auditHeadId for audit team members
       auditHeadId: string | null;
       // Module flags from CustomerAccount
@@ -34,6 +35,7 @@ declare module "next-auth" {
     customerAccountId: string | null;
     customerAccountCode: string | null;
     customerAccountName: string | null;
+    customerLogoUrl: string | null;
     // Audit Head isolation: auditHeadId for audit team members
     auditHeadId: string | null;
     // Module flags from CustomerAccount
@@ -55,6 +57,7 @@ declare module "next-auth/jwt" {
     customerAccountId: string | null;
     customerAccountCode: string | null;
     customerAccountName: string | null;
+    customerLogoUrl: string | null;
     // Audit Head isolation: auditHeadId for audit team members
     auditHeadId: string | null;
     // Module flags from CustomerAccount

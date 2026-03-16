@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
           select: {
             code: true,
             name: true,
+            logoUrl: true,
           },
         },
         department: {
@@ -90,6 +91,7 @@ export async function GET(req: NextRequest) {
           email: user.email,
           userName: user.userName,
           customerAccountId: user.customerAccountId,
+          logoUrl: user.customerAccount?.logoUrl || null,
           compliancePercentage,
         };
       })

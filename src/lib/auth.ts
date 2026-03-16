@@ -30,6 +30,7 @@ const userSelect = {
       id: true,
       code: true,
       name: true,
+      logoUrl: true,
       isGrcAdded: true,
       isTprmAdded: true,
       isQpostComplianceEnabled: true,
@@ -92,7 +93,7 @@ function buildAuthUser(dbUser: {
   departmentId: string | null;
   department: { id: string; name: string } | null;
   customerAccountId: string | null;
-  customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean } | null;
+  customerAccount: { id: string; code: string; name: string; logoUrl: string | null; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean } | null;
   auditHeadId: string | null;
   userRoles: { role: { id: string; name: string } }[];
 }, extraRoles?: string[]) {
@@ -112,6 +113,7 @@ function buildAuthUser(dbUser: {
     customerAccountId: dbUser.customerAccountId,
     customerAccountCode: dbUser.customerAccount?.code || null,
     customerAccountName: dbUser.customerAccount?.name || null,
+    customerLogoUrl: dbUser.customerAccount?.logoUrl || null,
     auditHeadId: dbUser.auditHeadId,
     // Legacy accounts (created before module flags) have both as false — default isGrcAdded=true
     isGrcAdded: (dbUser.customerAccount?.isGrcAdded === false && dbUser.customerAccount?.isTprmAdded === false)
@@ -314,6 +316,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.customerAccountId = user.customerAccountId;
           token.customerAccountCode = user.customerAccountCode;
           token.customerAccountName = user.customerAccountName;
+          token.customerLogoUrl = user.customerLogoUrl;
           token.auditHeadId = user.auditHeadId;
           token.isGrcAdded = user.isGrcAdded;
           token.isTprmAdded = user.isTprmAdded;
@@ -351,6 +354,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               token.customerAccountId = authUser.customerAccountId;
               token.customerAccountCode = authUser.customerAccountCode;
               token.customerAccountName = authUser.customerAccountName;
+              token.customerLogoUrl = authUser.customerLogoUrl;
               token.auditHeadId = authUser.auditHeadId;
               token.isGrcAdded = authUser.isGrcAdded;
               token.isTprmAdded = authUser.isTprmAdded;
@@ -373,6 +377,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.customerAccountId = token.customerAccountId as string | null;
         session.user.customerAccountCode = token.customerAccountCode as string | null;
         session.user.customerAccountName = token.customerAccountName as string | null;
+        session.user.customerLogoUrl = token.customerLogoUrl as string | null;
         // Audit Head isolation: Include auditHeadId in session
         session.user.auditHeadId = token.auditHeadId as string | null;
         session.user.isGrcAdded = (token.isGrcAdded as boolean) ?? false;

@@ -473,8 +473,8 @@ export default function CustomerAccountsPage() {
         const data = await response.json();
 
         // Upload logo if a file was selected
-        if (formData.logoFile && data.user?.id) {
-          await uploadCustomerLogo(data.user.id, formData.logoFile);
+        if (formData.logoFile && data.customerAccount?.id) {
+          await uploadCustomerLogo(data.customerAccount.id, formData.logoFile);
         }
 
         // Trigger dynamic translation for customer account name
@@ -557,8 +557,8 @@ export default function CustomerAccountsPage() {
 
       if (response.ok) {
         // Upload logo if a file was selected
-        if (formData.logoFile && selectedCustomer.id) {
-          await uploadCustomerLogo(selectedCustomer.id, formData.logoFile);
+        if (formData.logoFile && selectedCustomer.customerAccountId) {
+          await uploadCustomerLogo(selectedCustomer.customerAccountId, formData.logoFile);
         }
 
         // Trigger dynamic translation for customer account name

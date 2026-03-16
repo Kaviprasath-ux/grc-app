@@ -53,7 +53,6 @@ export async function GET(req: NextRequest) {
         fullName: true,
         createdAt: true,
         updatedAt: true,
-        logoUrl: true,
         customerCode: true,
         lastLogin: true,
         isBlocked: true,
@@ -74,16 +73,16 @@ export async function GET(req: NextRequest) {
       .map((u) => u.customerAccountId)
       .filter((id): id is string => !!id);
 
-    let accountFlagsMap = new Map<string, { isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean }>();
+    let accountFlagsMap = new Map<string, { isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>();
     if (accountIds.length > 0) {
       try {
         const flags = await prisma.$queryRawUnsafe<
-          Array<{ id: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean }>
+          Array<{ id: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>
         >(
-          `SELECT id, "isGrcAdded", "isTprmAdded", "isQpostComplianceEnabled" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
+          `SELECT id, "isGrcAdded", "isTprmAdded", "isQpostComplianceEnabled", "logoUrl" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
           ...accountIds
         );
-        accountFlagsMap = new Map(flags.map((f) => [f.id, { isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded, isQpostComplianceEnabled: f.isQpostComplianceEnabled }]));
+        accountFlagsMap = new Map(flags.map((f) => [f.id, { isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded, isQpostComplianceEnabled: f.isQpostComplianceEnabled, logoUrl: f.logoUrl }]));
       } catch {
         // If raw query fails (e.g., columns don't exist yet), default to false
       }
@@ -114,7 +113,7 @@ export async function GET(req: NextRequest) {
         blocked: user.isBlocked || false,
         blockedSince: null,
         active: user.isActive !== false,
-        logoUrl: user.logoUrl || null,
+        logoUrl: flags?.logoUrl || null,
         language: user.language || "en-US",
         timeZone: user.timezone || "Asia/Qatar",
         isTprmAdded: flags?.isTprmAdded || false,
