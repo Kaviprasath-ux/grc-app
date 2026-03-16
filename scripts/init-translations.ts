@@ -53,6 +53,7 @@ const translations: [string, string, string][] = [
   ['Rejected', 'مرفوض', 'Noraidīts'],
   ['Draft', 'مسودة', 'Melnraksts'],
   ['Published', 'منشور', 'Publicēts'],
+  ['Expired', 'منتهية', 'Beidzies'],
   ['No data available', 'لا توجد بيانات', 'Nav pieejamu datu'],
   ['No results found', 'لا توجد نتائج', 'Rezultāti nav atrasti'],
   ['No results', 'لا توجد نتائج', 'Nav rezultātu'],
@@ -247,7 +248,7 @@ const translations: [string, string, string][] = [
   ['You don\'t have permission to access this page.', 'ليس لديك صلاحية للوصول إلى هذه الصفحة.', 'Jums nav atļaujas piekļūt šai lapai.'],
   ['Go Back', 'العودة', 'Atgriezties'],
   ['Go to Dashboard', 'الذهاب إلى لوحة التحكم', 'Doties uz vadības paneli'],
-  ['You don\'t have permission to view this content.', 'ليس لديك صلاحية لعرض هذا المحتوى.', 'Jums nav atļaujas skatīt šo saturu.'],
+  // REMOVED DUPLICATE: You don\
 
   // ==========================================
   // ORGANIZATION - PROFILE
@@ -647,7 +648,7 @@ const translations: [string, string, string][] = [
   ['Detect', 'اكتشاف', 'Atklāt'],
   ['Respond', 'استجابة', 'Reaģēt'],
   ['Recover', 'استعادة', 'Atjaunot'],
-  ['You don\'t have permission to access Controls.', 'ليس لديك صلاحية للوصول إلى الضوابط.', 'Jums nav atļaujas piekļūt kontrolēm.'],
+  // REMOVED DUPLICATE: You don\
 
   // ==========================================
   // COMPLIANCE - GOVERNANCE
@@ -678,7 +679,7 @@ const translations: [string, string, string][] = [
   ['New Governance - Step 3 of 3', 'حوكمة جديدة - الخطوة 3 من 3', 'Jauna pārvaldība - 3. solis no 3'],
   ['Governance Name', 'اسم الحوكمة', 'Pārvaldības nosaukums'],
   ['Enter governance name', 'أدخل اسم الحوكمة', 'Ievadiet pārvaldības nosaukumu'],
-  ['You don\'t have permission to access Governance.', 'ليس لديك صلاحية للوصول إلى الحوكمة.', 'Jums nav atļaujas piekļūt pārvaldībai.'],
+  // REMOVED DUPLICATE: You don\
   ['Standard', 'المعيار', 'Standarts'],
   ['Procedure', 'الإجراء', 'Procedūra'],
 
@@ -698,7 +699,7 @@ const translations: [string, string, string][] = [
   ['Risk Owner', 'مالك المخاطر', 'Riska īpašnieks'],
   ['Risk Rating', 'تصنيف المخاطر', 'Riska novērtējums'],
   ['Risk Type', 'نوع المخاطر', 'Riska tips'],
-  ['You don\'t have permission to access Risk Register.', 'ليس لديك صلاحية للوصول إلى سجل المخاطر.', 'Jums nav atļaujas piekļūt risku reģistram.'],
+  // REMOVED DUPLICATE: You don\
   ['RiskRegister', 'سجل المخاطر', 'Risku reģistrs'],
   ['Register', 'السجل', 'Reģistrs'],
   ['Total Risks', 'إجمالي المخاطر', 'Kopējie riski'],
@@ -715,6 +716,7 @@ const translations: [string, string, string][] = [
   ['No activity log entries found', 'لم يتم العثور على إدخالات في سجل النشاط', 'Nav atrasti aktivitāšu žurnāla ieraksti'],
   ['No activity logs found', 'لم يتم العثور على سجلات نشاط', 'Nav atrasti aktivitāšu žurnāli'],
   ['Toggle columns', 'تبديل الأعمدة', 'Pārslēgt kolonnas'],
+  ['Columns', 'الأعمدة', 'Kolonnas'],
   ['Import Risks', 'استيراد المخاطر', 'Importēt riskus'],
   ['Upload a CSV file to import risks', 'ارفع ملف CSV لاستيراد المخاطر', 'Augšupielādējiet CSV failu, lai importētu riskus'],
   ['Required columns:', 'الأعمدة المطلوبة:', 'Obligātās kolonnas:'],
@@ -777,7 +779,7 @@ const translations: [string, string, string][] = [
   ['Items requiring attention', 'عناصر تتطلب الانتباه', 'Vienumi, kam nepieciešama uzmanība'],
   ['Overdue Items', 'عناصر متأخرة', 'Nokavētie vienumi'],
   ['Requires immediate attention', 'يتطلب اهتماماً فورياً', 'Nepieciešama tūlītēja uzmanība'],
-  ['You don\'t have permission to access the Internal Audit Dashboard.', 'ليس لديك صلاحية للوصول إلى لوحة تحكم التدقيق الداخلي.', 'Jums nav atļaujas piekļūt iekšējā audita panelim.'],
+  // REMOVED DUPLICATE: You don\
   // Status/severity labels for badges
   ['Planned', 'مخطط', 'Plānots'],
 
@@ -1245,7 +1247,7 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['Inventory', 'الجرد', 'Inventārs'],
   ['Loading assets...', 'جاري تحميل الأصول...', 'Ielādē aktīvus...'],
-  ['You don\'t have permission to access Asset Inventory.', 'ليس لديك صلاحية للوصول إلى جرد الأصول.', 'Jums nav atļaujas piekļūt aktīvu inventāram.'],
+  // REMOVED DUPLICATE: You don\
   ['Total Assets', 'إجمالي الأصول', 'Kopējie aktīvi'],
   ['Active Assets', 'الأصول النشطة', 'Aktīvie aktīvi'],
   ['Critical Assets', 'الأصول الحرجة', 'Kritiskie aktīvi'],
@@ -2329,7 +2331,7 @@ const translations: [string, string, string][] = [
   ['Failed to update exception. Please try again.', 'فشل تحديث الاستثناء. يرجى المحاولة مرة أخرى.', 'Neizdevās atjaunināt izņēmumu. Lūdzu, mēģiniet vēlreiz.'],
   ['This exception has been approved and cannot be edited.', 'تمت الموافقة على هذا الاستثناء ولا يمكن تعديله.', 'Šis izņēmums ir apstiprināts un to nevar rediģēt.'],
   ['Are you sure you want to delete exception', 'هل أنت متأكد أنك تريد حذف الاستثناء', 'Vai tiešām vēlaties dzēst izņēmumu'],
-  ['You don\'t have permission to access Exception Management.', 'ليس لديك صلاحية للوصول إلى إدارة الاستثناءات.', 'Jums nav atļaujas piekļūt izņēmumu pārvaldībai.'],
+  // REMOVED DUPLICATE: You don\
   ['Description/Justification', 'الوصف/المبرر', 'Apraksts/Pamatojums'],
   ['Provide justification for this exception', 'قدم مبرراً لهذا الاستثناء', 'Sniedziet pamatojumu šim izņēmumam'],
   ['Authorised', 'مصرح به', 'Autorizēts'],
@@ -3285,7 +3287,7 @@ const translations: [string, string, string][] = [
   ['Date Range', 'نطاق التاريخ', 'Datumu diapazons'],
   ['Delete AI Workpaper', 'حذف ورقة عمل الذكاء الاصطناعي', 'Dzēst AI darba dokumentu'],
   ['Are you sure you want to delete this attachment?', 'هل أنت متأكد أنك تريد حذف هذا المرفق؟', 'Vai tiešām vēlaties dzēst šo pielikumu?'],
-  ['Attachment deleted successfully', 'تم حذف المرفق بنجاح', 'Pielikums veiksmīgi dzēsts'],
+  // REMOVED DUPLICATE: Attachment deleted successfully
   ['Delete Attachment', 'حذف المرفق', 'Dzēst pielikumu'],
   ['Failed to delete attachment', 'فشل في حذف المرفق', 'Neizdevās dzēst pielikumu'],
   ['Delete Document', 'حذف مستند', 'Dzēst dokumentu'],
@@ -3377,7 +3379,7 @@ const translations: [string, string, string][] = [
   ['Failed to create engagement', 'فشل في إنشاء المهمة', 'Neizdevās izveidot iesaisti'],
   ['Failed to create evidence request', 'فشل في إنشاء طلب الأدلة', 'Neizdevās izveidot pierādījumu pieprasījumu'],
   ['Failed to delete AI Workpaper', 'فشل في حذف ورقة عمل الذكاء الاصطناعي', 'Neizdevās dzēst AI darba dokumentu'],
-  ['Failed to delete attachment', 'فشل في حذف المرفق', 'Neizdevās dzēst pielikumu'],
+  // REMOVED DUPLICATE: Failed to delete attachment
   ['Failed to delete document', 'فشل في حذف المستند', 'Neizdevās dzēst dokumentu'],
   ['Failed to delete engagement', 'فشل في حذف المهمة', 'Neizdevās dzēst iesaisti'],
   ['Failed to delete evidence request', 'فشل في حذف طلب الأدلة', 'Neizdevās dzēst pierādījumu pieprasījumu'],
@@ -3586,7 +3588,7 @@ const translations: [string, string, string][] = [
   ['Workpapers', 'أوراق العمل', 'Darba dokumenti'],
   ['Workpapers added successfully', 'تمت إضافة أوراق العمل بنجاح', 'Darba dokumenti veiksmīgi pievienoti'],
   ['workpapers generated', 'أوراق عمل تم إنشاؤها', 'darba dokumenti ģenerēti'],
-  ['You don\'t have permission to access Fieldwork.', 'ليس لديك صلاحية للوصول إلى العمل الميداني.', 'Jums nav atļaujas piekļūt lauka darbam.'],
+  // REMOVED DUPLICATE: You don\
 
   // CAPA Tracking & Report translations
   [', providing adequate assurance over financial reporting and operational integrity.', '، مما يوفر ضماناً كافياً على التقارير المالية والنزاهة التشغيلية.', ', nodrošinot pietiekamu pārliecību par finanšu pārskatiem un darbības integritāti.'],
@@ -3924,7 +3926,7 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['Add controls to plan risk mitigation', 'أضف ضوابط لتخطيط تخفيف المخاطر', 'Pievienojiet kontroles risku mazināšanas plānošanai'],
   ['Adding risks to your library...', 'جاري إضافة المخاطر إلى مكتبتك...', 'Pievieno riskus jūsu bibliotēkai...'],
-  ['Click \'Confirm & Register\' to add these risks to your library.', 'انقر "تأكيد وتسجيل" لإضافة هذه المخاطر إلى مكتبتك.', 'Noklikšķiniet "Apstiprināt un reģistrēt", lai pievienotu šos riskus jūsu bibliotēkai.'],
+  // REMOVED DUPLICATE: Click \
   ['Comparing with existing risk library...', 'جاري المقارنة مع مكتبة المخاطر الحالية...', 'Salīdzina ar esošo risku bibliotēku...'],
   ['Confirm & Register', 'تأكيد وتسجيل', 'Apstiprināt un reģistrēt'],
   ['Existing Matches', 'التطابقات الحالية', 'Esošās atbilstības'],
@@ -4189,9 +4191,9 @@ const translations: [string, string, string][] = [
   // ==========================================
   // PERMISSIONS (missing batch)
   // ==========================================
-  ['You don\'t have permission to access Evidence.', 'ليس لديك صلاحية للوصول إلى الأدلة.', 'Jums nav atļaujas piekļūt pierādījumiem.'],
-  ['You don\'t have permission to access Risk Assessment.', 'ليس لديك صلاحية للوصول إلى تقييم المخاطر.', 'Jums nav atļaujas piekļūt risku novērtējumam.'],
-  ['You don\'t have permission to access Risk Control Matrix.', 'ليس لديك صلاحية للوصول إلى مصفوفة ضوابط المخاطر.', 'Jums nav atļaujas piekļūt risku kontroles matricai.'],
+  // REMOVED DUPLICATE: You don\
+  // REMOVED DUPLICATE: You don\
+  // REMOVED DUPLICATE: You don\
 
   // ==========================================
   // NO DATA / EMPTY STATES (missing batch)
@@ -4363,6 +4365,10 @@ const translations: [string, string, string][] = [
   ['General', 'عام', 'Vispārīgi'],
   ['TPRM', 'إدارة مخاطر الطرف الثالث', 'TPRM'],
   ['GRC Administration', 'إدارة الحوكمة والمخاطر والامتثال', 'GRC administrēšana'],
+  ['GRC Administrator', 'مسؤول الحوكمة والمخاطر والامتثال', 'GRC administrators'],
+  ['Customers', 'العملاء', 'Klienti'],
+  ['Email Settings', 'إعدادات البريد الإلكتروني', 'E-pasta iestatījumi'],
+  ['Email Templates', 'قوالب البريد الإلكتروني', 'E-pasta veidnes'],
 
   // ==========================================
   // TPRM — VENDOR MANAGEMENT
@@ -4768,17 +4774,17 @@ const translations: [string, string, string][] = [
   ['scan has been cancelled', 'تم إلغاء الفحص', 'skenēšana ir atcelta'],
   ['assessment has been saved successfully', 'تم حفظ التقييم بنجاح', 'novērtējums ir veiksmīgi saglabāts'],
   ['has been queued for scanning. This may take a few minutes.', 'تمت إضافته إلى قائمة الفحص. قد يستغرق ذلك بضع دقائق.', 'ir ievietots skenēšanas rindā. Tas var aizņemt dažas minūtes.'],
-  ['Assessment Triggered', 'تم بدء التقييم', 'Novērtējums uzsākts'],
+  // REMOVED DUPLICATE: Assessment Triggered
   ['Vendors Monitored', 'الموردون المراقبون', 'Uzraudzītie piegādātāji'],
   ['Average Security Score', 'متوسط درجة الأمان', 'Vidējais drošības rādītājs'],
   ['High Risk Vendors', 'الموردون ذوو المخاطر العالية', 'Augsta riska piegādātāji'],
   ['Active Scans', 'الفحوصات النشطة', 'Aktīvās skenēšanas'],
-  ['No monitoring data available', 'لا تتوفر بيانات مراقبة', 'Nav pieejamu uzraudzības datu'],
+  // REMOVED DUPLICATE: No monitoring data available
   ['Results will appear here once the scanning API sends data', 'ستظهر النتائج هنا بمجرد إرسال واجهة الفحص للبيانات', 'Rezultāti parādīsies šeit, kad skenēšanas API nosūtīs datus'],
   ['No vendors match your search', 'لا يوجد موردون يطابقون بحثك', 'Neviens piegādātājs neatbilst jūsu meklēšanai'],
-  ['Search vendors...', 'البحث عن الموردين...', 'Meklēt piegādātājus...'],
-  ['Please enter a vendor name or domain', 'يرجى إدخال اسم المورد أو النطاق', 'Lūdzu, ievadiet piegādātāja nosaukumu vai domēnu'],
-  ['Enter vendor name', 'أدخل اسم المورد', 'Ievadiet piegādātāja nosaukumu'],
+  // REMOVED DUPLICATE: Search vendors...
+  // REMOVED DUPLICATE: Please enter a vendor name or domain
+  // REMOVED DUPLICATE: Enter vendor name
   ['Delete functionality coming soon', 'ميزة الحذف ستتوفر قريبًا', 'Dzēšanas funkcionalitāte drīzumā'],
   ['Failed to cancel scan', 'فشل في إلغاء الفحص', 'Neizdevās atcelt skenēšanu'],
   ['1 to', '1 إلى', '1 līdz'],
@@ -4983,46 +4989,46 @@ const translations: [string, string, string][] = [
   ['Parent', 'رئيسي', 'Galvenais'],
   ['Child', 'فرعي', 'Pakārtotais'],
   ['Help', 'مساعدة', 'Palīdzība'],
-  ['Search...', 'بحث...', 'Meklēt...'],
-  ['Search domains...', 'البحث عن المجالات...', 'Meklēt domēnus...'],
-  ['Search questions...', 'البحث عن الأسئلة...', 'Meklēt jautājumus...'],
-  ['Search templates...', 'البحث عن القوالب...', 'Meklēt veidnes...'],
-  ['All Domains', 'جميع المجالات', 'Visi domēni'],
-  ['Add Domain', 'إضافة مجال', 'Pievienot domēnu'],
-  ['Edit Domain', 'تعديل المجال', 'Rediģēt domēnu'],
+  // REMOVED DUPLICATE: Search...
+  // REMOVED DUPLICATE: Search domains...
+  // REMOVED DUPLICATE: Search questions...
+  // REMOVED DUPLICATE: Search templates...
+  // REMOVED DUPLICATE: All Domains
+  // REMOVED DUPLICATE: Add Domain
+  // REMOVED DUPLICATE: Edit Domain
   ['Domain updated', 'تم تحديث المجال', 'Domēns atjaunināts'],
   ['Domain created', 'تم إنشاء المجال', 'Domēns izveidots'],
   ['Domain deleted', 'تم حذف المجال', 'Domēns dzēsts'],
-  ['Add Question', 'إضافة سؤال', 'Pievienot jautājumu'],
-  ['Edit Question', 'تعديل السؤال', 'Rediģēt jautājumu'],
+  // REMOVED DUPLICATE: Add Question
+  // REMOVED DUPLICATE: Edit Question
   ['Question updated', 'تم تحديث السؤال', 'Jautājums atjaunināts'],
   ['Question created', 'تم إنشاء السؤال', 'Jautājums izveidots'],
   ['Question deleted', 'تم حذف السؤال', 'Jautājums dzēsts'],
   ['Parent Question', 'السؤال الرئيسي', 'Galvenais jautājums'],
-  ['Select parent question', 'اختر السؤال الرئيسي', 'Izvēlieties galveno jautājumu'],
-  ['Question Title', 'عنوان السؤال', 'Jautājuma nosaukums'],
-  ['VerifAI Prompt Question', 'سؤال أمر VerifAI', 'VerifAI uzvednes jautājums'],
-  ['No Domain', 'لا يوجد مجال', 'Nav domēna'],
-  ['Validate Through AI', 'التحقق عبر الذكاء الاصطناعي', 'Validēt ar AI'],
-  ['Mandatory Question', 'سؤال إلزامي', 'Obligāts jautājums'],
-  ['Enter recommendation', 'أدخل التوصية', 'Ievadiet ieteikumu'],
-  ['Select severity', 'اختر الخطورة', 'Izvēlieties smagumu'],
-  ['Unassigned', 'غير مخصص', 'Nepiešķirts'],
-  ['VerifAI Prompt', 'أمر VerifAI', 'VerifAI uzvedne'],
+  // REMOVED DUPLICATE: Select parent question
+  // REMOVED DUPLICATE: Question Title
+  // REMOVED DUPLICATE: VerifAI Prompt Question
+  // REMOVED DUPLICATE: No Domain
+  // REMOVED DUPLICATE: Validate Through AI
+  // REMOVED DUPLICATE: Mandatory Question
+  // REMOVED DUPLICATE: Enter recommendation
+  // REMOVED DUPLICATE: Select severity
+  // REMOVED DUPLICATE: Unassigned
+  // REMOVED DUPLICATE: VerifAI Prompt
   ['Questions linked successfully', 'تم ربط الأسئلة بنجاح', 'Jautājumi veiksmīgi saistīti'],
   ['Failed to link questions', 'فشل في ربط الأسئلة', 'Neizdevās saistīt jautājumus'],
   ['Question unlinked', 'تم إلغاء ربط السؤال', 'Jautājums atsaistīts'],
   ['Failed to unlink', 'فشل في إلغاء الربط', 'Neizdevās atsaistīt'],
-  ['Templates are managed in Configurations', 'تُدار القوالب في الإعدادات', 'Veidnes tiek pārvaldītas iestatījumos'],
-  ['No questionnaire templates found', 'لم يتم العثور على قوالب استبيانات', 'Nav atrasta neviena anketas veidne'],
+  // REMOVED DUPLICATE: Templates are managed in Configurations
+  // REMOVED DUPLICATE: No questionnaire templates found
   ['Create templates in the Configurations page first', 'أنشئ القوالب في صفحة الإعدادات أولاً', 'Vispirms izveidojiet veidnes iestatījumu lapā'],
   ['Linked Questions', 'الأسئلة المرتبطة', 'Saistītie jautājumi'],
   ['Add Questions', 'إضافة أسئلة', 'Pievienot jautājumus'],
-  ['No questions linked yet', 'لم يتم ربط أي أسئلة بعد', 'Vēl nav saistīts neviens jautājums'],
-  ['Add Questions to Template', 'إضافة أسئلة إلى القالب', 'Pievienot jautājumus veidnei'],
-  ['No available questions', 'لا توجد أسئلة متاحة', 'Nav pieejamu jautājumu'],
-  ['Link Selected', 'ربط المحدد', 'Saistīt izvēlētos'],
-  ['Enter domain name', 'أدخل اسم المجال', 'Ievadiet domēna nosaukumu'],
+  // REMOVED DUPLICATE: No questions linked yet
+  // REMOVED DUPLICATE: Add Questions to Template
+  // REMOVED DUPLICATE: No available questions
+  // REMOVED DUPLICATE: Link Selected
+  // REMOVED DUPLICATE: Enter domain name
   ['Remove this question from the template?', 'هل تريد إزالة هذا السؤال من القالب؟', 'Vai noņemt šo jautājumu no veidnes?'],
 
   // ==========================================
@@ -5084,8 +5090,8 @@ const translations: [string, string, string][] = [
   ['Failed to validate subscription', 'فشل في التحقق من الاشتراك', 'Neizdevās validēt abonementu'],
   ['Back To Vendor Inventory', 'العودة إلى جرد الموردين', 'Atpakaļ uz piegādātāju inventāru'],
   ['Contact Phone', 'هاتف الاتصال', 'Kontakttālrunis'],
-  ['Configure TPRM module settings and parameters', 'تكوين إعدادات ومعايير وحدة إدارة مخاطر الطرف الثالث', 'Konfigurēt TPRM moduļa iestatījumus un parametrus'],
-  ['This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting.', 'هذا المورد ذو مخاطر اسمية وبالتالي لا يلزم إجراء مزيد من العناية الواجبة. يرجى المتابعة مع التعاقد.', 'Šis piegādātājs ir ar nominālu risku, tāpēc turpmāka pienācīga pārbaude nav nepieciešama. Lūdzu, turpiniet ar līguma slēgšanu.'],
+  // REMOVED DUPLICATE: Configure TPRM module settings and parameters
+  // REMOVED DUPLICATE: This vendor is nominal risk and hence there is no 
   ['This vendor is low risk. Basic due-diligence review is recommended.', 'هذا المورد منخفض المخاطر. يوصى بمراجعة العناية الواجبة الأساسية.', 'Šis piegādātājs ir ar zemu risku. Ieteicama pamata pienācīgas pārbaudes veikšana.'],
   ['This vendor is medium risk. Standard due-diligence assessment is required.', 'هذا المورد متوسط المخاطر. يلزم إجراء تقييم العناية الواجبة القياسي.', 'Šis piegādātājs ir ar vidēju risku. Nepieciešams standarta pienācīgas pārbaudes novērtējums.'],
   ['This vendor is high risk. Enhanced due-diligence assessment is required.', 'هذا المورد عالي المخاطر. يلزم إجراء تقييم العناية الواجبة المعزز.', 'Šis piegādātājs ir ar augstu risku. Nepieciešams padziļināts pienācīgas pārbaudes novērtējums.'],
@@ -5108,13 +5114,13 @@ const translations: [string, string, string][] = [
   ['Search by Vendor', 'البحث حسب المورد', 'Meklēt pēc piegādātāja'],
   ['Assessment Count', 'عدد التقييمات', 'Novērtējumu skaits'],
   ['Vendor Count', 'عدد الموردين', 'Piegādātāju skaits'],
-  ['All Vendor Contracts', 'جميع عقود الموردين', 'Visi piegādātāju līgumi'],
+  // REMOVED DUPLICATE: All Vendor Contracts
   ['EXPIRING ON', 'تاريخ الانتهاء', 'BEIGU DATUMS'],
   ['Reassessments', 'إعادة التقييم', 'Atkārtoti novērtējumi'],
   ['Past', 'السابقة', 'Iepriekšējie'],
   ['New Vendor Scan', 'فحص مورد جديد', 'Jauna piegādātāja skenēšana'],
   ['Track and monitor vendor security posture in real-time', 'تتبع ومراقبة الوضع الأمني للمورد في الوقت الفعلي', 'Izsekojiet un uzraugiet piegādātāja drošības stāvokli reāllaikā'],
-  ['Results will appear here once the scanning API sends data', 'ستظهر النتائج هنا بمجرد إرسال واجهة برمجة الفحص للبيانات', 'Rezultāti parādīsies šeit, kad skenēšanas API nosūtīs datus'],
+  // REMOVED DUPLICATE: Results will appear here once the scanning API sen
   ['Discipline', 'التخصص', 'Disciplīna'],
   ['Vendor Offboarding', 'إنهاء خدمة المورد', 'Piegādātāja izslēgšana'],
   ['Questionnaires', 'الاستبيانات', 'Anketas'],
@@ -5158,20 +5164,20 @@ const translations: [string, string, string][] = [
   ['Enter template name', 'أدخل اسم القالب', 'Ievadiet veidnes nosaukumu'],
   ['Template created successfully', 'تم إنشاء القالب بنجاح', 'Veidne veiksmīgi izveidota'],
   ['Add questions in Vendor Onboarding configuration first', 'أضف أسئلة في إعدادات تسجيل المورد أولاً', 'Vispirms pievienojiet jautājumus Piegādātāja reģistrācijas konfigurācijā'],
-  ['Template Details', 'تفاصيل القالب', 'Veidnes detaļas'],
+  // REMOVED DUPLICATE: Template Details
   ['Default', 'افتراضي', 'Noklusējuma'],
   ['ISMS', 'ISMS', 'ISMS'],
-  ['Compliance', 'الامتثال', 'Atbilstība'],
+  // REMOVED DUPLICATE: Compliance
   ['PNG, JPG, GIF, WebP', 'PNG, JPG, GIF, WebP', 'PNG, JPG, GIF, WebP'],
-  ['Choose File', 'اختيار ملف', 'Izvēlēties failu'],
-  ['Download', 'تحميل', 'Lejupielādēt'],
+  // REMOVED DUPLICATE: Choose File
+  // REMOVED DUPLICATE: Download
   ['Template updated successfully', 'تم تحديث القالب بنجاح', 'Veidne veiksmīgi atjaunināta'],
   ['Template deleted successfully', 'تم حذف القالب بنجاح', 'Veidne veiksmīgi dzēsta'],
-  ['Select All', 'تحديد الكل', 'Atlasīt visu'],
-  ['Deselect All', 'إلغاء تحديد الكل', 'Noņemt visu atlasi'],
-  ['selected', 'محدد', 'atlasīts'],
-  ['Create', 'إنشاء', 'Izveidot'],
-  ['Link Existing', 'ربط موجود', 'Saistīt esošu'],
+  // REMOVED DUPLICATE: Select All
+  // REMOVED DUPLICATE: Deselect All
+  // REMOVED DUPLICATE: selected
+  // REMOVED DUPLICATE: Create
+  // REMOVED DUPLICATE: Link Existing
   ['Enable AI Verification', 'تفعيل التحقق بالذكاء الاصطناعي', 'Iespējot AI verifikāciju'],
 
   // ==========================================
@@ -5182,8 +5188,8 @@ const translations: [string, string, string][] = [
   ['Run an assessment from the Assessment Factory to see results here', 'قم بإجراء تقييم من مصنع التقييم لعرض النتائج هنا', 'Veiciet novērtējumu no novērtējumu rūpnīcas, lai šeit redzētu rezultātus'],
   ['Assessment Templates', 'قوالب التقييم', 'Novērtējuma veidnes'],
   ['Questionnaire templates for vendor assessments', 'قوالب الاستبيان لتقييمات الموردين', 'Anketu veidnes piegādātāju novērtējumiem'],
-  ['Search templates...', 'البحث في القوالب...', 'Meklēt veidnes...'],
-  ['Try adjusting your search', 'حاول تعديل بحثك', 'Mēģiniet pielāgot meklēšanu'],
+  // REMOVED DUPLICATE: Search templates...
+  // REMOVED DUPLICATE: Try adjusting your search
   ['Questionnaire', 'استبيان', 'Anketa'],
   ['No questions in this template', 'لا توجد أسئلة في هذا القالب', 'Šajā veidnē nav jautājumu'],
   ['Assessment Workflow', 'سير عمل التقييم', 'Novērtējuma darbplūsma'],
@@ -5203,8 +5209,8 @@ const translations: [string, string, string][] = [
   ['From the Review Questionnaire page, click the \'Generate Report\' button in the top-right corner to download a comprehensive assessment report.', 'من صفحة مراجعة الاستبيان، انقر على زر "إنشاء تقرير" في الزاوية العلوية اليمنى لتنزيل تقرير تقييم شامل.', 'No anketas pārskatīšanas lapas noklikšķiniet uz pogas "Ģenerēt pārskatu" augšējā labajā stūrī, lai lejupielādētu visaptverošu novērtējuma pārskatu.'],
   ['For any questions or support requests, please reach out to the TPRM administration team.', 'لأي أسئلة أو طلبات دعم، يرجى التواصل مع فريق إدارة مخاطر الطرف الثالث.', 'Ja jums ir jautājumi vai atbalsta pieprasījumi, lūdzu sazinieties ar TPRM administrācijas komandu.'],
   ['Select an item from the left menu', 'اختر عنصرًا من القائمة اليسرى', 'Atlasiet vienumu no kreisās izvēlnes'],
-  ['No data', 'لا توجد بيانات', 'Nav datu'],
-  ['Returned', 'تم الإرجاع', 'Atgriezts'],
+  // REMOVED DUPLICATE: No data
+  // REMOVED DUPLICATE: Returned
   ['In-Progress(approver)', 'قيد التنفيذ (الموافق)', 'Procesā (apstiprinātājs)'],
   ['Deficient', 'ناقص', 'Nepietiekams'],
   ['Action Plan Details', 'تفاصيل خطة العمل', 'Darbības plāna detaļas'],
@@ -5219,13 +5225,13 @@ const translations: [string, string, string][] = [
   ['Overall Cybersecurity Score', 'نقاط الأمن السيبراني الإجمالية', 'Kopējais kiberdrošības rādītājs'],
   ['till', 'حتى', 'līdz'],
   ['The control environment was found to be', 'تبين أن بيئة الرقابة كانت', 'Kontroles vide tika novērtēta kā'],
-  ['Third Party Risk Management Team conducted a due diligence review of', 'أجرى فريق إدارة مخاطر الطرف الثالث مراجعة العناية الواجبة لـ', 'Trešo pušu risku pārvaldības komanda veica pienācīgas pārbaudes pārskatu par'],
-  ['For any further questions or follow-ups on this report, please reach out to us.', 'لأي استفسارات أو متابعات إضافية حول هذا التقرير، يرجى التواصل معنا.', 'Ja jums ir papildu jautājumi vai sekojumi par šo pārskatu, lūdzu sazinieties ar mums.'],
+  // REMOVED DUPLICATE: Third Party Risk Management Team conducted a due d
+  // REMOVED DUPLICATE: For any further questions or follow-ups on this re
 
   // TPRM - BO DASHBOARD
-  ['Vendor Count', 'عدد الموردين', 'Piegādātāju skaits'],
-  ['Assessment Count', 'عدد التقييمات', 'Novērtējumu skaits'],
-  ['Help', 'مساعدة', 'Palīdzība'],
+  // REMOVED DUPLICATE: Vendor Count
+  // REMOVED DUPLICATE: Assessment Count
+  // REMOVED DUPLICATE: Help
 
   // TPRM - BO/RM ASSESSMENTS
   ['Terminated Vendors', 'الموردون المنتهية عقودهم', 'Izbeigti piegādātāji'],
@@ -5238,19 +5244,19 @@ const translations: [string, string, string][] = [
   ['Offboard Approved (RM)', 'إنهاء التعاقد معتمد (مدير العلاقات)', 'Izbeigšana apstiprināta (RM)'],
   ['Pending BO Approval', 'بانتظار موافقة مالك الأعمال', 'Gaida BO apstiprinājumu'],
   ['Terminated', 'منتهي', 'Izbeigts'],
-  ['In-Progress(approver)', 'قيد التنفيذ (الموافق)', 'Procesā (apstiprinātājs)'],
+  // REMOVED DUPLICATE: In-Progress(approver)
   ['Offboard Assessment', 'تقييم إنهاء التعاقد', 'Izbeigšanas novērtējums'],
   ['Reassessment', 'إعادة التقييم', 'Atkārtots novērtējums'],
 
   // TPRM - BO Contracts page
-  ['Contact Email', 'البريد الإلكتروني للتواصل', 'Kontakta e-pasts'],
-  ['Failed to renew contract', 'فشل في تجديد العقد', 'Neizdevās atjaunot līgumu'],
+  // REMOVED DUPLICATE: Contact Email
+  // REMOVED DUPLICATE: Failed to renew contract
 
   // TPRM - Account Overview page
-  ['Account Overview', 'نظرة عامة على الحسابات', 'Kontu pārskats'],
-  ['Customer Accounts', 'حسابات العملاء', 'Klientu konti'],
+  // REMOVED DUPLICATE: Account Overview
+  // REMOVED DUPLICATE: Customer Accounts
   ['Vendor Accounts', 'حسابات الموردين', 'Piegādātāju konti'],
-  ['Assessment Factory', 'مصنع التقييم', 'Novērtēšanas rūpnīca'],
+  // REMOVED DUPLICATE: Assessment Factory
   ['Super Admin', 'المشرف الأعلى', 'Galvenais administrators'],
   ['Create New Customer', 'إنشاء عميل جديد', 'Izveidot jaunu klientu'],
   ['Create Factory Admin', 'إنشاء مسؤول المصنع', 'Izveidot rūpnīcas administratoru'],
@@ -5276,6 +5282,10 @@ const translations: [string, string, string][] = [
   ['Create New Customer Account', 'إنشاء حساب عميل جديد', 'Izveidot jaunu klienta kontu'],
   ['Create Factory Admin Account', 'إنشاء حساب مسؤول المصنع', 'Izveidot rūpnīcas administratora kontu'],
   ['Create New TPRM Admin Account', 'إنشاء حساب مسؤول TPRM جديد', 'Izveidot jaunu TPRM administratora kontu'],
+  ['Customer Name', 'اسم العميل', 'Klienta nosaukums'],
+  ['CustomerAdministrator', 'مسؤول العميل', 'Klienta administrators'],
+  ['FactoryAdmin', 'مسؤول المصنع', 'Rūpnīcas administrators'],
+  ['TPRMAdmin', 'مسؤول إدارة مخاطر الطرف الثالث', 'TPRM administrators'],
   ['Search customers...', 'البحث عن العملاء...', 'Meklēt klientus...'],
   ['Search factory accounts...', 'البحث عن حسابات المصنع...', 'Meklēt rūpnīcas kontus...'],
   ['Search super admins...', 'البحث عن المشرفين الأعلى...', 'Meklēt galvenos administratorus...'],
@@ -5309,10 +5319,10 @@ const translations: [string, string, string][] = [
   ['SME Management Menu', 'قائمة إدارة الخبراء', 'Ekspertu pārvaldības izvēlne'],
   ['Support Menu', 'قائمة الدعم', 'Atbalsta izvēlne'],
   ['When an assessment is initiated for your vendor, it will appear in the Active tab.', 'عند بدء تقييم للمورد الخاص بك، سيظهر في علامة التبويب النشطة.', 'Kad novērtējums tiek uzsākts jūsu piegādātājam, tas parādīsies cilnē Aktīvie.'],
-  ['Click \'Start\' to open the Response Questionnaire.', 'انقر على "بدء" لفتح استبيان الاستجابة.', 'Noklikšķiniet "Sākt", lai atvērtu atbilžu anketu.'],
+  // REMOVED DUPLICATE: Click \
   ['Answer each question with Yes, No, or N/A. Upload required artifacts.', 'أجب على كل سؤال بنعم أو لا أو غير منطبق. ارفع المستندات المطلوبة.', 'Atbildiet uz katru jautājumu ar Jā, Nē vai N/A. Augšupielādējiet nepieciešamos artefaktus.'],
   ['Your responses are auto-saved as you work.', 'يتم حفظ ردودك تلقائياً أثناء العمل.', 'Jūsu atbildes tiek automātiski saglabātas darba laikā.'],
-  ['Click \'Submit Assessment\' when all mandatory questions are answered.', 'انقر على "إرسال التقييم" عند الإجابة على جميع الأسئلة الإلزامية.', 'Noklikšķiniet "Iesniegt novērtējumu", kad visi obligātie jautājumi ir atbildēti.'],
+  // REMOVED DUPLICATE: Click \
   ['Clarifications: When an assessor needs clarification on your response, it appears in the Clarifications tab.', 'التوضيحات: عندما يحتاج المقيّم إلى توضيح ردك، يظهر في علامة التوضيحات.', 'Precizējumi: Kad vērtētājam nepieciešams precizējums par jūsu atbildi, tas parādās cilnē Precizējumi.'],
   ['Issue Remediation: If issues are found during assessment, you\'ll see remediation requests.', 'معالجة المشكلات: إذا تم اكتشاف مشكلات أثناء التقييم، ستظهر لك طلبات المعالجة.', 'Problēmu novēršana: Ja novērtēšanas laikā tiek atrastas problēmas, jūs redzēsiet novēršanas pieprasījumus.'],
   ['Vendor Issues: You can report issues from your side using the Vendor Issues tab.', 'مشكلات المورد: يمكنك الإبلاغ عن مشكلات من جانبك باستخدام علامة مشكلات المورد.', 'Piegādātāja problēmas: Jūs varat ziņot par problēmām no savas puses, izmantojot cilni Piegādātāja problēmas.'],
@@ -5349,9 +5359,9 @@ const translations: [string, string, string][] = [
   ['Expiry date', 'تاريخ الانتهاء', 'Derīguma termiņš'],
   ['Enter email address', 'أدخل عنوان البريد الإلكتروني', 'Ievadiet e-pasta adresi'],
   ['Customer name is required', 'اسم العميل مطلوب', 'Klienta nosaukums ir obligāts'],
-  ['Please enter the subscription start date.', 'يرجى إدخال تاريخ بدء الاشتراك.', 'Lūdzu, ievadiet abonēšanas sākuma datumu.'],
-  ['Expiry date is required and should be greater than the start date!', 'تاريخ الانتهاء مطلوب ويجب أن يكون أكبر من تاريخ البدء!', 'Derīguma termiņš ir obligāts un tam jābūt lielākam par sākuma datumu!'],
-  ['Status is required!', 'الحالة مطلوبة!', 'Statuss ir obligāts!'],
+  // REMOVED DUPLICATE: Please enter the subscription start date.
+  // REMOVED DUPLICATE: Expiry date is required and should be greater than
+  // REMOVED DUPLICATE: Status is required!
 
   // ==========================================
   // TPRM - CONTROL CENTER
@@ -5363,51 +5373,51 @@ const translations: [string, string, string][] = [
   // ==========================================
   // TPRM — MASTER DATA PAGE (missing phrases)
   // ==========================================
-  ['Manage the master question bank for assessments', 'إدارة بنك الأسئلة الرئيسي للتقييمات', 'Pārvaldīt galveno jautājumu banku novērtējumiem'],
-  ['Link questions to questionnaire templates', 'ربط الأسئلة بقوالب الاستبيانات', 'Piesaistīt jautājumus anketu veidnēm'],
-  ['Manage assessment domain categories', 'إدارة فئات مجالات التقييم', 'Pārvaldīt novērtējumu domēnu kategorijas'],
+  // REMOVED DUPLICATE: Manage the master question bank for assessments
+  // REMOVED DUPLICATE: Link questions to questionnaire templates
+  // REMOVED DUPLICATE: Manage assessment domain categories
   ['Failed to load domains', 'فشل في تحميل المجالات', 'Neizdevās ielādēt domēnus'],
-  ['Domain updated', 'تم تحديث المجال', 'Domēns atjaunināts'],
-  ['Domain created', 'تم إنشاء المجال', 'Domēns izveidots'],
-  ['Domain deleted', 'تم حذف المجال', 'Domēns dzēsts'],
+  // REMOVED DUPLICATE: Domain updated
+  // REMOVED DUPLICATE: Domain created
+  // REMOVED DUPLICATE: Domain deleted
   ['Are you sure you want to delete this domain?', 'هل أنت متأكد أنك تريد حذف هذا المجال؟', 'Vai tiešām vēlaties dzēst šo domēnu?'],
   ['Failed to load questions', 'فشل في تحميل الأسئلة', 'Neizdevās ielādēt jautājumus'],
-  ['Question updated', 'تم تحديث السؤال', 'Jautājums atjaunināts'],
-  ['Question created', 'تم إنشاء السؤال', 'Jautājums izveidots'],
-  ['Question deleted', 'تم حذف السؤال', 'Jautājums dzēsts'],
+  // REMOVED DUPLICATE: Question updated
+  // REMOVED DUPLICATE: Question created
+  // REMOVED DUPLICATE: Question deleted
   ['Are you sure you want to delete this question?', 'هل أنت متأكد أنك تريد حذف هذا السؤال؟', 'Vai tiešām vēlaties dzēst šo jautājumu?'],
-  ['Is Parent Question', 'هل هو سؤال رئيسي', 'Vai ir vecāka jautājums'],
-  ['Parent Question', 'السؤال الرئيسي', 'Vecāka jautājums'],
-  ['Enter question text', 'أدخل نص السؤال', 'Ievadiet jautājuma tekstu'],
-  ['Enter VerifAI prompt', 'أدخل أمر VerifAI', 'Ievadiet VerifAI uzvedni'],
-  ['Mandatory Attachment', 'مرفق إلزامي', 'Obligāts pielikums'],
-  ['Enter evidence', 'أدخل الأدلة', 'Ievadiet pierādījumus'],
-  ['Enter issue', 'أدخل المشكلة', 'Ievadiet problēmu'],
-  ['Enter risk', 'أدخل المخاطر', 'Ievadiet risku'],
+  // REMOVED DUPLICATE: Is Parent Question
+  // REMOVED DUPLICATE: Parent Question
+  // REMOVED DUPLICATE: Enter question text
+  // REMOVED DUPLICATE: Enter VerifAI prompt
+  // REMOVED DUPLICATE: Mandatory Attachment
+  // REMOVED DUPLICATE: Enter evidence
+  // REMOVED DUPLICATE: Enter issue
+  // REMOVED DUPLICATE: Enter risk
   ['Failed to load questionnaires', 'فشل في تحميل الاستبيانات', 'Neizdevās ielādēt anketas'],
-  ['Failed to link questions', 'فشل في ربط الأسئلة', 'Neizdevās piesaistīt jautājumus'],
-  ['Questions linked successfully', 'تم ربط الأسئلة بنجاح', 'Jautājumi veiksmīgi piesaistīti'],
-  ['Remove this question from the template?', 'إزالة هذا السؤال من القالب؟', 'Noņemt šo jautājumu no veidnes?'],
-  ['Failed to unlink', 'فشل في إلغاء الربط', 'Neizdevās atsaistīt'],
-  ['Question unlinked', 'تم إلغاء ربط السؤال', 'Jautājums atsaistīts'],
-  ['Linked Questions', 'الأسئلة المرتبطة', 'Piesaistītie jautājumi'],
-  ['Add Questions', 'إضافة أسئلة', 'Pievienot jautājumus'],
-  ['Create templates in the Configurations page first', 'قم بإنشاء القوالب في صفحة الإعدادات أولاً', 'Vispirms izveidojiet veidnes konfigurācijas lapā'],
-  ['Issue', 'المشكلة', 'Problēma'],
-  ['Questionnaires', 'الاستبيانات', 'Anketas'],
+  // REMOVED DUPLICATE: Failed to link questions
+  // REMOVED DUPLICATE: Questions linked successfully
+  // REMOVED DUPLICATE: Remove this question from the template?
+  // REMOVED DUPLICATE: Failed to unlink
+  // REMOVED DUPLICATE: Question unlinked
+  // REMOVED DUPLICATE: Linked Questions
+  // REMOVED DUPLICATE: Add Questions
+  // REMOVED DUPLICATE: Create templates in the Configurations page first
+  // REMOVED DUPLICATE: Issue
+  // REMOVED DUPLICATE: Questionnaires
   ['Failed to save', 'فشل في الحفظ', 'Neizdevās saglabāt'],
   ['Failed to delete', 'فشل في الحذف', 'Neizdevās dzēst'],
 
   // ==========================================
   // TPRM CONFIGURATIONS PAGE — MISSING PHRASES
   // ==========================================
-  ['Field Title', 'عنوان الحقل', 'Lauka nosaukums'],
-  ['Enter field name', 'أدخل اسم الحقل', 'Ievadiet lauka nosaukumu'],
-  ['Enter question title', 'أدخل عنوان السؤال', 'Ievadiet jautājuma nosaukumu'],
-  ['Total Score', 'النتيجة الإجمالية', 'Kopējais rezultāts'],
+  // REMOVED DUPLICATE: Field Title
+  // REMOVED DUPLICATE: Enter field name
+  // REMOVED DUPLICATE: Enter question title
+  // REMOVED DUPLICATE: Total Score
   ['exceeds max VRR', 'يتجاوز الحد الأقصى لتصنيف مخاطر المورد', 'pārsniedz maksimālo VRR'],
   ['Discipline Name', 'اسم التخصص', 'Disciplīnas nosaukums'],
-  ['Discipline', 'التخصص', 'Disciplīna'],
+  // REMOVED DUPLICATE: Discipline
   ['Failed to load profile fields', 'فشل في تحميل حقول الملف', 'Neizdevās ielādēt profila laukus'],
   ['Are you sure you want to delete all items?', 'هل أنت متأكد أنك تريد حذف جميع العناصر؟', 'Vai esat pārliecināts, ka vēlaties dzēst visus vienumus?'],
   ['All items deleted', 'تم حذف جميع العناصر', 'Visi vienumi dzēsti'],
@@ -5421,39 +5431,39 @@ const translations: [string, string, string][] = [
   ['Template created', 'تم إنشاء القالب', 'Veidne izveidota'],
   ['questions imported', 'تم استيراد الأسئلة', 'jautājumi importēti'],
   ['Template created but question import had errors', 'تم إنشاء القالب ولكن استيراد الأسئلة واجه أخطاء', 'Veidne izveidota, bet jautājumu importēšanā bija kļūdas'],
-  ['Template created successfully', 'تم إنشاء القالب بنجاح', 'Veidne veiksmīgi izveidota'],
+  // REMOVED DUPLICATE: Template created successfully
   ['Failed to create template', 'فشل في إنشاء القالب', 'Neizdevās izveidot veidni'],
   ['Template deleted', 'تم حذف القالب', 'Veidne dzēsta'],
-  ['Delete this template and all linked questions?', 'حذف هذا القالب وجميع الأسئلة المرتبطة؟', 'Dzēst šo veidni un visus saistītos jautājumus?'],
+  // REMOVED DUPLICATE: Delete this template and all linked questions?
   ['Question text is required', 'نص السؤال مطلوب', 'Jautājuma teksts ir obligāts'],
   ['Question added to template', 'تم إضافة السؤال إلى القالب', 'Jautājums pievienots veidnei'],
   ['Failed to save question', 'فشل في حفظ السؤال', 'Neizdevās saglabāt jautājumu'],
-  ['Remove this question from the template?', 'إزالة هذا السؤال من القالب؟', 'Noņemt šo jautājumu no veidnes?'],
+  // REMOVED DUPLICATE: Remove this question from the template?
   ['Failed to remove', 'فشل في الإزالة', 'Neizdevās noņemt'],
   ['Question removed from template', 'تم إزالة السؤال من القالب', 'Jautājums noņemts no veidnes'],
-  ['Questions linked successfully', 'تم ربط الأسئلة بنجاح', 'Jautājumi veiksmīgi piesaistīti'],
+  // REMOVED DUPLICATE: Questions linked successfully
   ['Link Existing Questions', 'ربط أسئلة موجودة', 'Piesaistīt esošos jautājumus'],
-  ['No questions linked to this template', 'لا توجد أسئلة مرتبطة بهذا القالب', 'Šai veidnei nav piesaistītu jautājumu'],
-  ['Click Add to create a new question or Link Existing to add from the master question bank', 'انقر على إضافة لإنشاء سؤال جديد أو ربط موجود للإضافة من بنك الأسئلة الرئيسي', 'Noklikšķiniet Pievienot, lai izveidotu jaunu jautājumu, vai Piesaistīt esošos, lai pievienotu no galvenās jautājumu bankas'],
-  ['View Questions', 'عرض الأسئلة', 'Skatīt jautājumus'],
-  ['Cover Image', 'صورة الغلاف', 'Vāka attēls'],
-  ['Import Questions', 'استيراد الأسئلة', 'Importēt jautājumus'],
-  ['Vendor Profile Questions', 'أسئلة ملف المورد', 'Piegādātāja profila jautājumi'],
-  ['Enter template name', 'أدخل اسم القالب', 'Ievadiet veidnes nosaukumu'],
-  ['Default', 'افتراضي', 'Noklusējuma'],
-  ['ISMS', 'نظام إدارة أمن المعلومات', 'ISMS'],
-  ['Click or drag to upload cover image', 'انقر أو اسحب لرفع صورة الغلاف', 'Noklikšķiniet vai velciet, lai augšupielādētu vāka attēlu'],
-  ['Download the Excel template, fill in your questions, then import the file. You can skip this step and add questions manually later.', 'قم بتحميل قالب Excel وأدخل أسئلتك ثم استورد الملف. يمكنك تخطي هذه الخطوة وإضافة الأسئلة يدوياً لاحقاً.', 'Lejupielādējiet Excel veidni, aizpildiet jautājumus, pēc tam importējiet failu. Varat izlaist šo soli un pievienot jautājumus manuāli vēlāk.'],
-  ['Excel template with 13 required columns', 'قالب Excel يحتوي على 13 عموداً مطلوباً', 'Excel veidne ar 13 obligātajām kolonnām'],
+  // REMOVED DUPLICATE: No questions linked to this template
+  // REMOVED DUPLICATE: Click Add to create a new question or Link Existin
+  // REMOVED DUPLICATE: View Questions
+  // REMOVED DUPLICATE: Cover Image
+  // REMOVED DUPLICATE: Import Questions
+  // REMOVED DUPLICATE: Vendor Profile Questions
+  // REMOVED DUPLICATE: Enter template name
+  // REMOVED DUPLICATE: Default
+  // REMOVED DUPLICATE: ISMS
+  // REMOVED DUPLICATE: Click or drag to upload cover image
+  // REMOVED DUPLICATE: Download the Excel template, fill in your question
+  // REMOVED DUPLICATE: Excel template with 13 required columns
   ['Total rows', 'إجمالي الصفوف', 'Kopā rindu'],
   ['Valid', 'صالح', 'Derīgs'],
   ['more errors', 'أخطاء إضافية', 'vairāk kļūdu'],
-  ['Select onboarding questions to include in the vendor profile for this template. This step is optional.', 'اختر أسئلة التسجيل لتضمينها في ملف المورد لهذا القالب. هذه الخطوة اختيارية.', 'Atlasiet iekārtošanas jautājumus, ko iekļaut piegādātāja profilā šai veidnei. Šis solis nav obligāts.'],
-  ['Add questions in Vendor Onboarding configuration first', 'أضف أسئلة في تكوين تسجيل المورد أولاً', 'Vispirms pievienojiet jautājumus piegādātāja iekārtošanas konfigurācijā'],
-  ['Add Questionnaire', 'إضافة استبيان', 'Pievienot anketu'],
+  // REMOVED DUPLICATE: Select onboarding questions to include in the vend
+  // REMOVED DUPLICATE: Add questions in Vendor Onboarding configuration f
+  // REMOVED DUPLICATE: Add Questionnaire
   ['Enabling...', 'جاري التفعيل...', 'Iespējo...'],
-  ['Response Type', 'نوع الاستجابة', 'Atbildes tips'],
-  ['Vendor Offboarding', 'إنهاء تعاقد المورد', 'Piegādātāja izbeigšana'],
+  // REMOVED DUPLICATE: Response Type
+  // REMOVED DUPLICATE: Vendor Offboarding
   ['Enter question', 'أدخل السؤال', 'Ievadiet jautājumu'],
   ['Weightage', 'الوزن', 'Svars'],
   ['Configuration Validation', 'التحقق من صحة الإعدادات', 'Konfigurācijas validācija'],
@@ -5475,43 +5485,43 @@ const translations: [string, string, string][] = [
   ['Configuration saved', 'تم حفظ الإعدادات', 'Konfigurācija saglabāta'],
   ['Monitoring schedule updated', 'تم تحديث جدول المراقبة', 'Uzraudzības grafiks atjaunināts'],
   ['Failed to save schedule', 'فشل في حفظ الجدول', 'Neizdevās saglabāt grafiku'],
-  ['Manage vendor profile fields and onboarding questions', 'إدارة حقول ملف المورد وأسئلة التسجيل', 'Pārvaldīt piegādātāja profila laukus un iekārtošanas jautājumus'],
-  ['Manage service categories for vendor classification', 'إدارة فئات الخدمة لتصنيف الموردين', 'Pārvaldīt pakalpojumu kategorijas piegādātāju klasifikācijai'],
-  ['Manage assessment disciplines', 'إدارة تخصصات التقييم', 'Pārvaldīt novērtējumu disciplīnas'],
-  ['Manage TPRM departments', 'إدارة أقسام إدارة مخاطر الطرف الثالث', 'Pārvaldīt TPRM nodaļas'],
-  ['Manage assessment questionnaire templates', 'إدارة قوالب استبيانات التقييم', 'Pārvaldīt novērtējumu anketu veidnes'],
-  ['Manage vendor offboarding questionnaire', 'إدارة استبيان إنهاء تعاقد المورد', 'Pārvaldīt piegādātāja izbeigšanas anketu'],
-  ['Configure scoring formula and security factors', 'تكوين صيغة التسجيل وعوامل الأمان', 'Konfigurēt vērtēšanas formulu un drošības faktorus'],
-  ['Parent', 'رئيسي', 'Vecāks'],
-  ['Child', 'فرعي', 'Bērns'],
+  // REMOVED DUPLICATE: Manage vendor profile fields and onboarding questi
+  // REMOVED DUPLICATE: Manage service categories for vendor classificatio
+  // REMOVED DUPLICATE: Manage assessment disciplines
+  // REMOVED DUPLICATE: Manage TPRM departments
+  // REMOVED DUPLICATE: Manage assessment questionnaire templates
+  // REMOVED DUPLICATE: Manage vendor offboarding questionnaire
+  // REMOVED DUPLICATE: Configure scoring formula and security factors
+  // REMOVED DUPLICATE: Parent
+  // REMOVED DUPLICATE: Child
   ['Monitoring Recurrence Schedule', 'جدول تكرار المراقبة', 'Uzraudzības atkārtošanās grafiks'],
   ['SQ.NO', 'الرقم التسلسلي', 'SQ.NO'],
 
   // ==========================================
   // TPRM — CONTINUOUS MONITORING PAGE
   // ==========================================
-  ['assessment has been saved successfully', 'تم حفظ التقييم بنجاح', 'novērtējums ir veiksmīgi saglabāts'],
-  ['Cancel scan', 'إلغاء الفحص', 'Atcelt skenēšanu'],
-  ['has been queued for scanning. This may take a few minutes.', 'تمت إضافته لقائمة الفحص. قد يستغرق ذلك بضع دقائق.', 'ir pievienots skenēšanas rindai. Tas var aizņemt dažas minūtes.'],
-  ['scan has been cancelled', 'تم إلغاء الفحص', 'skenēšana ir atcelta'],
-  ['Failed to cancel scan', 'فشل في إلغاء الفحص', 'Neizdevās atcelt skenēšanu'],
-  ['Vendors Monitored', 'الموردون المراقبون', 'Uzraudzītie piegādātāji'],
-  ['Average Security Score', 'متوسط درجة الأمان', 'Vidējais drošības rādītājs'],
-  ['High Risk Vendors', 'الموردون عالي المخاطر', 'Augsta riska piegādātāji'],
-  ['Active Scans', 'عمليات الفحص النشطة', 'Aktīvās skenēšanas'],
-  ['Queued Assessments', 'التقييمات في قائمة الانتظار', 'Rindā esošie novērtējumi'],
-  ['Results will appear here once the scanning API sends data', 'ستظهر النتائج هنا بمجرد إرسال واجهة الفحص للبيانات', 'Rezultāti parādīsies šeit, kad skenēšanas API nosūtīs datus'],
-  ['Vendor Scorecard', 'بطاقة أداء المورد', 'Piegādātāju rādītāju karte'],
-  ['Search vendors...', 'البحث عن الموردين...', 'Meklēt piegādātājus...'],
-  ['No vendors match your search', 'لا يوجد موردون يطابقون بحثك', 'Neviens piegādātājs neatbilst meklēšanai'],
-  ['Delete functionality coming soon', 'وظيفة الحذف قادمة قريباً', 'Dzēšanas funkcionalitāte drīzumā'],
-  ['1 to', '١ إلى', '1 līdz'],
-  ['Vendor Domain (URL)', 'نطاق المورد (URL)', 'Piegādātāja domēns (URL)'],
-  ['Start Scan', 'بدء الفحص', 'Sākt skenēšanu'],
-  ['Submitting...', 'جاري الإرسال...', 'Iesniedz...'],
+  // REMOVED DUPLICATE: assessment has been saved successfully
+  // REMOVED DUPLICATE: Cancel scan
+  // REMOVED DUPLICATE: has been queued for scanning. This may take a few 
+  // REMOVED DUPLICATE: scan has been cancelled
+  // REMOVED DUPLICATE: Failed to cancel scan
+  // REMOVED DUPLICATE: Vendors Monitored
+  // REMOVED DUPLICATE: Average Security Score
+  // REMOVED DUPLICATE: High Risk Vendors
+  // REMOVED DUPLICATE: Active Scans
+  // REMOVED DUPLICATE: Queued Assessments
+  // REMOVED DUPLICATE: Results will appear here once the scanning API sen
+  // REMOVED DUPLICATE: Vendor Scorecard
+  // REMOVED DUPLICATE: Search vendors...
+  // REMOVED DUPLICATE: No vendors match your search
+  // REMOVED DUPLICATE: Delete functionality coming soon
+  // REMOVED DUPLICATE: 1 to
+  // REMOVED DUPLICATE: Vendor Domain (URL)
+  // REMOVED DUPLICATE: Start Scan
+  // REMOVED DUPLICATE: Submitting...
   ['Processing', 'قيد المعالجة', 'Apstrādā'],
   ['Queued', 'في قائمة الانتظار', 'Rindā'],
-  ['Cancelled', 'تم الإلغاء', 'Atcelts'],
+  // REMOVED DUPLICATE: Cancelled
   ['Network Security', 'أمن الشبكات', 'Tīkla drošība'],
   ['DNS Health', 'صحة DNS', 'DNS veselība'],
   ['Patching Cadence', 'وتيرة التصحيح', 'Ielāpu biežums'],
@@ -5527,7 +5537,7 @@ const translations: [string, string, string][] = [
   ['Information Leak', 'تسريب المعلومات', 'Informācijas noplūde'],
   ['Social Engineering', 'الهندسة الاجتماعية', 'Sociālā inženierija'],
   ['Company', 'الشركة', 'Uzņēmums'],
-  ['No monitoring data available', 'لا تتوفر بيانات مراقبة', 'Nav pieejami uzraudzības dati'],
+  // REMOVED DUPLICATE: No monitoring data available
 ];
 
 function createExcelFile(): void {

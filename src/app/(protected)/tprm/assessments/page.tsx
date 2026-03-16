@@ -221,7 +221,7 @@ function LogDetailDialog({
         </div>
 
         {/* Fixed Footer — pagination left, Close right */}
-        <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-between">
+        <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex items-center justify-between rtl:flex-row-reverse">
           {totalRows > LOGS_PER_PAGE ? (
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-500">
@@ -446,6 +446,7 @@ export default function AssessmentWorkspacePage() {
     {
       accessorKey: "assessmentType",
       header: t("Type"),
+      cell: ({ row }) => t(row.getValue("assessmentType")),
     },
     {
       accessorKey: "vendor.name",

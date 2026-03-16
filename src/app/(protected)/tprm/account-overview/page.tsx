@@ -379,7 +379,7 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("User Role")}</Label>
-                    <Input className="bg-slate-50" value={ROLE_LABELS[tab] || ""} disabled />
+                    <Input className="bg-slate-50" value={t(ROLE_LABELS[tab] || "")} disabled />
                   </div>
                 </div>
 
@@ -613,15 +613,15 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row justify-between gap-2">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse justify-between gap-2">
             {hasSubscription ? (
-              <Button variant="outline" size="sm" className="w-full sm:w-auto order-last sm:ltr:order-first sm:rtl:order-last" onClick={() => setShowSubDialog(true)}>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto order-last sm:order-first" onClick={() => setShowSubDialog(true)}>
                 {t("Subscription Plan")} {pendingPlans.length > 0 && `(${pendingPlans.length})`}
               </Button>
             ) : (
               <div />
             )}
-            <div className="flex gap-2 ltr:ml-auto rtl:mr-auto">
+            <div className="flex gap-2 rtl:flex-row-reverse">
               <Button onClick={handleSubmit} disabled={saving} size="sm" className="flex-1 sm:flex-none">
                 {saving ? t("Saving...") : t("Save")}
               </Button>
@@ -942,7 +942,7 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <Label className="text-sm font-medium text-slate-700">{t("User Role")}</Label>
-                        <Input className="bg-slate-50" value={editRoleLabel} disabled />
+                        <Input className="bg-slate-50" value={t(editRoleLabel)} disabled />
                       </div>
                     </div>
                   )}
@@ -1181,15 +1181,15 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
 
           {/* Fixed Footer */}
           {!loadingData && (
-            <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row justify-between gap-2">
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse justify-between gap-2">
               {hasSubscription ? (
-                <Button variant="outline" size="sm" className="w-full sm:w-auto order-last sm:ltr:order-first sm:rtl:order-last" onClick={() => setShowSubDialog(true)}>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto order-last sm:order-first" onClick={() => setShowSubDialog(true)}>
                   {t("Subscription Plan")} {allPlans.length > 0 && `(${allPlans.length})`}
                 </Button>
               ) : (
                 <div />
               )}
-              <div className="flex gap-2 ltr:ml-auto rtl:mr-auto">
+              <div className="flex gap-2 rtl:flex-row-reverse">
                 <Button onClick={handleSubmit} disabled={saving} size="sm" className="flex-1 sm:flex-none">
                   {saving ? t("Saving...") : t("Save")}
                 </Button>
@@ -1422,7 +1422,7 @@ function CustomerAccountsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:rtl:flex-row-reverse items-start sm:items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-slate-700">{t("Customer Accounts")}</h3>
         <Button onClick={() => setCreateOpen(true)} size="sm" className="w-full sm:w-auto">
           <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -1607,7 +1607,7 @@ function VendorAccountsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:rtl:flex-row-reverse items-start sm:items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-slate-700">{t("Vendor Accounts")}</h3>
         <div className="relative w-full sm:w-64">
           <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -1706,6 +1706,16 @@ function AssessmentFactoryTab() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const accountRecords = useMemo(() => data.map(a => ({ id: a.id, name: a.companyName })), [data]);
+  const { data: translatedFactoryAccounts } = useTranslatedData(accountRecords, { modelName: 'CustomerAccount' });
+  const userRecords = useMemo(() => data.filter(a => a.userId).map(a => ({ id: a.userId!, fullName: a.fullName })), [data]);
+  const { data: translatedFactoryUsers } = useTranslatedData(userRecords, { modelName: 'User' });
+  const factoryTranslatedData = useMemo(() => data.map(a => {
+    const ta = translatedFactoryAccounts.find(r => r.id === a.id);
+    const tu = a.userId ? translatedFactoryUsers.find(r => r.id === a.userId) : null;
+    return { ...a, companyName: ta?.name || a.companyName, fullName: tu?.fullName || a.fullName };
+  }), [data, translatedFactoryAccounts, translatedFactoryUsers]);
+
   const handleDeleteAccount = async () => {
     if (!deleteAccountId) return;
     setDeleting(true);
@@ -1797,14 +1807,14 @@ function AssessmentFactoryTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:rtl:flex-row-reverse items-start sm:items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-slate-700">{t("Assessment Factory")}</h3>
         <Button onClick={() => setCreateOpen(true)} size="sm" className="w-full sm:w-auto">
           <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Create Factory Admin")}
         </Button>
       </div>
-      <DataGrid columns={columns} data={data} searchPlaceholder={t("Search factory accounts...")} searchColumn="companyName" />
+      <DataGrid columns={columns} data={factoryTranslatedData} searchPlaceholder={t("Search factory accounts...")} searchColumn="companyName" />
       <CreateAccountDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
@@ -1876,6 +1886,13 @@ function SuperAdminTab() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const superAdminUserRecords = useMemo(() => data.map(a => ({ id: a.id, fullName: a.fullName })), [data]);
+  const { data: translatedSuperAdmins } = useTranslatedData(superAdminUserRecords, { modelName: 'User' });
+  const superAdminTranslatedData = useMemo(() => data.map(a => {
+    const tu = translatedSuperAdmins.find(r => r.id === a.id);
+    return tu ? { ...a, fullName: tu.fullName || a.fullName } : a;
+  }), [data, translatedSuperAdmins]);
 
   const handleDeleteUser = async () => {
     if (!deleteUserId) return;
@@ -1972,14 +1989,14 @@ function SuperAdminTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:rtl:flex-row-reverse items-start sm:items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-slate-700">{t("Super Admin")}</h3>
         <Button onClick={() => setCreateOpen(true)} size="sm" className="w-full sm:w-auto">
           <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Create New SuperAdmin")}
         </Button>
       </div>
-      <DataGrid columns={columns} data={data} searchPlaceholder={t("Search super admins...")} searchColumn="fullName" />
+      <DataGrid columns={columns} data={superAdminTranslatedData} searchPlaceholder={t("Search super admins...")} searchColumn="fullName" />
       <CreateAccountDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
@@ -2034,7 +2051,7 @@ export default function AccountOverviewPage() {
           <Home className="h-4 w-4" />
           <span>{t("TPRM")}</span>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Account Overview")}</span>
       </nav>
 

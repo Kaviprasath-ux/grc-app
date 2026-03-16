@@ -114,12 +114,12 @@ export function DataGrid<TData, TValue>({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <Settings2 className="h-4 w-4 mr-2" />
-                  Columns
+                  <Settings2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Columns")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("Toggle columns")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {table
                   .getAllColumns()
@@ -228,7 +228,7 @@ export function DataGrid<TData, TValue>({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
           </Button>
           <Button
             variant="ghost"
@@ -237,7 +237,7 @@ export function DataGrid<TData, TValue>({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 rtl:rotate-180" />
           </Button>
         </div>
       </div>

@@ -185,7 +185,7 @@ export default function CustomerAccountsPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [customers, setCustomers] = useState<CustomerAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOnboardDialog, setShowOnboardDialog] = useState(false);
@@ -1101,7 +1101,7 @@ export default function CustomerAccountsPage() {
             <Home className="h-4 w-4" />
             <span>{t("GRC")}</span>
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <span className="text-primary-700 font-medium">{t("Customer Accounts")}</span>
         </nav>
         <div className="flex items-center justify-between">
@@ -1124,7 +1124,7 @@ export default function CustomerAccountsPage() {
           <Home className="h-4 w-4" />
           <span>{t("GRC")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
         <span className="text-primary-700 font-medium">{t("Customer Accounts")}</span>
       </nav>
 
@@ -1132,7 +1132,7 @@ export default function CustomerAccountsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Customer Accounts")}</h1>
         <Button onClick={() => setShowOnboardDialog(true)} size="sm" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Onboard Customer")}
         </Button>
       </div>
@@ -1562,7 +1562,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row justify-between gap-2">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse justify-between gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -1571,7 +1571,7 @@ export default function CustomerAccountsPage() {
             >
               {t("Subscription Plan")} {pendingSubscriptionPlans.length > 0 && `(${pendingSubscriptionPlans.length})`}
             </Button>
-            <div className="flex gap-2">
+            <div className="flex gap-2 rtl:flex-row-reverse">
               <Button onClick={handleOnboardCustomer} disabled={submitting} size="sm" className="flex-1 sm:flex-none">
                 {submitting ? t("Saving...") : t("Save")}
               </Button>
@@ -1894,7 +1894,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row justify-between gap-2">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse justify-between gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -1903,7 +1903,7 @@ export default function CustomerAccountsPage() {
             >
               {t("Subscription Plan")}
             </Button>
-            <div className="flex gap-2">
+            <div className="flex gap-2 rtl:flex-row-reverse">
               <Button onClick={handleEditCustomer} disabled={submitting} size="sm" className="flex-1 sm:flex-none">
                 {submitting ? t("Saving...") : t("Save")}
               </Button>
@@ -1950,7 +1950,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2 rtl:flex-row-reverse">
             <Button onClick={handleChangePassword} disabled={submitting} size="sm">
               {submitting ? t("Changing...") : t("Change")}
             </Button>
@@ -2061,7 +2061,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row gap-2">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse gap-2">
             <Button
               onClick={() => setShowNewSubscriptionDialog(true)}
               size="sm"
@@ -2219,7 +2219,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2 rtl:flex-row-reverse">
             <Button onClick={handleAddSubscription} size="sm">
               {t("Save")}
             </Button>
@@ -2373,7 +2373,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2 rtl:flex-row-reverse">
             <Button onClick={handleEditSubscription} disabled={submitting} size="sm">
               {submitting ? t("Saving...") : t("Save")}
             </Button>
@@ -2400,7 +2400,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2">
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex gap-2 rtl:flex-row-reverse">
             <Button
               onClick={handleDeleteCustomer}
               disabled={submitting}

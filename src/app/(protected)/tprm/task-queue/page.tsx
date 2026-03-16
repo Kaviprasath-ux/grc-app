@@ -154,6 +154,7 @@ export default function TaskQueuePage() {
     {
       accessorKey: "assessmentType",
       header: t("Assessment Type"),
+      cell: ({ row }) => t(row.getValue("assessmentType")),
     },
     {
       accessorKey: "vendorSubmissionDate",
@@ -192,6 +193,7 @@ export default function TaskQueuePage() {
     {
       accessorKey: "assessmentType",
       header: t("Assessment Type"),
+      cell: ({ row }) => t(row.getValue("assessmentType")),
     },
     {
       accessorKey: "vendorSubmissionDate",
@@ -314,7 +316,7 @@ export default function TaskQueuePage() {
 
   // Toolbar extra for date filters (non-returned tabs)
   const dateFilterToolbar = (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 rtl:flex-row-reverse">
       <DatePicker
         value={dateFrom}
         onChange={(date) => setDateFrom(date)}
