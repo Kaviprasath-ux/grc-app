@@ -54,6 +54,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface Designation {
+  id: string;
+  name: string;
+}
+
 interface Department {
   id: string;
   name: string;
@@ -122,12 +127,14 @@ export default function UsersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [designations, setDesignations] = useState<Designation[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [reportingManagers, setReportingManagers] = useState<ReportingManager[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedDesignations } = useTranslatedData(designations, { modelName: 'Designation' });
   const { data: translatedManagers } = useTranslatedData(reportingManagers, { modelName: 'User' });
   const tDeptName = useCallback((id: string | undefined) => {
     if (!id) return undefined;
@@ -217,12 +224,14 @@ export default function UsersPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [deptRes, userRes] = await Promise.all([
+      const [deptRes, userRes, desigRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
+        fetch("/api/organization-settings/designation"),
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
+      if (desigRes.ok) setDesignations(await desigRes.json());
       if (userRes.ok) {
         const allUsers = await userRes.json();
         // Hide CustomerAdministrator from the users list
@@ -351,11 +360,22 @@ export default function UsersPage() {
         toast({ title: t("Success"), description: t("User created successfully") });
       } else {
         const error = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
-        toast({ title: t("Error"), description: error.error || t("Failed to create user"), variant: "destructive" });
+        const errorMsg = error.error || t("Failed to create user");
+        const fieldErrors: Record<string, string> = {};
+        if (errorMsg.toLowerCase().includes("email")) {
+          fieldErrors.email = t(errorMsg);
+        } else if (errorMsg.toLowerCase().includes("username") || errorMsg.toLowerCase().includes("user id")) {
+          fieldErrors.userName = t(errorMsg);
+        } else {
+          fieldErrors.general = t(errorMsg);
+        }
+        setUserFormErrors(fieldErrors);
+        addUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (error) {
       console.error("Error adding user:", error);
-      toast({ title: t("Error"), description: t("Failed to create user. Please try again."), variant: "destructive" });
+      setUserFormErrors({ general: t("Failed to create user. Please try again.") });
+      addUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setIsSaving(false);
     }
@@ -411,11 +431,22 @@ export default function UsersPage() {
         toast({ title: t("Success"), description: t("User updated successfully") });
       } else {
         const error = await res.json().catch(() => ({ error: "Failed to update user" }));
-        toast({ title: t("Error"), description: error.error || t("Failed to update user"), variant: "destructive" });
+        const errorMsg = error.error || t("Failed to update user");
+        const fieldErrors: Record<string, string> = {};
+        if (errorMsg.toLowerCase().includes("email")) {
+          fieldErrors.email = t(errorMsg);
+        } else if (errorMsg.toLowerCase().includes("username") || errorMsg.toLowerCase().includes("user id")) {
+          fieldErrors.userName = t(errorMsg);
+        } else {
+          fieldErrors.general = t(errorMsg);
+        }
+        setEditUserFormErrors(fieldErrors);
+        editUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (error) {
       console.error("Error updating user:", error);
-      toast({ title: t("Error"), description: t("Failed to update user"), variant: "destructive" });
+      setEditUserFormErrors({ general: t("Failed to update user") });
+      editUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setIsEditSaving(false);
     }
@@ -1167,6 +1198,7 @@ export default function UsersPage() {
           </div>
           {/* Scrollable Content */}
           <div ref={addUserScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+            {userFormErrors.general && (<div className="rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.general}</p></div>)}
             {/* Account Credentials Section */}
             <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Credentials")}</h4>
@@ -1369,14 +1401,21 @@ export default function UsersPage() {
                 </div>
                 <div>
                   <Label htmlFor="designation" className="text-sm font-medium text-slate-700">{t("Designation")}</Label>
-                  <Input
-                    id="designation"
+                  <Select
                     value={userForm.designation}
-                    onChange={(e) => setUserForm({ ...userForm, designation: e.target.value })}
-                    placeholder={t("Enter designation")}
-                    autoComplete="off"
-                    className="mt-1.5 bg-white"
-                  />
+                    onValueChange={(value) => setUserForm({ ...userForm, designation: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 bg-white">
+                      <SelectValue placeholder={t("Select Designation")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                      {translatedDesignations.map((desig) => (
+                        <SelectItem key={desig.id} value={desig.name}>
+                          {desig.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 {/* Reporting Manager - full width */}
                 <div className="sm:col-span-2">
@@ -1558,6 +1597,7 @@ export default function UsersPage() {
           {/* Scrollable Content */}
           {editingUser && (
             <div ref={editUserScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4">
+              {editUserFormErrors.general && (<div className="rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{editUserFormErrors.general}</p></div>)}
               {/* User ID - Read Only */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end">{t("User ID")}</Label>
@@ -1783,16 +1823,11 @@ export default function UsersPage() {
                     <SelectValue placeholder={t("Select Designation")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                    <SelectItem value="Analyst">{t("Analyst")}</SelectItem>
-                    <SelectItem value="Developer">{t("Developer")}</SelectItem>
-                    <SelectItem value="Financial Analyst">{t("Financial Analyst")}</SelectItem>
-                    <SelectItem value="HR Manager">{t("HR Manager")}</SelectItem>
-                    <SelectItem value="Manager">{t("Manager")}</SelectItem>
-                    <SelectItem value="Marketing Specialist">{t("Marketing Specialist")}</SelectItem>
-                    <SelectItem value="Operations Executive">{t("Operations Executive")}</SelectItem>
-                    <SelectItem value="Senior Manager">{t("Senior Manager")}</SelectItem>
-                    <SelectItem value="Software Engineer">{t("Software Engineer")}</SelectItem>
-                    <SelectItem value="Team Lead">{t("Team Lead")}</SelectItem>
+                    {translatedDesignations.map((desig) => (
+                      <SelectItem key={desig.id} value={desig.name}>
+                        {desig.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
