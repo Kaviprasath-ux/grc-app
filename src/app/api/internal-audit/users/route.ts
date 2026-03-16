@@ -229,14 +229,22 @@ export const POST = withAuth(
       // Get customer account ID for multi-tenant isolation
       const customerAccountId = getCustomerAccountId(session);
 
-      // Check for duplicate userId (globally unique) and userName/email (per customer account)
-      const existingByUserId = await prisma.user.findFirst({ where: { userId }, select: { id: true } });
-      if (existingByUserId) {
-        return NextResponse.json(
-          { error: `User ID "${userId}" is already taken. Please choose a different user ID.` },
-          { status: 409 }
-        );
-      }
+      // Auto-generate userId server-side to avoid race conditions
+      // Find the max existing BA-prefixed userId within this customer account and increment
+      const existingBAUsers = await prisma.user.findMany({
+        where: {
+          userId: { startsWith: "BA" },
+          ...(customerAccountId ? { customerAccountId } : {}),
+        },
+        select: { userId: true },
+      });
+      const maxBAId = existingBAUsers.reduce((max: number, u) => {
+        const match = u.userId?.match(/^BA(\d+)$/);
+        return match ? Math.max(max, parseInt(match[1])) : max;
+      }, 0);
+      const generatedUserId = `BA${String(maxBAId + 1).padStart(4, "0")}`;
+      // Use server-generated ID (ignore client-sent userId)
+      const finalUserId = generatedUserId;
 
       const existingByUserName = await prisma.user.findFirst({
         where: { userName, customerAccountId: customerAccountId || undefined },
@@ -286,7 +294,7 @@ export const POST = withAuth(
 
       const user = await prisma.user.create({
         data: {
-          userId,
+          userId: finalUserId,
           userName,
           email,
           password: hashedPassword,

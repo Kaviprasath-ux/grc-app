@@ -83,9 +83,9 @@ export async function POST(request: NextRequest) {
       departmentId,
     } = body;
 
-    if (!userId || !userName || !email || !password || !firstName || !lastName || !fullName) {
+    if (!userName || !email || !password || !firstName || !lastName || !fullName) {
       return NextResponse.json(
-        { error: "userId, userName, email, password, firstName, lastName, and fullName are required" },
+        { error: "userName, email, password, firstName, lastName, and fullName are required" },
         { status: 400 }
       );
     }
@@ -139,17 +139,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check for duplicate userId (globally unique) and userName/email (per customer account)
-    const existingByUserId = await prisma.user.findFirst({
-      where: { userId },
-      select: { id: true },
+    // Auto-generate clean sequential userId server-side (USR0001, USR0002, etc.)
+    const existingUSRUsers = await prisma.user.findMany({
+      where: {
+        userId: { startsWith: "USR" },
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
+      select: { userId: true },
     });
-    if (existingByUserId) {
-      return NextResponse.json(
-        { error: `User ID "${userId}" is already taken. Please choose a different user ID.` },
-        { status: 409 }
-      );
-    }
+    const maxUSRId = existingUSRUsers.reduce((max: number, u) => {
+      const match = u.userId?.match(/^USR(\d+)$/);
+      return match ? Math.max(max, parseInt(match[1])) : max;
+    }, 0);
+    const finalUserId = `USR${String(maxUSRId + 1).padStart(4, "0")}`;
 
     const existingByUserName = await prisma.user.findFirst({
       where: { userName, customerAccountId: customerAccountId || undefined },
@@ -207,7 +209,7 @@ export async function POST(request: NextRequest) {
       // Create the user
       const newUser = await tx.user.create({
         data: {
-          userId,
+          userId: finalUserId,
           userName,
           email,
           password: hashedPassword,

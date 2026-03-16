@@ -72,6 +72,7 @@ interface ReportingManager {
 
 interface User {
   id: string;
+  userId?: string;
   userName: string;
   email: string;
   firstName: string;
@@ -131,6 +132,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [reportingManagers, setReportingManagers] = useState<ReportingManager[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nextUserId, setNextUserId] = useState("");
 
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
@@ -237,6 +239,17 @@ export default function UsersPage() {
         // Hide CustomerAdministrator from the users list
         setUsers(allUsers.filter((u: User) => u.role !== "CustomerAdministrator"));
       }
+
+      // Fetch next user ID from server
+      try {
+        const nextIdRes = await fetch("/api/users/next-id");
+        if (nextIdRes.ok) {
+          const { nextId } = await nextIdRes.json();
+          setNextUserId(nextId);
+        }
+      } catch {
+        // Fallback: keep existing
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -324,15 +337,11 @@ export default function UsersPage() {
     setUserFormErrors({});
     setIsSaving(true);
 
-    // Auto-generate User ID
-    const userId = `USR-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-
     try {
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId,
           userName: userForm.userName,
           email: userForm.email,
           password: userForm.password,
@@ -357,6 +366,7 @@ export default function UsersPage() {
         triggerTranslation('User', user.id, { fullName: user.fullName, firstName: user.firstName, lastName: user.lastName, designation: user.designation });
         resetForm();
         setIsAddUserOpen(false);
+        fetchData(); // Refresh next user ID
         toast({ title: t("Success"), description: t("User created successfully") });
       } else {
         const error = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
@@ -570,7 +580,7 @@ export default function UsersPage() {
     const csv = [
       ["User ID", "Username", "Email", "First Name", "Last Name", "Full Name", "Designation", "Function", "Role", "Department", "Language", "Timezone", "Active", "Blocked"],
       ...translatedUsers.map((u) => [
-        u.id?.slice(0, 8) || "",
+        u.userId || "",
         u.userName,
         u.email,
         u.firstName,
@@ -655,7 +665,6 @@ export default function UsersPage() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                userId: `USR-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                 userName,
                 email,
                 password: password || "DefaultPass123",
@@ -1203,8 +1212,17 @@ export default function UsersPage() {
             <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Credentials")}</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {/* Username - full width */}
-                <div className="sm:col-span-2">
+                {/* User ID - auto-generated, read-only */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("User ID")} <span className="text-xs text-slate-500">({t("Auto-generated")})</span></Label>
+                  <Input
+                    value={nextUserId}
+                    disabled
+                    className="mt-1.5 bg-slate-50"
+                  />
+                </div>
+                {/* Username */}
+                <div>
                   <Label htmlFor="userName" className="text-sm font-medium text-slate-700">{t("Username")} *</Label>
                   <Input
                     id="userName"
@@ -1601,7 +1619,7 @@ export default function UsersPage() {
               {/* User ID - Read Only */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end">{t("User ID")}</Label>
-                <span className="text-sm text-muted-foreground">{editingUser.id?.slice(0, 8) || "-"}</span>
+                <span className="text-sm text-muted-foreground">{editingUser.userId || "-"}</span>
               </div>
 
               {/* First Name */}
@@ -2046,7 +2064,7 @@ export default function UsersPage() {
               {/* User ID */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end text-slate-500">{t("User ID")}</Label>
-                <span className="text-sm text-slate-800">{viewingUser.id?.slice(0, 8) || "-"}</span>
+                <span className="text-sm text-slate-800">{viewingUser.userId || "-"}</span>
               </div>
 
               {/* First Name */}

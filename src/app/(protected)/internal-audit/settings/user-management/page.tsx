@@ -167,17 +167,19 @@ export default function UserManagementPage() {
       if (usersRes.ok) {
         const data = await usersRes.json();
         setUsers(data);
-        // Generate next user ID based on existing userId values (BA0001, BA0002, etc.)
-        const maxId = data.reduce((max: number, user: User) => {
-          const match = user.userId?.match(/BA(\d+)/);
-          if (match) {
-            return Math.max(max, parseInt(match[1]));
-          }
-          return max;
-        }, 0);
-        setNextUserId(`BA${String(maxId + 1).padStart(4, "0")}`);
       } else {
         console.error("Failed to fetch users:", await usersRes.text());
+      }
+
+      // Fetch next user ID from server (checks ALL users globally, not just visible audit users)
+      try {
+        const nextIdRes = await fetch("/api/internal-audit/users/next-id");
+        if (nextIdRes.ok) {
+          const { nextId } = await nextIdRes.json();
+          setNextUserId(nextId);
+        }
+      } catch {
+        // Fallback: keep existing nextUserId
       }
 
       if (departmentsRes.ok) {
@@ -410,6 +412,10 @@ export default function UserManagementPage() {
         toast({ title: t("Success"), description: t("User saved successfully!") });
       } else {
         const errorData = await response.json().catch(() => ({}));
+        // If duplicate userId error, re-fetch to get correct next ID
+        if (response.status === 409) {
+          fetchData();
+        }
         toast({
           title: t("Error"),
           description: errorData.error || t("Failed to save user"),
