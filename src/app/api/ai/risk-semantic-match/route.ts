@@ -98,7 +98,7 @@ async function handler(
             description?: string;
             category?: string;
             risk_rating?: string;
-            threats?: string[];
+            threats?: Array<string | { name: string; vulnerabilities?: string[] }>;
             controls?: string[];
         }
 
@@ -117,15 +117,16 @@ async function handler(
                     Vulnerabilities: t.Vulnerabilities || [],
                 }));
             } else if (r.threats && r.threats.length > 0) {
-                // Convert flat threat names to threat objects
+                // Convert flat threat names/objects to threat objects
+                // Handle both string format and object format {name, vulnerabilities}
                 const controls: GeneratedControl[] = (r.controls || []).map(c => ({
                     ControlName: c,
                     control_functionalGrouping: "protect",
                 }));
-                threats = r.threats.map(t => ({
-                    threat_name: t,
+                threats = r.threats.map((t: string | { name: string; vulnerabilities?: string[] }) => ({
+                    threat_name: typeof t === 'string' ? t : t.name,
                     controls,
-                    Vulnerabilities: [],
+                    Vulnerabilities: typeof t === 'string' ? [] : (t.vulnerabilities || []),
                 }));
             }
 
