@@ -300,13 +300,40 @@ QPost (Qatar Post) is the first client to use the module duplication pattern. Th
 
 | Feature | Standard Compliance | QPost Compliance |
 |---------|-------------------|-----------------|
-| Controls | Full Control/ControlDomain system | **Removed** — no controls |
+| Controls | Full Control/ControlDomain system | **Removed** — no controls layer |
 | Requirements | Linked to Controls via junction | Standalone, linked directly to Framework |
 | Framework page | Table layout | Card layout with donut/bar charts |
 | Compliance calculation | Based on Control implementation | Based on Requirement `implementationStatus` |
 | CMM Maturity | Supported | Not supported |
 | Control owner/assignee | Supported | Not applicable |
-| Risk Matrix | Links to Controls | Links to Requirements |
+| Risk Matrix | Links to Controls | Links to Requirements (displayed as "Controls") |
+
+### 5.1.1 IMPORTANT: "Control" vs "Requirement" Naming Confusion
+
+**This is a critical distinction to understand when working on QPost Compliance.**
+
+In the **database, API routes, code variables, and Prisma models**, the entity is called **"Requirement"** (e.g., `QPostRequirement`, `/api/qpost-compliance/requirements/`, `requirementType`, `requirementId`).
+
+In the **UI (frontend display)**, the same entity is labeled **"Control"** (e.g., sidebar shows "Controls", page titles say "Controls", buttons say "Add Control", table headers say "Control Name").
+
+This is because QPost's compliance model removed the standard Compliance "Control/ControlDomain" layer entirely. What QPost calls "Controls" in their business terminology maps to what the codebase stores as "Requirements" — standalone items linked directly to Frameworks.
+
+**Quick Reference:**
+
+| Layer | Term Used | Examples |
+|-------|-----------|---------|
+| Database (Prisma models) | **Requirement** | `QPostRequirement`, `QPostRequirementCategory`, `QPostRequirementEvidence` |
+| API routes & URLs | **requirement** | `/api/qpost-compliance/requirements/`, `/api/qpost-compliance/requirements/[id]/evidences` |
+| Code variables | **requirement** | `requirementType`, `requirementId`, `fetchRequirements()`, `translatedRequirements` |
+| Permission resources | **controls** | `qpost-compliance.controls:view`, `qpost-compliance.controls:create` |
+| UI display (sidebar, headings, labels, buttons, toasts) | **Control** | "Controls", "Add Control", "Control Name", "Control Type", "Linked Controls" |
+| Translations (`t()` keys) | **Control** | `t("Controls")`, `t("Add Control")`, `t("Control Type")`, `t("Linked Controls")` |
+
+**Rules when making changes:**
+- **DO NOT rename** database models, API routes, file/folder paths, or code variable names from "requirement" to "control"
+- **DO** use "Control" (not "Requirement") in any new user-visible `t()` strings for QPost pages
+- The navigation item is `{ name: "Controls", href: "/qpost-compliance/requirements" }` — the display name differs from the URL path intentionally
+- When adding new QPost pages or features that reference this entity, always display "Control" to the user but use "requirement" in code
 
 ### 5.2 File Inventory
 

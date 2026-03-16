@@ -1453,7 +1453,7 @@ export default function EvidenceDetailPage() {
               {/* Left Column */}
               <div className="space-y-6">
                 <div>
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Control")}</Label>
                   <p className="mt-1 text-slate-800">{translatedEvidence?.name || evidence.name}</p>
                 </div>
                 <div>
@@ -1536,7 +1536,7 @@ export default function EvidenceDetailPage() {
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
             >
-              {t("Linked Requirements")}
+              {t("Linked Controls")}
             </button>
           </div>
 
@@ -1544,7 +1544,7 @@ export default function EvidenceDetailPage() {
           <div className="bg-slate-50 rounded-b-lg rounded-tr-lg p-3 sm:p-6">
             {activeTab === "requirements" && (
               <div>
-                <h3 className="text-lg font-semibold text-primary-700 mb-4">{t("Requirements")}</h3>
+                <h3 className="text-lg font-semibold text-primary-700 mb-4">{t("Controls")}</h3>
                 <div className="space-y-3">
                   {evidence.requirements?.map((er) => {
                     const tr = translatedRequirements.find(r => r.id === er.requirement.id);
@@ -1575,7 +1575,7 @@ export default function EvidenceDetailPage() {
                   {(!evidence.requirements || evidence.requirements.length === 0) && (
                     <div className="text-center py-8 text-slate-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>{t("No requirements linked to this evidence")}</p>
+                      <p>{t("No controls linked to this evidence")}</p>
                     </div>
                   )}
                 </div>
@@ -1775,7 +1775,7 @@ export default function EvidenceDetailPage() {
           <div className="p-3 sm:p-5 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")}</Label>
+                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Control")}</Label>
                 <p>{translatedEvidence?.name || evidence.name}</p>
               </div>
               <div className="space-y-2">
@@ -2600,7 +2600,7 @@ export default function EvidenceDetailPage() {
                 : "text-slate-500"
                 }`}
             >
-              {t("Linked Requirements")}
+              {t("Linked Controls")}
             </button>
             <button
               onClick={() => setActiveTab("artifacts")}
@@ -2616,7 +2616,7 @@ export default function EvidenceDetailPage() {
           {activeTab === "requirements" && (
             <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">{t("Requirements")}</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("Controls")}</h3>
                 <Dialog open={linkRequirementsOpen} onOpenChange={(open) => {
                   setLinkRequirementsOpen(open);
                   if (!open) {
@@ -2626,11 +2626,11 @@ export default function EvidenceDetailPage() {
                   }
                 }}>
                   <DialogTrigger asChild>
-                    <Button size="sm">{t("Link Requirements")}</Button>
+                    <Button size="sm">{t("Link Controls")}</Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
                     <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
-                      <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Requirement")}</DialogTitle>
+                      <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Control")}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
                       {/* Filters */}
@@ -2652,7 +2652,7 @@ export default function EvidenceDetailPage() {
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
-                          placeholder={t("Search By Requirement Code , Name")}
+                          placeholder={t("Search By Control Code , Name")}
                           value={requirementSearchQuery}
                           onChange={(e) => setRequirementSearchQuery(e.target.value)}
                           className="pl-10 pr-10 text-sm bg-slate-50 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
@@ -2714,8 +2714,8 @@ export default function EvidenceDetailPage() {
                         {availableRequirements.length === 0 && (
                           <div className="p-8 text-center text-slate-400">
                             {requirementSearchQuery.trim() || requirementFrameworkFilter !== "all"
-                              ? t("No requirements found matching your filters")
-                              : t("No available requirements to link")}
+                              ? t("No controls found matching your filters")
+                              : t("No available controls to link")}
                           </div>
                         )}
                       </div>
@@ -2728,7 +2728,7 @@ export default function EvidenceDetailPage() {
                         disabled={selectedRequirementIds.length === 0}
                         className="rounded-lg"
                       >
-                        {t("Link Requirement")}
+                        {t("Link Control")}
                       </Button>
                     </div>
                   </DialogContent>
@@ -2774,7 +2774,7 @@ export default function EvidenceDetailPage() {
                   {(!evidence.requirements || evidence.requirements.length === 0) && (
                     <div className="text-center py-8 text-slate-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>{t("No requirements linked to this evidence")}</p>
+                      <p>{t("No controls linked to this evidence")}</p>
                     </div>
                   )}
                 </div>

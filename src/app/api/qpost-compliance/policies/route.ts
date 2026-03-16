@@ -13,6 +13,7 @@ export const GET = withAuth(
       const documentType = searchParams.get("documentType");
       const departmentId = searchParams.get("departmentId");
       const frameworkId = searchParams.get("frameworkId");
+      const requirementId = searchParams.get("requirementId");
       const search = searchParams.get("search");
       const page = parseInt(searchParams.get("page") || "1");
       const limit = parseInt(searchParams.get("limit") || "50");
@@ -41,6 +42,14 @@ export const GET = withAuth(
             requirement: {
               frameworkId: frameworkId,
             },
+          },
+        };
+      }
+      // Filter by specific requirement (takes precedence over frameworkId)
+      if (requirementId) {
+        where.requirements = {
+          some: {
+            requirementId: requirementId,
           },
         };
       }

@@ -565,6 +565,32 @@ const SOARow = memo(function SOARow({
       <TableCell className="py-3 text-sm text-slate-700 w-64 truncate">
         {translatedName || req.name}
       </TableCell>
+      <TableCell className="py-3 w-20 text-center">
+        {req.policies && req.policies.length > 0 ? (
+          <Link href={`/qpost-compliance/governance?controlId=${req.id}`} onClick={(e) => e.stopPropagation()}>
+            <span className="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer transition-colors">
+              {req.policies.length}
+            </span>
+          </Link>
+        ) : (
+          <span className="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded-full text-xs font-medium bg-slate-50 text-slate-400">
+            0
+          </span>
+        )}
+      </TableCell>
+      <TableCell className="py-3 w-20 text-center">
+        {req.evidences && req.evidences.length > 0 ? (
+          <Link href={`/qpost-compliance/evidence?controlId=${req.id}`} onClick={(e) => e.stopPropagation()}>
+            <span className="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer transition-colors">
+              {req.evidences.length}
+            </span>
+          </Link>
+        ) : (
+          <span className="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded-full text-xs font-medium bg-slate-50 text-slate-400">
+            0
+          </span>
+        )}
+      </TableCell>
       <TableCell className="py-3 w-28">
         <Select
           defaultValue={req.applicability ?? undefined}
@@ -954,9 +980,9 @@ export default function FrameworkDetailPage({
 
   const handleAddRequirement = async () => {
     const errors: Record<string, string> = {};
-    if (!newRequirement.name.trim()) errors.name = t("Requirement name should not be empty.");
-    if (!newRequirement.category.trim()) errors.category = t("Requirement category should not be empty.");
-    if (!newRequirement.code.trim()) errors.code = t("Requirement code should not be empty.");
+    if (!newRequirement.name.trim()) errors.name = t("Control name should not be empty.");
+    if (!newRequirement.category.trim()) errors.category = t("Control category should not be empty.");
+    if (!newRequirement.code.trim()) errors.code = t("Control code should not be empty.");
     if (Object.keys(errors).length > 0) {
       setReqErrors(errors);
       return;
@@ -1150,11 +1176,11 @@ export default function FrameworkDetailPage({
       } else {
         const error = await response.json();
         console.error("Import error:", error);
-        toast({ title: t("Error"), description: t("Failed to import requirements. Please check the file format."), variant: "destructive" });
+        toast({ title: t("Error"), description: t("Failed to import controls. Please check the file format."), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error importing requirements:", error);
-      toast({ title: t("Error"), description: t("Failed to import requirements. Please try again."), variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to import controls. Please try again."), variant: "destructive" });
     } finally {
       setImporting(false);
     }
@@ -1286,7 +1312,9 @@ export default function FrameworkDetailPage({
     // Create CSV content
     const headers = [
       "Code",
-      "Requirement",
+      "Control",
+      "Policies",
+      "Evidences",
       "Applicability",
       "Justification",
       "Implementation Status",
@@ -1302,6 +1330,8 @@ export default function FrameworkDetailPage({
       return [
         req.code,
         req.name.replace(/"/g, '""'),
+        String(req.policies?.length ?? 0),
+        String(req.evidences?.length ?? 0),
         applicability,
         justification.replace(/"/g, '""'),
         implementationStatus,
@@ -1408,14 +1438,14 @@ export default function FrameworkDetailPage({
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{translatedFramework?.name || framework.name}</h1>
-        <p className="text-sm text-slate-500">{t("Manage framework requirements")}</p>
+        <p className="text-sm text-slate-500">{t("Manage framework controls")}</p>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="overflow-x-auto">
           <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="requirements">{t("All Requirements")}</TabsTrigger>
+            <TabsTrigger value="requirements">{t("All Controls")}</TabsTrigger>
             <TabsTrigger value="soa">{t("SOA")}</TabsTrigger>
             <TabsTrigger value="audit-logs">{t("Audit Logs")}</TabsTrigger>
           </TabsList>
@@ -1426,7 +1456,7 @@ export default function FrameworkDetailPage({
           {/* Header with actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <Input
-              placeholder={t("Search by requirement code, name...")}
+              placeholder={t("Search by control code, name...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full sm:max-w-sm bg-white"
@@ -1446,7 +1476,7 @@ export default function FrameworkDetailPage({
               </Button>
               <Button size="sm" onClick={() => setIsAddRequirementOpen(true)}>
                 <Plus className="h-4 w-4 me-2" />
-                {t("New Requirement")}
+                {t("New Control")}
               </Button>
             </div>
           </div>
@@ -1543,18 +1573,20 @@ export default function FrameworkDetailPage({
             <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <p className="text-sm text-amber-700">
-                {t("This framework has no requirements. Import requirements to enable SOA editing.")}
+                {t("This framework has no controls. Import controls to enable SOA editing.")}
               </p>
             </div>
           )}
 
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
-            <Table className="table-fixed w-full min-w-[700px]">
+            <Table className="table-fixed w-full min-w-[860px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50/50">
                   <TableHead className="text-xs font-semibold text-slate-600 py-3 w-16">{t("Code")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-64">{t("Requirement")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-64">{t("Control")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-20 text-center">{t("Policies")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-20 text-center">{t("Evidences")}</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-600 py-3 w-28">{t("Applicability")}</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-600 py-3 w-44">{t("Justification")}</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-600 py-3 w-36">{t("Implementation Status")}</TableHead>
@@ -1583,7 +1615,7 @@ export default function FrameworkDetailPage({
               <span className="text-xs text-slate-500">
                 {flatRequirements.length > 0
                   ? t("Showing {start} to {end} of {total}").replace("{start}", String(soaStartIndex + 1)).replace("{end}", String(soaEndIndex)).replace("{total}", String(flatRequirements.length))
-                  : t("No requirements")}
+                  : t("No controls")}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -1747,18 +1779,18 @@ export default function FrameworkDetailPage({
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Requirement")}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Control")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <p className="text-sm text-slate-500">
-              {t("To add a requirement to this framework, please accurately fill in the fields below.")}
+              {t("To add a control to this framework, please accurately fill in the fields below.")}
             </p>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Name")} <span className="text-red-500">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Control Name")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.name}
                 onChange={(e) => {
@@ -1778,7 +1810,7 @@ export default function FrameworkDetailPage({
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Category")} <span className="text-red-500">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Control Category")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.category}
                 onChange={(e) => {
@@ -1801,7 +1833,7 @@ export default function FrameworkDetailPage({
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")} <span className="text-red-500">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Control Code")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newRequirement.code}
                 onChange={(e) => {
@@ -1821,7 +1853,7 @@ export default function FrameworkDetailPage({
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Description")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Control Description")}</Label>
               <Textarea
                 value={newRequirement.description}
                 onChange={(e) =>
@@ -1836,7 +1868,7 @@ export default function FrameworkDetailPage({
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Type")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Control Type")}</Label>
               <Select
                 value={newRequirement.requirementType}
                 onValueChange={(value) =>
@@ -1884,7 +1916,7 @@ export default function FrameworkDetailPage({
             <Button
               onClick={handleAddRequirement}
             >
-              {t("Add Requirement")}
+              {t("Add Control")}
             </Button>
           </div>
         </DialogContent>
@@ -1936,7 +1968,7 @@ export default function FrameworkDetailPage({
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Control Code")}</Label>
               <Input disabled value={selectedRequirement?.code || ""} className="mt-1.5 bg-slate-50" />
             </div>
 
@@ -2027,7 +2059,7 @@ export default function FrameworkDetailPage({
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Requirements")}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Controls")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -2111,7 +2143,7 @@ export default function FrameworkDetailPage({
           {/* Fixed Header */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Requirement")}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Control")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -2119,7 +2151,7 @@ export default function FrameworkDetailPage({
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Control Code")}</Label>
                 <Input
                   value={updateRequirement.code}
                   onChange={(e) =>
@@ -2129,7 +2161,7 @@ export default function FrameworkDetailPage({
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Requirement Name")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Control Name")}</Label>
                 <Input
                   value={updateRequirement.name}
                   onChange={(e) =>
@@ -2157,7 +2189,7 @@ export default function FrameworkDetailPage({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Requirement Type")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Control Type")}</Label>
                 <Select
                   value={updateRequirement.requirementType}
                   onValueChange={(value) =>

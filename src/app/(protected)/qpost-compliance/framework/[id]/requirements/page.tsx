@@ -229,13 +229,13 @@ export default function RequirementsByFrameworkPage() {
           {t("Integrated Frameworks")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{t("Requirements")}</span>
+        <span className="text-primary-700 font-medium">{t("Controls")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
-          {framework ? `${framework.name} - ${t("Requirements")}` : t("Requirements")}
+          {framework ? `${framework.name} - ${t("Controls")}` : t("Controls")}
         </h1>
       </div>
 
@@ -248,7 +248,7 @@ export default function RequirementsByFrameworkPage() {
             <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder={t("Search requirements...")}
+              placeholder={t("Search controls...")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -296,7 +296,7 @@ export default function RequirementsByFrameworkPage() {
             className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-slate-700 transition-colors"
             onClick={() => handleSort("name")}
           >
-            {t("Requirement Name")} {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+            {t("Control Name")} {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
           </span>
           <span
             className="text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:text-slate-700 transition-colors"
@@ -337,13 +337,13 @@ export default function RequirementsByFrameworkPage() {
             </div>
             <p className="text-sm font-medium text-slate-600 mb-1">
               {search || statusFilter !== "all" || categoryFilter !== "all"
-                ? t("No requirements match your filters")
-                : t("No requirements linked yet")}
+                ? t("No controls match your filters")
+                : t("No controls linked yet")}
             </p>
             <p className="text-xs text-slate-400">
               {search || statusFilter !== "all" || categoryFilter !== "all"
                 ? t("Try adjusting your search or filters")
-                : t("Link requirements to the framework to see them here")}
+                : t("Link controls to the framework to see them here")}
             </p>
           </div>
         ) : (
@@ -408,7 +408,7 @@ export default function RequirementsByFrameworkPage() {
           <span className="text-xs text-slate-500">
             {total > 0
               ? t("Showing {start} to {end} of {total}").replace("{start}", String(startIndex + 1)).replace("{end}", String(endIndex)).replace("{total}", String(total))
-              : t("No requirements")}
+              : t("No controls")}
           </span>
           <div className="flex items-center gap-1">
             <Button

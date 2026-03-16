@@ -165,6 +165,7 @@ export default function GovernancePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
+  const [controlFilter, setControlFilter] = useState<string>(searchParams.get("controlId") || "all");
 
   // Filter options
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -267,7 +268,7 @@ export default function GovernancePage() {
     } else {
       fetchPolicies();
     }
-  }, [activeTab, activeDocType, currentPage, frameworkFilter, statusFilter]);
+  }, [activeTab, activeDocType, currentPage, frameworkFilter, controlFilter, statusFilter]);
 
   const fetchFilterOptions = async () => {
     try {
@@ -340,6 +341,7 @@ export default function GovernancePage() {
       params.set("limit", itemsPerPage.toString());
       params.set("documentType", activeDocType);
       if (frameworkFilter && frameworkFilter !== "all") params.set("frameworkId", frameworkFilter);
+      if (controlFilter && controlFilter !== "all") params.set("requirementId", controlFilter);
       if (search) params.set("search", search);
       if (statusFilter) params.set("status", statusFilter);
 
@@ -370,7 +372,7 @@ export default function GovernancePage() {
     } finally {
       setLoading(false);
     }
-  }, [activeDocType, currentPage, frameworkFilter, search, statusFilter]);
+  }, [activeDocType, currentPage, frameworkFilter, controlFilter, search, statusFilter]);
 
   const fetchVaultDocuments = async () => {
     try {
@@ -905,6 +907,17 @@ export default function GovernancePage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <Select value={controlFilter} onValueChange={setControlFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
+                        <SelectValue placeholder={t("Control")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                        <SelectItem value="all">{t("All Controls")}</SelectItem>
+                        {translatedRequirements.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>{r.code} - {r.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
                       <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm bg-slate-50 border-slate-200">
                         <SelectValue placeholder={t("Status")} />
@@ -1218,6 +1231,17 @@ export default function GovernancePage() {
                         <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
                         {translatedFrameworks.map((f) => (
                           <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={controlFilter} onValueChange={setControlFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
+                        <SelectValue placeholder={t("Control")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                        <SelectItem value="all">{t("All Controls")}</SelectItem>
+                        {translatedRequirements.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>{r.code} - {r.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1612,14 +1636,14 @@ export default function GovernancePage() {
             {createStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold text-slate-800">{t("Select Requirements to Link")}</Label>
+                  <Label className="text-base font-semibold text-slate-800">{t("Select Controls to Link")}</Label>
                   <Badge variant="secondary">{selectedRequirementIds.length} {t("selected")}</Badge>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
                     <Input
-                      placeholder={t("Search requirements...")}
+                      placeholder={t("Search controls...")}
                       value={requirementSearch}
                       onChange={(e) => setRequirementSearch(e.target.value)}
                       className="bg-white"
@@ -1633,7 +1657,7 @@ export default function GovernancePage() {
                       <TableRow className="border-b border-slate-100 bg-slate-50/50">
                         <TableHead className="w-[50px] py-4 ps-4"></TableHead>
                         <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Code")}</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Requirement Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Name")}</TableHead>
                         <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Framework")}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1660,7 +1684,7 @@ export default function GovernancePage() {
                       {filteredRequirements.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={4} className="h-24 text-center text-slate-500">
-                            {t("No requirements found")}
+                            {t("No controls found")}
                           </TableCell>
                         </TableRow>
                       )}
@@ -1700,14 +1724,14 @@ export default function GovernancePage() {
                     </p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">{t("Linked Requirements")}</Label>
-                    <p className="font-medium text-slate-900">{selectedRequirementIds.length} {t("requirements")}</p>
+                    <Label className="text-slate-500 text-sm">{t("Linked Controls")}</Label>
+                    <p className="font-medium text-slate-900">{selectedRequirementIds.length} {t("controls")}</p>
                   </div>
                 </div>
 
                 {selectedRequirementIds.length > 0 && (
                   <div>
-                    <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Requirements")}:</Label>
+                    <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Controls")}:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedRequirementIds.map((id) => {
                         const req = translatedRequirements.find((r) => r.id === id);

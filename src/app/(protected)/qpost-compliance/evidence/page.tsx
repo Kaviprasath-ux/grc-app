@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
@@ -165,6 +165,7 @@ const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 
 export default function EvidencePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { t, isRTL } = useLanguage();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('qpost-compliance.evidence');
@@ -208,6 +209,7 @@ export default function EvidencePage() {
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [controlFilter, setControlFilter] = useState<string>(searchParams.get("controlId") || "all");
 
   // Status counts (original - not affected by status filter)
   const [statusCounts, setStatusCounts] = useState<StatusCount[]>([
@@ -227,6 +229,7 @@ export default function EvidencePage() {
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
       if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
+      if (controlFilter && controlFilter !== "all") params.append("requirementId", controlFilter);
       if (searchTermRef.current) params.append("search", searchTermRef.current);
       // Don't include status filter - we want total counts
       params.append("limit", "1000"); // Get all to count
@@ -259,7 +262,7 @@ export default function EvidencePage() {
     } catch (error) {
       console.error("Error fetching status counts:", error);
     }
-  }, [frameworkFilter, departmentFilter]);
+  }, [frameworkFilter, departmentFilter, controlFilter]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -303,6 +306,7 @@ export default function EvidencePage() {
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
       if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
+      if (controlFilter && controlFilter !== "all") params.append("requirementId", controlFilter);
       if (searchTermRef.current) params.append("search", searchTermRef.current);
       if (selectedStatus) params.append("status", selectedStatus);
       params.append("page", currentPage.toString());
@@ -320,7 +324,7 @@ export default function EvidencePage() {
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, departmentFilter, selectedStatus, currentPage]);
+  }, [frameworkFilter, departmentFilter, controlFilter, selectedStatus, currentPage]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
@@ -1002,6 +1006,17 @@ export default function EvidencePage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Select value={controlFilter} onValueChange={setControlFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm bg-slate-50 border-slate-200">
+                      <SelectValue placeholder={t("Control")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      <SelectItem value="all">{t("All Controls")}</SelectItem>
+                      {translatedRequirements.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>{r.code} - {r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -1292,14 +1307,14 @@ export default function EvidencePage() {
               <div className="space-y-4">
 
                 <div>
-                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Evidence Requirement")} *</Label>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Evidence Control")} *</Label>
                   <Input
                     value={createForm.name}
                     onChange={(e) => {
                       setCreateForm({ ...createForm, name: e.target.value });
                       if (evidenceErrors.name) setEvidenceErrors((prev) => { const { name, ...rest } = prev; return rest; });
                     }}
-                    placeholder={t("Enter evidence requirement")}
+                    placeholder={t("Enter evidence control")}
                     className={`mt-1.5 w-full ${evidenceErrors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                   />
                   {evidenceErrors.name && (
@@ -1404,7 +1419,7 @@ export default function EvidencePage() {
             {createStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold text-slate-800">{t("Select Requirements to Link")}</Label>
+                  <Label className="text-base font-semibold text-slate-800">{t("Select Controls to Link")}</Label>
                   <Badge variant="secondary">{selectedRequirementIds.length} {t("selected")}</Badge>
                 </div>
 
@@ -1412,7 +1427,7 @@ export default function EvidencePage() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
                     <Input
-                      placeholder={t("Search requirements...")}
+                      placeholder={t("Search controls...")}
                       value={requirementFilters.search}
                       onChange={(e) => setRequirementFilters({ ...requirementFilters, search: e.target.value })}
                       className="bg-white"
@@ -1438,7 +1453,7 @@ export default function EvidencePage() {
                       <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                         <TableHead className="w-[50px] py-3 ps-4"></TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Code")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Requirement Name")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Control Name")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Framework")}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1459,7 +1474,7 @@ export default function EvidencePage() {
                       {filteredRequirements.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center py-8 text-slate-500">
-                            {t("No requirements found")}
+                            {t("No controls found")}
                           </TableCell>
                         </TableRow>
                       )}
@@ -1496,8 +1511,8 @@ export default function EvidencePage() {
                     </p>
                   </div>
                   <div>
-                    <Label className="text-xs text-slate-500">{t("Linked Requirements")}</Label>
-                    <p className="font-medium text-slate-900">{selectedRequirementIds.length} {t("requirements")}</p>
+                    <Label className="text-xs text-slate-500">{t("Linked Controls")}</Label>
+                    <p className="font-medium text-slate-900">{selectedRequirementIds.length} {t("controls")}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-slate-500">{t("Description")}</Label>
@@ -1507,7 +1522,7 @@ export default function EvidencePage() {
 
                 {selectedRequirementIds.length > 0 && (
                   <div>
-                    <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Requirements")}:</Label>
+                    <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Controls")}:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedRequirementIds.map((id) => {
                         const req = translatedRequirements.find((r) => r.id === id);

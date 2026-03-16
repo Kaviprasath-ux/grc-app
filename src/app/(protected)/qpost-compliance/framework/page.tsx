@@ -570,7 +570,7 @@ export default function QPostFrameworkPage() {
 
       toast({
         title: t("Subscribed Successfully"),
-        description: `${t("Subscribed to")} "${masterData.name}" ${t("with")} ${clonedRequirementsCount} ${t("requirements")}`,
+        description: `${t("Subscribed to")} "${masterData.name}" ${t("with")} ${clonedRequirementsCount} ${t("controls")}`,
       });
 
       // Fire-and-forget: trigger translations for all cloned records
@@ -752,7 +752,7 @@ export default function QPostFrameworkPage() {
         }
         toast({
           title: t("Import Failed"),
-          description: result.error || t("Failed to import requirements"),
+          description: result.error || t("Failed to import controls"),
           variant: "destructive",
         });
       }
@@ -760,7 +760,7 @@ export default function QPostFrameworkPage() {
       console.error("Error importing file:", error);
       toast({
         title: t("Error"),
-        description: t("Failed to import requirements"),
+        description: t("Failed to import controls"),
         variant: "destructive",
       });
     } finally {
@@ -981,7 +981,7 @@ export default function QPostFrameworkPage() {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs font-medium text-slate-700">{t("Requirements")}</span>
+                          <span className="text-xs font-medium text-slate-700">{t("Controls")}</span>
                           <p className="text-[11px] text-slate-400">{t("Compliance")}</p>
                         </div>
                         {!isLocked && <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0 ltr:rotate-0 rtl:rotate-180" />}
@@ -1382,14 +1382,14 @@ export default function QPostFrameworkPage() {
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {t("Import Framework Requirements")}
+                {t("Import Framework Controls")}
               </DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
           <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
             <p className="text-sm text-slate-600">
-              {t("Upload an Excel file (.xlsx) containing your framework requirements.")}
+              {t("Upload an Excel file (.xlsx) containing your framework controls.")}
               {" "}{t("You can download the sample template to see the required format.")}
             </p>
 

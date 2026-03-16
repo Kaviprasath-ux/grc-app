@@ -539,7 +539,7 @@ export default function GovernanceMasterDataPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assignee")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Approver")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Requirement")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Control")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Recurrence")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Code")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>

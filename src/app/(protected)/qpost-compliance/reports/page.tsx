@@ -289,7 +289,7 @@ export default function ReportsPage() {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-primary-900">{t("Management Report")}</h3>
-          <p className="text-xs text-primary-600/70 mt-0.5">{t("Generate a comprehensive compliance report with charts across frameworks, requirements, and governance")}</p>
+          <p className="text-xs text-primary-600/70 mt-0.5">{t("Generate a comprehensive compliance report with charts across frameworks, controls, and governance")}</p>
         </div>
         <ChevronRight className="h-4 w-4 text-primary-300 flex-shrink-0 transition-transform ltr:group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
       </button>
@@ -487,7 +487,7 @@ export default function ReportsPage() {
                   htmlFor="controlRequirementsByFramework"
                   className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
-                  {t("Requirements by Framework")}
+                  {t("Controls by Framework")}
                 </label>
               </div>
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -502,7 +502,7 @@ export default function ReportsPage() {
                   htmlFor="controlImplementationsByFramework"
                   className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
-                  {t("Requirement Implementations by Framework")}
+                  {t("Control Implementations by Framework")}
                 </label>
               </div>
 
@@ -519,7 +519,7 @@ export default function ReportsPage() {
                   htmlFor="complianceRequirementsExceptions"
                   className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
-                  {t("Compliance Requirements Exceptions")}
+                  {t("Compliance Controls Exceptions")}
                 </label>
               </div>
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -534,7 +534,7 @@ export default function ReportsPage() {
                   htmlFor="controlExceptions"
                   className="text-sm font-medium text-slate-700 cursor-pointer"
                 >
-                  {t("Requirement Exceptions")}
+                  {t("Control Exceptions")}
                 </label>
               </div>
 

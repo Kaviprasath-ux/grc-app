@@ -587,7 +587,7 @@ export default function EvidencesMasterDataPage() {
             <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5">{t("Evidence Code")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Evidence Requirement")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Evidence Control")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -696,7 +696,7 @@ export default function EvidencesMasterDataPage() {
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    {t("Evidence Requirement")} <span className="text-red-500">*</span>
+                    {t("Evidence Control")} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     value={newFormData.name}
@@ -913,7 +913,7 @@ export default function EvidencesMasterDataPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Evidence requirement")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Evidence control")}</Label>
                 <Input
                   value={editingEvidence.description || ""}
                   onChange={(e) =>

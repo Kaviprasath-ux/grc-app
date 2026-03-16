@@ -1405,7 +1405,7 @@ export default function GovernanceDetailPage() {
   const tabs = [
     {
       id: "requirements",
-      label: t("Linked Requirements"),
+      label: t("Linked Controls"),
       icon: Shield,
       count: linkedRequirements.length,
     },
@@ -2433,8 +2433,8 @@ export default function GovernanceDetailPage() {
                   );
                 })()}
 
-                {/* Option 2: Generate Policy Using AI */}
-                {(() => {
+                {/* Option 2: Generate Policy Using AI — HIDDEN for QPost (kept for future use) */}
+                {false && (() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
                   const hasLinkedRequirements = policy?.requirements && policy.requirements.length > 0;
                   const isDisabled = hasDocument || !hasLinkedRequirements;
@@ -2466,7 +2466,7 @@ export default function GovernanceDetailPage() {
                             {hasDocument
                               ? t("Delete existing file to use AI")
                               : !hasLinkedRequirements
-                              ? t("Link requirements first to generate")
+                              ? t("Link controls first to generate")
                               : t("Create document with AI assistance")}
                           </p>
                         </div>
@@ -2577,7 +2577,7 @@ export default function GovernanceDetailPage() {
 
                           {/* Linked Requirements */}
                           <div>
-                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Linked Requirements")} ({policy?.requirements?.length || 0})</Label>
+                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Linked Controls")} ({policy?.requirements?.length || 0})</Label>
                             <div className="mt-2 border border-slate-200 rounded-lg max-h-32 overflow-y-auto">
                               {policy?.requirements && policy.requirements.length > 0 ? (
                                 <div className="divide-y divide-slate-100">
@@ -2594,7 +2594,7 @@ export default function GovernanceDetailPage() {
                                 </div>
                               ) : (
                                 <div className="p-4 text-center text-slate-500">
-                                  {t("No requirements linked to this policy")}
+                                  {t("No controls linked to this policy")}
                                 </div>
                               )}
                             </div>
@@ -2602,7 +2602,7 @@ export default function GovernanceDetailPage() {
 
                           <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
                             <p className="text-sm text-primary-800">
-                              <strong>{t("Note")}:</strong> {t("The AI will use the selected template and linked requirements to generate a comprehensive policy document.")}
+                              <strong>{t("Note")}:</strong> {t("The AI will use the selected template and linked controls to generate a comprehensive policy document.")}
                             </p>
                           </div>
                         </div>
@@ -2663,7 +2663,7 @@ export default function GovernanceDetailPage() {
                             <Link2 className={`h-6 w-6 ${hasDocument ? "text-slate-400" : "text-green-600"}`} />
                           </div>
                           <h3 className={`font-medium ${hasDocument ? "text-slate-400" : "text-slate-800"}`}>
-                            {t("Link from Vault")}
+                            {t("Link from Document Management")}
                           </h3>
                           <p className={`text-sm mt-1 ${hasDocument ? "text-slate-300" : "text-slate-500"}`}>
                             {hasDocument
@@ -2674,7 +2674,7 @@ export default function GovernanceDetailPage() {
                       </DialogTrigger>
                   <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
                     <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
-                      <DialogTitle className="text-base font-semibold text-slate-800">{t("Link from Vault")}</DialogTitle>
+                      <DialogTitle className="text-base font-semibold text-slate-800">{t("Link from Document Management")}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                       {/* Search Bar */}
@@ -3076,7 +3076,7 @@ export default function GovernanceDetailPage() {
       {activeTab === "requirements" && (
         <div className="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">{t("Linked Requirements")}</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Linked Controls")}</h3>
             <PermissionGate resource="qpost-compliance.governance" action="edit">
               <Dialog open={linkRequirementDialogOpen} onOpenChange={(open) => {
                 setLinkRequirementDialogOpen(open);
@@ -3088,12 +3088,12 @@ export default function GovernanceDetailPage() {
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                    {t("Link Requirement")}
+                    {t("Link Control")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                   <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
-                    <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Requirement")}</DialogTitle>
+                    <DialogTitle className="text-base font-semibold text-slate-800">{t("Link Control")}</DialogTitle>
                   </DialogHeader>
                   <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                     {/* Search input */}
@@ -3164,8 +3164,8 @@ export default function GovernanceDetailPage() {
                           </div>
                           <p className="text-sm font-medium text-slate-600 mb-1">
                             {requirementSearchQuery.trim()
-                              ? t("No requirements found matching your filters")
-                              : t("No available requirements to link")}
+                              ? t("No controls found matching your filters")
+                              : t("No available controls to link")}
                           </p>
                         </div>
                       )}
@@ -3178,7 +3178,7 @@ export default function GovernanceDetailPage() {
                       onClick={handleLinkRequirement}
                       disabled={selectedRequirementIds.length === 0}
                     >
-                      {t("Link Requirement")}
+                      {t("Link Control")}
                     </Button>
                   </div>
                 </DialogContent>
@@ -3191,8 +3191,8 @@ export default function GovernanceDetailPage() {
                 <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                   <Link2 className="h-6 w-6 text-primary-400" />
                 </div>
-                <p className="text-sm font-medium text-slate-600 mb-1">{t("No requirements linked to this")} {t(typeLabels[policy.documentType] || "policy").toLowerCase()}</p>
-                <p className="text-xs text-slate-400">{t("Link requirements to track compliance")}</p>
+                <p className="text-sm font-medium text-slate-600 mb-1">{t("No controls linked to this")} {t(typeLabels[policy.documentType] || "policy").toLowerCase()}</p>
+                <p className="text-xs text-slate-400">{t("Link controls to track compliance")}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">

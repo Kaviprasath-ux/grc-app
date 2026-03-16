@@ -790,7 +790,7 @@ export default function ExceptionsPage() {
 
                   {createForm.frameworkId && (
                     <div>
-                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")} *</Label>
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Control")} *</Label>
                       <Select
                         value={createForm.requirementId}
                         onValueChange={(value) =>
@@ -798,7 +798,7 @@ export default function ExceptionsPage() {
                         }
                       >
                         <SelectTrigger className="mt-1.5 w-full bg-white">
-                          <SelectValue placeholder={t("Select requirement")} />
+                          <SelectValue placeholder={t("Select control")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           {translatedRequirements.map((r) => (
@@ -1558,7 +1558,7 @@ export default function ExceptionsPage() {
 
                   {editForm.frameworkId && (
                     <div>
-                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Requirement")} *</Label>
+                      <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Control")} *</Label>
                       <Select
                         value={editForm.requirementId}
                         onValueChange={(value) =>
@@ -1567,7 +1567,7 @@ export default function ExceptionsPage() {
                         disabled={selectedException?.status === "Approved"}
                       >
                         <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
-                          <SelectValue placeholder={t("Select requirement")} />
+                          <SelectValue placeholder={t("Select control")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           {translatedRequirements.map((r) => (

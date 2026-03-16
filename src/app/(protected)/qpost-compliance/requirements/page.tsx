@@ -301,7 +301,7 @@ export default function QPostRequirementsPage() {
 
       if (res.ok) {
         const created = await res.json();
-        toast({ title: t("Success"), description: t("Requirement created successfully") });
+        toast({ title: t("Success"), description: t("Control created successfully") });
         triggerTranslation("QPostRequirement", created.id, {
           name: created.name,
           description: created.description,
@@ -312,14 +312,14 @@ export default function QPostRequirementsPage() {
       } else {
         const err = await res.json();
         if (res.status === 409) {
-          setFormErrors({ code: t("Requirement with this code already exists") });
+          setFormErrors({ code: t("Control with this code already exists") });
         } else {
-          toast({ title: t("Error"), description: err.error || t("Failed to create requirement"), variant: "destructive" });
+          toast({ title: t("Error"), description: err.error || t("Failed to create control"), variant: "destructive" });
         }
       }
     } catch (error) {
       console.error("Error creating requirement:", error);
-      toast({ title: t("Error"), description: t("Failed to create requirement"), variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to create control"), variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -333,14 +333,14 @@ export default function QPostRequirementsPage() {
         method: "DELETE",
       });
       if (res.ok) {
-        toast({ title: t("Success"), description: t("Requirement deleted successfully") });
+        toast({ title: t("Success"), description: t("Control deleted successfully") });
         fetchRequirements(pagination.page);
       } else {
-        toast({ title: t("Error"), description: t("Failed to delete requirement"), variant: "destructive" });
+        toast({ title: t("Error"), description: t("Failed to delete control"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting requirement:", error);
-      toast({ title: t("Error"), description: t("Failed to delete requirement"), variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to delete control"), variant: "destructive" });
     } finally {
       setDeleteDialogOpen(false);
       setRequirementToDelete(null);
@@ -379,21 +379,21 @@ export default function QPostRequirementsPage() {
         <span>/</span>
         <span>{t("QPost Compliance")}</span>
         <span>/</span>
-        <span className="text-foreground font-medium">{t("Requirements")}</span>
+        <span className="text-foreground font-medium">{t("Controls")}</span>
       </div>
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("Requirements")}</h1>
+          <h1 className="text-2xl font-bold">{t("Controls")}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {t("Manage compliance requirements across frameworks")}
+            {t("Manage compliance controls across frameworks")}
           </p>
         </div>
         {canCreate && (
           <Button onClick={openCreateDialog}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Add Requirement")}
+            {t("Add Control")}
           </Button>
         )}
       </div>
@@ -403,7 +403,7 @@ export default function QPostRequirementsPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={t("Search requirements...")}
+            placeholder={t("Search controls...")}
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="ltr:pl-9 rtl:pr-9"
@@ -470,7 +470,7 @@ export default function QPostRequirementsPage() {
                 <TableCell colSpan={canDelete ? 9 : 8} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <FileText className="h-8 w-8" />
-                    <p>{t("No requirements found")}</p>
+                    <p>{t("No controls found")}</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -545,7 +545,7 @@ export default function QPostRequirementsPage() {
           <p className="text-sm text-muted-foreground">
             {t("Showing")} {(pagination.page - 1) * pagination.limit + 1}-
             {Math.min(pagination.page * pagination.limit, pagination.total)} {t("of")}{" "}
-            {pagination.total} {t("requirements")}
+            {pagination.total} {t("controls")}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -575,7 +575,7 @@ export default function QPostRequirementsPage() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{t("Add Requirement")}</DialogTitle>
+            <DialogTitle>{t("Add Control")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             {/* Code */}
@@ -595,7 +595,7 @@ export default function QPostRequirementsPage() {
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={t("Requirement name")}
+                placeholder={t("Control name")}
               />
               {formErrors.name && <p className="text-sm text-destructive">{formErrors.name}</p>}
             </div>
@@ -606,14 +606,14 @@ export default function QPostRequirementsPage() {
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t("Requirement description")}
+                placeholder={t("Control description")}
                 rows={3}
               />
             </div>
 
             {/* Requirement Type */}
             <div className="space-y-1.5">
-              <Label>{t("Requirement Type")}</Label>
+              <Label>{t("Control Type")}</Label>
               <Select
                 value={formData.requirementType}
                 onValueChange={(v) => setFormData({ ...formData, requirementType: v })}
@@ -693,7 +693,7 @@ export default function QPostRequirementsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("Delete Requirement")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Control")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("Are you sure you want to delete")} &quot;{requirementToDelete?.name}&quot;?{" "}
               {t("This action cannot be undone.")}

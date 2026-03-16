@@ -462,13 +462,13 @@ function ManagementReportContent() {
                     {/* Empty bar when no requirements */}
                     {stats.totalRequirements === 0 && (
                       <div className="h-full w-full bg-slate-200 flex items-center justify-center">
-                        <span className="text-xs text-slate-500">{t("No Requirements")}</span>
+                        <span className="text-xs text-slate-500">{t("No Controls")}</span>
                       </div>
                     )}
                   </div>
                   {/* Total requirements count */}
                   <div className="w-12 sm:w-16 text-xs sm:text-sm text-slate-500 ltr:text-right rtl:text-left">
-                    {stats.totalRequirements} {t("Requirements")}
+                    {stats.totalRequirements} {t("Controls")}
                   </div>
                 </div>
               ))}
@@ -497,7 +497,7 @@ function ManagementReportContent() {
       {showControlRequirementsByFramework && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">{t("Requirements by Framework")}</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Controls by Framework")}</h3>
           </div>
           <div className="px-3 sm:px-5 py-4">
             <div className="space-y-4">
@@ -505,7 +505,7 @@ function ManagementReportContent() {
                 <div key={framework.id} className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span>{framework.name}</span>
-                    <span>{framework._count?.requirements || 0} {t("Requirements")}</span>
+                    <span>{framework._count?.requirements || 0} {t("Controls")}</span>
                   </div>
                   <div className="h-6 bg-slate-200 rounded overflow-hidden">
                     <div
@@ -527,7 +527,7 @@ function ManagementReportContent() {
       {showControlImplementationsByFramework && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">{t("Requirement Implementations by Framework")}</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Control Implementations by Framework")}</h3>
           </div>
           <div className="px-3 sm:px-5 py-4">
             <div className="space-y-4">
@@ -535,7 +535,7 @@ function ManagementReportContent() {
                 <div key={framework.id} className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span>{framework.name}</span>
-                    <span>{framework._count?.requirements || 0} {t("Requirements")}</span>
+                    <span>{framework._count?.requirements || 0} {t("Controls")}</span>
                   </div>
                   <div className="h-6 bg-slate-200 rounded overflow-hidden">
                     <div
@@ -557,7 +557,7 @@ function ManagementReportContent() {
       {showComplianceRequirementsExceptions && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">{t("Compliance Requirements Exceptions")}</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Compliance Controls Exceptions")}</h3>
           </div>
           <div className="px-3 sm:px-5 py-4">
             {requirementExceptionsList.length > 0 ? (
@@ -576,7 +576,7 @@ function ManagementReportContent() {
                 ))}
               </div>
             ) : (
-              <p className="text-slate-400 text-center py-4">{t("No requirement exceptions found")}</p>
+              <p className="text-slate-400 text-center py-4">{t("No control exceptions found")}</p>
             )}
           </div>
         </div>
@@ -586,7 +586,7 @@ function ManagementReportContent() {
       {showControlExceptions && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-3 sm:px-5 py-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">{t("Requirement Exceptions")}</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Control Exceptions")}</h3>
           </div>
           <div className="px-3 sm:px-5 py-4">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">

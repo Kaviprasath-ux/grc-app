@@ -39,7 +39,7 @@ export default function MasterDataPage() {
     },
     {
       name: t("Evidences"),
-      description: t("Manage evidence definitions and requirements"),
+      description: t("Manage evidence definitions and controls"),
       icon: ClipboardList,
       href: "/qpost-compliance/master-data/evidences",
     },

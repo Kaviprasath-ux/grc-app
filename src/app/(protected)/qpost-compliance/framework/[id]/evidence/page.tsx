@@ -227,7 +227,7 @@ export default function EvidenceByFrameworkPage() {
                 <p className="text-xs text-slate-400">
                   {searchTerm
                     ? t("Try adjusting your search")
-                    : t("Link evidence to requirements in the framework to see them here")}
+                    : t("Link evidence to controls in the framework to see them here")}
                 </p>
               </div>
             )}

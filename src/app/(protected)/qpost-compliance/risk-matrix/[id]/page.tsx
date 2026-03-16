@@ -306,7 +306,7 @@ export default function RiskDetailPage() {
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/qpost-compliance/risk-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Risk Requirement Matrix")}
+          {t("Risk Control Matrix")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{tRisk?.riskId || risk.riskId}</span>
@@ -749,7 +749,7 @@ export default function RiskDetailPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            {t("Linked Requirements")}
+            {t("Linked Controls")}
           </CardTitle>
           <Dialog
             open={linkRequirementDialogOpen}
@@ -758,21 +758,21 @@ export default function RiskDetailPage() {
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                {t("Link Requirement")}
+                {t("Link Control")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-[95vw] sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>{t("Link Requirement to Risk")}</DialogTitle>
+                <DialogTitle>{t("Link Control to Risk")}</DialogTitle>
               </DialogHeader>
               <div className="py-4">
-                <Label>{t("Select Requirement")}</Label>
+                <Label>{t("Select Control")}</Label>
                 <Select
                   value={selectedRequirementId}
                   onValueChange={setSelectedRequirementId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("Select a requirement")} />
+                    <SelectValue placeholder={t("Select a control")} />
                   </SelectTrigger>
                   <SelectContent>
                     {translatedRequirements
@@ -804,9 +804,9 @@ export default function RiskDetailPage() {
           {linkedRequirements.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>{t("No requirements linked to this risk")}</p>
+              <p>{t("No controls linked to this risk")}</p>
               <p className="text-sm mt-1">
-                {t("Link requirements to show how this risk is being mitigated")}
+                {t("Link controls to show how this risk is being mitigated")}
               </p>
             </div>
           ) : (
@@ -814,7 +814,7 @@ export default function RiskDetailPage() {
             <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("Requirement Code")}</TableHead>
+                  <TableHead>{t("Control Code")}</TableHead>
                   <TableHead>{t("Name")}</TableHead>
                   <TableHead>{t("Framework")}</TableHead>
                   <TableHead>{t("Status")}</TableHead>

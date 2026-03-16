@@ -56,6 +56,7 @@ import {
   ChevronRight,
   Upload,
   Download,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { triggerTranslation, useTranslatedRecord, useTranslatedData } from "@/hooks/useTranslatedData";
@@ -198,6 +199,32 @@ export default function QPostRequirementDetailPage() {
   const [importPolicyErrors, setImportPolicyErrors] = useState<string[]>([]);
   const [downloadingPolicyTemplate, setDownloadingPolicyTemplate] = useState(false);
 
+  // Create evidence dialog
+  const [createEvidenceOpen, setCreateEvidenceOpen] = useState(false);
+  const [creatingEvidence, setCreatingEvidence] = useState(false);
+  const [createEvidenceForm, setCreateEvidenceForm] = useState({
+    name: "",
+    description: "",
+    recurrence: "",
+    departmentId: "",
+    assigneeId: "",
+  });
+
+  // Create policy dialog
+  const [createPolicyOpen, setCreatePolicyOpen] = useState(false);
+  const [creatingPolicy, setCreatingPolicy] = useState(false);
+  const [createPolicyForm, setCreatePolicyForm] = useState({
+    name: "",
+    documentType: "Policy",
+    recurrence: "",
+    departmentId: "",
+    assigneeId: "",
+  });
+
+  // Reference data for create dialogs
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; fullName: string; departmentId?: string }[]>([]);
+
   // ---------------------------------------------------------------------------
   // Fetch requirement
   // ---------------------------------------------------------------------------
@@ -249,7 +276,7 @@ export default function QPostRequirementDetailPage() {
       });
       if (!res.ok) throw new Error("Failed to save");
       const updated = await res.json();
-      toast({ title: t("Requirement updated successfully") });
+      toast({ title: t("Control updated successfully") });
       triggerTranslation("QPostRequirement", updated.id, {
         name: updated.name,
         description: updated.description,
@@ -257,7 +284,7 @@ export default function QPostRequirementDetailPage() {
       setEditOpen(false);
       fetchRequirement();
     } catch {
-      toast({ title: t("Failed to update requirement"), variant: "destructive" });
+      toast({ title: t("Failed to update control"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -501,6 +528,112 @@ export default function QPostRequirementDetailPage() {
   };
 
   // ---------------------------------------------------------------------------
+  // Fetch reference data (departments, users) for create dialogs
+  // ---------------------------------------------------------------------------
+
+  const fetchReferenceData = useCallback(async () => {
+    try {
+      const [deptRes, usersRes] = await Promise.all([
+        fetch("/api/departments"),
+        fetch("/api/users"),
+      ]);
+      if (deptRes.ok) {
+        const d = await deptRes.json();
+        setDepartments(Array.isArray(d) ? d : d.data || []);
+      }
+      if (usersRes.ok) {
+        const u = await usersRes.json();
+        setUsers(Array.isArray(u) ? u : u.data || []);
+      }
+    } catch {
+      // Silently fail - create dialogs will show empty dropdowns
+    }
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Create evidence handler
+  // ---------------------------------------------------------------------------
+
+  const handleCreateEvidence = async () => {
+    if (!createEvidenceForm.name.trim()) {
+      toast({ title: t("Name is required"), variant: "destructive" });
+      return;
+    }
+    setCreatingEvidence(true);
+    try {
+      const res = await fetch("/api/qpost-compliance/evidences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createEvidenceForm.name.trim(),
+          description: createEvidenceForm.description.trim() || null,
+          recurrence: createEvidenceForm.recurrence || null,
+          departmentId: createEvidenceForm.departmentId || null,
+          assigneeId: createEvidenceForm.assigneeId || null,
+          frameworkId: requirement?.framework?.id || null,
+          requirementIds: [id],
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        toast({ title: t("Success"), description: t("Evidence created and linked successfully") });
+        triggerTranslation("QPostEvidence", created.id, { name: created.name, description: created.description });
+        setCreateEvidenceOpen(false);
+        setCreateEvidenceForm({ name: "", description: "", recurrence: "", departmentId: "", assigneeId: "" });
+        fetchRequirement();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: err.error || t("Failed to create evidence"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to create evidence"), variant: "destructive" });
+    } finally {
+      setCreatingEvidence(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Create policy handler
+  // ---------------------------------------------------------------------------
+
+  const handleCreatePolicy = async () => {
+    if (!createPolicyForm.name.trim()) {
+      toast({ title: t("Name is required"), variant: "destructive" });
+      return;
+    }
+    setCreatingPolicy(true);
+    try {
+      const res = await fetch("/api/qpost-compliance/policies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createPolicyForm.name.trim(),
+          documentType: createPolicyForm.documentType,
+          recurrence: createPolicyForm.recurrence || null,
+          departmentId: createPolicyForm.departmentId || null,
+          assigneeId: createPolicyForm.assigneeId || null,
+          requirementIds: [id],
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        toast({ title: t("Success"), description: t("Policy created and linked successfully") });
+        triggerTranslation("QPostPolicy", created.id, { name: created.name });
+        setCreatePolicyOpen(false);
+        setCreatePolicyForm({ name: "", documentType: "Policy", recurrence: "", departmentId: "", assigneeId: "" });
+        fetchRequirement();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: err.error || t("Failed to create policy"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to create policy"), variant: "destructive" });
+    } finally {
+      setCreatingPolicy(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
   // Translation hooks (must be called before any early returns)
   // ---------------------------------------------------------------------------
 
@@ -533,7 +666,7 @@ export default function QPostRequirementDetailPage() {
           <ArrowLeft className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Back")}
         </Button>
-        <p className="text-muted-foreground">{t("Requirement not found")}</p>
+        <p className="text-muted-foreground">{t("Control not found")}</p>
       </div>
     );
   }
@@ -547,7 +680,7 @@ export default function QPostRequirementDetailPage() {
         </Link>
         <ChevronRight className="h-3 w-3" />
         <Link href="/qpost-compliance/requirements" className="hover:text-foreground">
-          {t("Requirements")}
+          {t("Controls")}
         </Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-foreground font-medium">{req.code}</span>
@@ -578,7 +711,7 @@ export default function QPostRequirementDetailPage() {
       {/* Detail Card */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("Requirement Details")}</CardTitle>
+          <CardTitle>{t("Control Details")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -586,7 +719,7 @@ export default function QPostRequirementDetailPage() {
             <DetailField label={t("Name")} value={req.name} />
             <DetailField label={t("Framework")} value={requirement.framework?.name} />
             <DetailField label={t("Category")} value={requirement.category?.name} />
-            <DetailField label={t("Requirement Type")} value={requirement.requirementType} />
+            <DetailField label={t("Control Type")} value={requirement.requirementType} />
             <DetailField label={t("Chapter Type")} value={requirement.chapterType} />
             <DetailField label={t("Level")} value={String(requirement.level)} />
             <DetailField label={t("Sort Order")} value={String(requirement.sortOrder)} />
@@ -615,7 +748,7 @@ export default function QPostRequirementDetailPage() {
               </div>
             </div>
             {requirement.parent && (
-              <DetailField label={t("Parent Requirement")} value={`${requirement.parent.code} - ${requirement.parent.name}`} />
+              <DetailField label={t("Parent Control")} value={`${requirement.parent.code} - ${requirement.parent.name}`} />
             )}
           </div>
           {req.description && (
@@ -637,7 +770,7 @@ export default function QPostRequirementDetailPage() {
       {requirement.children && requirement.children.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>{t("Sub-Requirements")} ({requirement.children.length})</CardTitle>
+            <CardTitle>{t("Sub-Controls")} ({requirement.children.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -688,9 +821,13 @@ export default function QPostRequirementDetailPage() {
                     <Upload className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                     {t("Import")}
                   </Button>
-                  <Button size="sm" onClick={openLinkEvidence}>
+                  <Button size="sm" variant="outline" onClick={openLinkEvidence}>
                     <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                     {t("Link Evidence")}
+                  </Button>
+                  <Button size="sm" onClick={() => { fetchReferenceData(); setCreateEvidenceForm({ name: "", description: "", recurrence: "", departmentId: "", assigneeId: "" }); setCreateEvidenceOpen(true); }}>
+                    <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Create")}
                   </Button>
                 </div>
               )}
@@ -751,9 +888,13 @@ export default function QPostRequirementDetailPage() {
                     <Upload className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                     {t("Import")}
                   </Button>
-                  <Button size="sm" onClick={openLinkPolicy}>
+                  <Button size="sm" variant="outline" onClick={openLinkPolicy}>
                     <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                     {t("Link Policy")}
+                  </Button>
+                  <Button size="sm" onClick={() => { fetchReferenceData(); setCreatePolicyForm({ name: "", documentType: "Policy", recurrence: "", departmentId: "", assigneeId: "" }); setCreatePolicyOpen(true); }}>
+                    <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Create")}
                   </Button>
                 </div>
               )}
@@ -845,7 +986,7 @@ export default function QPostRequirementDetailPage() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("Edit Requirement")}</DialogTitle>
+            <DialogTitle>{t("Edit Control")}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
@@ -857,11 +998,11 @@ export default function QPostRequirementDetailPage() {
               <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>{t("Requirement Type")}</Label>
+              <Label>{t("Control Type")}</Label>
               <Select value={editForm.requirementType} onValueChange={(v) => setEditForm({ ...editForm, requirementType: v })}>
                 <SelectTrigger><SelectValue placeholder={t("Select type")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="requirement">{t("Requirement")}</SelectItem>
+                  <SelectItem value="requirement">{t("Control")}</SelectItem>
                   <SelectItem value="chapter">{t("Chapter")}</SelectItem>
                   <SelectItem value="section">{t("Section")}</SelectItem>
                   <SelectItem value="clause">{t("Clause")}</SelectItem>
@@ -1034,7 +1175,7 @@ export default function QPostRequirementDetailPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              {t("Upload an Excel file (.xlsx) to import evidences and automatically link them to this requirement.")}
+              {t("Upload an Excel file (.xlsx) to import evidences and automatically link them to this control.")}
             </p>
             <p className="text-xs text-muted-foreground">
               {t("Note: Evidence Code and Status will be auto-generated. For Recurrence column, only these values are accepted:")}{" "}
@@ -1106,7 +1247,7 @@ export default function QPostRequirementDetailPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              {t("Upload an Excel file (.xlsx) to import governance documents and automatically link them to this requirement.")}
+              {t("Upload an Excel file (.xlsx) to import governance documents and automatically link them to this control.")}
             </p>
             <p className="text-xs text-muted-foreground">
               {t("Note: Code and Status will be auto-generated. For Document Type, accepted values are:")}{" "}
@@ -1165,6 +1306,154 @@ export default function QPostRequirementDetailPage() {
             <Button onClick={handleImportPolicies} disabled={!importPolicyFile || importingPolicy}>
               {importingPolicy && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
               {t("Import")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Create Evidence Dialog                                               */}
+      {/* ------------------------------------------------------------------- */}
+      <Dialog open={createEvidenceOpen} onOpenChange={setCreateEvidenceOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Create Evidence")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("Name")} *</Label>
+              <Input
+                value={createEvidenceForm.name}
+                onChange={(e) => setCreateEvidenceForm({ ...createEvidenceForm, name: e.target.value })}
+                placeholder={t("Evidence name")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Description")}</Label>
+              <Textarea
+                value={createEvidenceForm.description}
+                onChange={(e) => setCreateEvidenceForm({ ...createEvidenceForm, description: e.target.value })}
+                placeholder={t("Evidence description")}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Recurrence")}</Label>
+              <Select value={createEvidenceForm.recurrence} onValueChange={(v) => setCreateEvidenceForm({ ...createEvidenceForm, recurrence: v })}>
+                <SelectTrigger><SelectValue placeholder={t("Select recurrence")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Monthly">{t("Monthly")}</SelectItem>
+                  <SelectItem value="Quarterly">{t("Quarterly")}</SelectItem>
+                  <SelectItem value="Half-yearly">{t("Half-yearly")}</SelectItem>
+                  <SelectItem value="Yearly">{t("Yearly")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Department")}</Label>
+              <Select value={createEvidenceForm.departmentId} onValueChange={(v) => setCreateEvidenceForm({ ...createEvidenceForm, departmentId: v, assigneeId: "" })}>
+                <SelectTrigger><SelectValue placeholder={t("Select department")} /></SelectTrigger>
+                <SelectContent>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Assignee")}</Label>
+              <Select value={createEvidenceForm.assigneeId} onValueChange={(v) => setCreateEvidenceForm({ ...createEvidenceForm, assigneeId: v })}>
+                <SelectTrigger><SelectValue placeholder={t("Select assignee")} /></SelectTrigger>
+                <SelectContent>
+                  {users
+                    .filter((u) => !createEvidenceForm.departmentId || u.departmentId === createEvidenceForm.departmentId)
+                    .map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setCreateEvidenceOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleCreateEvidence} disabled={creatingEvidence}>
+              {creatingEvidence && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Create")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Create Policy Dialog                                                 */}
+      {/* ------------------------------------------------------------------- */}
+      <Dialog open={createPolicyOpen} onOpenChange={setCreatePolicyOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Create Policy")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("Name")} *</Label>
+              <Input
+                value={createPolicyForm.name}
+                onChange={(e) => setCreatePolicyForm({ ...createPolicyForm, name: e.target.value })}
+                placeholder={t("Policy name")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Document Type")}</Label>
+              <Select value={createPolicyForm.documentType} onValueChange={(v) => setCreatePolicyForm({ ...createPolicyForm, documentType: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                  <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                  <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Recurrence")}</Label>
+              <Select value={createPolicyForm.recurrence} onValueChange={(v) => setCreatePolicyForm({ ...createPolicyForm, recurrence: v })}>
+                <SelectTrigger><SelectValue placeholder={t("Select recurrence")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Monthly">{t("Monthly")}</SelectItem>
+                  <SelectItem value="Quarterly">{t("Quarterly")}</SelectItem>
+                  <SelectItem value="Half-yearly">{t("Half-yearly")}</SelectItem>
+                  <SelectItem value="Yearly">{t("Yearly")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Department")}</Label>
+              <Select value={createPolicyForm.departmentId} onValueChange={(v) => setCreatePolicyForm({ ...createPolicyForm, departmentId: v, assigneeId: "" })}>
+                <SelectTrigger><SelectValue placeholder={t("Select department")} /></SelectTrigger>
+                <SelectContent>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Assignee")}</Label>
+              <Select value={createPolicyForm.assigneeId} onValueChange={(v) => setCreatePolicyForm({ ...createPolicyForm, assigneeId: v })}>
+                <SelectTrigger><SelectValue placeholder={t("Select assignee")} /></SelectTrigger>
+                <SelectContent>
+                  {users
+                    .filter((u) => !createPolicyForm.departmentId || u.departmentId === createPolicyForm.departmentId)
+                    .map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setCreatePolicyOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleCreatePolicy} disabled={creatingPolicy}>
+              {creatingPolicy && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Create")}
             </Button>
           </div>
         </DialogContent>

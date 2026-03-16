@@ -181,7 +181,7 @@ export default function RiskComplianceMatrixPage() {
           <span>{t("Compliance")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">{t("Risk Requirement Matrix")}</span>
+        <span className="text-primary-700 font-medium">{t("Risk Control Matrix")}</span>
       </nav>
 
       {/* Header */}
@@ -286,7 +286,7 @@ export default function RiskComplianceMatrixPage() {
                             className="flex items-center gap-2 p-0 h-auto font-medium text-blue-600 hover:text-blue-800"
                           >
                             <Link2 className="h-4 w-4" />
-                            {t("Linked Requirements")} ({risk.requirementRisks?.length || 0})
+                            {t("Linked Controls")} ({risk.requirementRisks?.length || 0})
                             {expandedRequirements.has(risk.id) ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
@@ -301,7 +301,7 @@ export default function RiskComplianceMatrixPage() {
                             <Table className="min-w-[500px]">
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead>{t("Requirement Code")}</TableHead>
+                                  <TableHead>{t("Control Code")}</TableHead>
                                   <TableHead>{t("Name")}</TableHead>
                                   <TableHead>{t("Status")}</TableHead>
                                   <TableHead className="w-[100px]">{t("Actions")}</TableHead>
@@ -335,7 +335,7 @@ export default function RiskComplianceMatrixPage() {
                             </Table>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-500 py-2">{t("No requirements linked to this risk")}</p>
+                            <p className="text-sm text-gray-500 py-2">{t("No controls linked to this risk")}</p>
                           )}
                         </CollapsibleContent>
                       </Collapsible>

@@ -400,7 +400,7 @@ export default function FrameworkMasterDataPage() {
               </div>
               <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                 <p className="text-sm text-slate-600">
-                  {t("This feature will use AI to help generate framework requirements based on your inputs.")}
+                  {t("This feature will use AI to help generate framework controls based on your inputs.")}
                 </p>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">{t("Framework Name")}</Label>
@@ -441,7 +441,7 @@ export default function FrameworkMasterDataPage() {
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
             <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-slate-100">
               <DialogTitle className="text-base font-semibold text-slate-800">
-                  {wizardStep === 1 ? t("Create Integrated Framework") : t("Import Requirement")}
+                  {wizardStep === 1 ? t("Create Integrated Framework") : t("Import Control")}
                 </DialogTitle>
               </div>
 
@@ -461,7 +461,7 @@ export default function FrameworkMasterDataPage() {
                     <span className={`hidden sm:inline ltr:ml-2 rtl:mr-2 text-sm ${
                       step === wizardStep ? "text-slate-800 font-medium" : "text-slate-500"
                     }`}>
-                      {step === 1 ? t("Framework Details") : t("Import Requirement")}
+                      {step === 1 ? t("Framework Details") : t("Import Control")}
                     </span>
                     {step < 2 && <div className="w-6 sm:w-12 h-0.5 bg-slate-200 mx-1.5 sm:mx-3" />}
                   </div>
@@ -581,7 +581,7 @@ export default function FrameworkMasterDataPage() {
                       onCheckedChange={(checked) => setUseAIRequirements(checked as boolean)}
                     />
                     <Label htmlFor="useAI" className="cursor-pointer text-sm text-slate-600">
-                      {t("Do you want to get requirements from our AI?")}
+                      {t("Do you want to get controls from our AI?")}
                     </Label>
                   </div>
                   <div className="pt-2">

@@ -228,7 +228,7 @@ export default function SOAPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">{t("Statement of Applicability")}</h1>
           <p className="text-gray-600">
-            {t("Manage requirement applicability and implementation status")}
+            {t("Manage control applicability and implementation status")}
           </p>
         </div>
         <Button variant="outline" className="w-full sm:w-auto">
@@ -243,7 +243,7 @@ export default function SOAPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-3xl font-bold">{stats.total}</p>
-              <p className="text-sm text-gray-500">{t("Total Requirements")}</p>
+              <p className="text-sm text-gray-500">{t("Total Controls")}</p>
             </div>
           </CardContent>
         </Card>
@@ -296,7 +296,7 @@ export default function SOAPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder={t("Search requirements...")}
+                placeholder={t("Search controls...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -400,7 +400,7 @@ export default function SOAPage() {
       {/* SOA Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("Requirements")}</CardTitle>
+          <CardTitle>{t("Controls")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -408,7 +408,7 @@ export default function SOAPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("Code")}</TableHead>
-                <TableHead>{t("Requirement")}</TableHead>
+                <TableHead>{t("Control")}</TableHead>
                 <TableHead>{t("Framework")}</TableHead>
                 <TableHead>{t("Applicability")}</TableHead>
                 <TableHead>{t("Implementation")}</TableHead>
@@ -423,7 +423,7 @@ export default function SOAPage() {
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8">
                     <Shield className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p className="text-gray-500">{t("No requirements found")}</p>
+                    <p className="text-gray-500">{t("No controls found")}</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -531,7 +531,7 @@ export default function SOAPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label className="text-gray-500">{t("Requirement")}</Label>
+              <Label className="text-gray-500">{t("Control")}</Label>
               <p className="font-medium">{selectedEntry?.name}</p>
             </div>
             <div>
