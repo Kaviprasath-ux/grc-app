@@ -2483,7 +2483,7 @@ export default function GovernanceDetailPage() {
                             </div>
                             <div className="space-y-1.5">
                               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Document Type")}</Label>
-                              <Input value={t(typeLabels[policy?.documentType] || "Policy")} disabled className="bg-slate-50" />
+                              <Input value={t(typeLabels[policy?.documentType ?? ""] || "Policy")} disabled className="bg-slate-50" />
                             </div>
                           </div>
 
@@ -2553,7 +2553,7 @@ export default function GovernanceDetailPage() {
                                       <Input
                                         value={newTemplateName}
                                         onChange={(e) => setNewTemplateName(e.target.value)}
-                                        placeholder={newTemplateFile.name.replace(/\.[^/.]+$/, "")}
+                                        placeholder={newTemplateFile?.name.replace(/\.[^/.]+$/, "") ?? ""}
                                         className="mt-1"
                                       />
                                     </div>
@@ -2579,9 +2579,9 @@ export default function GovernanceDetailPage() {
                           <div>
                             <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Linked Controls")} ({policy?.requirements?.length || 0})</Label>
                             <div className="mt-2 border border-slate-200 rounded-lg max-h-32 overflow-y-auto">
-                              {policy?.requirements && policy.requirements.length > 0 ? (
+                              {(policy?.requirements?.length ?? 0) > 0 ? (
                                 <div className="divide-y divide-slate-100">
-                                  {policy.requirements.map((pr) => (
+                                  {policy?.requirements?.map((pr) => (
                                     <div key={pr.requirement.id} className="p-2 hover:bg-slate-50">
                                       <div className="flex items-center gap-2">
                                         <Badge variant="outline" className="text-xs font-mono">
