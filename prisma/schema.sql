@@ -160,7 +160,7 @@ CREATE TABLE "Department" (
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "userId" TEXT,
     "userName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT,
@@ -3676,10 +3676,10 @@ CREATE INDEX "Department_customerAccountId_idx" ON "Department"("customerAccount
 CREATE UNIQUE INDEX "Department_customerAccountId_name_key" ON "Department"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_userId_key" ON "User"("userId");
+CREATE INDEX "User_customerAccountId_idx" ON "User"("customerAccountId");
 
 -- CreateIndex
-CREATE INDEX "User_customerAccountId_idx" ON "User"("customerAccountId");
+CREATE UNIQUE INDEX "User_customerAccountId_userId_key" ON "User"("customerAccountId", "userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_customerAccountId_userName_key" ON "User"("customerAccountId", "userName");

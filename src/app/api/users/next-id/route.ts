@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
 
     const customerAccountId = session.user.customerAccountId || null;
 
+    // userId is unique per customer account
     const existingUsers = await prisma.user.findMany({
       where: {
         userId: { startsWith: "USR" },

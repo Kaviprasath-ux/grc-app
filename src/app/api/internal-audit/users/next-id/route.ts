@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 
-// GET next available user ID (BA0001, BA0002, etc.) scoped to customer account
+// GET next available user ID (BA0001, BA0002, etc.) - unique per customer account
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
 
+      // userId is unique per customer account
       const existingBAUsers = await prisma.user.findMany({
         where: {
           userId: { startsWith: "BA" },

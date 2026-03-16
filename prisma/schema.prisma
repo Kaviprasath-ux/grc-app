@@ -345,7 +345,7 @@ model Department {
 // Users
 model User {
   id                  String           @id @default(cuid())
-  userId              String           @unique
+  userId              String?
   userName            String
   email               String
   password            String?
@@ -476,7 +476,8 @@ model User {
   contractDeletionRequests   TPRMContractDeletionRequest[] @relation("DeletionRequestedBy")
   contractDeletionReviews    TPRMContractDeletionRequest[] @relation("DeletionReviewedBy")
 
-  // Multi-tenant: userName and email are unique per customer account, not globally
+  // Multi-tenant: userId, userName and email are unique per customer account, not globally
+  @@unique([customerAccountId, userId])
   @@unique([customerAccountId, userName])
   @@unique([customerAccountId, email])
   @@index([customerAccountId])

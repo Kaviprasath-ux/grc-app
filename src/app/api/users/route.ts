@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Auto-generate clean sequential userId server-side (USR0001, USR0002, etc.)
+    // userId is unique per customer account
     const existingUSRUsers = await prisma.user.findMany({
       where: {
         userId: { startsWith: "USR" },

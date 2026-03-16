@@ -230,7 +230,7 @@ export const POST = withAuth(
       const customerAccountId = getCustomerAccountId(session);
 
       // Auto-generate userId server-side to avoid race conditions
-      // Find the max existing BA-prefixed userId within this customer account and increment
+      // userId is unique per customer account
       const existingBAUsers = await prisma.user.findMany({
         where: {
           userId: { startsWith: "BA" },
