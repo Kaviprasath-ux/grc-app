@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
 
 /**
  * GET /api/settings/logo
@@ -36,6 +33,7 @@ export async function GET() {
 /**
  * POST /api/settings/logo
  * Upload/change logo — CustomerAdministrator only
+ * Stores logo as base64 data URL in DB (works on serverless/cloud)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -72,35 +70,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 400 });
     }
 
-    // Get current account to delete old logo
-    const account = await prisma.customerAccount.findUnique({
-      where: { id: customerAccountId },
-      select: { logoUrl: true },
-    });
-
-    // Create uploads directory
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "logos");
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    // Delete old logo file if exists
-    if (account?.logoUrl) {
-      const oldFilePath = path.join(process.cwd(), "public", account.logoUrl);
-      if (existsSync(oldFilePath)) {
-        try { await unlink(oldFilePath); } catch { /* ignore */ }
-      }
-    }
-
-    // Save new file
-    const ext = path.extname(file.name) || `.${file.type.split("/")[1]}`;
-    const filename = `${customerAccountId}-${Date.now()}${ext}`;
-    const filePath = path.join(uploadDir, filename);
+    // Convert to base64 data URL and store in DB
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    const base64 = buffer.toString("base64");
+    const logoUrl = `data:${file.type};base64,${base64}`;
 
-    // Update DB
-    const logoUrl = `/uploads/logos/${filename}`;
     await prisma.customerAccount.update({
       where: { id: customerAccountId },
       data: { logoUrl },
@@ -134,20 +108,6 @@ export async function DELETE() {
       return NextResponse.json({ error: "No customer account" }, { status: 400 });
     }
 
-    const account = await prisma.customerAccount.findUnique({
-      where: { id: customerAccountId },
-      select: { logoUrl: true },
-    });
-
-    // Delete file
-    if (account?.logoUrl) {
-      const filePath = path.join(process.cwd(), "public", account.logoUrl);
-      if (existsSync(filePath)) {
-        try { await unlink(filePath); } catch { /* ignore */ }
-      }
-    }
-
-    // Clear DB
     await prisma.customerAccount.update({
       where: { id: customerAccountId },
       data: { logoUrl: null },

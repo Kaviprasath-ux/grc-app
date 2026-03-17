@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
 
 /**
  * GET /api/grc/customer-accounts/[id]/logo
@@ -43,7 +40,8 @@ export async function GET(
 
 /**
  * POST /api/grc/customer-accounts/[id]/logo
- * Upload a logo for a customer
+ * Upload a logo for a customer (GRC Administrator)
+ * Stores logo as base64 data URL in DB (works on serverless/cloud)
  */
 export async function POST(
   req: NextRequest,
@@ -63,16 +61,15 @@ export async function POST(
 
     const { id } = await params;
 
-    // Verify the customer account exists
     const account = await prisma.customerAccount.findUnique({
       where: { id },
+      select: { id: true },
     });
 
     if (!account) {
       return NextResponse.json({ error: "Customer account not found" }, { status: 404 });
     }
 
-    // Parse the form data
     const formData = await req.formData();
     const file = formData.get("logo") as File | null;
 
@@ -81,46 +78,21 @@ export async function POST(
     }
 
     // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, GIF, WebP, and SVG are allowed." }, { status: 400 });
     }
 
     // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 400 });
     }
 
-    // Create the uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "logos");
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    // Delete old logo if exists
-    if (account.logoUrl) {
-      const oldFilePath = path.join(process.cwd(), "public", account.logoUrl);
-      if (existsSync(oldFilePath)) {
-        try {
-          await unlink(oldFilePath);
-        } catch (err) {
-          console.error("Error deleting old logo:", err);
-        }
-      }
-    }
-
-    // Generate unique filename
-    const ext = path.extname(file.name) || `.${file.type.split("/")[1]}`;
-    const filename = `${id}-${Date.now()}${ext}`;
-    const filePath = path.join(uploadDir, filename);
-
-    // Write the file
+    // Convert to base64 data URL and store in DB
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    const base64 = buffer.toString("base64");
+    const logoUrl = `data:${file.type};base64,${base64}`;
 
-    // Update the customer account's logoUrl in the database
-    const logoUrl = `/uploads/logos/${filename}`;
     await prisma.customerAccount.update({
       where: { id },
       data: { logoUrl },
@@ -159,28 +131,15 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Get the customer account
     const account = await prisma.customerAccount.findUnique({
       where: { id },
+      select: { id: true },
     });
 
     if (!account) {
       return NextResponse.json({ error: "Customer account not found" }, { status: 404 });
     }
 
-    // Delete the logo file if it exists
-    if (account.logoUrl) {
-      const filePath = path.join(process.cwd(), "public", account.logoUrl);
-      if (existsSync(filePath)) {
-        try {
-          await unlink(filePath);
-        } catch (err) {
-          console.error("Error deleting logo file:", err);
-        }
-      }
-    }
-
-    // Clear the logoUrl in the database
     await prisma.customerAccount.update({
       where: { id },
       data: { logoUrl: null },

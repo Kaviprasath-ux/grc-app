@@ -5626,6 +5626,9 @@ const translations: [string, string, string][] = [
   ['Information Leak', 'تسريب المعلومات', 'Informācijas noplūde'],
   ['Social Engineering', 'الهندسة الاجتماعية', 'Sociālā inženierija'],
   ['Company', 'الشركة', 'Uzņēmums'],
+  // Gap Assessment
+  ['Gap Assessment', 'تقييم الفجوات', 'Nepilnību novērtējums'],
+  ['Coming soon', 'قريبًا', 'Drīzumā'],
   // Color Theme
   ['Color Theme', 'سمة اللون', 'Krāsu tēma'],
   ['Terracotta', 'تيراكوتا', 'Terakota'],

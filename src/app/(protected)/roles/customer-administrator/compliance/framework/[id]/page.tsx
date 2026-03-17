@@ -1612,6 +1612,7 @@ export default function CustomerAdminFrameworkDetailPage({
         <TabsList className={`overflow-x-auto ${isRTL ? "flex-row-reverse" : ""}`}>
           <TabsTrigger value="requirements">{t("All Requirements")}</TabsTrigger>
           <TabsTrigger value="soa">{t("SOA")}</TabsTrigger>
+          <TabsTrigger value="gap-assessment">{t("Gap Assessment")}</TabsTrigger>
           <TabsTrigger value="audit-logs">{t("Audit Logs")}</TabsTrigger>
         </TabsList>
         </div>
@@ -2058,6 +2059,17 @@ export default function CustomerAdminFrameworkDetailPage({
                 <p className="text-sm text-slate-400">{t("No requirements match your search.")}</p>
               </div>
             )}
+          </div>
+        </TabsContent>
+
+        {/* Gap Assessment Tab */}
+        <TabsContent value="gap-assessment" className="mt-6">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="p-4 bg-primary-50 rounded-full mb-4">
+              <Search className="h-8 w-8 text-primary-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-700 mb-1">{t("Gap Assessment")}</h3>
+            <p className="text-sm text-slate-500">{t("Coming soon")}</p>
           </div>
         </TabsContent>
 
