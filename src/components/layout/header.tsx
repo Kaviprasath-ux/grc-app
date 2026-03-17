@@ -183,7 +183,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
           className="flex items-center gap-2 xl:hidden"
         >
           {logoUrl ? (
-            <img src={logoUrl} alt={session.user.customerAccountName || "Logo"} className="h-10 max-w-[180px] object-contain" />
+            <img src={logoUrl} alt={session?.user?.customerAccountName || "Logo"} className="h-10 max-w-[180px] object-contain" />
           ) : (
             <img src="/logo 3.png" alt="GRC Platform" className="h-8 w-8 object-contain" />
           )}
