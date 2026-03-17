@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/api-auth";
 import { translateRecord } from "@/lib/translation-service";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -50,6 +51,7 @@ export const POST = withAuth(
       // Verify evidence exists
       const evidence = await prisma.qPostEvidence.findUnique({
         where: { id },
+        select: { id: true, name: true, evidenceCode: true, customerAccountId: true, assigneeId: true, approverId: true, status: true },
       });
 
       if (!evidence) {
@@ -87,6 +89,26 @@ export const POST = withAuth(
           findings: review.findings || "",
           recommendation: review.recommendation || "",
         });
+      }
+
+      // Notify assignee that review has been submitted
+      try {
+        if (evidence.assigneeId) {
+          void notificationService.send({
+            customerAccountId: evidence.customerAccountId,
+            actorId: session.id,
+            recipientId: evidence.assigneeId,
+            event: NOTIFICATION_EVENTS.GOVERNANCE_APPROVED,
+            title: "Evidence Review Completed",
+            message: `A manual review has been submitted for evidence "${evidence.name}"`,
+            link: `/qpost-compliance/evidence/${id}`,
+            relatedEntityType: "evidence",
+            relatedEntityId: id,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+      } catch (notifError) {
+        console.error("Error sending review notification:", notifError);
       }
 
       return NextResponse.json(review, { status: 201 });

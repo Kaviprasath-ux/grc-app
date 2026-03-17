@@ -401,7 +401,10 @@ model User {
   qpostAssignedPolicies    QPostPolicy[]    @relation("QPostPolicyAssignee")
   qpostApprovedPolicies    QPostPolicy[]    @relation("QPostPolicyApprover")
   qpostPolicyManualReviews QPostPolicyManualReview[] @relation("QPostPolicyManualReviewer")
+  qpostPolicyClarifications QPostPolicyClarification[] @relation("QPostPolicyClarificationUser")
   qpostEvidenceManualReviews QPostEvidenceManualReview[] @relation("QPostEvidenceManualReviewer")
+  qpostEvidenceApprovals    QPostEvidence[]               @relation("QPostEvidenceApprover")
+  qpostEvidenceClarifications QPostEvidenceClarification[] @relation("QPostEvidenceClarificationUser")
   qpostAssignedEvidences   QPostEvidence[]  @relation("QPostEvidenceAssignee")
   qpostUploadedArtifacts   QPostArtifact[]  @relation("QPostArtifactUploader")
   qpostRequestedExceptions QPostException[] @relation("QPostExceptionRequester")
@@ -4430,6 +4433,7 @@ model QPostPolicy {
   requirements          QPostRequirementPolicy[]
   policyAIReviews       QPostPolicyAIReview[]
   manualReviews         QPostPolicyManualReview[]
+  clarifications        QPostPolicyClarification[]
   policyExceptions      QPostPolicyException[]
   exceptions            QPostException[]                @relation("QPostPolicyExceptions")
   vaultDocumentLinks    QPostGovernanceVaultDocumentLink[]
@@ -4452,6 +4456,8 @@ model QPostEvidence {
   department            Department?                  @relation(fields: [departmentId], references: [id])
   assigneeId            String?
   assignee              User?                        @relation("QPostEvidenceAssignee", fields: [assigneeId], references: [id])
+  approverId            String?
+  approver              User?                        @relation("QPostEvidenceApprover", fields: [approverId], references: [id])
   dueDate               DateTime?
   reviewDate            DateTime?
   recurrence            String?
@@ -4478,6 +4484,7 @@ model QPostEvidence {
   evidenceAIIngestResults QPostEvidenceAIIngestResult[]
   cycleComments         QPostEvidenceCycleComment[]
   manualReviews         QPostEvidenceManualReview[]
+  clarifications        QPostEvidenceClarification[]
 
   @@unique([customerAccountId, evidenceCode])
   @@index([customerAccountId])
@@ -4827,6 +4834,19 @@ model QPostPolicyManualReview {
   @@index([policyId])
 }
 
+model QPostPolicyClarification {
+  id        String      @id @default(cuid())
+  policyId  String
+  policy    QPostPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation("QPostPolicyClarificationUser", fields: [userId], references: [id])
+  type      String      // "request" or "reply"
+  message   String      @db.Text
+  createdAt DateTime    @default(now())
+
+  @@index([policyId])
+}
+
 model QPostEvidenceManualReview {
   id             String        @id @default(cuid())
   evidenceId     String
@@ -4841,6 +4861,19 @@ model QPostEvidenceManualReview {
   reviewDate     DateTime      @default(now())
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([evidenceId])
+}
+
+model QPostEvidenceClarification {
+  id        String        @id @default(cuid())
+  evidenceId String
+  evidence  QPostEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation("QPostEvidenceClarificationUser", fields: [userId], references: [id])
+  type      String        // "request" or "reply"
+  message   String        @db.Text
+  createdAt DateTime      @default(now())
 
   @@index([evidenceId])
 }

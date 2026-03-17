@@ -505,6 +505,14 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.exceptions', actions: ['view', 'edit', 'approve'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
+    // QPost Compliance - mirrors compliance permissions (only active when isQpostComplianceEnabled=true via module flag filtering)
+    { resource: 'qpost-compliance.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'qpost-compliance.framework', actions: ['view'], scope: 'department' },
+    { resource: 'qpost-compliance.controls', actions: ['view', 'edit', 'approve'], scope: 'department' },
+    { resource: 'qpost-compliance.governance', actions: ['view', 'create', 'edit', 'approve'], scope: 'department' },
+    { resource: 'qpost-compliance.evidence', actions: ['view', 'create', 'edit', 'approve'], scope: 'department' },
+    { resource: 'qpost-compliance.exceptions', actions: ['view', 'edit', 'approve'], scope: 'department' },
+    { resource: 'qpost-compliance.kpi', actions: ['view'], scope: 'department' },
     // Asset Management - My Inventory, Classification, Reports only (NO full Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'asset.my-inventory', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },
@@ -540,6 +548,14 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
+    // QPost Compliance - mirrors compliance permissions (only active when isQpostComplianceEnabled=true via module flag filtering)
+    { resource: 'qpost-compliance.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'qpost-compliance.framework', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'qpost-compliance.controls', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'qpost-compliance.governance', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'qpost-compliance.evidence', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'qpost-compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'qpost-compliance.kpi', actions: ['view'], scope: 'department' },
     // Asset Management - My Inventory, Classification, Reports only (NO full Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'asset.my-inventory', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },

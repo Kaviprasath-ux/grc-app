@@ -20,6 +20,7 @@ export async function GET(
         framework: true,
         department: true,
         assignee: true,
+        approver: true,
         attachments: true,
         kpis: true,
         requirements: {

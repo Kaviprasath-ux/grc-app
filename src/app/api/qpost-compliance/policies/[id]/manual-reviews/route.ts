@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/api-auth";
 import { translateRecord } from "@/lib/translation-service";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -50,6 +51,7 @@ export const POST = withAuth(
       // Verify policy exists
       const policy = await prisma.qPostPolicy.findUnique({
         where: { id },
+        select: { id: true, customerAccountId: true, assigneeId: true, name: true, code: true },
       });
 
       if (!policy) {
@@ -87,6 +89,26 @@ export const POST = withAuth(
           findings: review.findings || "",
           recommendation: review.recommendation || "",
         });
+      }
+
+      // Notify assignee that review has been submitted
+      try {
+        if (policy.assigneeId) {
+          void notificationService.send({
+            customerAccountId: policy.customerAccountId,
+            actorId: session.id,
+            recipientId: policy.assigneeId,
+            event: NOTIFICATION_EVENTS.GOVERNANCE_APPROVED,
+            title: "Manual Review Completed",
+            message: `A manual review has been submitted for "${policy.name}"`,
+            link: `/qpost-compliance/governance/${id}`,
+            relatedEntityType: "governance",
+            relatedEntityId: id,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+      } catch (notifError) {
+        console.error("Error sending review notification:", notifError);
       }
 
       return NextResponse.json(review, { status: 201 });

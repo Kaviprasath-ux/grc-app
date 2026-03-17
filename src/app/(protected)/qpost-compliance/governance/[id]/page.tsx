@@ -74,6 +74,7 @@ import {
   X,
   Eye,
   Loader2,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -374,6 +375,26 @@ export default function GovernanceDetailPage() {
   const [deleteReviewId, setDeleteReviewId] = useState<string | null>(null);
   const [deletingReview, setDeletingReview] = useState(false);
 
+  // Clarification state
+  interface Clarification {
+    id: string;
+    type: string;
+    message: string;
+    createdAt: string;
+    user: { id: string; userName: string; fullName: string };
+  }
+  const [clarifications, setClarifications] = useState<Clarification[]>([]);
+  const [clarificationDialogOpen, setClarificationDialogOpen] = useState(false);
+  const [clarificationMessage, setClarificationMessage] = useState("");
+  const [sendingClarification, setSendingClarification] = useState(false);
+  const [clarificationType, setClarificationType] = useState<"request" | "reply">("request");
+
+  // Role-based checks for review workflow
+  const isAssignee = currentUserId && policy?.assigneeId === currentUserId;
+  const isApprover = currentUserId && policy?.approverId === currentUserId;
+  const canUploadAttachment = isAssignee || isCustomerAdmin;
+  const canReview = isApprover;
+
   // AI Review Hook - orchestrates ingest → review flow
   const {
     phase: aiReviewPhase,
@@ -606,12 +627,49 @@ export default function GovernanceDetailPage() {
     }
   }, [id]);
 
+  const fetchClarifications = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/qpost-compliance/policies/${id}/clarifications`);
+      if (response.ok) {
+        const data = await response.json();
+        setClarifications(data);
+      }
+    } catch (error) {
+      console.error("Error fetching clarifications:", error);
+    }
+  }, [id]);
+
+  const handleSendClarification = async () => {
+    if (!clarificationMessage.trim()) return;
+    setSendingClarification(true);
+    try {
+      const response = await fetch(`/api/qpost-compliance/policies/${id}/clarifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: clarificationType, message: clarificationMessage.trim() }),
+      });
+      if (response.ok) {
+        toast.success(clarificationType === "request" ? t("Clarification request sent") : t("Clarification reply sent"));
+        setClarificationDialogOpen(false);
+        setClarificationMessage("");
+        fetchClarifications();
+      } else {
+        toast.error(t("Failed to send clarification"));
+      }
+    } catch {
+      toast.error(t("Failed to send clarification"));
+    } finally {
+      setSendingClarification(false);
+    }
+  };
+
   useEffect(() => {
     fetchPolicy();
     fetchReferenceData();
     fetchVaultDocuments();
     fetchManualReviews();
-  }, [fetchPolicy, fetchReferenceData, fetchVaultDocuments, fetchManualReviews]);
+    fetchClarifications();
+  }, [fetchPolicy, fetchReferenceData, fetchVaultDocuments, fetchManualReviews, fetchClarifications]);
 
   // Filtered user lists for role-based assignment restrictions
   // Assignees: Only DepartmentContributor and DepartmentReviewer from the selected department
@@ -1975,12 +2033,36 @@ export default function GovernanceDetailPage() {
             <h3 className="text-base font-semibold text-slate-800">{t("Manual Review")}</h3>
             <Badge variant="outline" className="ml-2">{manualReviews.length}</Badge>
           </div>
-          {canEdit && (
-            <Button size="sm" onClick={() => setManualReviewDialogOpen(true)}>
-              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-              {t("Add Review")}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {(canReview || isAssignee) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="relative"
+                onClick={() => {
+                  setClarificationType(isApprover ? "request" : "reply");
+                  setClarificationMessage("");
+                  setClarificationDialogOpen(true);
+                }}
+              >
+                <MessageSquare className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                {t("Clarifications")}
+                {clarifications.length > 0 && (() => {
+                  const lastClarification = clarifications[clarifications.length - 1];
+                  const hasUnread = (isApprover && lastClarification.type === "reply") || (isAssignee && lastClarification.type === "request");
+                  return hasUnread ? (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 border-2 border-white" />
+                  ) : null;
+                })()}
+              </Button>
+            )}
+            {canReview && (
+              <Button size="sm" onClick={() => setManualReviewDialogOpen(true)}>
+                <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                {t("Manual Review")}
+              </Button>
+            )}
+          </div>
         </div>
         <div className="p-3 sm:p-5">
           {manualReviews.length === 0 ? (
@@ -1989,7 +2071,7 @@ export default function GovernanceDetailPage() {
                 <Eye className="h-6 w-6 text-slate-400" />
               </div>
               <p className="text-sm font-medium text-slate-600 mb-1">{t("No reviews yet")}</p>
-              <p className="text-xs text-slate-400">{t("Add a manual review to record your assessment of this document")}</p>
+              <p className="text-xs text-slate-400">{t("Approver will review this document")}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -2143,6 +2225,70 @@ export default function GovernanceDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Clarification Dialog with Chat Thread */}
+      <Dialog open={clarificationDialogOpen} onOpenChange={setClarificationDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-xl max-h-[80vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-amber-600" />
+              {t("Clarifications")}
+              {clarifications.length > 0 && <Badge variant="outline">{clarifications.length}</Badge>}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Chat Thread */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-3 min-h-[120px] max-h-[400px]">
+            {clarifications.length === 0 ? (
+              <div className="py-8 text-center">
+                <MessageSquare className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">{t("No clarifications yet")}</p>
+              </div>
+            ) : (
+              clarifications.map((c) => (
+                <div key={c.id} className={`flex gap-3 ${c.type === "reply" ? "flex-row-reverse" : ""}`}>
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-semibold bg-primary-100 text-primary-700">
+                    {c.user.fullName?.charAt(0) || "?"}
+                  </div>
+                  <div className={`max-w-[75%] rounded-lg p-3 ${c.type === "request" ? "bg-amber-50 border border-amber-200" : "bg-blue-50 border border-blue-200"}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium text-slate-700">{c.user.fullName}</span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {c.type === "request" ? t("Clarification") : t("Reply")}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{c.message}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {new Date(c.createdAt).toLocaleDateString()} {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Input Area */}
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex-shrink-0 space-y-3">
+            <Textarea
+              rows={2}
+              placeholder={isApprover ? t("Describe what clarification you need...") : t("Write your reply...")}
+              value={clarificationMessage}
+              onChange={(e) => setClarificationMessage(e.target.value)}
+              className="bg-white"
+            />
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={handleSendClarification}
+                disabled={sendingClarification || !clarificationMessage.trim()}
+              >
+                {sendingClarification && <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />}
+                {isApprover ? t("Request Clarification") : t("Send Reply")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       </>)}
 
       {/* Published Section - Only show when status is Published */}
@@ -2302,8 +2448,8 @@ export default function GovernanceDetailPage() {
           <h3 className="text-base font-semibold text-slate-800">{t("Attachments")}</h3>
         </div>
         <div className="p-3 sm:p-5">
-          {isCustomerAdmin ? (
-            /* Customer Admin: 3 Card Options */
+          {canUploadAttachment ? (
+            /* Assignee or Customer Admin: Upload/Link Options */
             <div className="space-y-6">
               {/* 3 Option Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

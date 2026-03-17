@@ -22,12 +22,16 @@ export const GET = withAuth(
       const where: Record<string, unknown> = { ...tenantFilter };
 
       // Department-based filtering for DepartmentContributor and DepartmentReviewer roles
-      // These roles should only see governance documents assigned to their department
+      // These roles should see governance documents in their department OR assigned/approved by them
       const isDepartmentRole = session.roles.some(role =>
         ['DepartmentContributor', 'DepartmentReviewer'].includes(role)
       );
       if (isDepartmentRole && session.departmentId) {
-        where.departmentId = session.departmentId;
+        where.OR = [
+          { departmentId: session.departmentId },
+          { assigneeId: session.id },
+          { approverId: session.id },
+        ];
       } else if (departmentId) {
         // For other roles, apply departmentId filter from query params if provided
         where.departmentId = departmentId;

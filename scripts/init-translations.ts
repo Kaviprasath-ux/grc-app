@@ -3933,6 +3933,24 @@ const translations: [string, string, string][] = [
   ['Failed to create policy', 'فشل في إنشاء السياسة', 'Neizdevās izveidot politiku'],
 
   ['Link from Document Management', 'ربط من إدارة المستندات', 'Saistīt no dokumentu pārvaldības'],
+  ['Select approver', 'اختر المعتمد', 'Izvēlieties apstiprinātāju'],
+  ['Need Clarification', 'طلب توضيح', 'Nepieciešams precizējums'],
+  ['Request Clarification', 'طلب توضيح', 'Pieprasīt precizējumu'],
+  ['Reply to Clarification', 'الرد على التوضيح', 'Atbildēt uz precizējumu'],
+  ['Clarification request sent', 'تم إرسال طلب التوضيح', 'Precizējuma pieprasījums nosūtīts'],
+  ['Clarification reply sent', 'تم إرسال الرد على التوضيح', 'Precizējuma atbilde nosūtīta'],
+  ['Failed to send clarification', 'فشل في إرسال التوضيح', 'Neizdevās nosūtīt precizējumu'],
+  ['Clarifications', 'التوضيحات', 'Precizējumi'],
+  ['Clarification', 'توضيح', 'Precizējums'],
+  ['Describe what clarification you need...', 'صف التوضيح الذي تحتاجه...', 'Aprakstiet, kāds precizējums jums nepieciešams...'],
+  ['Write your reply...', 'اكتب ردك...', 'Rakstiet savu atbildi...'],
+  ['Approver will review this document', 'سيقوم المعتمد بمراجعة هذا المستند', 'Apstiprinātājs pārskatīs šo dokumentu'],
+  ['Attachment Uploaded for Review', 'تم رفع المرفق للمراجعة', 'Pielikums augšupielādēts pārskatīšanai'],
+  ['Manual Review Completed', 'اكتملت المراجعة اليدوية', 'Manuālā pārskatīšana pabeigta'],
+  ['Clarification Requested', 'تم طلب توضيح', 'Precizējums pieprasīts'],
+  ['Clarification Reply', 'رد على التوضيح', 'Precizējuma atbilde'],
+  ['No clarifications yet', 'لا توجد توضيحات بعد', 'Vēl nav precizējumu'],
+  ['Send Reply', 'إرسال الرد', 'Nosūtīt atbildi'],
 
   // ==========================================
   // QPOST: "Requirement" → "Control" label renaming

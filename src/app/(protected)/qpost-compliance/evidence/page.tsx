@@ -290,6 +290,7 @@ export default function EvidencePage() {
     recurrence: "",
     departmentId: "",
     assigneeId: "",
+    approverId: "",
   });
 
   // Step 2 - Requirement selection
@@ -387,13 +388,15 @@ export default function EvidencePage() {
 
   const getCustomerScopedDepartments = () => translatedDepartments;
 
-  // Filter users for Assignee dropdown: only DepartmentContributors from the selected department
+  // Filter users for Assignee dropdown: DepartmentContributors and DepartmentReviewers from the selected department
   const filteredUsers = (() => {
     if (!createForm.departmentId) return [];
 
     return translatedUsers.filter((u) => {
       if (u.departmentId !== createForm.departmentId) return false;
-      return u.userRoles?.some((ur) => ur.role?.name === "DepartmentContributor");
+      return u.userRoles?.some((ur) =>
+        ["DepartmentContributor", "DepartmentReviewer"].includes(ur.role?.name)
+      );
     });
   })();
 
@@ -427,6 +430,7 @@ export default function EvidencePage() {
           recurrence: createForm.recurrence,
           departmentId: createForm.departmentId || null,
           assigneeId: createForm.assigneeId || null,
+          approverId: createForm.approverId || null,
           requirementIds: selectedRequirementIds,
           status: "Not Uploaded",
         }),
@@ -460,6 +464,7 @@ export default function EvidencePage() {
       recurrence: "",
       departmentId: "",
       assigneeId: "",
+      approverId: "",
     });
     setSelectedRequirementIds([]);
     setRequirementFilters({
@@ -1403,6 +1408,29 @@ export default function EvidencePage() {
                   )}
                 </div>
                 <div>
+                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Approver")}</Label>
+                  <Select
+                    value={createForm.approverId}
+                    onValueChange={(v) => setCreateForm({ ...createForm, approverId: v })}
+                    disabled={!createForm.departmentId}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder={
+                        !createForm.departmentId
+                          ? t("Select department first")
+                          : t("Select approver")
+                      } />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {translatedUsers
+                        .filter((u) => u.id !== createForm.assigneeId)
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Description")}</Label>
                   <Textarea
                     value={createForm.description}
@@ -1508,6 +1536,12 @@ export default function EvidencePage() {
                     <Label className="text-xs text-slate-500">{t("Assignee")}</Label>
                     <p className="font-medium text-slate-900">
                       {getCustomerScopedUsers().find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-500">{t("Approver")}</Label>
+                    <p className="font-medium text-slate-900">
+                      {getCustomerScopedUsers().find((u) => u.id === createForm.approverId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>

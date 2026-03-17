@@ -3,6 +3,7 @@ import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -121,6 +122,30 @@ export const POST = withAuth(
           where: { id },
           data: { status: "Draft" },
         });
+      }
+
+      // Notify approver that attachment was uploaded
+      try {
+        const policyWithApprover = await prisma.qPostPolicy.findUnique({
+          where: { id },
+          select: { approverId: true, name: true, code: true, customerAccountId: true },
+        });
+        if (policyWithApprover?.approverId) {
+          void notificationService.send({
+            customerAccountId: policyWithApprover.customerAccountId,
+            actorId: session.id,
+            recipientId: policyWithApprover.approverId,
+            event: NOTIFICATION_EVENTS.GOVERNANCE_SUBMIT_FOR_APPROVAL,
+            title: "Attachment Uploaded for Review",
+            message: `An attachment has been uploaded for "${policyWithApprover.name}" and is ready for your review`,
+            link: `/qpost-compliance/governance/${id}`,
+            relatedEntityType: "governance",
+            relatedEntityId: id,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+      } catch (notifError) {
+        console.error("Error sending attachment notification:", notifError);
       }
 
       return NextResponse.json(

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden, getCustomerAccountId } from "@/lib/api-auth";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -160,6 +161,30 @@ export const POST = withAuth(
           where: { id },
           data: { status: "Draft" },
         });
+      }
+
+      // Notify approver that attachment was uploaded
+      try {
+        const evidenceWithApprover = await prisma.qPostEvidence.findUnique({
+          where: { id },
+          select: { approverId: true, name: true, evidenceCode: true, customerAccountId: true },
+        });
+        if (evidenceWithApprover?.approverId) {
+          void notificationService.send({
+            customerAccountId: evidenceWithApprover.customerAccountId,
+            actorId: session.id,
+            recipientId: evidenceWithApprover.approverId,
+            event: NOTIFICATION_EVENTS.GOVERNANCE_SUBMIT_FOR_APPROVAL,
+            title: "Evidence Attachment Uploaded",
+            message: `An attachment has been uploaded for evidence "${evidenceWithApprover.name}" and is ready for your review`,
+            link: `/qpost-compliance/evidence/${id}`,
+            relatedEntityType: "evidence",
+            relatedEntityId: id,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        }
+      } catch (notifError) {
+        console.error("Error sending attachment notification:", notifError);
       }
 
       return NextResponse.json(

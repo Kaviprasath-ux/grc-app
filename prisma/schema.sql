@@ -3251,6 +3251,7 @@ CREATE TABLE "QPostEvidence" (
     "frameworkId" TEXT,
     "departmentId" TEXT,
     "assigneeId" TEXT,
+    "approverId" TEXT,
     "dueDate" TIMESTAMP(3),
     "reviewDate" TIMESTAMP(3),
     "recurrence" TEXT,
@@ -3592,6 +3593,18 @@ CREATE TABLE "QPostPolicyManualReview" (
 );
 
 -- CreateTable
+CREATE TABLE "QPostPolicyClarification" (
+    "id" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostPolicyClarification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "QPostEvidenceManualReview" (
     "id" TEXT NOT NULL,
     "evidenceId" TEXT NOT NULL,
@@ -3606,6 +3619,18 @@ CREATE TABLE "QPostEvidenceManualReview" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "QPostEvidenceManualReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QPostEvidenceClarification" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QPostEvidenceClarification_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -4679,7 +4704,13 @@ CREATE UNIQUE INDEX "QPostRequirementPolicy_requirementId_policyId_key" ON "QPos
 CREATE INDEX "QPostPolicyManualReview_policyId_idx" ON "QPostPolicyManualReview"("policyId");
 
 -- CreateIndex
+CREATE INDEX "QPostPolicyClarification_policyId_idx" ON "QPostPolicyClarification"("policyId");
+
+-- CreateIndex
 CREATE INDEX "QPostEvidenceManualReview_evidenceId_idx" ON "QPostEvidenceManualReview"("evidenceId");
+
+-- CreateIndex
+CREATE INDEX "QPostEvidenceClarification_evidenceId_idx" ON "QPostEvidenceClarification"("evidenceId");
 
 -- CreateIndex
 CREATE INDEX "ChatbotKBArticle_module_idx" ON "ChatbotKBArticle"("module");
@@ -5807,6 +5838,9 @@ ALTER TABLE "QPostEvidence" ADD CONSTRAINT "QPostEvidence_departmentId_fkey" FOR
 ALTER TABLE "QPostEvidence" ADD CONSTRAINT "QPostEvidence_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "QPostEvidence" ADD CONSTRAINT "QPostEvidence_approverId_fkey" FOREIGN KEY ("approverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "QPostEvidenceCycleComment" ADD CONSTRAINT "QPostEvidenceCycleComment_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -5924,10 +5958,22 @@ ALTER TABLE "QPostPolicyManualReview" ADD CONSTRAINT "QPostPolicyManualReview_po
 ALTER TABLE "QPostPolicyManualReview" ADD CONSTRAINT "QPostPolicyManualReview_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "QPostPolicyClarification" ADD CONSTRAINT "QPostPolicyClarification_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "QPostPolicy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostPolicyClarification" ADD CONSTRAINT "QPostPolicyClarification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "QPostEvidenceManualReview" ADD CONSTRAINT "QPostEvidenceManualReview_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "QPostEvidenceManualReview" ADD CONSTRAINT "QPostEvidenceManualReview_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceClarification" ADD CONSTRAINT "QPostEvidenceClarification_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "QPostEvidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QPostEvidenceClarification" ADD CONSTRAINT "QPostEvidenceClarification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ChatbotAuditLog" ADD CONSTRAINT "ChatbotAuditLog_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

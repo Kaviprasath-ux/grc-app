@@ -182,6 +182,7 @@ export default function GovernancePage() {
     recurrence: "",
     departmentId: "",
     assigneeId: "",
+    approverId: "",
   });
 
   const [policyErrors, setPolicyErrors] = useState<Record<string, string>>({});
@@ -441,6 +442,7 @@ export default function GovernancePage() {
       recurrence: "",
       departmentId: "",
       assigneeId: "",
+      approverId: "",
     });
     setSelectedRequirementIds([]);
     setRequirementSearch("");
@@ -1630,6 +1632,31 @@ export default function GovernancePage() {
                     </div>
                   )}
                 </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Approver")}</Label>
+                  <Select
+                    value={newPolicy.approverId}
+                    onValueChange={(v) => {
+                      setNewPolicy({ ...newPolicy, approverId: v });
+                    }}
+                    disabled={!newPolicy.departmentId}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder={
+                        !newPolicy.departmentId
+                          ? t("Select department first")
+                          : t("Select approver")
+                      } />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {getCustomerScopedUsers()
+                        .filter((u) => u.id !== newPolicy.assigneeId)
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
 
@@ -1721,6 +1748,12 @@ export default function GovernancePage() {
                     <Label className="text-slate-500 text-sm">{t("Assignee")}</Label>
                     <p className="font-medium text-slate-900">
                       {getCustomerScopedUsers().find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-500 text-sm">{t("Approver")}</Label>
+                    <p className="font-medium text-slate-900">
+                      {getCustomerScopedUsers().find((u) => u.id === newPolicy.approverId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>

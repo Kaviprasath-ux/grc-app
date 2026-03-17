@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
-import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
+import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 import { translateRecord } from "@/lib/translation-service";
 
 // GET all QPost evidences with filters - filtered by customer account and department for department roles
@@ -23,12 +23,16 @@ export const GET = withAuth(
       const where: Record<string, unknown> = { ...tenantFilter };
 
       // Department-based filtering for DepartmentContributor and DepartmentReviewer roles
-      // These roles should only see evidence assigned to their department
+      // These roles should see evidence in their department OR assigned/approved by them
       const isDepartmentRole = session.roles.some(role =>
         ['DepartmentContributor', 'DepartmentReviewer'].includes(role)
       );
       if (isDepartmentRole && session.departmentId) {
-        where.departmentId = session.departmentId;
+        where.OR = [
+          { departmentId: session.departmentId },
+          { assigneeId: session.id },
+          { approverId: session.id },
+        ];
       } else if (departmentId) {
         // For other roles, apply departmentId filter from query params if provided
         where.departmentId = departmentId;
@@ -107,6 +111,7 @@ export const POST = withAuth(
         frameworkId,
         departmentId,
         assigneeId,
+        approverId,
         dueDate,
         reviewDate,
         recurrence,
@@ -143,6 +148,7 @@ export const POST = withAuth(
           frameworkId,
           departmentId,
           assigneeId,
+          approverId,
           dueDate: dueDate ? new Date(dueDate) : null,
           reviewDate: reviewDate ? new Date(reviewDate) : null,
           recurrence,
@@ -195,6 +201,26 @@ export const POST = withAuth(
           evidenceName: evidence.name,
           channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
         });
+      }
+
+      // Notify approver if set and different from creator
+      if (approverId && approverId !== session?.id && session?.customerAccountId) {
+        try {
+          void notificationService.send({
+            customerAccountId: session.customerAccountId,
+            actorId: session.id,
+            recipientId: approverId,
+            event: NOTIFICATION_EVENTS.GOVERNANCE_SUBMIT_FOR_APPROVAL,
+            title: "Evidence Approver Assigned",
+            message: `You have been assigned as approver for evidence "${evidence.name}"`,
+            link: `/qpost-compliance/evidence/${evidence.id}`,
+            relatedEntityType: "evidence",
+            relatedEntityId: evidence.id,
+            channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
+          });
+        } catch (notifError) {
+          console.error("Error sending approver notification:", notifError);
+        }
       }
 
       return NextResponse.json(evidence, { status: 201 });
