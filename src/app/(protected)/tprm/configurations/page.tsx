@@ -646,7 +646,7 @@ function VendorOnboardingSection() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : (
-            <DataGrid columns={pfColumns} data={profileFields.map(f => f.isSystem ? f : (translatedProfileFields.find(tf => tf.id === f.id) || f))} />
+            <DataGrid columns={pfColumns} data={profileFields.map(f => f.isSystem ? f : (translatedProfileFields.find(tf => tf.id === f.id) || f))} searchPlaceholder={t("Search...")} />
           )}
         </TabsContent>
 
@@ -669,7 +669,7 @@ function VendorOnboardingSection() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : (
-            <DataGrid columns={obColumns} data={translatedObQuestions} />
+            <DataGrid columns={obColumns} data={translatedObQuestions} searchPlaceholder={t("Search...")} />
           )}
 
           {/* VRR Reference Table — fetched dynamically from Control Center */}
@@ -976,7 +976,7 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <DataGrid columns={columns} data={filteredItems} />
+        <DataGrid columns={columns} data={filteredItems} hideSearch />
       )}
 
       <div className="mt-2 text-xs text-muted-foreground">
@@ -1304,6 +1304,18 @@ function QuestionnaireManagementSection() {
         const impRes = await fetch("/api/tprm/master-data/questions-import", { method: "POST", body: fd });
         if (impRes.ok) {
           const impData = await impRes.json();
+          // Trigger translation for each imported question
+          if (impData.questions && impData.questions.length > 0) {
+            impData.questions.forEach((q: { id: string; questionText: string; evidence: string | null; issue: string | null; risk: string | null; recommendation: string | null }) => {
+              triggerTranslation('TPRMMasterQuestion', q.id, {
+                questionText: q.questionText,
+                evidence: q.evidence,
+                issue: q.issue,
+                risk: q.risk,
+                recommendation: q.recommendation,
+              });
+            });
+          }
           toast({ title: t("Success"), description: `${t("Template created")}. ${impData.created} ${t("questions imported")}.` });
         } else {
           toast({ title: t("Success"), description: t("Template created but question import had errors") });
@@ -1805,7 +1817,7 @@ function QuestionnaireManagementSection() {
             <p className="text-sm mt-1">{t("Click Add to create a new question or Link Existing to add from the master question bank")}</p>
           </div>
         ) : (
-          <DataGrid columns={qColumns} data={links} />
+          <DataGrid columns={qColumns} data={links} searchPlaceholder={t("Search...")} />
         )}
 
         {renderQuestionDialog()}
@@ -1894,7 +1906,7 @@ function QuestionnaireManagementSection() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <DataGrid columns={templateColumns} data={translatedTemplates} />
+        <DataGrid columns={templateColumns} data={translatedTemplates} searchPlaceholder={t("Search...")} />
       )}
 
       {/* 3-Step Wizard Dialog */}
@@ -2379,7 +2391,7 @@ function OffboardingSection() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <DataGrid columns={columns} data={translatedQuestions} />
+        <DataGrid columns={columns} data={translatedQuestions} searchPlaceholder={t("Search...")} />
       )}
 
       {/* Add/Edit Dialog */}

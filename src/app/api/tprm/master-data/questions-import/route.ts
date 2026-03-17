@@ -109,7 +109,7 @@ export const POST = withAuth(
       });
       let nextSort = (maxOrder._max.sortOrder || 0) + 1;
 
-      const createdQuestionIds: string[] = [];
+      const createdQuestions: { id: string; questionText: string; evidence: string | null; issue: string | null; risk: string | null; recommendation: string | null }[] = [];
       const errors: { row: number; message: string }[] = [];
 
       // Process data rows (skip header)
@@ -166,7 +166,7 @@ export const POST = withAuth(
               severity: getStr(getCell(row, 'severity')) || null,
             },
           });
-          createdQuestionIds.push(question.id);
+          createdQuestions.push({ id: question.id, questionText: question.questionText, evidence: question.evidence, issue: question.issue, risk: question.risk, recommendation: question.recommendation });
         } catch (err) {
           console.error(`Questions import DB error at row ${rowNum}:`, err);
           errors.push({ row: rowNum, message: 'Failed to save question. Please check the data and try again.' });
@@ -175,7 +175,7 @@ export const POST = withAuth(
 
       // Link to template if provided
       let linked = 0;
-      if (templateId && createdQuestionIds.length > 0) {
+      if (templateId && createdQuestions.length > 0) {
         const maxLinkOrder = await prisma.tPRMQuestionnaireQuestion.aggregate({
           where: { customerAccountId, templateId },
           _max: { sortOrder: true },
@@ -183,22 +183,23 @@ export const POST = withAuth(
         let linkSort = (maxLinkOrder._max.sortOrder || 0) + 1;
 
         await prisma.tPRMQuestionnaireQuestion.createMany({
-          data: createdQuestionIds.map((qId) => ({
+          data: createdQuestions.map((q) => ({
             customerAccountId,
             templateId,
-            questionId: qId,
+            questionId: q.id,
             sortOrder: linkSort++,
           })),
         });
-        linked = createdQuestionIds.length;
+        linked = createdQuestions.length;
       }
 
       return NextResponse.json({
-        created: createdQuestionIds.length,
+        created: createdQuestions.length,
         linked,
         errors,
         totalRows: jsonData.length - 1,
-        validRows: createdQuestionIds.length,
+        validRows: createdQuestions.length,
+        questions: createdQuestions,
       });
     } catch (error) {
       console.error('Question import error:', error);
