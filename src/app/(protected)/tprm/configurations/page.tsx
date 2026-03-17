@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Plus, Pencil, Trash2, ChevronRight, Home, Eye, Link2,
   ClipboardList, FolderTree, Building2, BookOpen, FileQuestion,
@@ -1108,6 +1108,32 @@ function QuestionnaireManagementSection() {
   const [domains, setDomains] = useState<DomainItem[]>([]);
   const [allMasterQuestions, setAllMasterQuestions] = useState<MasterQuestionFull[]>([]);
 
+  // Translate master questions linked to the selected template
+  const templateQuestions = useMemo(() =>
+    (templateData?.masterQuestionLinks || []).map(l => l.question),
+    [templateData]
+  );
+  const { data: translatedTemplateQuestions } = useTranslatedData(templateQuestions, { modelName: 'TPRMMasterQuestion' });
+
+  // Translate domains used in questions
+  const templateDomains = useMemo(() => {
+    const seen = new Set<string>();
+    return (templateData?.masterQuestionLinks || [])
+      .map(l => l.question.domain)
+      .filter((d): d is { id: string; name: string } => !!d && !seen.has(d.id) && (seen.add(d.id), true));
+  }, [templateData]);
+  const { data: translatedDomains } = useTranslatedData(templateDomains, { modelName: 'TPRMDomain' });
+
+  const translatedLinks = useMemo(() => {
+    if (!templateData?.masterQuestionLinks) return [];
+    return templateData.masterQuestionLinks.map(link => {
+      const tq = translatedTemplateQuestions.find(q => q.id === link.question.id);
+      const td = link.question.domain ? translatedDomains.find(d => d.id === link.question.domain!.id) : null;
+      const question = { ...link.question, ...(tq || {}), ...(td ? { domain: { ...link.question.domain!, name: td.name } } : {}) };
+      return { ...link, question };
+    });
+  }, [templateData, translatedTemplateQuestions, translatedDomains]);
+
   // ---- Question dialog ----
   const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
   const [editQuestionLink, setEditQuestionLink] = useState<TemplateQuestion | null>(null);
@@ -1306,9 +1332,10 @@ function QuestionnaireManagementSection() {
           const impData = await impRes.json();
           // Trigger translation for each imported question
           if (impData.questions && impData.questions.length > 0) {
-            impData.questions.forEach((q: { id: string; questionText: string; evidence: string | null; issue: string | null; risk: string | null; recommendation: string | null }) => {
+            impData.questions.forEach((q: { id: string; questionText: string; verifaiPrompt: string | null; evidence: string | null; issue: string | null; risk: string | null; recommendation: string | null }) => {
               triggerTranslation('TPRMMasterQuestion', q.id, {
                 questionText: q.questionText,
+                verifaiPrompt: q.verifaiPrompt,
                 evidence: q.evidence,
                 issue: q.issue,
                 risk: q.risk,
@@ -1721,8 +1748,8 @@ function QuestionnaireManagementSection() {
   // ========== QUESTIONS SUB-VIEW ==========
 
   if (subView === "questions" && selectedTemplateId) {
-    const tmpl = templates.find((x) => x.id === selectedTemplateId);
-    const links = templateData?.masterQuestionLinks || [];
+    const tmpl = translatedTemplates.find((x) => x.id === selectedTemplateId);
+    const links = translatedLinks;
 
     const qColumns: ColumnDef<TemplateQuestion>[] = [
       {

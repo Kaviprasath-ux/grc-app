@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import * as XLSX from 'xlsx';
+import { translateRecord } from '@/lib/translation-service';
 
 // Each field can match multiple possible column header names (case-insensitive)
 const COLUMN_ALIASES: Record<string, { aliases: string[]; required: boolean }> = {
@@ -109,7 +110,7 @@ export const POST = withAuth(
       });
       let nextSort = (maxOrder._max.sortOrder || 0) + 1;
 
-      const createdQuestions: { id: string; questionText: string; evidence: string | null; issue: string | null; risk: string | null; recommendation: string | null }[] = [];
+      const createdQuestions: { id: string; questionText: string; verifaiPrompt: string | null; evidence: string | null; issue: string | null; risk: string | null; recommendation: string | null }[] = [];
       const errors: { row: number; message: string }[] = [];
 
       // Process data rows (skip header)
@@ -141,6 +142,10 @@ export const POST = withAuth(
             domainCache.set(key, newDomain.id);
             domainId = newDomain.id;
           }
+          // Translate domain (new or existing)
+          if (customerAccountId && domainId) {
+            void translateRecord(customerAccountId, 'TPRMDomain', domainId, { name: domainName });
+          }
         }
 
         const seqStr = getStr(getCell(row, 'seqNo'));
@@ -166,7 +171,7 @@ export const POST = withAuth(
               severity: getStr(getCell(row, 'severity')) || null,
             },
           });
-          createdQuestions.push({ id: question.id, questionText: question.questionText, evidence: question.evidence, issue: question.issue, risk: question.risk, recommendation: question.recommendation });
+          createdQuestions.push({ id: question.id, questionText: question.questionText, verifaiPrompt: question.verifaiPrompt, evidence: question.evidence, issue: question.issue, risk: question.risk, recommendation: question.recommendation });
         } catch (err) {
           console.error(`Questions import DB error at row ${rowNum}:`, err);
           errors.push({ row: rowNum, message: 'Failed to save question. Please check the data and try again.' });
@@ -191,6 +196,20 @@ export const POST = withAuth(
           })),
         });
         linked = createdQuestions.length;
+      }
+
+      // Trigger server-side translation for each imported question
+      if (customerAccountId) {
+        for (const q of createdQuestions) {
+          void translateRecord(customerAccountId, 'TPRMMasterQuestion', q.id, {
+            questionText: q.questionText,
+            ...(q.verifaiPrompt && { verifaiPrompt: q.verifaiPrompt }),
+            ...(q.evidence && { evidence: q.evidence }),
+            ...(q.issue && { issue: q.issue }),
+            ...(q.risk && { risk: q.risk }),
+            ...(q.recommendation && { recommendation: q.recommendation }),
+          });
+        }
       }
 
       return NextResponse.json({
