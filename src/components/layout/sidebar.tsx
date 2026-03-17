@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { navigation, filterNavigationByPermissionsAndRole, type NavItem } from "@/lib/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLogo } from "@/contexts/LogoContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -219,6 +220,7 @@ function NavItemComponent({ item, depth = 0, collapsed = false, onNavigate, onEx
 export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: SidebarProps) {
   const { data: session, status } = useSession();
   const { t, isRTL } = useLanguage();
+  const { logoUrl } = useLogo();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const filteredNavigation = useMemo(() => {
@@ -260,8 +262,8 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
           }
           className="flex items-center gap-3 group shrink-0"
         >
-          {session?.user?.customerLogoUrl ? (
-            <img src={session.user.customerLogoUrl} alt={session.user.customerAccountName || "Logo"} className={collapsed ? "h-9 w-9 rounded object-cover shrink-0" : "h-10 max-w-[180px] object-contain shrink-0"} />
+          {logoUrl ? (
+            <img src={logoUrl} alt={session.user.customerAccountName || "Logo"} className={collapsed ? "h-9 w-9 rounded object-cover shrink-0" : "h-10 max-w-[180px] object-contain shrink-0"} />
           ) : (
             <>
               <img src="/logo 3.png" alt="Platform" className="h-6 w-6 object-contain shrink-0" />

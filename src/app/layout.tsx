@@ -3,6 +3,8 @@ import { SessionProvider } from "next-auth/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LogoProvider } from "@/contexts/LogoContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,7 +22,11 @@ export default function RootLayout({
       <body className="antialiased" suppressHydrationWarning>
         <SessionProvider refetchOnWindowFocus={false}>
           <LanguageProvider>
-            {children}
+            <ThemeProvider>
+              <LogoProvider>
+                {children}
+              </LogoProvider>
+            </ThemeProvider>
           </LanguageProvider>
         </SessionProvider>
         <Toaster />

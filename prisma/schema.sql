@@ -9,6 +9,7 @@ CREATE TABLE "CustomerAccount" (
     "isTprmAdded" BOOLEAN NOT NULL DEFAULT false,
     "isQpostComplianceEnabled" BOOLEAN NOT NULL DEFAULT false,
     "emailNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "theme" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

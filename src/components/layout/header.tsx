@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw, PanelLeftClose, PanelLeftOpen, MessageCircleQuestion } from "lucide-react";
+import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw, PanelLeftClose, PanelLeftOpen, MessageCircleQuestion, Palette } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -21,6 +21,9 @@ import { ar, lv, enUS } from "date-fns/locale";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Locale } from "@/i18n/config";
 import { useNotifications, getNotificationStyle, Notification } from "@/hooks/useNotifications";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useLogo } from "@/contexts/LogoContext";
+import { useHasRole } from "@/hooks/usePermissions";
 import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 import {
   AlertDialog,
@@ -74,6 +77,11 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const dateFnsLocale = dateFnsLocales[locale] || enUS;
+
+  // Theme (only for CustomerAdministrator)
+  const { theme, setTheme, themeOptions } = useTheme();
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
+  const { logoUrl } = useLogo();
 
   // Translate current user name
   const userRecord = session?.user?.id ? { id: session.user.id, fullName: session.user.name || "" } : null;
@@ -174,8 +182,8 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
           href={session?.user?.roles?.includes("GRCAdministrator") ? "/grc" : "/dashboard"}
           className="flex items-center gap-2 xl:hidden"
         >
-          {session?.user?.customerLogoUrl ? (
-            <img src={session.user.customerLogoUrl} alt={session.user.customerAccountName || "Logo"} className="h-10 max-w-[180px] object-contain" />
+          {logoUrl ? (
+            <img src={logoUrl} alt={session.user.customerAccountName || "Logo"} className="h-10 max-w-[180px] object-contain" />
           ) : (
             <img src="/logo 3.png" alt="GRC Platform" className="h-8 w-8 object-contain" />
           )}
@@ -208,6 +216,49 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
       <div className="flex items-center gap-2">
         {/* Global Search */}
         <GlobalSearch />
+
+        {/* Theme Picker — Customer Administrator only */}
+        {isCustomerAdmin && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden md:flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-2"
+                title={t("Color Theme")}
+              >
+                <Palette className="h-4 w-4" />
+                <span
+                  className="h-3.5 w-3.5 rounded-full border border-slate-300"
+                  style={{ backgroundColor: themeOptions.find(o => o.id === theme)?.color || "#A57865" }}
+                />
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 max-h-72 overflow-y-auto">
+              <DropdownMenuLabel className="text-xs text-slate-500 font-medium">
+                {t("Color Theme")}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {themeOptions.map((opt) => (
+                <DropdownMenuItem
+                  key={opt.id}
+                  className="flex items-center justify-between gap-2 cursor-pointer"
+                  onClick={() => setTheme(opt.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="h-4 w-4 rounded-full border border-slate-200"
+                      style={{ backgroundColor: opt.color }}
+                    />
+                    <span className="text-sm">{t(opt.name)}</span>
+                  </div>
+                  {theme === opt.id && <Check className="h-4 w-4 text-primary-500" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* Language Selector */}
         <DropdownMenu>

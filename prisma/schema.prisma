@@ -25,6 +25,7 @@ model CustomerAccount {
   isTprmAdded            Boolean                  @default(false) // Whether this account was onboarded via TPRM
   isQpostComplianceEnabled Boolean                @default(false) // Whether this account uses QPost Compliance module
   emailNotificationsEnabled Boolean               @default(true) // Toggle for non-mandatory email notifications
+  theme                    String?                  // Color theme chosen by Customer Admin (e.g., terracotta, ocean, forest, royal, slate, crimson)
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   // Relations - all data belonging to this customer

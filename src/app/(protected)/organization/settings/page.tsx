@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, ChevronRight, Home, Package, Mail, Globe } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, ChevronRight, Home, Package, Mail, Globe, ImageIcon, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { Switch } from "@/components/ui/switch";
 import { isValidName } from "@/lib/validations";
+import { useLogo } from "@/contexts/LogoContext";
 
 interface SettingItem {
   id: string;
@@ -103,6 +104,62 @@ export default function OrganizationSettingsPage() {
   // Email notifications toggle state
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
   const [emailToggleLoading, setEmailToggleLoading] = useState(false);
+
+  // Company logo — shared context so sidebar/header update instantly
+  const { logoUrl, refreshLogo } = useLogo();
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side validation
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: t("Error"), description: t("Only JPEG, PNG, GIF, WebP, and SVG files are allowed"), variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: t("Error"), description: t("File too large. Maximum size is 5MB"), variant: "destructive" });
+      return;
+    }
+
+    setLogoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("logo", file);
+      const res = await fetch("/api/settings/logo", { method: "POST", body: formData });
+      if (res.ok) {
+        await refreshLogo(); // Updates sidebar/header instantly via shared context
+        toast({ title: t("Success"), description: t("Logo updated successfully") });
+      } else {
+        const err = await res.json();
+        toast({ title: t("Error"), description: err.error || t("Failed to upload logo"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to upload logo"), variant: "destructive" });
+    }
+    setLogoUploading(false);
+    // Reset file input
+    if (logoInputRef.current) logoInputRef.current.value = "";
+  };
+
+  const handleLogoRemove = async () => {
+    setLogoUploading(true);
+    try {
+      const res = await fetch("/api/settings/logo", { method: "DELETE" });
+      if (res.ok) {
+        await refreshLogo(); // Updates sidebar/header instantly via shared context
+        toast({ title: t("Success"), description: t("Logo removed successfully") });
+      } else {
+        toast({ title: t("Error"), description: t("Failed to remove logo"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to remove logo"), variant: "destructive" });
+    }
+    setLogoUploading(false);
+  };
 
   // Dialog states
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
@@ -566,6 +623,62 @@ export default function OrganizationSettingsPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Organization Settings")}</h1>
+      </div>
+
+      {/* Company Logo Card */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2.5 bg-primary-50 rounded-xl">
+            <ImageIcon className="h-5 w-5 text-primary-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800">{t("Company Logo")}</h3>
+            <p className="text-xs text-slate-500">{t("Upload your organization logo")}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-5">
+          {/* Logo Preview */}
+          <div className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center bg-slate-50 overflow-hidden flex-shrink-0">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Company Logo" className="h-full w-full object-contain p-1" />
+            ) : (
+              <ImageIcon className="h-8 w-8 text-slate-300" />
+            )}
+          </div>
+          {/* Actions */}
+          <div className="flex flex-col gap-2">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={logoUploading}
+              className="gap-2"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {logoUrl ? t("Change Logo") : t("Upload Logo")}
+            </Button>
+            {logoUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogoRemove}
+                disabled={logoUploading}
+                className="gap-2 text-slate-500 hover:text-red-600 hover:bg-red-50"
+              >
+                <X className="h-3.5 w-3.5" />
+                {t("Remove Logo")}
+              </Button>
+            )}
+            <p className="text-[11px] text-slate-400">{t("JPEG, PNG, GIF, WebP, SVG. Max 5MB")}</p>
+          </div>
+        </div>
       </div>
 
       {/* Settings Card Grid */}
