@@ -263,7 +263,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
           className="flex items-center gap-3 group shrink-0"
         >
           {logoUrl ? (
-            <img src={logoUrl} alt={session.user.customerAccountName || "Logo"} className={collapsed ? "h-9 w-9 rounded object-cover shrink-0" : "h-10 max-w-[180px] object-contain shrink-0"} />
+            <img src={logoUrl} alt={session?.user?.customerAccountName || "Logo"} className={collapsed ? "h-9 w-9 rounded object-cover shrink-0" : "h-10 max-w-[180px] object-contain shrink-0"} />
           ) : (
             <>
               <img src="/logo 3.png" alt="Platform" className="h-6 w-6 object-contain shrink-0" />
