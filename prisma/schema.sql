@@ -2432,6 +2432,7 @@ CREATE TABLE "TPRMVendor" (
     "businessJustification" TEXT,
     "vendorCertification" TEXT,
     "vendorUrl" TEXT,
+    "password" TEXT,
     "onboardedDate" TIMESTAMP(3),
     "offboardedDate" TIMESTAMP(3),
     "contractDocumentName" TEXT,

@@ -186,6 +186,7 @@ export const POST = withAuth(
           engagementId,
           vendorCertification: body.vendorCertification,
           vendorUrl: body.vendorUrl || null,
+          password: body.password || null,
           businessJustification: body.businessJustification,
           accessToNetwork: body.accessToNetwork ?? false,
           cloud: body.cloud ?? false,

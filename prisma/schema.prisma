@@ -3427,6 +3427,7 @@ model TPRMVendor {
   businessJustification String?       @db.Text
   vendorCertification String?
   vendorUrl           String?
+  password            String?
   onboardedDate       DateTime?
   offboardedDate      DateTime?
   contractDocumentName String?

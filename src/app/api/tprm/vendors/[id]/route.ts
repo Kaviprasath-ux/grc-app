@@ -77,6 +77,7 @@ export const PATCH = withAuth<RouteContext>(
           engagementId: body.engagementId,
           vendorCertification: body.vendorCertification,
           vendorUrl: body.vendorUrl,
+          password: body.password,
           businessJustification: body.businessJustification,
           accessToNetwork: body.accessToNetwork,
           cloud: body.cloud,

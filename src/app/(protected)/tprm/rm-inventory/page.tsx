@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Home, ChevronRight, Search, Plus, Minus, Download, MoreHorizontal,
   Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X, Check, Info, Play, AlertTriangle,
@@ -263,6 +262,8 @@ export default function RMInventoryPage() {
   }, [translatedServiceCategories, rawServiceCategories]);
   const [customProfileFields, setCustomProfileFields] = useState<ProfileField[]>([]);
   const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
+  const { data: translatedProfileFields } = useTranslatedData(customProfileFields, { modelName: 'TPRMVendorProfileField' });
+  const { data: translatedOnboardingQuestions } = useTranslatedData(onboardingQuestions, { modelName: 'TPRMOnboardingQuestion' });
   const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number }[]>([]);
 
   // ── Form state ─────────────────────────────────────
@@ -270,7 +271,8 @@ export default function RMInventoryPage() {
   const [serviceCategory, setServiceCategory] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
   const [vendorUrl, setVendorUrl] = useState("");
-  const [performMonitoring, setPerformMonitoring] = useState(false);
+  const [vendorPassword, setVendorPassword] = useState("");
+  const [vendorConfirmPassword, setVendorConfirmPassword] = useState("");
   const [managers, setManagers] = useState<AccountManager[]>([{ ...emptyManager }]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [profileAnswers, setProfileAnswers] = useState<Record<string, string>>({});
@@ -434,7 +436,8 @@ export default function RMInventoryPage() {
     setServiceCategory("");
     setServiceDescription("");
     setVendorUrl("");
-    setPerformMonitoring(false);
+    setVendorPassword("");
+    setVendorConfirmPassword("");
     setManagers([{ ...emptyManager }]);
     setFormErrors({});
     setProfileAnswers({});
@@ -451,10 +454,16 @@ export default function RMInventoryPage() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
     if (!vendorName.trim()) errors.vendorName = t("Vendor name is required");
+    if (!vendorUrl.trim()) errors.vendorUrl = t("Vendor URL is required");
+    if (vendorUrl.trim() && !/^https?:\/\/.+\..+/.test(vendorUrl.trim())) errors.vendorUrl = t("Invalid URL format");
+    if (!vendorPassword.trim()) errors.vendorPassword = t("Password is required");
+    if (!vendorConfirmPassword.trim()) errors.vendorConfirmPassword = t("Confirm password is required");
+    if (vendorPassword && vendorConfirmPassword && vendorPassword !== vendorConfirmPassword) errors.vendorConfirmPassword = t("Passwords do not match");
+    if (!serviceCategory) errors.serviceCategory = t("Service category is required");
     managers.forEach((m, i) => {
-      if (m.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email)) {
-        errors[`manager_${i}_email`] = t("Invalid email format");
-      }
+      if (!m.name.trim()) errors[`manager_${i}_name`] = t("Account manager name is required");
+      if (!m.email.trim()) errors[`manager_${i}_email`] = t("Account manager email is required");
+      if (m.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email)) errors[`manager_${i}_email`] = t("Invalid email format");
     });
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -483,6 +492,7 @@ export default function RMInventoryPage() {
       serviceCategory: serviceCategory || null,
       serviceDescription: serviceDescription || null,
       vendorUrl: vendorUrl.trim() || null,
+      password: vendorPassword || null,
       onboardingAnswers: questionAnswers,
     };
   };
@@ -525,14 +535,6 @@ export default function RMInventoryPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ vrr: vrrLabel }),
         });
-        // Trigger monitoring assessment if toggle is on and vendor URL is provided
-        if (performMonitoring && vendorUrl.trim()) {
-          void fetch("/api/tprm/monitoring/scan", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ vendorName: vendorName.trim(), vendorUrl: vendorUrl.trim() }),
-          });
-        }
         triggerTranslation('TPRMVendor', created.id, { name: vendorName.trim(), serviceCategory: serviceCategory || undefined });
         setCreatedVendorName(vendorName.trim());
         setCreatedVendorId(created.id);
@@ -617,7 +619,8 @@ export default function RMInventoryPage() {
     setServiceCategory(vendor.serviceCategory || "");
     setServiceDescription(vendor.serviceDescription || "");
     setVendorUrl(vendor.vendorUrl || "");
-    setPerformMonitoring(false);
+    setVendorPassword("");
+    setVendorConfirmPassword("");
     setManagers(parseManagers(vendor));
     setFormErrors({});
     setProfileAnswers({});
@@ -907,6 +910,13 @@ export default function RMInventoryPage() {
           )}
         </div>
 
+        {/* Vendor URL */}
+        <div className="space-y-1.5">
+          <Label>{t("Vendor URL")} *</Label>
+          <Input value={vendorUrl} onChange={(e) => setVendorUrl(e.target.value)} placeholder={t("e.g. https://vendor-website.com")} />
+          {formErrors.vendorUrl && <p className="text-xs text-red-500">{formErrors.vendorUrl}</p>}
+        </div>
+
         {/* Engagement selector — shown only when existing vendor is selected */}
         {isExistingVendor && existingEngagements.length > 0 && (
           <div className="space-y-1.5 relative">
@@ -949,15 +959,16 @@ export default function RMInventoryPage() {
             )}
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-1.5">
-                <Label>{t("Account Manager Name")}</Label>
+                <Label>{t("Account Manager Name")} *</Label>
                 <Input value={manager.name} onChange={(e) => updateManager(index, "name", e.target.value)} placeholder={t("Enter account manager name")} />
+                {formErrors[`manager_${index}_name`] && <p className="text-xs text-red-500">{formErrors[`manager_${index}_name`]}</p>}
               </div>
               {index === 0 && (
                 <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={addManager}><Plus className="h-4 w-4" /></Button>
               )}
             </div>
             <div className="space-y-1.5">
-              <Label>{t("Account Manager Email")}</Label>
+              <Label>{t("Account Manager Email")} *</Label>
               <Input type="email" value={manager.email} onChange={(e) => updateManager(index, "email", e.target.value)} placeholder={t("Enter account manager email")} />
               {formErrors[`manager_${index}_email`] && <p className="text-xs text-red-500">{formErrors[`manager_${index}_email`]}</p>}
             </div>
@@ -968,15 +979,30 @@ export default function RMInventoryPage() {
           </div>
         ))}
 
+        {/* Password */}
+        <div className="space-y-1.5">
+          <Label>{t("Password")} *</Label>
+          <Input type="password" value={vendorPassword} onChange={(e) => setVendorPassword(e.target.value)} placeholder={t("Enter password")} />
+          {formErrors.vendorPassword && <p className="text-xs text-red-500">{formErrors.vendorPassword}</p>}
+        </div>
+
+        {/* Confirm Password */}
+        <div className="space-y-1.5">
+          <Label>{t("Confirm Password")} *</Label>
+          <Input type="password" value={vendorConfirmPassword} onChange={(e) => setVendorConfirmPassword(e.target.value)} placeholder={t("Confirm password")} />
+          {formErrors.vendorConfirmPassword && <p className="text-xs text-red-500">{formErrors.vendorConfirmPassword}</p>}
+        </div>
+
         {/* Service Category */}
         <div className="space-y-1.5">
-          <Label>{t("Service Category")}</Label>
+          <Label>{t("Service Category")} *</Label>
           <Select value={serviceCategory} onValueChange={setServiceCategory}>
             <SelectTrigger><SelectValue placeholder={t("Select category")} /></SelectTrigger>
             <SelectContent>
               {serviceCategories.map((cat) => <SelectItem key={cat} value={cat}>{t(cat)}</SelectItem>)}
             </SelectContent>
           </Select>
+          {formErrors.serviceCategory && <p className="text-xs text-red-500">{formErrors.serviceCategory}</p>}
         </div>
 
         {/* Service Description */}
@@ -985,23 +1011,12 @@ export default function RMInventoryPage() {
           <Textarea value={serviceDescription} onChange={(e) => setServiceDescription(e.target.value)} placeholder={t("Describe the services provided")} rows={3} />
         </div>
 
-        {/* Vendor URL */}
-        <div className="space-y-1.5">
-          <Label>{t("Vendor URL")}</Label>
-          <Input value={vendorUrl} onChange={(e) => setVendorUrl(e.target.value)} placeholder={t("e.g. https://vendor-website.com")} />
-        </div>
-
-        {/* Perform Monitoring Assessment Toggle */}
-        <div className="flex items-center gap-3 pt-2">
-          <Switch checked={performMonitoring} onCheckedChange={setPerformMonitoring} />
-          <Label className="text-sm">{t("Perform Monitoring Assessment")}</Label>
-        </div>
       </div>
 
       {/* ══ Section 2: Vendor Profile Fields (Added by Admin) ══ */}
-      {customProfileFields.length > 0 && (
+      {translatedProfileFields.length > 0 && (
         <div className="space-y-3">
-          {customProfileFields.map((field) => (
+          {translatedProfileFields.map((field) => (
             <div key={field.id} className="space-y-1.5">
               <Label>{field.fieldName}</Label>
               <Input
@@ -1015,9 +1030,9 @@ export default function RMInventoryPage() {
       )}
 
       {/* ══ Section 3: Onboarding Questions ══ */}
-      {onboardingQuestions.length > 0 && (
+      {translatedOnboardingQuestions.length > 0 && (
         <div className="space-y-3">
-          {onboardingQuestions.map((q) => (
+          {translatedOnboardingQuestions.map((q) => (
             <div key={q.id} className="space-y-2">
               <div className="space-y-1.5">
                 <Label>{q.title}</Label>
