@@ -667,6 +667,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.asr-assessment-factory', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-template', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-support', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['view', 'edit'], scope: 'all' },
   ],
 
   // TPRM Approver - Same workspace as Assessor (no task-queue/assessments workspace)
@@ -680,6 +681,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.asr-assessment-factory', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-template', actions: ['*'], scope: 'all' },
     { resource: 'tprm.asr-support', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['view', 'edit', 'approve'], scope: 'all' },
   ],
 
   // TPRM Auditor - Read-only access to all assessor pages except Assessment Factory
@@ -694,6 +696,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.asr-support', actions: ['view'], scope: 'all' },
     { resource: 'tprm.asr-factory-reports', actions: ['view'], scope: 'all' },
     { resource: 'tprm.reports', actions: ['view'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['view'], scope: 'all' },
   ],
 
   // Internal IT Team - IT-assigned issue management
@@ -707,6 +710,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.am-follow-ups', actions: ['*'], scope: 'all' },
     { resource: 'tprm.am-sme-management', actions: ['*'], scope: 'all' },
     { resource: 'tprm.am-support', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['view', 'edit'], scope: 'all' },
   ],
 
   // SME - Same as Account Manager but without SME Management page
@@ -714,6 +718,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.am-assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.am-follow-ups', actions: ['*'], scope: 'all' },
     { resource: 'tprm.am-support', actions: ['*'], scope: 'all' },
+    { resource: 'tprm.assessments', actions: ['view'], scope: 'all' },
   ],
 };
 
