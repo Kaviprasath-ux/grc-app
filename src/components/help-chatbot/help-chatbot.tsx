@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircleQuestion, Send, Trash2, X } from "lucide-react";
+import { Bot, MessageCircleQuestion, Send, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHelpChatbot } from "@/hooks/useHelpChatbot";
@@ -33,6 +33,9 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
     moduleArticles,
     modulesWithCounts,
     pageSuggestions,
+    agentMode,
+    setAgentMode,
+    confirmUpdate,
   } = useHelpChatbot({ isOpen, onOpenChange });
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -103,6 +106,20 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => setAgentMode(!agentMode)}
+              className={cn(
+                "h-7 w-7 rounded-full transition-colors",
+                agentMode
+                  ? "text-yellow-300 bg-yellow-500/20 hover:bg-yellow-500/30"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
+              )}
+              title={agentMode ? t("Agent Mode ON - Can update records") : t("Enable Agent Mode")}
+            >
+              <Bot className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={clearChat}
               className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10 rounded-full"
               title={t("Clear chat")}
@@ -139,7 +156,11 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
               blocked={msg.blocked}
               isRAG={msg.isRAG}
               isDataQuery={msg.isDataQuery}
+              isAgentUpdate={msg.isAgentUpdate}
+              pendingUpdateId={msg.pendingUpdateId}
+              executed={msg.executed}
               onSelectArticle={selectArticle}
+              onConfirmUpdate={confirmUpdate}
             />
           ))}
 

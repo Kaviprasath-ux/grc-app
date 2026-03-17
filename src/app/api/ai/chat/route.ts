@@ -20,6 +20,7 @@ import { routeQuery, getGeneralChatResponse } from "@/lib/chatbot/query-router";
 import { searchKB, isKBSeeded, seedKBEmbeddings } from "@/lib/chatbot/kb-embeddings";
 import { getNoResultsResponse } from "@/lib/chatbot/answer-generator";
 import { processDataQuery } from "@/lib/chatbot/data-query-engine";
+import { processAgentUpdate, executeConfirmedUpdate } from "@/lib/chatbot/agent-update-engine";
 import { generateReflectiveAnswer } from "@/lib/chatbot/self-reflect";
 import type { ProductFlags } from "@/lib/help-search";
 import {
@@ -33,6 +34,8 @@ import { helpArticles } from "@/data/help-knowledge-base";
 interface ChatRequest {
   query: string;
   conversationHistory?: { role: "user" | "bot"; content: string }[];
+  agentMode?: boolean;
+  confirmUpdateId?: string;
 }
 
 // ==================== HELPERS ====================
@@ -78,6 +81,29 @@ export const POST = withAuthOnly(
       const body = (await req.json()) as ChatRequest;
       query = (body.query || "").trim();
       const conversationHistory = body.conversationHistory || [];
+      const agentMode = body.agentMode || false;
+      const confirmUpdateId = body.confirmUpdateId;
+
+      if (agentMode) {
+        console.log("[AI Chat] Agent mode is ON");
+      }
+
+      // Handle update confirmation (user clicked "Yes" on a pending update)
+      if (confirmUpdateId) {
+        const updateResult = await executeConfirmedUpdate(confirmUpdateId, userId);
+        responseContent = updateResult.content;
+        tokensUsed = updateResult.tokensUsed;
+        intent = "agent_update";
+
+        return NextResponse.json({
+          answer: responseContent,
+          sources: [],
+          confidence: "high",
+          intent,
+          isAgentUpdate: true,
+          executed: updateResult.executed || false,
+        });
+      }
 
       if (!query) {
         return NextResponse.json({ error: "Query is required" }, { status: 400 });
@@ -148,8 +174,30 @@ export const POST = withAuthOnly(
       // ═══════════════════════════════════════════════════════════════
       // LAYER 3: QUERY ROUTING
       // ═══════════════════════════════════════════════════════════════
-      const routeResult = await routeQuery(processedQuery, conversationHistory);
+      const routeResult = await routeQuery(processedQuery, conversationHistory, agentMode);
       intent = routeResult.intent;
+      console.log(`[AI Chat] Routed to: ${intent} (confidence: ${routeResult.confidence}, agentMode: ${agentMode})`);
+
+      // --- Agent Update (when agent mode is ON) ---
+      if (intent === "agent_update" && agentMode) {
+        const agentResult = await processAgentUpdate(
+          processedQuery, customerAccountId, userId, userRoles, conversationHistory
+        );
+        responseContent = agentResult.content;
+        tokensUsed = agentResult.tokensUsed;
+
+        const agentOutputResult = validateOutput(responseContent);
+        responseContent = agentOutputResult.sanitizedResponse;
+
+        return NextResponse.json({
+          answer: responseContent,
+          sources: [],
+          confidence: "high",
+          intent,
+          isAgentUpdate: true,
+          pendingUpdateId: agentResult.pendingUpdate?.id,
+        });
+      }
 
       // --- General Chat ---
       if (intent === "general_chat") {

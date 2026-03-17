@@ -23,6 +23,8 @@ export interface FieldMeta {
   values?: string[];
   /** Whether this field can be used in aggregations */
   aggregatable?: boolean;
+  /** Whether this field can be updated via agent mode (user-editable in UI forms) */
+  editable?: boolean;
 }
 
 export interface ModelMeta {
@@ -36,8 +38,10 @@ export interface ModelMeta {
   description: string;
   /** Queryable fields */
   fields: FieldMeta[];
-  /** Which roles can query this model */
+  /** Which roles can query this model (view access) */
   allowedRoles: string[] | "all";
+  /** Which roles can update this model via agent mode (edit access) */
+  allowedEditRoles?: string[];
   /** The code/ID field displayed to users */
   codeField?: string;
   /** The primary name/title field */
@@ -52,10 +56,29 @@ export interface ModelMeta {
 //
 // Product areas:
 //   GRC (Compliance): Control, Framework, Requirement, Policy, Evidence
+//   Organization:     Department, User, Process
 //   GRC (Risk):       Risk
 //   GRC (Asset):      Asset
 //   Internal Audit:   AuditEngagement, InternalAuditFinding
 //   TPRM:             TPRMVendor
+
+/** Roles that can access Organization module — departments, users, processes */
+const ORG_FULL_ROLES = [
+  "GRCAdministrator", "CustomerAdministrator",
+];
+
+/** Roles that can view departments (most roles need department dropdowns) */
+const ORG_DEPARTMENT_ROLES = [
+  "GRCAdministrator", "CustomerAdministrator",
+  "Reviewer", "DepartmentReviewer", "DepartmentContributor", "Contributor",
+  "AuditHead", "AuditManager", "Auditor", "Auditee",
+];
+
+/** Roles that can view processes */
+const ORG_PROCESS_ROLES = [
+  "GRCAdministrator", "CustomerAdministrator",
+  "Reviewer", "DepartmentReviewer", "DepartmentContributor", "Contributor",
+];
 
 /** Roles that can access GRC Compliance module data */
 const GRC_COMPLIANCE_ROLES = [
@@ -92,9 +115,120 @@ const TPRM_ROLES = [
 /** Roles that can view Controls (includes Auditor who has compliance.controls:view) */
 const CONTROL_ROLES = [...GRC_COMPLIANCE_ROLES, "Auditor"];
 
+// ==================== EDIT ROLE GROUPS (Agent Mode) ====================
+// Only roles with 'edit' action in permissions.ts can update via chatbot agent
+
+/** Roles that can EDIT organization data (departments, users, processes) */
+const ORG_EDIT_ROLES = ["GRCAdministrator", "CustomerAdministrator"];
+
+/** Roles that can EDIT risk data */
+const RISK_EDIT_ROLES = [
+  "GRCAdministrator", "CustomerAdministrator",
+  "Reviewer", "DepartmentReviewer", "DepartmentContributor", "Contributor",
+];
+
+/** Roles that can EDIT compliance data (controls, policies, evidence) */
+const COMPLIANCE_EDIT_ROLES = [
+  "GRCAdministrator", "CustomerAdministrator",
+  "Reviewer", "Contributor",
+];
+
+/** Roles that can EDIT asset data */
+const ASSET_EDIT_ROLES = [
+  "GRCAdministrator", "CustomerAdministrator",
+  "Reviewer", "DepartmentReviewer", "DepartmentContributor", "Contributor",
+];
+
+/** Roles that can EDIT audit data */
+const AUDIT_EDIT_ROLES = [
+  "GRCAdministrator", "CustomerAdministrator",
+  "AuditHead", "AuditManager",
+];
+
+/** Roles that can EDIT TPRM vendor data */
+const TPRM_EDIT_ROLES = [
+  "GRCAdministrator", "CustomerAdministrator",
+  "TPRMAdmin", "RelationshipManager",
+];
+
 // ==================== QUERYABLE MODELS ====================
 
 export const QUERYABLE_MODELS: ModelMeta[] = [
+  // ==================== ORGANIZATION MODULE ====================
+  {
+    prismaModel: "Department",
+    displayName: "Department",
+    aliases: ["departments", "teams", "divisions", "organization departments"],
+    description: "Organization departments/divisions",
+    nameField: "name",
+    allowedRoles: ORG_DEPARTMENT_ROLES,
+    allowedEditRoles: ORG_EDIT_ROLES,
+    fields: [
+      { name: "name", type: "string", description: "Department name", editable: true },
+      { name: "description", type: "string", description: "Department description", editable: true },
+      { name: "createdAt", type: "date", description: "Date created" },
+    ],
+  },
+  {
+    prismaModel: "User",
+    displayName: "User",
+    aliases: ["users", "staff", "employees", "team members", "people"],
+    description: "Users/employees in the organization with their roles and department assignments",
+    nameField: "fullName",
+    allowedRoles: ORG_FULL_ROLES,
+    // No allowedEditRoles — User records are NOT updatable via chatbot agent for security
+    fields: [
+      // SAFE fields — no password, no email by default
+      { name: "fullName", type: "string", description: "User full name" },
+      { name: "firstName", type: "string", description: "First name" },
+      { name: "lastName", type: "string", description: "Last name" },
+      { name: "designation", type: "string", description: "Job designation/title" },
+      { name: "function", type: "string", description: "Job function" },
+      { name: "role", type: "string", description: "Primary role (e.g. CustomerAdministrator, Reviewer, AuditHead)" },
+      { name: "language", type: "string", description: "Preferred language" },
+      { name: "isActive", type: "boolean", description: "Whether user is active" },
+      { name: "isBlocked", type: "boolean", description: "Whether user is blocked" },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
+      { name: "lastLogin", type: "date", description: "Last login date" },
+      { name: "createdAt", type: "date", description: "Date created" },
+      // NOTE: password, userName, email are intentionally EXCLUDED for security
+    ],
+  },
+  {
+    prismaModel: "Process",
+    displayName: "Process",
+    aliases: ["processes", "business processes", "organization processes"],
+    description: "Business processes with RACI assignments, risk ratings, and audit information",
+    nameField: "name",
+    codeField: "processCode",
+    allowedRoles: ORG_PROCESS_ROLES,
+    allowedEditRoles: ORG_EDIT_ROLES,
+    fields: [
+      { name: "processCode", type: "string", description: "Process code" },
+      { name: "name", type: "string", description: "Process name", editable: true },
+      { name: "description", type: "string", description: "Process description", editable: true },
+      { name: "processType", type: "string", description: "Process type", values: ["Primary", "Management", "Supporting"] },
+      { name: "status", type: "string", description: "Process status", values: ["Active", "Inactive"] },
+      { name: "processFrequency", type: "string", description: "How often the process runs", values: ["Daily", "Weekly", "Monthly", "Quarterly", "Bi-annually", "Annually", "As needed"], editable: true },
+      { name: "natureOfImplementation", type: "string", description: "Implementation type", values: ["Manual", "Automated", "Manual + Automated"], editable: true },
+      { name: "riskRating", type: "string", description: "Process risk rating", values: ["Low", "Medium", "High", "Not Assessed"] },
+      { name: "operationalComplexity", type: "string", description: "Operational complexity", values: ["Low", "Medium", "High"], editable: true },
+      { name: "assetDependency", type: "boolean", description: "Whether process depends on an asset", editable: true },
+      { name: "externalDependency", type: "boolean", description: "Whether process has external dependency", editable: true },
+      { name: "externalParty", type: "string", description: "External party name (if external dependency)" },
+      { name: "piiCapture", type: "boolean", description: "Whether process captures PII data", editable: true },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" }, editable: true },
+      { name: "ownerId", type: "string", description: "Process owner", relation: { model: "User", displayField: "fullName", relationField: "owner" }, editable: true },
+      { name: "responsibleId", type: "string", description: "RACI: Responsible person", relation: { model: "User", displayField: "fullName", relationField: "responsible" }, editable: true },
+      { name: "accountableId", type: "string", description: "RACI: Accountable person", relation: { model: "User", displayField: "fullName", relationField: "accountable" }, editable: true },
+      { name: "consultedId", type: "string", description: "RACI: Consulted person", relation: { model: "User", displayField: "fullName", relationField: "consulted" }, editable: true },
+      { name: "informedId", type: "string", description: "RACI: Informed person", relation: { model: "User", displayField: "fullName", relationField: "informed" }, editable: true },
+      { name: "lastAuditDate", type: "date", description: "Last audit date", editable: true },
+      { name: "reviewDate", type: "date", description: "Review date" },
+      { name: "createdAt", type: "date", description: "Date created" },
+    ],
+  },
+  // ==================== GRC MODULE ====================
   {
     prismaModel: "Risk",
     displayName: "Risk",
@@ -103,11 +237,12 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     nameField: "name",
     codeField: "riskId",
     allowedRoles: GRC_RISK_ROLES,
+    allowedEditRoles: RISK_EDIT_ROLES,
     fields: [
       { name: "riskId", type: "string", description: "Risk code (e.g. RSK-001)" },
-      { name: "name", type: "string", description: "Risk name/title" },
-      { name: "description", type: "string", description: "Risk description/details" },
-      { name: "riskSources", type: "string", description: "Source/origin of the risk" },
+      { name: "name", type: "string", description: "Risk name/title", editable: true },
+      { name: "description", type: "string", description: "Risk description/details", editable: true },
+      { name: "riskSources", type: "string", description: "Source/origin of the risk", editable: true },
       { name: "status", type: "string", description: "Risk status", values: ["Awaiting Approval", "Pending Assessment", "Open", "In Progress", "Closed"] },
       { name: "riskRating", type: "string", description: "Risk rating level", values: ["Catastrophic", "Very High", "High", "Medium", "Low"] },
       { name: "riskScore", type: "number", description: "Risk score (likelihood × impact)", aggregatable: true },
@@ -124,18 +259,18 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
       { name: "targetImpact", type: "number", description: "Target impact rating", aggregatable: true },
       { name: "targetRiskScore", type: "number", description: "Target risk score", aggregatable: true },
       // Response
-      { name: "responseStrategy", type: "string", description: "Risk response strategy", values: ["Treat", "Transfer", "Avoid", "Accept"] },
+      { name: "responseStrategy", type: "string", description: "Risk response strategy", values: ["Treat", "Transfer", "Avoid", "Accept"], editable: true },
       { name: "assessmentStatus", type: "string", description: "Assessment status", values: ["Open", "In-Progress", "Draft", "Submitted", "Approved", "Rejected", "Completed"] },
       { name: "responseStatus", type: "string", description: "Response status", values: ["Open", "In-Progress", "Awaiting Approval", "Sent Back", "Completed"] },
-      { name: "treatmentPlan", type: "string", description: "Risk treatment plan" },
+      { name: "treatmentPlan", type: "string", description: "Risk treatment plan", editable: true },
       { name: "treatmentDueDate", type: "date", description: "Treatment due date" },
       { name: "treatmentStatus", type: "string", description: "Treatment status", values: ["Not Started", "In Progress", "Completed"] },
       // Relations
-      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
-      { name: "categoryId", type: "string", description: "Risk category", relation: { model: "RiskCategory", displayField: "name" } },
-      { name: "typeId", type: "string", description: "Risk type", relation: { model: "RiskType", displayField: "name" } },
-      { name: "ownerId", type: "string", description: "Risk owner (person responsible for managing the risk)", relation: { model: "User", displayField: "fullName", relationField: "owner" } },
-      { name: "impactedAssetId", type: "string", description: "Impacted asset", relation: { model: "Asset", displayField: "name", relationField: "impactedAsset" } },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" }, editable: true },
+      { name: "categoryId", type: "string", description: "Risk category", relation: { model: "RiskCategory", displayField: "name" }, editable: true },
+      { name: "typeId", type: "string", description: "Risk type", relation: { model: "RiskType", displayField: "name" }, editable: true },
+      { name: "ownerId", type: "string", description: "Risk owner (person responsible for managing the risk)", relation: { model: "User", displayField: "fullName", relationField: "owner" }, editable: true },
+      { name: "impactedAssetId", type: "string", description: "Impacted asset", relation: { model: "Asset", displayField: "name", relationField: "impactedAsset" }, editable: true },
       // Dates
       { name: "identifiedDate", type: "date", description: "Date risk was identified" },
       { name: "lastAssessmentDate", type: "date", description: "Last assessment date" },
@@ -151,17 +286,18 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     nameField: "name",
     codeField: "controlCode",
     allowedRoles: CONTROL_ROLES,
+    allowedEditRoles: COMPLIANCE_EDIT_ROLES,
     fields: [
-      { name: "controlCode", type: "string", description: "Control code (e.g. AC-1)" },
-      { name: "name", type: "string", description: "Control name/title" },
-      { name: "description", type: "string", description: "Control description/details" },
-      { name: "status", type: "string", description: "Compliance status", values: ["Non Compliant", "Compliant", "Not Applicable", "Partial Compliant"] },
-      { name: "scope", type: "string", description: "Scope", values: ["In-Scope", "Not In-Scope"] },
-      { name: "functionalGrouping", type: "string", description: "Functional grouping", values: ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"] },
-      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
+      { name: "controlCode", type: "string", description: "Control code (e.g. AC-1)", editable: true },
+      { name: "name", type: "string", description: "Control name/title", editable: true },
+      { name: "description", type: "string", description: "Control description/details", editable: true },
+      { name: "status", type: "string", description: "Compliance status", values: ["Non Compliant", "Compliant", "Not Applicable", "Partial Compliant"], editable: true },
+      { name: "scope", type: "string", description: "Scope", values: ["In-Scope", "Not In-Scope"], editable: true },
+      { name: "functionalGrouping", type: "string", description: "Functional grouping", values: ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"], editable: true },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" }, editable: true },
       { name: "frameworkId", type: "string", description: "Framework", relation: { model: "Framework", displayField: "name" } },
       { name: "ownerId", type: "string", description: "Control owner (person responsible)", relation: { model: "User", displayField: "fullName", relationField: "owner" } },
-      { name: "assigneeId", type: "string", description: "Control assignee (person assigned to implement/manage)", relation: { model: "User", displayField: "fullName", relationField: "assignee" } },
+      { name: "assigneeId", type: "string", description: "Control assignee (person assigned to implement/manage)", relation: { model: "User", displayField: "fullName", relationField: "assignee" }, editable: true },
       { name: "createdAt", type: "date", description: "Date created" },
     ],
   },
@@ -214,15 +350,16 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     nameField: "name",
     codeField: "code",
     allowedRoles: GRC_COMPLIANCE_ROLES,
+    allowedEditRoles: COMPLIANCE_EDIT_ROLES,
     fields: [
       { name: "code", type: "string", description: "Policy code" },
-      { name: "name", type: "string", description: "Policy name/title" },
+      { name: "name", type: "string", description: "Policy name/title", editable: true },
       { name: "description", type: "string", description: "Policy description" },
-      { name: "documentType", type: "string", description: "Document type", values: ["Policy", "Standard", "Procedure"] },
+      { name: "documentType", type: "string", description: "Document type", values: ["Policy", "Standard", "Procedure"], editable: true },
       { name: "status", type: "string", description: "Policy status", values: ["Not Uploaded", "Draft", "Approved", "Needs Review", "Published", "Pending Approval"] },
       { name: "version", type: "string", description: "Policy version" },
-      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
-      { name: "assigneeId", type: "string", description: "Policy assignee (person responsible for the policy)", relation: { model: "User", displayField: "fullName", relationField: "assignee" } },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" }, editable: true },
+      { name: "assigneeId", type: "string", description: "Policy assignee (person responsible for the policy)", relation: { model: "User", displayField: "fullName", relationField: "assignee" }, editable: true },
       { name: "approverId", type: "string", description: "Policy approver", relation: { model: "User", displayField: "fullName", relationField: "approver" } },
       { name: "reviewDate", type: "date", description: "Next review date" },
       { name: "effectiveDate", type: "date", description: "Policy effective date" },
@@ -237,16 +374,18 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     nameField: "name",
     codeField: "evidenceCode",
     allowedRoles: GRC_COMPLIANCE_ROLES,
+    allowedEditRoles: COMPLIANCE_EDIT_ROLES,
     fields: [
       { name: "evidenceCode", type: "string", description: "Evidence code" },
-      { name: "name", type: "string", description: "Evidence name/title" },
-      { name: "description", type: "string", description: "Evidence description" },
+      { name: "name", type: "string", description: "Evidence name/title", editable: true },
+      { name: "description", type: "string", description: "Evidence description", editable: true },
       { name: "status", type: "string", description: "Evidence status", values: ["Not Uploaded", "Draft", "Validated", "Published", "Need Attention"] },
       { name: "domain", type: "string", description: "Domain area" },
-      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" }, editable: true },
       { name: "frameworkId", type: "string", description: "Framework", relation: { model: "Framework", displayField: "name" } },
-      { name: "assigneeId", type: "string", description: "Evidence assignee (person responsible)", relation: { model: "User", displayField: "fullName" } },
+      { name: "assigneeId", type: "string", description: "Evidence assignee (person responsible)", relation: { model: "User", displayField: "fullName" }, editable: true },
       { name: "dueDate", type: "date", description: "Due date" },
+      { name: "reviewDate", type: "date", description: "Review date", editable: true },
       { name: "createdAt", type: "date", description: "Date created" },
     ],
   },
@@ -258,29 +397,30 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     nameField: "name",
     codeField: "assetId",
     allowedRoles: GRC_ASSET_ROLES,
+    allowedEditRoles: ASSET_EDIT_ROLES,
     fields: [
       { name: "assetId", type: "string", description: "Asset code" },
-      { name: "name", type: "string", description: "Asset name" },
+      { name: "name", type: "string", description: "Asset name", editable: true },
       { name: "description", type: "string", description: "Asset description" },
       { name: "assetType", type: "string", description: "Asset type", values: ["Hardware", "Software", "Information", "People", "Services", "Facility"] },
       { name: "status", type: "string", description: "Asset status", values: ["Active", "Retired"] },
       { name: "value", type: "number", description: "Asset monetary value", aggregatable: true },
-      { name: "location", type: "string", description: "Asset location" },
+      { name: "location", type: "string", description: "Asset location", editable: true },
       // Category hierarchy
-      { name: "categoryId", type: "string", description: "Asset category (e.g. IT Equipment, Vehicles)", relation: { model: "AssetCategory", displayField: "name", relationField: "category" } },
-      { name: "subCategoryId", type: "string", description: "Asset sub-category", relation: { model: "AssetSubCategory", displayField: "name", relationField: "subCategory" } },
-      { name: "groupId", type: "string", description: "Asset group", relation: { model: "AssetGroup", displayField: "name", relationField: "group" } },
+      { name: "categoryId", type: "string", description: "Asset category (e.g. IT Equipment, Vehicles)", relation: { model: "AssetCategory", displayField: "name", relationField: "category" }, editable: true },
+      { name: "subCategoryId", type: "string", description: "Asset sub-category", relation: { model: "AssetSubCategory", displayField: "name", relationField: "subCategory" }, editable: true },
+      { name: "groupId", type: "string", description: "Asset group", relation: { model: "AssetGroup", displayField: "name", relationField: "group" }, editable: true },
       // Classification & sensitivity
       { name: "classificationId", type: "string", description: "Asset classification (Critical, High, Medium, Low)", relation: { model: "AssetClassification", displayField: "name", relationField: "classification" } },
       { name: "sensitivityId", type: "string", description: "Asset sensitivity (Public, Internal, Confidential, Restricted)", relation: { model: "AssetSensitivity", displayField: "name", relationField: "sensitivity" } },
-      { name: "lifecycleStatusId", type: "string", description: "Lifecycle status (Active, In Use, Needs Maintenance, Retired)", relation: { model: "AssetLifecycleStatus", displayField: "name", relationField: "lifecycleStatus" } },
+      { name: "lifecycleStatusId", type: "string", description: "Lifecycle status (Active, In Use, Needs Maintenance, Retired)", relation: { model: "AssetLifecycleStatus", displayField: "name", relationField: "lifecycleStatus" }, editable: true },
       // Ownership
-      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
-      { name: "ownerId", type: "string", description: "Asset owner", relation: { model: "User", displayField: "fullName", relationField: "owner" } },
-      { name: "custodianId", type: "string", description: "Asset custodian (person managing the asset)", relation: { model: "User", displayField: "fullName", relationField: "custodian" } },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" }, editable: true },
+      { name: "ownerId", type: "string", description: "Asset owner", relation: { model: "User", displayField: "fullName", relationField: "owner" }, editable: true },
+      { name: "custodianId", type: "string", description: "Asset custodian (person managing the asset)", relation: { model: "User", displayField: "fullName", relationField: "custodian" }, editable: true },
       // Dates
-      { name: "acquisitionDate", type: "date", description: "Acquisition/purchase date" },
-      { name: "nextReviewDate", type: "date", description: "Next review date" },
+      { name: "acquisitionDate", type: "date", description: "Acquisition/purchase date", editable: true },
+      { name: "nextReviewDate", type: "date", description: "Next review date", editable: true },
       { name: "createdAt", type: "date", description: "Date created" },
     ],
   },
@@ -322,22 +462,23 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     nameField: "engagementTitle",
     codeField: "auditId",
     allowedRoles: AUDIT_ROLES,
+    allowedEditRoles: AUDIT_EDIT_ROLES,
     fields: [
       { name: "auditId", type: "string", description: "Audit code (e.g. AUD001)" },
-      { name: "engagementTitle", type: "string", description: "Audit engagement title" },
-      { name: "description", type: "string", description: "Engagement description" },
-      { name: "engagementObjective", type: "string", description: "Audit objective" },
-      { name: "engagementScope", type: "string", description: "Audit scope" },
+      { name: "engagementTitle", type: "string", description: "Audit engagement title", editable: true },
+      { name: "description", type: "string", description: "Engagement description", editable: true },
+      { name: "engagementObjective", type: "string", description: "Audit objective", editable: true },
+      { name: "engagementScope", type: "string", description: "Audit scope", editable: true },
       { name: "status", type: "string", description: "Engagement status", values: ["Planned", "In Progress", "Completed", "Cancelled"] },
-      { name: "priority", type: "string", description: "Priority level", values: ["Low", "Medium", "High"] },
-      { name: "auditType", type: "string", description: "Type of audit" },
+      { name: "priority", type: "string", description: "Priority level", values: ["Low", "Medium", "High"], editable: true },
+      { name: "auditType", type: "string", description: "Type of audit", editable: true },
       { name: "year", type: "number", description: "Audit year" },
       { name: "quarter", type: "string", description: "Quarter", values: ["Q1", "Q2", "Q3", "Q4"] },
-      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
-      { name: "assignedAuditorId", type: "string", description: "Assigned auditor", relation: { model: "User", displayField: "fullName", relationField: "assignedAuditor" } },
-      { name: "auditeeId", type: "string", description: "Auditee (person being audited)", relation: { model: "User", displayField: "fullName", relationField: "auditee" } },
-      { name: "plannedStartDate", type: "date", description: "Planned start date" },
-      { name: "plannedEndDate", type: "date", description: "Planned end date" },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" }, editable: true },
+      { name: "assignedAuditorId", type: "string", description: "Assigned auditor", relation: { model: "User", displayField: "fullName", relationField: "assignedAuditor" }, editable: true },
+      { name: "auditeeId", type: "string", description: "Auditee (person being audited)", relation: { model: "User", displayField: "fullName", relationField: "auditee" }, editable: true },
+      { name: "plannedStartDate", type: "date", description: "Planned start date", editable: true },
+      { name: "plannedEndDate", type: "date", description: "Planned end date", editable: true },
       { name: "actualStartDate", type: "date", description: "Actual start date" },
       { name: "actualEndDate", type: "date", description: "Actual end date" },
       { name: "plannedHours", type: "number", description: "Planned hours", aggregatable: true },
@@ -353,17 +494,22 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     nameField: "finding",
     codeField: "findingId",
     allowedRoles: AUDIT_ROLES,
+    allowedEditRoles: AUDIT_EDIT_ROLES,
     fields: [
       { name: "findingId", type: "string", description: "Finding code (e.g. FND001)" },
-      { name: "finding", type: "string", description: "Finding title/summary" },
-      { name: "description", type: "string", description: "Finding description/details" },
-      { name: "severity", type: "string", description: "Severity level", values: ["Low", "Medium", "High", "Critical"] },
+      { name: "finding", type: "string", description: "Finding title/summary", editable: true },
+      { name: "description", type: "string", description: "Finding description/details", editable: true },
+      { name: "severity", type: "string", description: "Severity level", values: ["Low", "Medium", "High", "Critical"], editable: true },
       { name: "status", type: "string", description: "Finding status", values: ["Open", "In Progress", "Closed", "Overdue", "Under Review"] },
-      { name: "recommendation", type: "string", description: "Recommended corrective action" },
+      { name: "recommendation", type: "string", description: "Recommended corrective action", editable: true },
       { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
-      { name: "responsiblePerson", type: "string", description: "Person responsible for resolving the finding" },
+      { name: "responsiblePerson", type: "string", description: "Person responsible for resolving the finding", editable: true },
+      { name: "criteria", type: "string", description: "What should be (criteria)", editable: true },
+      { name: "condition", type: "string", description: "What is (actual state)", editable: true },
+      { name: "cause", type: "string", description: "Why it happened", editable: true },
+      { name: "effect", type: "string", description: "The consequence", editable: true },
       { name: "identifiedDate", type: "date", description: "Date identified" },
-      { name: "targetDate", type: "date", description: "Target closure date" },
+      { name: "targetDate", type: "date", description: "Target closure date", editable: true },
       { name: "closedDate", type: "date", description: "Date finding was closed" },
       { name: "createdAt", type: "date", description: "Date created" },
     ],
@@ -376,22 +522,24 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     nameField: "name",
     codeField: "vendorCode",
     allowedRoles: TPRM_ROLES,
+    allowedEditRoles: TPRM_EDIT_ROLES,
     fields: [
       { name: "vendorCode", type: "string", description: "Vendor code (e.g. VEN001)" },
-      { name: "name", type: "string", description: "Vendor name" },
+      { name: "name", type: "string", description: "Vendor name", editable: true },
       { name: "status", type: "string", description: "Vendor status", values: ["Onboarding", "Onboarded", "Offboarding", "Offboarded"] },
       { name: "vrr", type: "string", description: "Vendor risk rating", values: ["Critical", "High", "Moderate", "Low", "Nominal"] },
-      { name: "serviceCategory", type: "string", description: "Service category" },
-      { name: "serviceDescription", type: "string", description: "Description of vendor services" },
-      { name: "contactEmail", type: "string", description: "Vendor contact email" },
-      { name: "contactPhone", type: "string", description: "Vendor contact phone" },
-      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" } },
-      { name: "cloud", type: "boolean", description: "Cloud-based vendor" },
-      { name: "pii", type: "boolean", description: "Handles PII data" },
-      { name: "accessToData", type: "boolean", description: "Has access to data" },
-      { name: "accessToNetwork", type: "boolean", description: "Has access to network" },
-      { name: "contractStartDate", type: "date", description: "Contract start date" },
-      { name: "contractEndDate", type: "date", description: "Contract end date" },
+      { name: "serviceCategory", type: "string", description: "Service category", editable: true },
+      { name: "serviceDescription", type: "string", description: "Description of vendor services", editable: true },
+      { name: "contactEmail", type: "string", description: "Vendor contact email", editable: true },
+      { name: "contactPhone", type: "string", description: "Vendor contact phone", editable: true },
+      { name: "departmentId", type: "string", description: "Department", relation: { model: "Department", displayField: "name" }, editable: true },
+      { name: "cloud", type: "boolean", description: "Cloud-based vendor", editable: true },
+      { name: "pii", type: "boolean", description: "Handles PII data", editable: true },
+      { name: "accessToData", type: "boolean", description: "Has access to data", editable: true },
+      { name: "accessToNetwork", type: "boolean", description: "Has access to network", editable: true },
+      { name: "contractStartDate", type: "date", description: "Contract start date", editable: true },
+      { name: "contractEndDate", type: "date", description: "Contract end date", editable: true },
+      { name: "businessJustification", type: "string", description: "Business justification for engaging the vendor", editable: true },
       { name: "createdAt", type: "date", description: "Date created" },
     ],
   },
@@ -444,4 +592,52 @@ export function getAccessibleModelNames(userRoles: string[]): string[] {
       return userRoles.some((r) => m.allowedRoles.includes(r));
     })
     .map((m) => m.prismaModel);
+}
+
+/**
+ * Get the list of model names the user can EDIT based on roles (for agent mode).
+ */
+export function getEditableModelNames(userRoles: string[]): string[] {
+  return QUERYABLE_MODELS
+    .filter((m) => {
+      if (!m.allowedEditRoles || m.allowedEditRoles.length === 0) return false;
+      return userRoles.some((r) => m.allowedEditRoles!.includes(r));
+    })
+    .map((m) => m.prismaModel);
+}
+
+/**
+ * Get editable fields for a model (fields with editable: true).
+ */
+export function getEditableFields(modelMeta: ModelMeta): FieldMeta[] {
+  return modelMeta.fields.filter((f) => f.editable);
+}
+
+/**
+ * Build a schema prompt showing ONLY editable fields for agent mode.
+ */
+export function buildEditableSchemaPrompt(userRoles: string[]): string {
+  const editableModels = QUERYABLE_MODELS.filter((m) => {
+    if (!m.allowedEditRoles || m.allowedEditRoles.length === 0) return false;
+    return userRoles.some((r) => m.allowedEditRoles!.includes(r));
+  });
+
+  const parts = editableModels.map((m) => {
+    const editFields = m.fields.filter((f) => f.editable);
+    if (editFields.length === 0) return null;
+
+    const fields = editFields
+      .map((f) => {
+        let desc = `  - ${f.name} (${f.type}): ${f.description}`;
+        if (f.values) desc += ` [valid values: ${f.values.join(", ")}]`;
+        if (f.relation) desc += ` → set by name (e.g. "John Doe" or "IT Operations")`;
+        return desc;
+      })
+      .join("\n");
+
+    const identifiers = [m.codeField, m.nameField].filter(Boolean).join(" or ");
+    return `${m.displayName} (table: ${m.prismaModel}):\n  Identify by: ${identifiers}\n  Editable fields:\n${fields}`;
+  }).filter(Boolean);
+
+  return parts.join("\n\n");
 }

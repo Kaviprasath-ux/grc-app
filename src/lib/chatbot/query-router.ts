@@ -16,7 +16,7 @@ import { QUERYABLE_MODELS } from "./schema-metadata";
 
 // ==================== TYPES ====================
 
-export type QueryIntent = "kb_search" | "data_query" | "general_chat";
+export type QueryIntent = "kb_search" | "data_query" | "general_chat" | "agent_update";
 
 export interface RouterResult {
   intent: QueryIntent;
@@ -50,7 +50,7 @@ const GENERAL_CHAT_PATTERNS = [
 
 // ==================== LLM INTENT CLASSIFICATION ====================
 
-function buildRouterPrompt(): string {
+function buildRouterPrompt(agentMode: boolean = false): string {
   // Build a compact list of queryable entities for context
   const entities = QUERYABLE_MODELS.map(
     (m) => `${m.displayName} (aliases: ${m.aliases.join(", ")})`
@@ -85,8 +85,13 @@ KEY DISTINCTION:
 - "how to add a requirement" → kb_search (wants help with the process)
 
 FOLLOW-UP CONTEXT: Conversation history may be included. If the user asks a follow-up about a previously discussed entity (e.g. "what is its status", "show me the functional grouping of this", "who owns it"), classify based on what they are asking about — if the previous context was about database records, the follow-up is also a data_query.
+${agentMode ? `
+4. **agent_update** — The user wants to CHANGE, UPDATE, MODIFY, or SET a field value on an existing record. Agent mode is ENABLED.
+   Examples: "change the owner of risk RSK-001 to John Doe", "update the description of this control", "set priority of AUD003 to High", "change the assignee to Sarah", "update vendor contact email"
 
-Output ONLY valid JSON: {"intent": "data_query"|"kb_search"|"general_chat", "confidence": 0.0-1.0}`;
+   KEY: If the user says "change", "update", "set", "modify", "assign", "reassign", or any variation that implies MODIFYING data, classify as agent_update.
+` : ""}
+Output ONLY valid JSON: {"intent": "data_query"|"kb_search"|"general_chat"${agentMode ? '|"agent_update"' : ""}, "confidence": 0.0-1.0}`;
 }
 
 // ==================== CONVERSATION HISTORY TYPE ====================
@@ -102,13 +107,14 @@ export interface ConversationMessage {
  */
 async function classifyWithLLM(
   query: string,
-  conversationHistory: ConversationMessage[] = []
+  conversationHistory: ConversationMessage[] = [],
+  agentMode: boolean = false
 ): Promise<RouterResult> {
   const client = getOpenAI();
 
   // Build messages with conversation context for follow-up resolution
   const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
-    { role: "system", content: buildRouterPrompt() },
+    { role: "system", content: buildRouterPrompt(agentMode) },
   ];
 
   // Include last few conversation turns so the LLM can resolve "this", "it", etc.
@@ -138,7 +144,7 @@ async function classifyWithLLM(
     const intent = parsed.intent as QueryIntent;
 
     // Validate intent is one of the valid options
-    if (!["kb_search", "data_query", "general_chat"].includes(intent)) {
+    if (!["kb_search", "data_query", "general_chat", "agent_update"].includes(intent)) {
       return { intent: "kb_search", confidence: 0.5 };
     }
 
@@ -164,7 +170,8 @@ async function classifyWithLLM(
  */
 export async function routeQuery(
   query: string,
-  conversationHistory: ConversationMessage[] = []
+  conversationHistory: ConversationMessage[] = [],
+  agentMode: boolean = false
 ): Promise<RouterResult> {
   const trimmed = query.trim();
 
@@ -177,7 +184,7 @@ export async function routeQuery(
 
   // For everything else, use LLM-based classification
   try {
-    return await classifyWithLLM(trimmed, conversationHistory);
+    return await classifyWithLLM(trimmed, conversationHistory, agentMode);
   } catch (error) {
     console.error("[QueryRouter] LLM classification failed:", error);
     // Fallback: treat as kb_search (safest default)

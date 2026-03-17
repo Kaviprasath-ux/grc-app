@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { HelpArticle } from "@/data/help-knowledge-base";
 import type { ScoredResult } from "@/lib/help-search";
-import { ExternalLink, User, Bot, ShieldAlert, Sparkles, BookOpen, Database } from "lucide-react";
+import { ExternalLink, User, Bot, ShieldAlert, Sparkles, BookOpen, Database, Pencil, Check, X } from "lucide-react";
 
 interface ChatMessageProps {
   role: "user" | "bot";
@@ -17,7 +17,11 @@ interface ChatMessageProps {
   blocked?: boolean;
   isRAG?: boolean;
   isDataQuery?: boolean;
+  isAgentUpdate?: boolean;
+  pendingUpdateId?: string;
+  executed?: boolean;
   onSelectArticle?: (article: HelpArticle) => void;
+  onConfirmUpdate?: (updateId: string, confirm: boolean) => void;
 }
 
 export function ChatMessage({
@@ -30,7 +34,11 @@ export function ChatMessage({
   blocked,
   isRAG,
   isDataQuery,
+  isAgentUpdate,
+  pendingUpdateId,
+  executed,
   onSelectArticle,
+  onConfirmUpdate,
 }: ChatMessageProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -156,6 +164,15 @@ export function ChatMessage({
                   </span>
                 </div>
               )}
+              {/* Agent update badge */}
+              {isAgentUpdate && (
+                <div className="flex items-center gap-1 mb-1.5">
+                  <Pencil className="w-3 h-3 text-amber-500" />
+                  <span className="text-[10px] font-medium text-amber-600 uppercase tracking-wider">
+                    {executed ? t("Updated") : t("Agent Update")}
+                  </span>
+                </div>
+              )}
               <div
                 className="text-slate-700 chatbot-markdown"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
@@ -183,6 +200,26 @@ export function ChatMessage({
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Agent update confirmation buttons */}
+          {isAgentUpdate && pendingUpdateId && !executed && onConfirmUpdate && (
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={() => onConfirmUpdate(pendingUpdateId, true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
+              >
+                <Check className="w-3.5 h-3.5" />
+                {t("Yes, Update")}
+              </button>
+              <button
+                onClick={() => onConfirmUpdate(pendingUpdateId, false)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                {t("Cancel")}
+              </button>
             </div>
           )}
 

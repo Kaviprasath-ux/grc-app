@@ -35,6 +35,12 @@ export interface ChatMessage {
   isRAG?: boolean;
   /** Whether this is a data query response (NLP-to-SQL) */
   isDataQuery?: boolean;
+  /** Whether this is an agent update message */
+  isAgentUpdate?: boolean;
+  /** Pending update ID for confirmation */
+  pendingUpdateId?: string;
+  /** Whether the update was executed */
+  executed?: boolean;
   /** Timestamp */
   timestamp: number;
 }
@@ -56,6 +62,7 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [isTyping, setIsTyping] = useState(false);
   const [activeModule, setActiveModule] = useState<HelpModule | null>(null);
+  const [agentMode, setAgentMode] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -167,6 +174,7 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
           body: JSON.stringify({
             query: trimmed,
             conversationHistory: recentMessages,
+            agentMode,
           }),
           signal: abortController.signal,
         });
@@ -185,8 +193,11 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
           sources: data.sources || [],
           confidence: data.confidence || "medium",
           blocked: data.blocked || false,
-          isRAG: !data.fallback && !data.article && !data.isDataQuery,
+          isRAG: !data.fallback && !data.article && !data.isDataQuery && !data.isAgentUpdate,
           isDataQuery: data.isDataQuery || false,
+          isAgentUpdate: data.isAgentUpdate || false,
+          pendingUpdateId: data.pendingUpdateId || undefined,
+          executed: data.executed || false,
           timestamp: Date.now(),
         };
 
@@ -240,7 +251,7 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
         setMessages((prev) => [...prev, botMsg]);
       }
     },
-    [userRoles, productFlags, messages]
+    [userRoles, productFlags, messages, agentMode]
   );
 
   /** Select a specific article to display (Phase 1 style — direct display). */
@@ -289,6 +300,57 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
     setIsTyping(false);
   }, []);
 
+  /** Confirm or cancel a pending agent update */
+  const confirmUpdate = useCallback(async (updateId: string, confirm: boolean) => {
+    if (!confirm) {
+      // User cancelled
+      const cancelMsg: ChatMessage = {
+        id: `bot-${Date.now()}`,
+        role: "bot",
+        content: "Update cancelled. No changes were made.",
+        timestamp: Date.now(),
+      };
+      setMessages((prev) => [...prev, cancelMsg]);
+      return;
+    }
+
+    setIsTyping(true);
+
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmUpdateId: updateId }),
+      });
+
+      const data = await response.json();
+
+      const botMsg: ChatMessage = {
+        id: `bot-${Date.now()}`,
+        role: "bot",
+        content: data.answer,
+        confidence: data.confidence || "high",
+        isAgentUpdate: true,
+        executed: data.executed || false,
+        timestamp: Date.now(),
+      };
+
+      setIsTyping(false);
+      setMessages((prev) => [...prev, botMsg]);
+    } catch {
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          role: "bot",
+          content: "An error occurred while confirming the update. Please try again.",
+          timestamp: Date.now(),
+        },
+      ]);
+    }
+  }, []);
+
   return {
     isOpen,
     isTyping,
@@ -307,6 +369,10 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
     modulesWithCounts,
     // Context-aware
     pageSuggestions,
+    // Agent mode
+    agentMode,
+    setAgentMode,
+    confirmUpdate,
     // Alias
     helpModules: modulesWithCounts,
   };
