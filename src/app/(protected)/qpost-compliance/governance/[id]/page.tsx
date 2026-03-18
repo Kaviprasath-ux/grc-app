@@ -122,6 +122,7 @@ interface Policy {
     fileSize: number;
     filePath: string;
     uploadedAt: string;
+    uploadedBy?: { id: string; fullName: string } | null;
   }>;
   policyExceptions?: Array<{
     exception: {
@@ -145,6 +146,7 @@ interface Policy {
       filePath: string;
       status: string;
       uploadedAt: string;
+      uploadedBy?: { id: string; fullName: string } | null;
     };
   }>;
 }
@@ -2952,7 +2954,7 @@ export default function GovernanceDetailPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-primary truncate">{att.fileName}</p>
                           <p className="text-xs text-slate-500">
-                            {t("By")} {att.uploadedBy?.fullName || att.uploadedByName || t("Unknown")}, {new Date(att.uploadedAt).toLocaleDateString("en-US", {
+                            {t("By")} {att.uploadedBy?.fullName || t("Unknown")}, {new Date(att.uploadedAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "2-digit",
                               year: "numeric",
