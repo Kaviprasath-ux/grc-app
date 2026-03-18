@@ -103,13 +103,8 @@ export const GET = withAuth(
           },
         };
 
-        // For AuditHead (not admin), only show users they manage + themselves
-        if (isAuditHead && !isAdmin) {
-          whereClause.OR = [
-            { auditHeadId: session.id },  // Users managed by this AuditHead
-            { id: session.id },            // Include themselves
-          ];
-        }
+        // AuditHead/Auditor see all audit users within their tenant (same as CustomerAdmin)
+        // Tenant isolation is already handled by getTenantFilter above
       }
 
       const users = await prisma.user.findMany({

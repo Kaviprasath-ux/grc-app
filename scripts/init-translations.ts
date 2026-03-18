@@ -852,7 +852,6 @@ const translations: [string, string, string][] = [
   ['Configure the number of days before escalation for each activity type', 'تكوين عدد الأيام قبل التصعيد لكل نوع نشاط', 'Konfigurēt dienu skaitu pirms eskalācijas katram darbības tipam'],
   ['Response Submission', 'تقديم الرد', 'Atbildes iesniegšana'],
   ['Acknowledgement', 'الإقرار', 'Apstiprinājums'],
-  ['Clarification', 'التوضيح', 'Precizējums'],
   ['Issue Resolution', 'حل القضية', 'Problēmas atrisināšana'],
   ['days', 'أيام', 'dienas'],
   ['Loading configuration...', 'جاري تحميل الإعدادات...', 'Ielādē konfigurāciju...'],
@@ -3453,7 +3452,6 @@ const translations: [string, string, string][] = [
   ['Mark as Executed', 'تحديد كمنفذ', 'Atzīmēt kā izpildītu'],
   ['Marking...', 'جاري التحديد...', 'Atzīmē...'],
   ['Minutes of Meeting', 'محضر الاجتماع', 'Sanāksmes protokols'],
-  ['Need Clarification', 'يحتاج توضيح', 'Nepieciešams precizējums'],
   ['New Audit Plan', 'خطة تدقيق جديدة', 'Jauns audita plāns'],
   ['New Document', 'مستند جديد', 'Jauns dokuments'],
   ['New Evidence Request', 'طلب أدلة جديد', 'Jauns pierādījumu pieprasījums'],
@@ -3933,7 +3931,6 @@ const translations: [string, string, string][] = [
   ['Failed to create policy', 'فشل في إنشاء السياسة', 'Neizdevās izveidot politiku'],
 
   ['Link from Document Management', 'ربط من إدارة المستندات', 'Saistīt no dokumentu pārvaldības'],
-  ['Select approver', 'اختر المعتمد', 'Izvēlieties apstiprinātāju'],
   ['Need Clarification', 'طلب توضيح', 'Nepieciešams precizējums'],
   ['Request Clarification', 'طلب توضيح', 'Pieprasīt precizējumu'],
   ['Reply to Clarification', 'الرد على التوضيح', 'Atbildēt uz precizējumu'],
@@ -4849,7 +4846,6 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['Follow-ups', 'المتابعات', 'Turpmākās darbības'],
   ['Follow-Ups', 'المتابعات', 'Turpmākās darbības'],
-  ['Clarifications', 'التوضيحات', 'Precizējumi'],
   ['No clarifications found', 'لم يتم العثور على توضيحات', 'Precizējumi nav atrasti'],
   ['Open Queries', 'الاستفسارات المفتوحة', 'Atvērtie jautājumi'],
   ['Closed Queries', 'الاستفسارات المغلقة', 'Slēgtie jautājumi'],

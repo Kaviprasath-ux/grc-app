@@ -317,8 +317,7 @@ export function OrgChart() {
         DepartmentReviewer: 5,
         Contributor: 6,
         DepartmentContributor: 7,
-        Auditor: 8,
-        Auditee: 9,
+        Auditee: 8,
       };
 
       nodes.sort((a, b) => {
@@ -375,8 +374,7 @@ export function OrgChart() {
       DepartmentReviewer: 5,
       Contributor: 6,
       DepartmentContributor: 7,
-      Auditor: 8,
-      Auditee: 9,
+      Auditee: 8,
     };
 
     const getRolePriority = (user: UserNode) => {
