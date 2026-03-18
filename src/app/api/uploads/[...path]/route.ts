@@ -59,11 +59,16 @@ export async function GET(req: NextRequest, context: RouteContext) {
     // Get filename for Content-Disposition header
     const fileName = path.basename(filePath);
 
+    // Determine if file should be downloaded or displayed inline
+    // Images and PDFs can be displayed inline, others should be downloaded
+    const inlineTypes = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.txt'];
+    const disposition = inlineTypes.includes(ext) ? 'inline' : 'attachment';
+
     // Return the file
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `inline; filename="${fileName}"`,
+        'Content-Disposition': `${disposition}; filename="${fileName}"`,
         'Cache-Control': 'public, max-age=31536000',
       },
     });

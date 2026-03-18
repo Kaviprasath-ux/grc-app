@@ -101,6 +101,7 @@ interface Control {
   id: string;
   controlCode: string;
   name: string;
+  controlQuestion?: string;
   status: string;
   domain?: { id: string; name: string };
   functionalGrouping?: string;
@@ -1854,12 +1855,15 @@ export default function FrameworkDetailPage({
                                       <TableRow>
                                         <TableHead>{t("Control Code")}</TableHead>
                                         <TableHead>{t("Control Name")}</TableHead>
+                                        <TableHead>{t("Control Question")}</TableHead>
                                         <TableHead>{t("Status")}</TableHead>
                                         <TableHead>{t("Action")}</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                      {requirement.controls.map((rc) => (
+                                      {requirement.controls.map((rc) => {
+                                        const translatedCtrl = translatedControls.find(c => c.id === rc.control.id);
+                                        return (
                                         <TableRow
                                           key={rc.id}
                                           className="cursor-pointer hover:bg-slate-50 transition-colors"
@@ -1873,6 +1877,11 @@ export default function FrameworkDetailPage({
                                           <TableCell>
                                             <span className="text-primary-600 hover:underline">
                                               {tControl(rc.control.id, rc.control.name)}
+                                            </span>
+                                          </TableCell>
+                                          <TableCell>
+                                            <span className="text-slate-600 text-sm">
+                                              {translatedCtrl?.controlQuestion || rc.control.controlQuestion || "-"}
                                             </span>
                                           </TableCell>
                                           <TableCell>
@@ -1905,7 +1914,8 @@ export default function FrameworkDetailPage({
                                             </Button>
                                           </TableCell>
                                         </TableRow>
-                                      ))}
+                                      );
+                                      })}
                                     </TableBody>
                                   </Table>
                                 </div>

@@ -22,6 +22,16 @@ export const REGULATORY_AI_ENDPOINTS = {
   INTELLIGENCE_HUB: '/api/regulatory_Intelligence_hub',
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Policy Generation V2 - Generate GRC Policy Document (DOCX)
+  // ─────────────────────────────────────────────────────────────────────────
+  GENERATE_POLICY_V2: '/api/generate_policy_v2',
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Policy Review - AI Compliance Review (returns DOCX report)
+  // ─────────────────────────────────────────────────────────────────────────
+  REVIEW_POLICY: '/api/review-policy',
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Health Check
   // ─────────────────────────────────────────────────────────────────────────
   HEALTH: '/health',
@@ -36,6 +46,8 @@ export type RegulatoryAIEndpoint = typeof REGULATORY_AI_ENDPOINTS[keyof typeof R
 
 export const REGULATORY_ENDPOINT_NAMES: Record<string, string> = {
   [REGULATORY_AI_ENDPOINTS.INTELLIGENCE_HUB]: 'Regulatory Intelligence Hub',
+  [REGULATORY_AI_ENDPOINTS.GENERATE_POLICY_V2]: 'Policy Generation V2',
+  [REGULATORY_AI_ENDPOINTS.REVIEW_POLICY]: 'Policy Compliance Review',
   [REGULATORY_AI_ENDPOINTS.HEALTH]: 'Regulatory AI Health Check',
 };
 

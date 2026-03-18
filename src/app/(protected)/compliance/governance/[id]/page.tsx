@@ -342,7 +342,7 @@ export default function GovernanceDetailPage() {
   const [storedSignature, setStoredSignature] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // AI Generate Policy state
+  // AI Generate Policy state (legacy)
   const [generatePolicyDialogOpen, setGeneratePolicyDialogOpen] = useState(false);
   const [generatingPolicy, setGeneratingPolicy] = useState(false);
   const [templates, setTemplates] = useState<Array<{
@@ -359,8 +359,42 @@ export default function GovernanceDetailPage() {
   const [newTemplateFile, setNewTemplateFile] = useState<File | null>(null);
   const [newTemplateName, setNewTemplateName] = useState("");
 
+  // Generate AI Policy state
+  const [advancedReviewDialogOpen, setAdvancedReviewDialogOpen] = useState(false);
+  const [advancedReviewLoading, setAdvancedReviewLoading] = useState(false);
+  const [advancedReviewResult, setAdvancedReviewResult] = useState<{
+    success: boolean;
+    attachment?: {
+      id: string;
+      fileName: string;
+      filePath: string;
+      fileSize: number;
+    };
+    framework?: string;
+    controlCode?: string;
+    controlsUsed?: number;
+    error?: string;
+  } | null>(null);
+
   // AI Review Details Modal state
   const [aiReviewDetailsOpen, setAiReviewDetailsOpen] = useState(false);
+
+  // Policy Review (Advanced AI Review - Option 4) state
+  const [policyReviewDialogOpen, setPolicyReviewDialogOpen] = useState(false);
+  const [policyReviewLoading, setPolicyReviewLoading] = useState(false);
+  const [policyReviewDeleting, setPolicyReviewDeleting] = useState(false);
+  const [policyReviewResult, setPolicyReviewResult] = useState<{
+    success: boolean;
+    report?: {
+      fileName: string;
+      filePath: string;
+      fileSize: number;
+    };
+    analysis?: Record<string, unknown>;
+    controlsAnalyzed?: number;
+    regulationsChecked?: string[];
+    error?: string;
+  } | null>(null);
   const [aiReviewResult, setAiReviewResult] = useState<AIReviewResponse | null>(null);
 
   // AI Review Hook - orchestrates ingest → review flow
@@ -957,6 +991,157 @@ export default function GovernanceDetailPage() {
     }
   };
 
+  // Generate AI Policy - calls /api/generate_policy_v2 to generate policy document
+  const handleAdvancedAIReview = async () => {
+    // Validate linked controls
+    if (!policy?.policyControls || policy.policyControls.length === 0) {
+      toast.error(t("Please link controls to this policy first"));
+      return;
+    }
+
+    setAdvancedReviewLoading(true);
+    setAdvancedReviewResult(null);
+    toast.info(t("Generating policy document using AI..."), { duration: 60000 });
+
+    try {
+      console.log("[Generate AI Policy] Starting generation for policy:", id);
+      console.log("[Generate AI Policy] Policy Name:", policy?.name);
+      console.log("[Generate AI Policy] Linked Controls:", policy.policyControls.length);
+
+      const response = await fetch("/api/ai/governance/generate-policy-v2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ policyId: id }),
+      });
+
+      const result = await response.json();
+      console.log("[Generate AI Policy] Response status:", response.status);
+      console.log("[Generate AI Policy] Response result:", JSON.stringify(result, null, 2));
+
+      if (response.ok && result.success) {
+        setAdvancedReviewResult({
+          success: true,
+          attachment: result.attachment,
+          framework: result.framework,
+          controlCode: result.controlCode,
+          controlsUsed: result.controlsUsed,
+        });
+        toast.success(t("Policy document generated successfully!"));
+        fetchPolicy(); // Refresh to show new attachment
+      } else {
+        const errorMessage = result.error || result.details || t("Failed to generate policy");
+        console.error("[Generate AI Policy] Error:", errorMessage);
+        setAdvancedReviewResult({
+          success: false,
+          error: errorMessage,
+        });
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("[Generate AI Policy] Exception:", error);
+      setAdvancedReviewResult({
+        success: false,
+        error: t("An error occurred while generating the policy"),
+      });
+      toast.error(t("An error occurred while generating the policy"));
+    } finally {
+      setAdvancedReviewLoading(false);
+    }
+  };
+
+  // Advanced AI Review (Policy Review) - calls /api/review-policy to analyze policy document
+  const handlePolicyReview = async () => {
+    // Validate document exists
+    if (attachments.length === 0 && linkedVaultDocuments.length === 0) {
+      toast.error(t("Please upload a policy document first"));
+      return;
+    }
+
+    // Validate linked controls
+    if (!policy?.policyControls || policy.policyControls.length === 0) {
+      toast.error(t("Please link controls to this policy first"));
+      return;
+    }
+
+    setPolicyReviewLoading(true);
+    setPolicyReviewResult(null);
+    toast.info(t("Analyzing policy document..."), { duration: 120000 });
+
+    try {
+      console.log("[Policy Review] Starting review for policy:", id);
+      console.log("[Policy Review] Policy Name:", policy?.name);
+      console.log("[Policy Review] Linked Controls:", policy.policyControls.length);
+
+      const response = await fetch("/api/ai/governance/review-policy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ policyId: id }),
+      });
+
+      const result = await response.json();
+      console.log("[Policy Review] Response status:", response.status);
+      console.log("[Policy Review] Response result:", JSON.stringify(result, null, 2));
+
+      if (response.ok && result.success) {
+        setPolicyReviewResult({
+          success: true,
+          report: result.report,
+          analysis: result.analysis,
+          controlsAnalyzed: result.controlsAnalyzed,
+          regulationsChecked: result.regulationsChecked,
+        });
+        toast.success(t("Policy review completed successfully!"));
+        fetchPolicy(); // Refresh to update AI review status
+      } else {
+        const errorMessage = result.error || result.details || t("Failed to review policy");
+        console.error("[Policy Review] Error:", errorMessage);
+        setPolicyReviewResult({
+          success: false,
+          error: errorMessage,
+        });
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("[Policy Review] Exception:", error);
+      setPolicyReviewResult({
+        success: false,
+        error: t("An error occurred while reviewing the policy"),
+      });
+      toast.error(t("An error occurred while reviewing the policy"));
+    } finally {
+      setPolicyReviewLoading(false);
+    }
+  };
+
+  // Delete AI Review Report
+  const handleDeletePolicyReview = async () => {
+    setPolicyReviewDeleting(true);
+    try {
+      // Reset AI review status
+      const response = await fetch(`/api/policies/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aiReviewStatus: "Pending",
+          aiReviewJustification: null,
+        }),
+      });
+
+      if (response.ok) {
+        setPolicyReviewResult(null);
+        toast.success(t("AI review deleted successfully"));
+        fetchPolicy();
+      } else {
+        toast.error(t("Failed to delete AI review"));
+      }
+    } catch (error) {
+      console.error("[Delete Policy Review] Error:", error);
+      toast.error(t("Failed to delete AI review"));
+    } finally {
+      setPolicyReviewDeleting(false);
+    }
+  };
+
   const handleSaveAssignee = async () => {
     await handleInlineUpdate("assigneeId", selectedAssigneeId);
     setAssigneeDialogOpen(false);
@@ -1464,7 +1649,7 @@ export default function GovernanceDetailPage() {
             ) : (
               <Button variant="outline" onClick={handleTriggerAIReview}>
                 <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                {t("Start AI Review")}
+                {t("Basic AI Review")}
               </Button>
             )}
           </PermissionGate>
@@ -1920,11 +2105,11 @@ export default function GovernanceDetailPage() {
         </div>
       </div>
 
-      {/* AI Review Section */}
+      {/* Basic AI Review Section */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="flex items-center gap-2 px-3 sm:px-5 py-3 border-b border-slate-100">
           <Sparkles className="h-5 w-5 text-primary-600" />
-          <h3 className="text-base font-semibold text-slate-800">{t("AI Review")}</h3>
+          <h3 className="text-base font-semibold text-slate-800">{t("Basic AI Review")}</h3>
         </div>
         <div className="p-3 sm:p-5">
           {!policy.aiReviewStatus || policy.aiReviewStatus === "Pending" ? (
@@ -1932,13 +2117,13 @@ export default function GovernanceDetailPage() {
               <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                 <Sparkles className="h-6 w-6 text-primary-400" />
               </div>
-              <p className="text-sm font-medium text-slate-600 mb-1">{t("AI Review has not been performed yet")}</p>
-              <p className="text-xs text-slate-400">{t("Start an AI review to analyze this document")}</p>
+              <p className="text-sm font-medium text-slate-600 mb-1">{t("Basic AI Review has not been performed yet")}</p>
+              <p className="text-xs text-slate-400">{t("Start a basic AI review to analyze this document")}</p>
             </div>
           ) : policy.aiReviewStatus === "In Progress" ? (
             <div className="flex items-center justify-center gap-4 py-4">
               <div className="w-6 h-6 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-              <p className="text-sm text-slate-600">{t("AI Review in progress...")}</p>
+              <p className="text-sm text-slate-600">{t("Basic AI Review in progress...")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -1995,7 +2180,7 @@ export default function GovernanceDetailPage() {
           <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
-              {t("AI Review Details")}
+              {t("Basic AI Review Details")}
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
@@ -2355,17 +2540,17 @@ export default function GovernanceDetailPage() {
                   );
                 })()}
 
-                {/* Option 2: Generate Policy Using AI */}
+                {/* Option 2: Generate AI Policy - Disabled when document exists */}
                 {(() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
                   const hasLinkedControls = policy?.policyControls && policy.policyControls.length > 0;
                   const isDisabled = hasDocument || !hasLinkedControls;
                   return (
-                    <Dialog open={generatePolicyDialogOpen} onOpenChange={(open) => {
+                    <Dialog open={advancedReviewDialogOpen} onOpenChange={(open) => {
                       if (isDisabled) return;
-                      setGeneratePolicyDialogOpen(open);
-                      if (open) {
-                        fetchTemplates();
+                      setAdvancedReviewDialogOpen(open);
+                      if (!open) {
+                        setAdvancedReviewResult(null);
                       }
                     }}>
                       <DialogTrigger asChild disabled={isDisabled}>
@@ -2382,22 +2567,23 @@ export default function GovernanceDetailPage() {
                             <Sparkles className={`h-6 w-6 ${isDisabled ? "text-slate-400" : "text-purple-600"}`} />
                           </div>
                           <h3 className={`font-medium ${isDisabled ? "text-slate-400" : "text-slate-800"}`}>
-                            {t("Compliance Policy Composer")}
+                            {t("Generate AI Policy")}
                           </h3>
                           <p className={`text-sm mt-1 ${isDisabled ? "text-slate-300" : "text-slate-500"}`}>
                             {hasDocument
                               ? t("Delete existing file to use AI")
                               : !hasLinkedControls
                               ? t("Link controls first to generate")
-                              : t("Create document with AI assistance")}
+                              : t("Generate policy with AI")}
                           </p>
                         </div>
                       </DialogTrigger>
-                      <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                         <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
-                          <DialogTitle className="text-base font-semibold text-slate-800">{t("Compliance Policy Composer")}</DialogTitle>
+                          <DialogTitle className="text-base font-semibold text-slate-800">{t("Generate AI Policy")}</DialogTitle>
                         </DialogHeader>
                         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
+                          {/* Policy Info */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Policy Name")}</Label>
@@ -2409,98 +2595,10 @@ export default function GovernanceDetailPage() {
                             </div>
                           </div>
 
-                          {/* Template Selection */}
-                          <div>
-                            <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                              {t("Select Template")} <span className="text-red-500">*</span>
-                              <span className="text-xs text-slate-400 normal-case tracking-normal">(.docx only)</span>
-                            </Label>
-                            <div className="mt-2 space-y-3">
-                              {templates.length > 0 ? (
-                                <div className="border rounded-lg max-h-40 overflow-y-auto">
-                                  {templates.map((template) => (
-                                    <div
-                                      key={template.id}
-                                      className={`p-3 cursor-pointer border-b last:border-b-0 hover:bg-slate-50 ${
-                                        selectedTemplateId === template.id ? "bg-primary-50 border-primary-200" : ""
-                                      }`}
-                                      onClick={() => setSelectedTemplateId(template.id)}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                          <input
-                                            type="radio"
-                                            checked={selectedTemplateId === template.id}
-                                            onChange={() => setSelectedTemplateId(template.id)}
-                                            className="text-primary-600"
-                                          />
-                                          <FileText className="h-4 w-4 text-primary-500" />
-                                          <span className="font-medium text-sm text-slate-800">{template.name}</span>
-                                        </div>
-                                        <span className="text-xs text-slate-500">
-                                          {template.fileSize ? `${(template.fileSize / 1024).toFixed(1)} KB` : ""}
-                                        </span>
-                                      </div>
-                                      {template.uploadedBy && (
-                                        <p className="text-xs text-slate-400 ltr:ml-6 rtl:mr-6 mt-1">
-                                          {t("Uploaded by")}: {template.uploadedBy.fullName}
-                                        </p>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="border-2 border-dashed rounded-lg p-4 text-center text-slate-500">
-                                  <FileText className="h-8 w-8 mx-auto mb-2 text-slate-400" />
-                                  <p className="text-sm">{t("No templates available")}</p>
-                                  <p className="text-xs text-slate-400">{t("Upload a .docx template below")}</p>
-                                </div>
-                              )}
-
-                              {/* Upload New Template */}
-                              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50">
-                                <Label className="text-sm font-medium text-slate-700">{t("Or upload a new template")}</Label>
-                                <div className="mt-2 flex gap-2">
-                                  <Input
-                                    type="file"
-                                    accept=".docx"
-                                    onChange={(e) => setNewTemplateFile(e.target.files?.[0] || null)}
-                                    className="flex-1"
-                                  />
-                                </div>
-                                {newTemplateFile && (
-                                  <div className="mt-2 flex gap-2 items-end">
-                                    <div className="flex-1">
-                                      <Label className="text-xs">{t("Template Name")}</Label>
-                                      <Input
-                                        value={newTemplateName}
-                                        onChange={(e) => setNewTemplateName(e.target.value)}
-                                        placeholder={newTemplateFile.name.replace(/\.[^/.]+$/, "")}
-                                        className="mt-1"
-                                      />
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      onClick={handleUploadTemplate}
-                                      disabled={uploadingTemplate}
-                                    >
-                                      {uploadingTemplate ? (
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                                      ) : (
-                                        <Upload className="h-4 w-4" />
-                                      )}
-                                      <span className="ltr:ml-1 rtl:mr-1">{t("Upload")}</span>
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
                           {/* Linked Controls */}
                           <div>
                             <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Linked Controls")} ({policy?.policyControls?.length || 0})</Label>
-                            <div className="mt-2 border border-slate-200 rounded-lg max-h-32 overflow-y-auto">
+                            <div className="mt-2 border border-slate-200 rounded-lg max-h-40 overflow-y-auto">
                               {policy?.policyControls && policy.policyControls.length > 0 ? (
                                 <div className="divide-y divide-slate-100">
                                   {policy.policyControls.map((pc) => (
@@ -2510,6 +2608,9 @@ export default function GovernanceDetailPage() {
                                           {pc.control.controlCode}
                                         </Badge>
                                         <span className="text-sm">{controlNameMap.get(pc.control.id) || pc.control.name}</span>
+                                        {pc.control.framework && (
+                                          <Badge className="text-xs bg-blue-100 text-blue-700">{pc.control.framework.name}</Badge>
+                                        )}
                                       </div>
                                     </div>
                                   ))}
@@ -2522,37 +2623,79 @@ export default function GovernanceDetailPage() {
                             </div>
                           </div>
 
-                          <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
-                            <p className="text-sm text-primary-800">
-                              <strong>{t("Note")}:</strong> {t("The AI will use the selected template and linked controls to generate a comprehensive policy document.")}
-                            </p>
-                          </div>
+                          {/* Note */}
+                          {!advancedReviewResult && !advancedReviewLoading && (
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                              <p className="text-sm text-purple-800">
+                                <strong>{t("Note")}:</strong> {t("The AI will analyze the linked controls and generate a comprehensive policy document in DOCX format.")}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Loading State */}
+                          {advancedReviewLoading && (
+                            <div className="flex flex-col items-center justify-center py-8">
+                              <div className="w-12 h-12 rounded-full border-4 border-purple-500 border-t-transparent animate-spin mb-4" />
+                              <p className="text-sm text-slate-600">{t("Generating policy document...")}</p>
+                              <p className="text-xs text-slate-400 mt-1">{t("This may take a few moments")}</p>
+                            </div>
+                          )}
+
+                          {/* Result Section */}
+                          {advancedReviewResult && (
+                            <div className="space-y-3">
+                              {advancedReviewResult.success ? (
+                                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                                  <div className="flex items-center gap-2 text-green-800 mb-2">
+                                    <Check className="h-5 w-5" />
+                                    <span className="font-medium">{t("Policy document generated successfully!")}</span>
+                                  </div>
+                                  <p className="text-sm text-green-700">
+                                    {t("The document has been added to the uploaded files section below.")}
+                                  </p>
+                                  {advancedReviewResult.framework && (
+                                    <p className="text-sm text-slate-600 mt-2">
+                                      {t("Framework")}: <strong>{advancedReviewResult.framework}</strong> | {t("Controls used")}: <strong>{advancedReviewResult.controlsUsed}</strong>
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="bg-red-50 text-red-800 rounded-lg p-4 border border-red-200">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <AlertTriangle className="h-5 w-5" />
+                                    <span className="font-medium">{t("Generation failed")}</span>
+                                  </div>
+                                  <p className="text-sm">{advancedReviewResult.error}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
                           <Button variant="outline" onClick={() => {
-                            setGeneratePolicyDialogOpen(false);
-                            setSelectedTemplateId("");
-                            setNewTemplateFile(null);
-                            setNewTemplateName("");
+                            setAdvancedReviewDialogOpen(false);
+                            setAdvancedReviewResult(null);
                           }}>
-                            {t("Cancel")}
+                            {t("Close")}
                           </Button>
-                          <Button
-                            onClick={handleGeneratePolicy}
-                            disabled={generatingPolicy || !hasLinkedControls || !selectedTemplateId}
-                          >
-                            {generatingPolicy ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" />
-                                {t("Generating...")}
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                                {t("Generate Policy")}
-                              </>
-                            )}
-                          </Button>
+                          {!advancedReviewResult?.success && (
+                            <Button
+                              onClick={handleAdvancedAIReview}
+                              disabled={advancedReviewLoading || !hasLinkedControls || hasDocument}
+                            >
+                              {advancedReviewLoading ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" />
+                                  {t("Generating...")}
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                  {t("Generate Policy")}
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -2710,31 +2853,297 @@ export default function GovernanceDetailPage() {
                   );
                 })()}
 
-                {/* Option 4: AI Policy Generator */}
+                {/* Option 4: Advanced AI Review - enabled when document EXISTS */}
                 {(() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
+                  const hasLinkedControls = policy?.policyControls && policy.policyControls.length > 0;
+                  const isDisabled = !hasDocument || !hasLinkedControls;
+
+                  // Parse existing review data from aiReviewJustification
+                  // Only consider it a valid review if it has a filePath (actual review report)
+                  let existingReview: { fileName?: string; filePath?: string; fileSize?: number; controlsAnalyzed?: number; regulationsChecked?: string[] } | null = null;
+                  if (policy.aiReviewJustification) {
+                    try {
+                      const parsed = JSON.parse(policy.aiReviewJustification);
+                      // Only set existingReview if it has a filePath (actual review report)
+                      if (parsed && parsed.filePath) {
+                        existingReview = parsed;
+                      }
+                    } catch {
+                      // Not JSON, just a string from policy generation - no review report
+                    }
+                  }
+
+                  // Review is truly completed only if we have an actual review report with filePath
+                  const hasReviewReport = existingReview?.filePath ? true : false;
+
                   return (
-                    <div
-                      className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-                        hasDocument
-                          ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
-                          : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${
-                        hasDocument ? "bg-slate-100" : "bg-blue-100"
-                      }`}>
-                        <Bot className={`h-6 w-6 ${hasDocument ? "text-slate-400" : "text-blue-600"}`} />
-                      </div>
-                      <h3 className={`font-medium ${hasDocument ? "text-slate-400" : "text-slate-800"}`}>
-                        {t("AI Policy Generator")}
-                      </h3>
-                      <p className={`text-sm mt-1 ${hasDocument ? "text-slate-300" : "text-slate-500"}`}>
-                        {hasDocument
-                          ? t("Delete existing file first")
-                          : t("Auto-generate policy with AI")}
-                      </p>
-                    </div>
+                    <Dialog open={policyReviewDialogOpen} onOpenChange={(open) => {
+                      if (isDisabled) return;
+                      setPolicyReviewDialogOpen(open);
+                      if (!open) {
+                        setPolicyReviewResult(null);
+                      }
+                    }}>
+                      <DialogTrigger asChild disabled={isDisabled}>
+                        <div
+                          className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                            isDisabled
+                              ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-50"
+                              : "border-slate-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                            isDisabled ? "bg-slate-100" : hasReviewReport ? "bg-green-100" : "bg-blue-100"
+                          }`}>
+                            {hasReviewReport ? (
+                              <Check className="h-6 w-6 text-green-600" />
+                            ) : (
+                              <Bot className={`h-6 w-6 ${isDisabled ? "text-slate-400" : "text-blue-600"}`} />
+                            )}
+                          </div>
+                          <h3 className={`font-medium ${isDisabled ? "text-slate-400" : "text-slate-800"}`}>
+                            {t("Advanced AI Review")}
+                          </h3>
+                          <p className={`text-sm mt-1 ${isDisabled ? "text-slate-300" : "text-slate-500"}`}>
+                            {!hasDocument
+                              ? t("Upload document first")
+                              : !hasLinkedControls
+                              ? t("Link controls first")
+                              : hasReviewReport
+                              ? t("Review completed - click to view")
+                              : t("Review policy with AI")}
+                          </p>
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                        <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                          <DialogTitle className="text-base font-semibold text-slate-800">{t("Advanced AI Review")}</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
+
+                          {/* Show existing review if report exists */}
+                          {hasReviewReport && existingReview && !policyReviewResult && !policyReviewLoading && (
+                            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                              <div className="flex items-center gap-2 text-green-800 mb-3">
+                                <Check className="h-5 w-5" />
+                                <span className="font-medium">{t("Review Report Available")}</span>
+                              </div>
+                              {existingReview.fileName && (
+                                <div className="flex items-center gap-2 text-sm text-slate-600 mb-3">
+                                  <FileText className="h-4 w-4" />
+                                  <span>{existingReview.fileName}</span>
+                                  {existingReview.fileSize && (
+                                    <span className="text-slate-400">
+                                      ({(existingReview.fileSize / 1024).toFixed(1)} KB)
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {existingReview.controlsAnalyzed && (
+                                <p className="text-sm text-slate-600">
+                                  {t("Controls analyzed")}: <strong>{existingReview.controlsAnalyzed}</strong>
+                                </p>
+                              )}
+                              {existingReview.regulationsChecked && existingReview.regulationsChecked.length > 0 && (
+                                <p className="text-sm text-slate-600 mb-3">
+                                  {t("Regulations checked")}: <strong>{existingReview.regulationsChecked.join(", ")}</strong>
+                                </p>
+                              )}
+                              <div className="flex gap-2 mt-4">
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    if (existingReview?.filePath) {
+                                      // Prepend /api to serve files through the API route
+                                      const apiPath = existingReview.filePath.startsWith('/uploads')
+                                        ? `/api${existingReview.filePath}`
+                                        : existingReview.filePath;
+                                      // Create a temporary link to trigger download
+                                      const link = document.createElement('a');
+                                      link.href = apiPath;
+                                      link.download = existingReview.fileName || 'AI_Review_Report.docx';
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                    }
+                                  }}
+                                >
+                                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                  {t("Download Report")}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={handleDeletePolicyReview}
+                                  disabled={policyReviewDeleting}
+                                >
+                                  {policyReviewDeleting ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                  )}
+                                  {t("Delete")}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Show start review UI when no review report exists */}
+                          {!hasReviewReport && !policyReviewResult && !policyReviewLoading && (
+                            <>
+                              {/* Policy Info */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Policy Name")}</Label>
+                                  <Input value={translatedPolicy?.name || policy?.name || ""} disabled className="bg-slate-50" />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Document")}</Label>
+                                  <Input value={attachments[0]?.fileName || linkedVaultDocuments[0]?.document?.fileName || ""} disabled className="bg-slate-50" />
+                                </div>
+                              </div>
+
+                              {/* Linked Controls */}
+                              <div>
+                                <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Controls to Review")} ({policy?.policyControls?.length || 0})</Label>
+                                <div className="mt-2 border border-slate-200 rounded-lg max-h-32 overflow-y-auto">
+                                  {policy?.policyControls && policy.policyControls.length > 0 ? (
+                                    <div className="divide-y divide-slate-100">
+                                      {policy.policyControls.map((pc) => (
+                                        <div key={pc.control.id} className="p-2 hover:bg-slate-50">
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-xs font-mono">
+                                              {pc.control.controlCode}
+                                            </Badge>
+                                            <span className="text-sm">{controlNameMap.get(pc.control.id) || pc.control.name}</span>
+                                            {pc.control.framework && (
+                                              <Badge className="text-xs bg-blue-100 text-blue-700">{pc.control.framework.name}</Badge>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="p-4 text-center text-slate-500">
+                                      {t("No controls linked to this policy")}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Note */}
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p className="text-sm text-blue-800">
+                                  <strong>{t("Note")}:</strong> {t("The AI will analyze the policy document against the linked controls and generate a compliance review report.")}
+                                </p>
+                              </div>
+                            </>
+                          )}
+
+                          {/* Loading State */}
+                          {policyReviewLoading && (
+                            <div className="flex flex-col items-center justify-center py-8">
+                              <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin mb-4" />
+                              <p className="text-sm text-slate-600">{t("Analyzing policy document...")}</p>
+                              <p className="text-xs text-slate-400 mt-1">{t("This may take a few moments")}</p>
+                            </div>
+                          )}
+
+                          {/* Result Section - after new review */}
+                          {policyReviewResult && (
+                            <div className="space-y-3">
+                              {policyReviewResult.success ? (
+                                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                                  <div className="flex items-center gap-2 text-green-800 mb-2">
+                                    <Check className="h-5 w-5" />
+                                    <span className="font-medium">{t("Policy review completed successfully!")}</span>
+                                  </div>
+                                  {policyReviewResult.report && (
+                                    <div className="flex items-center gap-2 text-sm text-slate-600 mb-3">
+                                      <FileText className="h-4 w-4" />
+                                      <span>{policyReviewResult.report.fileName}</span>
+                                      <span className="text-slate-400">
+                                        ({(policyReviewResult.report.fileSize / 1024).toFixed(1)} KB)
+                                      </span>
+                                    </div>
+                                  )}
+                                  {policyReviewResult.controlsAnalyzed && (
+                                    <p className="text-sm text-slate-600">
+                                      {t("Controls analyzed")}: <strong>{policyReviewResult.controlsAnalyzed}</strong>
+                                    </p>
+                                  )}
+                                  {policyReviewResult.regulationsChecked && policyReviewResult.regulationsChecked.length > 0 && (
+                                    <p className="text-sm text-slate-600 mb-3">
+                                      {t("Regulations checked")}: <strong>{policyReviewResult.regulationsChecked.join(", ")}</strong>
+                                    </p>
+                                  )}
+                                  {policyReviewResult.report && (
+                                    <div className="flex gap-2 mt-3">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => {
+                                          if (policyReviewResult.report?.filePath) {
+                                            // Prepend /api to serve files through the API route
+                                            const apiPath = policyReviewResult.report.filePath.startsWith('/uploads')
+                                              ? `/api${policyReviewResult.report.filePath}`
+                                              : policyReviewResult.report.filePath;
+                                            // Create a temporary link to trigger download
+                                            const link = document.createElement('a');
+                                            link.href = apiPath;
+                                            link.download = policyReviewResult.report.fileName || 'AI_Review_Report.docx';
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                          }
+                                        }}
+                                      >
+                                        <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                        {t("Download Report")}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="bg-red-50 text-red-800 rounded-lg p-4 border border-red-200">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <AlertTriangle className="h-5 w-5" />
+                                    <span className="font-medium">{t("Review failed")}</span>
+                                  </div>
+                                  <p className="text-sm">{policyReviewResult.error}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex-shrink-0">
+                          <Button variant="outline" onClick={() => {
+                            setPolicyReviewDialogOpen(false);
+                            setPolicyReviewResult(null);
+                          }}>
+                            {t("Close")}
+                          </Button>
+                          {!hasReviewReport && !policyReviewResult?.success && (
+                            <Button
+                              onClick={handlePolicyReview}
+                              disabled={policyReviewLoading || !hasLinkedControls || !hasDocument}
+                            >
+                              {policyReviewLoading ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" />
+                                  {t("Analyzing...")}
+                                </>
+                              ) : (
+                                <>
+                                  <Bot className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                  {t("Start Review")}
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   );
                 })()}
               </div>
