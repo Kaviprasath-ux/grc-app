@@ -252,13 +252,10 @@ export default function ControlsMasterDataPage() {
 
   const handleCreate = async () => {
     try {
-      const autoCode = `CTRL-${Date.now()}`;
-
       const response = await fetch("/api/controls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          controlCode: autoCode,
           name: formData.name,
           description: formData.description || null,
           controlQuestion: formData.controlQuestion || null,
@@ -306,7 +303,6 @@ export default function ControlsMasterDataPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          controlCode: formData.controlCode,
           name: formData.name,
           description: formData.description || null,
           controlQuestion: formData.controlQuestion || null,

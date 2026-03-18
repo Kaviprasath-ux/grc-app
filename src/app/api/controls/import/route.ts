@@ -98,8 +98,19 @@ export const POST = withAuth(
           ? controlCode
           : null;
         if (!newControlCode) {
-          const count = await prisma.control.count({ where: { customerAccountId } });
-          newControlCode = `CTRL-${String(count + 1).padStart(3, "0")}`;
+          // Generate code in UC-XXX-NNNN-YYYY format
+          const abbr = functionalGrouping ? functionalGrouping.substring(0, 3).toUpperCase() : "GEN";
+          const year = new Date().getFullYear();
+          const existingUC = await prisma.control.findMany({
+            where: { customerAccountId, controlCode: { startsWith: "UC-" } },
+            select: { controlCode: true },
+          });
+          let maxSerial = 0;
+          for (const c of existingUC) {
+            const m = c.controlCode.match(/UC-[A-Z]{3}-(\d+)-\d{4}/);
+            if (m) { const n = parseInt(m[1], 10); if (n > maxSerial) maxSerial = n; }
+          }
+          newControlCode = `UC-${abbr}-${String(maxSerial + 1).padStart(4, "0")}-${year}`;
         }
 
         // Create control with tenant isolation

@@ -34,20 +34,20 @@ export const GET = withAuth(
   { resource: "risk.response", action: "view" }
 );
 
-// Generate sequential control code for the Control record
-async function generateControlCode(customerAccountId: string): Promise<string> {
-  const lastControl = await prisma.control.findFirst({
-    where: { customerAccountId },
-    orderBy: { createdAt: "desc" },
+// Generate control code: UC-XXX-NNNN-YYYY format
+async function generateControlCode(customerAccountId: string, functionalGrouping?: string | null): Promise<string> {
+  const abbr = functionalGrouping ? functionalGrouping.substring(0, 3).toUpperCase() : "GEN";
+  const year = new Date().getFullYear();
+  const existingControls = await prisma.control.findMany({
+    where: { customerAccountId, controlCode: { startsWith: "UC-" } },
     select: { controlCode: true },
   });
-  if (!lastControl) return "CTRL-001";
-  const match = lastControl.controlCode.match(/CTRL-(\d+)/);
-  if (match) {
-    const nextNum = parseInt(match[1], 10) + 1;
-    return `CTRL-${String(nextNum).padStart(3, "0")}`;
+  let maxSerial = 0;
+  for (const c of existingControls) {
+    const m = c.controlCode.match(/UC-[A-Z]{3}-(\d+)-\d{4}/);
+    if (m) { const n = parseInt(m[1], 10); if (n > maxSerial) maxSerial = n; }
   }
-  return `CTRL-001`;
+  return `UC-${abbr}-${String(maxSerial + 1).padStart(4, "0")}-${year}`;
 }
 
 export const POST = withAuth(
@@ -58,7 +58,7 @@ export const POST = withAuth(
       const customerAccountId = getCustomerAccountId(session);
 
       // Generate a proper sequential control code
-      const controlCode = await generateControlCode(customerAccountId);
+      const controlCode = await generateControlCode(customerAccountId, body.functionalGrouping);
 
       // 1. Create the actual Control record in the compliance controls table
       const complianceControl = await prisma.control.create({

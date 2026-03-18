@@ -57,22 +57,18 @@ function parseControlMapping(controlMapping: string): string[] {
 /**
  * Generate a unique control code for auto-created controls
  */
-function generateControlCode(existingCodes: Set<string>, baseName: string): string {
-  // Clean the base name to create a code-friendly string
-  const cleanName = baseName
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .substring(0, 20);
-
-  let code = `AUTO-${cleanName}`;
-  let counter = 1;
+function generateControlCode(existingCodes: Set<string>, baseName: string, serialCounter: { value: number }): string {
+  // UC-GEN-NNNN-YYYY format (no functional grouping available during framework import)
+  const year = new Date().getFullYear();
+  serialCounter.value++;
+  let code = `UC-GEN-${String(serialCounter.value).padStart(4, "0")}-${year}`;
 
   // Ensure uniqueness
+  let counter = serialCounter.value;
   while (existingCodes.has(code.toLowerCase())) {
-    code = `AUTO-${cleanName}-${counter}`;
     counter++;
+    serialCounter.value = counter;
+    code = `UC-GEN-${String(counter).padStart(4, "0")}-${year}`;
   }
 
   return code;
@@ -181,11 +177,15 @@ export const POST = withAuth(
     const controlByCode = new Map<string, { id: string; controlCode: string; name: string }>();
     const controlByName = new Map<string, { id: string; controlCode: string; name: string }>();
     const existingControlCodes = new Set<string>();
+    let maxUCSerial = 0;
     for (const control of allControls) {
       controlByCode.set(control.controlCode.toLowerCase(), control);
       controlByName.set(control.name.toLowerCase(), control);
       existingControlCodes.add(control.controlCode.toLowerCase());
+      const m = control.controlCode.match(/UC-[A-Z]{3}-(\d+)-\d{4}/);
+      if (m) { const n = parseInt(m[1], 10); if (n > maxUCSerial) maxUCSerial = n; }
     }
+    const serialCounter = { value: maxUCSerial };
 
     // Collect control mapping errors (only for actual failures, not "not found")
     const controlMappingErrors: ValidationError[] = [];
@@ -282,7 +282,7 @@ export const POST = withAuth(
           if (!control) {
             try {
               // Generate a unique control code
-              const newControlCode = generateControlCode(existingControlCodes, controlRef);
+              const newControlCode = generateControlCode(existingControlCodes, controlRef, serialCounter);
               existingControlCodes.add(newControlCode.toLowerCase());
 
               // Create the new control with required defaults

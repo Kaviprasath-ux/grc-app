@@ -4,29 +4,38 @@ import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth"
 import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
 import { translateRecord } from '@/lib/translation-service';
 
-// Helper function to generate control code (format: CTRL-001, CTRL-002, etc.)
+// Functional grouping abbreviations (first 3 letters uppercase)
+function getFunctionalAbbr(functionalGrouping?: string | null): string {
+  if (!functionalGrouping) return "GEN";
+  return functionalGrouping.substring(0, 3).toUpperCase();
+}
+
+// Helper function to generate control code
+// Format: UC-GOV-0001-2026 (UC = prefix, GOV = functional group abbr, 0001 = serial, 2026 = year)
 // Scoped to customer account
-async function generateControlCode(customerAccountId: string): Promise<string> {
-  const lastControl = await prisma.control.findFirst({
-    where: { customerAccountId },
-    orderBy: { createdAt: "desc" },
+async function generateControlCode(customerAccountId: string, functionalGrouping?: string | null): Promise<string> {
+  const abbr = getFunctionalAbbr(functionalGrouping);
+  const year = new Date().getFullYear();
+
+  // Find the highest serial number for this tenant with the UC- prefix
+  const existingControls = await prisma.control.findMany({
+    where: { customerAccountId, controlCode: { startsWith: "UC-" } },
     select: { controlCode: true },
+    orderBy: { createdAt: "desc" },
   });
 
-  if (!lastControl) {
-    return "CTRL-001";
+  let maxSerial = 0;
+  for (const c of existingControls) {
+    // Match UC-XXX-NNNN-YYYY pattern and extract serial
+    const match = c.controlCode.match(/UC-[A-Z]{3}-(\d+)-\d{4}/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxSerial) maxSerial = num;
+    }
   }
 
-  // Extract the number from the last control code (e.g., "CTRL-042" -> 42)
-  const match = lastControl.controlCode.match(/CTRL-(\d+)/);
-  if (match) {
-    const nextNum = parseInt(match[1], 10) + 1;
-    return `CTRL-${String(nextNum).padStart(3, "0")}`;
-  }
-
-  // Fallback: count-based within customer account
-  const count = await prisma.control.count({ where: { customerAccountId } });
-  return `CTRL-${String(count + 1).padStart(3, "0")}`;
+  const nextSerial = String(maxSerial + 1).padStart(4, "0");
+  return `UC-${abbr}-${nextSerial}-${year}`;
 }
 
 // GET all controls with filters - filtered by customer account
@@ -161,7 +170,7 @@ export const POST = withAuth(
       const customerAccountId = getCustomerAccountId(session);
 
       // Generate control code if not provided
-      const code = controlCode || await generateControlCode(customerAccountId);
+      const code = controlCode || await generateControlCode(customerAccountId, functionalGrouping);
 
       const control = await prisma.control.create({
         data: {

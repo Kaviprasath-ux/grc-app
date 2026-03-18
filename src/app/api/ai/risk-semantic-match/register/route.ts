@@ -357,13 +357,26 @@ async function handler(
                                         stats.controls.matched++;
                                         console.log(`[Control] ✓ Matched existing by name: ${existingControl.name}`);
                                     } else {
-                                        const controlCode = `CTL-AI-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+                                        // Generate UC-XXX-NNNN-YYYY format code
+                                        const fg = control.control_functionalGrouping || "protect";
+                                        const abbr = fg.substring(0, 3).toUpperCase();
+                                        const yr = new Date().getFullYear();
+                                        const existingUC = await prisma.control.findMany({
+                                            where: { customerAccountId, controlCode: { startsWith: "UC-" } },
+                                            select: { controlCode: true },
+                                        });
+                                        let maxS = 0;
+                                        for (const c of existingUC) {
+                                            const m = c.controlCode.match(/UC-[A-Z]{3}-(\d+)-\d{4}/);
+                                            if (m) { const n = parseInt(m[1], 10); if (n > maxS) maxS = n; }
+                                        }
+                                        const controlCode = `UC-${abbr}-${String(maxS + 1).padStart(4, "0")}-${yr}`;
                                         controlRecord = await prisma.control.create({
                                             data: {
                                                 customerAccountId,
                                                 controlCode,
                                                 name: control.ControlName,
-                                                functionalGrouping: control.control_functionalGrouping || "protect",
+                                                functionalGrouping: fg,
                                                 status: "Non Compliant",
                                                 description: "AI suggested control",
                                             },

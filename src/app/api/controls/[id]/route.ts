@@ -203,7 +203,24 @@ export const PUT = withAuth(
     if (controlCode !== undefined) updateData.controlCode = controlCode;
     if (description !== undefined) updateData.description = description;
     if (controlQuestion !== undefined) updateData.controlQuestion = controlQuestion;
-    if (functionalGrouping !== undefined) updateData.functionalGrouping = functionalGrouping;
+    if (functionalGrouping !== undefined) {
+      updateData.functionalGrouping = functionalGrouping;
+      // Regenerate control code when functional grouping changes (unless controlCode explicitly provided)
+      if (controlCode === undefined) {
+        const abbr = functionalGrouping ? functionalGrouping.substring(0, 3).toUpperCase() : "GEN";
+        const year = new Date().getFullYear();
+        const existingControls = await prisma.control.findMany({
+          where: { customerAccountId: existing.customerAccountId, controlCode: { startsWith: "UC-" } },
+          select: { controlCode: true },
+        });
+        let maxSerial = 0;
+        for (const c of existingControls) {
+          const m = c.controlCode.match(/UC-[A-Z]{3}-(\d+)-\d{4}/);
+          if (m) { const n = parseInt(m[1], 10); if (n > maxSerial) maxSerial = n; }
+        }
+        updateData.controlCode = `UC-${abbr}-${String(maxSerial + 1).padStart(4, "0")}-${year}`;
+      }
+    }
     if (status !== undefined) updateData.status = status;
     if (entities !== undefined) updateData.entities = entities;
     if (isControlList !== undefined) updateData.isControlList = isControlList;
