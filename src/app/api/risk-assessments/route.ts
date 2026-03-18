@@ -1,15 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, canAccessRecord, forbidden } from "@/lib/api-auth";
-
-// Helper function to calculate risk rating based on score
-// Rating values matching website: Catastrophic, Very high, High, Low Risk
-function calculateRiskRating(score: number): string {
-  if (score >= 20) return "Catastrophic";
-  if (score >= 15) return "Very high";
-  if (score >= 10) return "High";
-  return "Low Risk";
-}
+import { calculateRiskScore } from '@/lib/risk-scoring';
 
 // Helper function to generate assessment ID
 async function generateAssessmentId(): Promise<string> {
@@ -133,8 +125,9 @@ export const POST = withAuth(
       const customerAccountId = getCustomerAccountId(session);
 
       const assessmentId = await generateAssessmentId();
-      const riskScore = likelihood * impact;
-      const riskRating = calculateRiskRating(riskScore);
+      const scoreResult = await calculateRiskScore(customerAccountId, { likelihood, impact });
+      const riskScore = scoreResult?.riskScore ?? (likelihood * impact);
+      const riskRating = scoreResult?.riskRating ?? "";
 
       const assessment = await prisma.riskAssessment.create({
         data: {

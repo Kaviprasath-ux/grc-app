@@ -889,6 +889,7 @@ CREATE TABLE "PolicyAttachment" (
     "filePath" TEXT NOT NULL,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "policyId" TEXT NOT NULL,
+    "uploadedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -906,6 +907,7 @@ CREATE TABLE "GovernanceVaultDocument" (
     "filePath" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'Active',
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "uploadedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -5044,7 +5046,13 @@ ALTER TABLE "KPIActionPlan" ADD CONSTRAINT "KPIActionPlan_kpiReviewId_fkey" FORE
 ALTER TABLE "PolicyAttachment" ADD CONSTRAINT "PolicyAttachment_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "Policy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "PolicyAttachment" ADD CONSTRAINT "PolicyAttachment_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "GovernanceVaultDocument" ADD CONSTRAINT "GovernanceVaultDocument_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GovernanceVaultDocument" ADD CONSTRAINT "GovernanceVaultDocument_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "GovernanceVaultDocumentLink" ADD CONSTRAINT "GovernanceVaultDocumentLink_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "GovernanceVaultDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;

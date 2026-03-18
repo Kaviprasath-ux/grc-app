@@ -3,15 +3,7 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getDataScopeFilter } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 import { translateRecord } from '@/lib/translation-service';
-
-// Helper function to calculate risk rating based on score
-// Rating values matching website: Catastrophic, Very high, High, Low Risk
-function calculateRiskRating(score: number): string {
-  if (score >= 20) return "Catastrophic";
-  if (score >= 15) return "Very high";
-  if (score >= 10) return "High";
-  return "Low Risk";
-}
+import { calculateRiskScore } from '@/lib/risk-scoring';
 
 // Helper function to generate risk ID (format: RID0001, RID0002, etc. matching website)
 // Now scoped to customer account
@@ -222,8 +214,9 @@ export const POST = withAuth(
       const customerAccountId = getCustomerAccountId(session);
 
       const riskId = await generateRiskId(customerAccountId);
-      const riskScore = likelihood * impact;
-      const riskRating = (likelihood && impact) ? calculateRiskRating(riskScore) : "";
+      const scoreResult = await calculateRiskScore(customerAccountId, { likelihood, impact });
+      const riskScore = scoreResult?.riskScore ?? 0;
+      const riskRating = scoreResult?.riskRating ?? "";
 
       const risk = await prisma.risk.create({
         data: {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId, withAuthOnly } from "@/lib/api-auth";
+import { calculateRiskScore } from '@/lib/risk-scoring';
 
 // Required template columns in exact order
 const TEMPLATE_COLUMNS = [
@@ -12,14 +13,6 @@ const TEMPLATE_COLUMNS = [
   "Potential threat",
   "Associated vulnerabilities",
 ] as const;
-
-// Helper function to calculate risk rating based on score
-function calculateRiskRating(score: number): string {
-  if (score >= 20) return "Catastrophic";
-  if (score >= 15) return "Very high";
-  if (score >= 10) return "High";
-  return "Low Risk";
-}
 
 // Helper function to generate risk ID
 async function generateRiskId(customerAccountId: string): Promise<string> {
@@ -235,11 +228,12 @@ export const POST = withAuth(
           // Generate risk ID
           const riskId = await generateRiskId(customerAccountId);
 
-          // Default values for assessment
+          // Default values for assessment (imported risks have no assessment yet)
           const likelihood = 1;
           const impact = 1;
-          const riskScore = likelihood * impact;
-          const riskRating = calculateRiskRating(riskScore);
+          const scoreResult = await calculateRiskScore(customerAccountId, { likelihood, impact });
+          const riskScore = scoreResult?.riskScore ?? 1;
+          const riskRating = scoreResult?.riskRating ?? "";
 
           // Create the risk with activity log
           const risk = await prisma.risk.create({

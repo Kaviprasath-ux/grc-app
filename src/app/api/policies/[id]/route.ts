@@ -23,7 +23,11 @@ export const GET = withAuth(
           department: true,
           assignee: true,
           approver: true,
-          attachments: true,
+          attachments: {
+            include: {
+              uploadedBy: { select: { id: true, fullName: true } },
+            },
+          },
           policyControls: {
             include: {
               control: {
@@ -51,6 +55,7 @@ export const GET = withAuth(
                   filePath: true,
                   status: true,
                   uploadedAt: true,
+                  uploadedBy: { select: { id: true, fullName: true } },
                 },
               },
             },
@@ -144,7 +149,11 @@ export const PUT = withAuth(
           department: true,
           assignee: true,
           approver: true,
-          attachments: true,
+          attachments: {
+            include: {
+              uploadedBy: { select: { id: true, fullName: true } },
+            },
+          },
         },
       });
 
@@ -271,7 +280,11 @@ export const PATCH = withAuth(
           department: true,
           assignee: true,
           approver: true,
-          attachments: true,
+          attachments: {
+            include: {
+              uploadedBy: { select: { id: true, fullName: true } },
+            },
+          },
         },
       });
 

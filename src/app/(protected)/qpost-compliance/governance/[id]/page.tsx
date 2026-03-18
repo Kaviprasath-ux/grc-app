@@ -2952,7 +2952,7 @@ export default function GovernanceDetailPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-primary truncate">{att.fileName}</p>
                           <p className="text-xs text-slate-500">
-                            By bts, {new Date(att.uploadedAt).toLocaleDateString("en-US", {
+                            {t("By")} {att.uploadedBy?.fullName || att.uploadedByName || t("Unknown")}, {new Date(att.uploadedAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "2-digit",
                               year: "numeric",
@@ -3002,7 +3002,7 @@ export default function GovernanceDetailPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-primary truncate">{link.document.fileName}</p>
                           <p className="text-xs text-slate-500">
-                            By bts, {new Date(link.document.uploadedAt).toLocaleDateString("en-US", {
+                            {t("By")} {link.document.uploadedBy?.fullName || t("Unknown")}, {new Date(link.document.uploadedAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "2-digit",
                               year: "numeric",

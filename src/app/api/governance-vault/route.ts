@@ -139,6 +139,7 @@ export const POST = withAuth(
           fileSize,
           filePath: relativePath,
           status: "Active",
+          uploadedById: session.id,
         },
         select: {
           id: true,

@@ -34,6 +34,9 @@ export const GET = withAuth(
       const attachments = await prisma.policyAttachment.findMany({
         where: { policyId: id },
         orderBy: { uploadedAt: "desc" },
+        include: {
+          uploadedBy: { select: { id: true, fullName: true } },
+        },
       });
 
       return NextResponse.json(
@@ -44,6 +47,7 @@ export const GET = withAuth(
           fileSize: att.fileSize,
           filePath: att.filePath,
           uploadedAt: att.uploadedAt.toISOString(),
+          uploadedByName: att.uploadedBy?.fullName || null,
         }))
       );
     } catch (error) {
@@ -112,6 +116,7 @@ export const POST = withAuth(
           fileType,
           fileSize: file.size,
           filePath: relativePath,
+          uploadedById: session.id,
         },
       });
 

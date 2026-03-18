@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
+import { calculateRiskScore } from '@/lib/risk-scoring';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
-}
-
-// Helper function to calculate risk rating based on score
-// Rating values matching website: Catastrophic, Very high, High, Low Risk
-function calculateRiskRating(score: number): string {
-  if (score >= 20) return "Catastrophic";
-  if (score >= 15) return "Very high";
-  if (score >= 10) return "High";
-  return "Low Risk";
 }
 
 // GET a single risk assessment - filtered by customer account and department scope
@@ -141,8 +133,9 @@ export const PUT = withAuth(
 
       const newLikelihood = likelihood ?? existing.likelihood;
       const newImpact = impact ?? existing.impact;
-      const riskScore = newLikelihood * newImpact;
-      const riskRating = calculateRiskRating(riskScore);
+      const scoreResult = await calculateRiskScore(existing.customerAccountId, { likelihood: newLikelihood, impact: newImpact });
+      const riskScore = scoreResult?.riskScore ?? (newLikelihood * newImpact);
+      const riskRating = scoreResult?.riskRating ?? "";
 
       const assessment = await prisma.riskAssessment.update({
         where: { id },

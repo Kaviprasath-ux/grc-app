@@ -3,18 +3,10 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
 import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
+import { calculateRiskScore } from '@/lib/risk-scoring';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
-}
-
-// Helper function to calculate risk rating based on score
-// Rating values matching website: Catastrophic, Very high, High, Low Risk
-function calculateRiskRating(score: number): string {
-  if (score >= 20) return "Catastrophic";
-  if (score >= 15) return "Very high";
-  if (score >= 10) return "High";
-  return "Low Risk";
 }
 
 // GET a single risk by ID - filtered by customer account
@@ -170,13 +162,8 @@ export const PUT = withAuth(
         return forbidden("Access denied - this risk belongs to a different department");
       }
 
-      // Calculate scores
-      const newLikelihood = likelihood ?? existingRisk.likelihood;
-    const newImpact = impact ?? existingRisk.impact;
-    const riskScore = newLikelihood * newImpact;
-    const calculatedRiskRating = calculateRiskRating(riskScore);
-
-    // Build update data
+      // Only recalculate scores if likelihood/impact are explicitly provided in the request
+      // (these come from assessment, not from the edit form)
     const updateData: Record<string, unknown> = {
       name,
       description,
@@ -188,16 +175,30 @@ export const PUT = withAuth(
       impactedAssetId,
       impactedAssetGroupId,
       impactedProcessId,
-      likelihood: newLikelihood,
-      impact: newImpact,
-      riskScore,
-      riskRating: riskRating || calculatedRiskRating,
       status,
       assessmentStatus,
       responseStrategy,
       treatmentPlan,
       treatmentStatus,
     };
+
+    // Only update likelihood/impact/riskScore/riskRating when explicitly sent (from assessment)
+    if (likelihood !== undefined) updateData.likelihood = likelihood;
+    if (impact !== undefined) updateData.impact = impact;
+    if (likelihood !== undefined || impact !== undefined) {
+      const newLikelihood = likelihood ?? existingRisk.likelihood;
+      const newImpact = impact ?? existingRisk.impact;
+      const scoreResult = await calculateRiskScore(existingRisk.customerAccountId, {
+        likelihood: newLikelihood,
+        impact: newImpact,
+      });
+      if (scoreResult) {
+        updateData.riskScore = scoreResult.riskScore;
+        updateData.riskRating = riskRating || scoreResult.riskRating;
+      }
+    } else if (riskRating !== undefined) {
+      updateData.riskRating = riskRating;
+    }
 
     if (inherentLikelihood !== undefined) updateData.inherentLikelihood = inherentLikelihood;
     if (inherentImpact !== undefined) updateData.inherentImpact = inherentImpact;

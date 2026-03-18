@@ -448,6 +448,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.settings', actions: ['view'], scope: 'all' }, // Needed for risk category/threat/vulnerability/cause dropdowns
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     // Internal Audit - NO ACCESS (entire module excluded)
   ],
@@ -482,6 +483,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'risk.settings', actions: ['view'], scope: 'all' }, // Needed for risk category/threat/vulnerability/cause dropdowns
     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'asset.classification', actions: ['view', 'create', 'edit'], scope: 'all' },
   ],
@@ -528,6 +530,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     // When completing an assessment with non-low risk, a response strategy must be provided
     { resource: 'risk.response', actions: ['view', 'create', 'approve'], scope: 'own' },
     { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.settings', actions: ['view'], scope: 'all' }, // Needed for risk category/threat/vulnerability/cause dropdowns
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
@@ -566,6 +569,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.settings', actions: ['view'], scope: 'all' }, // Needed for risk category/threat/vulnerability/cause dropdowns
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister (NO Settings)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },

@@ -451,6 +451,8 @@ model User {
   aiJobs              AIJob[]
   // Governance Templates
   uploadedTemplates   GovernanceTemplate[] @relation("TemplateUploader")
+  uploadedPolicyAttachments PolicyAttachment[] @relation("PolicyAttachmentUploader")
+  uploadedVaultDocuments    GovernanceVaultDocument[] @relation("VaultDocumentUploader")
   // Notification relations
   notifications              Notification[]
   notificationPreferences    NotificationPreference[]
@@ -1379,16 +1381,18 @@ model KPIActionPlan {
 
 // Policy Attachments (Governance document files)
 model PolicyAttachment {
-  id         String   @id @default(cuid())
-  fileName   String
-  fileType   String? // pdf, docx, xlsx, etc.
-  fileSize   Int?
-  filePath   String
-  uploadedAt DateTime @default(now())
-  policyId   String
-  policy     Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String   @id @default(cuid())
+  fileName       String
+  fileType       String? // pdf, docx, xlsx, etc.
+  fileSize       Int?
+  filePath       String
+  uploadedAt     DateTime @default(now())
+  policyId       String
+  policy         Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  uploadedById   String?
+  uploadedBy     User?    @relation("PolicyAttachmentUploader", fields: [uploadedById], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 // Governance Vault Document (Information Security Vault)
@@ -1404,6 +1408,8 @@ model GovernanceVaultDocument {
   filePath          String
   status            String                        @default("Active") // Active, Archived
   uploadedAt        DateTime                      @default(now())
+  uploadedById      String?
+  uploadedBy        User?                         @relation("VaultDocumentUploader", fields: [uploadedById], references: [id])
   createdAt         DateTime                      @default(now())
   updatedAt         DateTime                      @updatedAt
   linkedPolicies    GovernanceVaultDocumentLink[]
