@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId, resolveAuditHeadIdForCreate } from "@/lib/api-auth";
 import { translateRecord } from "@/lib/translation-service";
 
 // GET all internal audit risks with filters - filtered by customer account
@@ -74,7 +74,7 @@ export const POST = withAuth(
 
       // Get customer account ID and audit head ID for the new record
       const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
+      const auditHeadId = await resolveAuditHeadIdForCreate(session);
       const tenantFilter = getTenantFilter(session);
 
       // Generate risk ID - scoped to tenant, handles all legacy formats

@@ -192,7 +192,6 @@ export default function FieldworkDetailsPage() {
   const { t, locale } = useLanguage();
   const currentUserId = session?.user?.id;
   const isAuditHead = useHasRole("AuditHead");
-  const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
   const isAuditee = useHasRole("Auditee");
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
@@ -202,7 +201,7 @@ export default function FieldworkDetailsPage() {
   const isViewMode = urlMode === "view";
 
   // Check if user is part of the audit team (not just an auditee)
-  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  const isAuditTeam = isAuditHead || isAuditor;
   // Check if user is ONLY an auditee (not also part of audit team)
   const isAuditeeOnly = isAuditee && !isAuditTeam;
 
@@ -4905,7 +4904,7 @@ export default function FieldworkDetailsPage() {
                 >
                   {t("Close")}
                 </Button>
-                {(isAuditHead || isAuditManager || isAuditor) && (
+                {(isAuditHead || isAuditor) && (
                   <Button
                     onClick={() => {
                       setViewFindingDialogOpen(false);

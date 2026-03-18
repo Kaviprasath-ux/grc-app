@@ -71,7 +71,7 @@ const ORG_FULL_ROLES = [
 const ORG_DEPARTMENT_ROLES = [
   "GRCAdministrator", "CustomerAdministrator",
   "Reviewer", "DepartmentReviewer", "DepartmentContributor", "Contributor",
-  "AuditHead", "AuditManager", "Auditor", "Auditee",
+  "AuditHead", "Auditor", "Auditor", "Auditee",
 ];
 
 /** Roles that can view processes */
@@ -101,7 +101,7 @@ const GRC_ASSET_ROLES = [
 /** Roles that can access Internal Audit module data */
 const AUDIT_ROLES = [
   "GRCAdministrator", "CustomerAdministrator",
-  "AuditHead", "AuditManager", "Auditor", "Auditee",
+  "AuditHead", "Auditor", "Auditor", "Auditee",
 ];
 
 /** Roles that can access TPRM module data */
@@ -142,7 +142,7 @@ const ASSET_EDIT_ROLES = [
 /** Roles that can EDIT audit data */
 const AUDIT_EDIT_ROLES = [
   "GRCAdministrator", "CustomerAdministrator",
-  "AuditHead", "AuditManager",
+  "AuditHead", "Auditor",
 ];
 
 /** Roles that can EDIT TPRM vendor data */

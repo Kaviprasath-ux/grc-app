@@ -18,12 +18,12 @@ export const GET = withAuth(
       // For Auditee role, filter by auditeeId (their user ID)
       const isAuditee = session.roles.includes('Auditee') &&
                         !session.roles.includes('AuditHead') &&
-                        !session.roles.includes('AuditManager') &&
+                        !session.roles.includes('Auditor') &&
                         !session.roles.includes('Auditor');
 
       // Check if user has audit roles (for AuditHead filtering)
       const hasAuditRole = session.roles.includes('AuditHead') ||
-                           session.roles.includes('AuditManager') ||
+                           session.roles.includes('Auditor') ||
                            session.roles.includes('Auditor');
 
       const whereClause: Record<string, unknown> = {};
@@ -32,7 +32,7 @@ export const GET = withAuth(
         // Auditee can only see evidence requests assigned to them
         whereClause.auditeeId = session.id;
       } else if (hasAuditRole) {
-        // AuditHead/AuditManager/Auditor - filter through engagement
+        // AuditHead/Auditor/Auditor - filter through engagement
         whereClause.engagement = {
           ...tenantFilter,
           ...auditHeadFilter,

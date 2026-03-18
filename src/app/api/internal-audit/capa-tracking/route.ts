@@ -19,9 +19,9 @@ export const GET = withAuth(
       const tenantFilter = getTenantFilter(session);
       const auditHeadFilter = getAuditHeadFilter(session);
 
-      // Check if user is auditee only (has Auditee role but not AuditHead/AuditManager/Auditor)
+      // Check if user is auditee only (has Auditee role but not AuditHead/Auditor/Auditor)
       const userRoles = session.roles || [];
-      const auditTeamRoles = ['AuditHead', 'AuditManager', 'Auditor'];
+      const auditTeamRoles = ['AuditHead', 'Auditor', 'Auditor'];
       const isAuditTeam = userRoles.some((role: string) =>
         auditTeamRoles.some(r => r.toLowerCase() === role.toLowerCase())
       );
@@ -48,7 +48,7 @@ export const GET = withAuth(
           where.engagement = engagementFilter;
         }
       } else if (isAuditTeam) {
-        // For AuditHead/AuditManager/Auditor, filter through engagement
+        // For AuditHead/Auditor/Auditor, filter through engagement
         // Merge audit head filter with engagement status filter
         where.engagement = {
           ...auditHeadFilter,

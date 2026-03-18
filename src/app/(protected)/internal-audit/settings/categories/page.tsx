@@ -50,6 +50,7 @@ export default function AuditCategoriesPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
+  const { canCreate, canEdit, canDelete } = usePermissions('audit.settings');
   const [categories, setCategories] = useState<AuditCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -281,10 +282,12 @@ export default function AuditCategoriesPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Audit Category")}</h1>
-        <Button size="sm" onClick={openAddDialog}>
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("New Category")}
-        </Button>
+        {canCreate && (
+          <Button size="sm" onClick={openAddDialog}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New Category")}
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -324,24 +327,28 @@ export default function AuditCategoriesPage() {
                   <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{category.name}</TableCell>
                   <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditDialog(category)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(category)}
-                        title={t("Delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => openEditDialog(category)}
+                          title={t("Edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          onClick={() => openDeleteDialog(category)}
+                          title={t("Delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -395,9 +402,11 @@ export default function AuditCategoriesPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? t("Saving...") : t("Save")}
-            </Button>
+            {(!editItem || canEdit) && (
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? t("Saving...") : t("Save")}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

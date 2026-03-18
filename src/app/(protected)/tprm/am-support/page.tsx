@@ -172,7 +172,7 @@ export default function AMSupportPage() {
       <h1 className="text-2xl font-semibold">{t("Support")}</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="ltr:justify-start rtl:justify-end">
           <TabsTrigger value="nav-help">{t("Navigational Help")}</TabsTrigger>
           <TabsTrigger value="faqs">{t("FAQs")}</TabsTrigger>
           <TabsTrigger value="contact">{t("Contact Us")}</TabsTrigger>

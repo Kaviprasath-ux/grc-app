@@ -8,7 +8,7 @@ export const GET = withAuth(
     try {
       const isAuditee = session.roles.includes('Auditee') &&
                         !session.roles.includes('AuditHead') &&
-                        !session.roles.includes('AuditManager') &&
+                        !session.roles.includes('Auditor') &&
                         !session.roles.includes('Auditor');
 
       // Multi-tenant: Use consistent tenant filter helper

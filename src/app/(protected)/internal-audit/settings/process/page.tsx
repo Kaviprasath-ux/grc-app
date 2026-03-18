@@ -108,6 +108,7 @@ export default function ProcessPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
+  const { canCreate, canEdit, canDelete } = usePermissions('audit.settings');
   const [processes, setProcesses] = useState<Process[]>([]);
   const [filteredProcesses, setFilteredProcesses] = useState<Process[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -728,10 +729,12 @@ export default function ProcessPage() {
             className="hidden"
             onChange={handleImport}
           />
-          <Button size="sm" className="col-span-2 sm:col-span-1" onClick={openAddDialog}>
-            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("New Process")}
-          </Button>
+          {canCreate && (
+            <Button size="sm" className="col-span-2 sm:col-span-1" onClick={openAddDialog}>
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("New Process")}
+            </Button>
+          )}
         </div>
 
         {/* Table */}
@@ -830,24 +833,28 @@ export default function ProcessPage() {
                   </TableCell>
                   <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditDialog(process)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(process)}
-                        title={t("Delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => openEditDialog(process)}
+                          title={t("Edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          onClick={() => openDeleteDialog(process)}
+                          title={t("Delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

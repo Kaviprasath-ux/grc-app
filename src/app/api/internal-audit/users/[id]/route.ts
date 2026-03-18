@@ -5,7 +5,7 @@ import { isValidEmailFormat } from "@/lib/validations/email";
 import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
 
 // Audit-related roles that can be assigned
-const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditor", "Auditee"];
+const AUDIT_ROLES = ["AuditHead", "Auditor", "Auditor", "Auditee"];
 
 /**
  * Build filter for audit head isolation

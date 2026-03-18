@@ -75,7 +75,7 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
   );
 
   const AUDIT_ROLES = useMemo(
-    () => new Set(["AuditHead", "AuditManager", "Auditor", "Auditee"]),
+    () => new Set(["AuditHead", "Auditor", "Auditor", "Auditee"]),
     []
   );
 

@@ -312,7 +312,7 @@ export function OrgChart() {
       const rolePriority: Record<string, number> = {
         CustomerAdministrator: 1,
         AuditHead: 2,
-        AuditManager: 3,
+        Auditor: 3,
         Reviewer: 4,
         DepartmentReviewer: 5,
         Contributor: 6,
@@ -370,7 +370,7 @@ export function OrgChart() {
     const rolePriority: Record<string, number> = {
       CustomerAdministrator: 1,
       AuditHead: 2,
-      AuditManager: 3,
+      Auditor: 3,
       Reviewer: 4,
       DepartmentReviewer: 5,
       Contributor: 6,

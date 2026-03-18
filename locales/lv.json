@@ -5072,5 +5072,11 @@
   "The Task Queue shows pending assessment tasks assigned to you. You can process assessments, initiate reassessments for expired evaluations, and handle returned assessment items.": "Uzdevumu rinda parāda jums piešķirtos neizpildītos novērtēšanas uzdevumus.",
   "How do I set up assessment domains?": "Kā iestatīt novērtēšanas jomas?",
   "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires.": "Dodieties uz Pamatdatu pārvaldība > Jomas.",
-  "Pick date": "Izvēlēties datumu"
+  "Pick date": "Izvēlēties datumu",
+  "Response Questionnaire": "Atbilžu anketa",
+  "Submit Assessment": "Iesniegt novērtējumu",
+  "All Questions": "Visi jautājumi",
+  "answered": "atbildēts",
+  "Unanswered": "Neatbildēts",
+  "Awaiting Response": "Gaida atbildi"
 }

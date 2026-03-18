@@ -190,12 +190,12 @@ export const navigation: NavItem[] = [
   // ==================== End Risk Management Section ====================
 
   // ==================== Internal Audit Section ====================
-  // Note: Parent permission uses audit.fieldwork:view to allow Auditees to see the menu
-  // Auditees only have access to: Fieldwork, Report, CAPA Tracking
+  // Note: No parent permission — visibility determined by children's permissions.
+  // CustomerAdministrator sees: Audit Settings, Risk Register
+  // Auditees see: Fieldwork, Report, CAPA Tracking
   {
     name: "Internal Audit",
     icon: ClipboardCheck,
-    permission: "audit.fieldwork:view",
     children: [
       { name: "Dashboard", href: "/internal-audit/dashboard", icon: LayoutDashboard, permission: "audit.dashboard:view" },
       { name: "Audit Universe", href: "/internal-audit/audit-universe", icon: Network, permission: "audit.auditables:view" },
@@ -404,9 +404,8 @@ const ROLE_PATH_MAP: Record<string, string> = {
   "GRCAdministrator": "grc-administrator",
   "CustomerAdministrator": "customer-administrator",
   "AuditHead": "audit-head",
-  "AuditManager": "audit-manager",
-  "AuditUser": "audit-user",
   "Auditor": "auditor",
+  "AuditUser": "audit-user",
   "Auditee": "auditee",
   "Reviewer": "reviewer",
   "Contributor": "contributor",
@@ -486,14 +485,13 @@ function getRoleSpecificPath(originalPath: string, userRole: string): string {
 
 /**
  * Determine the primary role to use for navigation paths
- * Priority: AuditHead > AuditManager > Auditor > AuditUser > Auditee >
+ * Priority: AuditHead > Auditor > Auditor > AuditUser > Auditee >
  *           GRCAdministrator > CustomerAdministrator >
  *           Reviewer > DepartmentReviewer > Contributor > DepartmentContributor
  */
 function getPrimaryRole(roles: string[]): string {
   const rolePriority = [
     "AuditHead",
-    "AuditManager",
     "Auditor",
     "AuditUser",
     "Auditee",

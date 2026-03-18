@@ -105,10 +105,9 @@ export default function ReportsPage() {
   const { t, locale } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const isAuditHead = useHasRole("AuditHead");
-  const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
   const isAuditee = useHasRole("Auditee");
-  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  const isAuditTeam = isAuditHead || isAuditor;
   const isAuditeeOnly = isAuditee && !isAuditTeam;
 
   // Engagements list state
@@ -605,7 +604,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Generate Report Dialog - Pass/Fail Selection */}
-      {(isAuditHead || isAuditManager) && (
+      {(isAuditHead || isAuditor) && (
         <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
             {/* Fixed Header */}
@@ -977,7 +976,7 @@ export default function ReportsPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-bold text-sm text-slate-800">{t("Auditee Comment")}</h3>
-                    {isAuditee && !isAuditHead && !isAuditManager && !isEditingAuditeeComment && (
+                    {isAuditee && !isAuditHead && !isAuditor && !isEditingAuditeeComment && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -1049,7 +1048,7 @@ export default function ReportsPage() {
                 {t("Download")}
               </Button>
             )}
-            {report && (isAuditHead || isAuditManager) && (
+            {report && (isAuditHead || isAuditor) && (
               <>
                 {!isEditing ? (
                   <Button

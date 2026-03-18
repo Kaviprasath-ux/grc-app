@@ -13,11 +13,11 @@ export const GET = withAuth(
       const tenantFilter = getTenantFilter(session);
       const auditHeadFilter = getAuditHeadFilter(session);
 
-      // Check if user is auditee only (has Auditee role but not AuditHead/AuditManager/Auditor)
+      // Check if user is auditee only (has Auditee role but not AuditHead/Auditor/Auditor)
       // Note: session IS the user object (not session.user) because withAuth passes user directly
       const userRoles = session.roles || [];
       const isAuditTeam = userRoles.some((role: string) =>
-        ['AuditHead', 'AuditManager', 'Auditor'].includes(role)
+        ['AuditHead', 'Auditor', 'Auditor'].includes(role)
       );
       const isAuditee = userRoles.includes('Auditee');
       const isAuditeeOnly = isAuditee && !isAuditTeam;

@@ -87,6 +87,7 @@ export default function RiskAssessmentConfigPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
+  const { canCreate, canEdit, canDelete } = usePermissions('audit.settings');
   const [loading, setLoading] = useState(true);
 
   // Data states
@@ -469,10 +470,12 @@ export default function RiskAssessmentConfigPage() {
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Factors")}</h3>
-            <Button size="sm" onClick={() => openAddDialog("factor")}>
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("New Factor")}
-            </Button>
+            {canCreate && (
+              <Button size="sm" onClick={() => openAddDialog("factor")}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("New Factor")}
+              </Button>
+            )}
           </div>
           <Table>
             <TableHeader>
@@ -485,16 +488,22 @@ export default function RiskAssessmentConfigPage() {
               {translatedFactors.map((item) => (
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
-                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
-                    <div className="flex items-center gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("factor", item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => openDeleteDialog("factor", item)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {(canEdit || canDelete) && (
+                    <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
+                      <div className="flex items-center gap-0.5">
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("factor", item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => openDeleteDialog("factor", item)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               {translatedFactors.length === 0 && (
@@ -512,10 +521,12 @@ export default function RiskAssessmentConfigPage() {
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Probability")}</h3>
-            <Button size="sm" onClick={() => openAddDialog("probability")}>
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("New Probability")}
-            </Button>
+            {canCreate && (
+              <Button size="sm" onClick={() => openAddDialog("probability")}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("New Probability")}
+              </Button>
+            )}
           </div>
           <Table>
             <TableHeader>
@@ -530,16 +541,22 @@ export default function RiskAssessmentConfigPage() {
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{item.value}</TableCell>
-                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
-                    <div className="flex items-center gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("probability", item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => openDeleteDialog("probability", item)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {(canEdit || canDelete) && (
+                    <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
+                      <div className="flex items-center gap-0.5">
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("probability", item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => openDeleteDialog("probability", item)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               {translatedProbabilities.length === 0 && (
@@ -557,10 +574,12 @@ export default function RiskAssessmentConfigPage() {
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="text-base font-semibold text-slate-800">{t("Impact")}</h3>
-            <Button size="sm" onClick={() => openAddDialog("impact")}>
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("New Impact")}
-            </Button>
+            {canCreate && (
+              <Button size="sm" onClick={() => openAddDialog("impact")}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("New Impact")}
+              </Button>
+            )}
           </div>
           <Table>
             <TableHeader>
@@ -575,16 +594,22 @@ export default function RiskAssessmentConfigPage() {
                 <TableRow key={item.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 text-sm text-slate-800 ltr:pl-5 rtl:pr-5">{item.label}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-600">{item.value}</TableCell>
-                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
-                    <div className="flex items-center gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("impact", item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => openDeleteDialog("impact", item)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {(canEdit || canDelete) && (
+                    <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
+                      <div className="flex items-center gap-0.5">
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("impact", item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => openDeleteDialog("impact", item)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               {translatedImpacts.length === 0 && (
@@ -686,10 +711,12 @@ export default function RiskAssessmentConfigPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-slate-700">{t("Scoring Range")}</Label>
-                <Button size="sm" onClick={() => openAddDialog("scoringRange")}>
-                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                  {t("New Range")}
-                </Button>
+                {canCreate && (
+                  <Button size="sm" onClick={() => openAddDialog("scoringRange")}>
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("New Range")}
+                  </Button>
+                )}
               </div>
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <Table>
@@ -713,16 +740,22 @@ export default function RiskAssessmentConfigPage() {
                           {scoringConfig?.riskRatingCalcType !== "High of all" && (
                             <TableCell className="py-3 text-sm text-slate-600">{item.highValue ?? "-"}</TableCell>
                           )}
-                          <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
-                            <div className="flex items-center gap-0.5">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("scoringRange", item)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => openDeleteDialog("scoringRange", item)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                          {(canEdit || canDelete) && (
+                            <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
+                              <div className="flex items-center gap-0.5">
+                                {canEdit && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditDialog("scoringRange", item)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canDelete && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => openDeleteDialog("scoringRange", item)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     {translatedScoringRanges.filter((item) => item.calculationType === scoringConfig?.riskRatingCalcType).length === 0 && (

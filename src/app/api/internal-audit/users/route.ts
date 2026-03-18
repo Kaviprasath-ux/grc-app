@@ -6,21 +6,21 @@ import { isValidEmailFormat } from "@/lib/validations/email";
 import { translateRecord } from "@/lib/translation-service";
 
 // Audit-related roles that can be assigned in Internal Audit user management
-const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditee"];
+const AUDIT_ROLES = ["AuditHead", "Auditor", "Auditee"];
 
-// Roles that CustomerAdmin can create (only AuditHead)
-const CUSTOMER_ADMIN_ALLOWED_ROLES = ["AuditHead"];
+// Roles that CustomerAdmin can create (AuditHead, Auditor, Auditee)
+const CUSTOMER_ADMIN_ALLOWED_ROLES = ["AuditHead", "Auditor", "Auditee"];
 
-// Roles that AuditHead can create (AuditManager and Auditee - NOT AuditHead)
-const AUDIT_HEAD_ALLOWED_ROLES = ["AuditManager", "Auditee"];
+// Roles that AuditHead can create (Auditor and Auditee - NOT AuditHead)
+const AUDIT_HEAD_ALLOWED_ROLES = ["Auditor", "Auditee"];
 
 // GET all audit users - filtered by tenant and audit head
-// AuditHead can only see their own managed users (AuditManager/Auditee)
+// AuditHead can only see their own managed users (Auditor/Auditee)
 // CustomerAdmin/GRCAdmin can see all audit users
 // Query params:
 //   ?role=Auditee - Returns only auditees associated with the current audit head
 //   ?role=auditors - Returns the audit head and their audit managers (for auditor dropdown)
-//   ?role=AuditManager - Returns only audit managers associated with the current audit head
+//   ?role=Auditor - Returns only audit managers associated with the current audit head
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
@@ -67,26 +67,26 @@ export const GET = withAuth(
               auditHeadId: auditHeadId,
               userRoles: {
                 some: {
-                  role: { name: "AuditManager" },
+                  role: { name: "Auditor" },
                 },
               },
             }, // Include audit managers under this audit head
           ];
         } else {
-          // If no audit head context, return users with AuditHead or AuditManager roles
+          // If no audit head context, return users with AuditHead or Auditor roles
           whereClause.userRoles = {
             some: {
-              role: { name: { in: ["AuditHead", "AuditManager"] } },
+              role: { name: { in: ["AuditHead", "Auditor"] } },
             },
           };
         }
-      } else if (roleFilter === "AuditManager") {
+      } else if (roleFilter === "Auditor") {
         // Return only audit managers associated with this audit head
         whereClause = {
           ...whereClause,
           userRoles: {
             some: {
-              role: { name: "AuditManager" },
+              role: { name: "Auditor" },
             },
           },
         };
@@ -150,7 +150,7 @@ export const GET = withAuth(
 // POST create new audit user
 // Role creation restrictions:
 // - CustomerAdmin can ONLY create AuditHead users
-// - AuditHead can ONLY create AuditManager and Auditee users (associated with themselves)
+// - AuditHead can ONLY create Auditor and Auditee users (associated with themselves)
 export const POST = withAuth(
   async (req: NextRequest, context, session) => {
     try {
@@ -201,7 +201,7 @@ export const POST = withAuth(
           );
         }
       } else if (isAuditHead && !isCustomerAdmin && !isGRCAdmin) {
-        // AuditHead can ONLY create AuditManager and Auditee users
+        // AuditHead can ONLY create Auditor and Auditee users
         const invalidRoles = roleNames.filter(r => !AUDIT_HEAD_ALLOWED_ROLES.includes(r));
         if (invalidRoles.length > 0) {
           return NextResponse.json(
@@ -214,7 +214,7 @@ export const POST = withAuth(
       // Determine the auditHeadId for this new user
       // Rules:
       // 1. If creating an AuditHead, no auditHeadId is set (they are their own head)
-      // 2. If AuditHead is creating AuditManager/Auditee, set auditHeadId to session.id (automatic association)
+      // 2. If AuditHead is creating Auditor/Auditee, set auditHeadId to session.id (automatic association)
       let auditHeadIdToSet: string | null = null;
       const isCreatingAuditHead = roleNames.includes('AuditHead');
 
@@ -310,7 +310,7 @@ export const POST = withAuth(
           isBlocked: false,
           departmentId: departmentId || null,
           customerAccountId,
-          // Set auditHeadId for AuditManager/Auditee users created by AuditHead
+          // Set auditHeadId for Auditor/Auditee users created by AuditHead
           auditHeadId: auditHeadIdToSet,
           // Create UserRole entries for each role
           userRoles: {

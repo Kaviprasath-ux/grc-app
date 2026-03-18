@@ -177,17 +177,13 @@ export const ROLES = {
     name: 'AuditHead',
     description: 'Full access to Internal Audit module, all audit data',
   },
-  AuditManager: {
-    name: 'AuditManager',
-    description: 'Manages audits, assigns auditors, reviews findings',
-  },
   AuditUser: {
     name: 'AuditUser',
     description: 'Basic audit module access',
   },
   Auditor: {
     name: 'Auditor',
-    description: 'Conducts audits, creates findings',
+    description: 'Manages audits, assigns auditors, reviews findings, conducts audits',
   },
   Auditee: {
     name: 'Auditee',
@@ -323,7 +319,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
-    { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
+    { resource: 'audit.risk-register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     // CustomerAdmin can manage audit settings (types, categories, etc.) but NOT access User Management
     { resource: 'audit.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     // TPRM module — same access as TPRMCustomerAdmin
@@ -339,16 +335,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.support', actions: ['view'], scope: 'all' },
   ],
 
-  // Audit Head - Full access to Internal Audit module ONLY
+  // Audit Head - Full access to Internal Audit module EXCEPT Settings (view-only)
   // Also needs organization.department:view to see department dropdowns in CAPA, Fieldwork, etc.
   AuditHead: [
-    { resource: 'audit.*', actions: ['*'], scope: 'all' },
-    { resource: 'organization.department', actions: ['view'], scope: 'all' },
-  ],
-
-  // Audit Manager - Same access as AuditHead EXCEPT Settings
-  // Can see all sections and data that AuditHead sees, but cannot access Settings/User Management
-  AuditManager: [
     { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
@@ -359,13 +348,13 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.capa', actions: ['*'], scope: 'all' },
     { resource: 'audit.documents', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
-    // NO audit.settings - AuditManager cannot access Settings/User Management
+    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
     { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
   // Audit User - Basic audit access (view-only, NO Dashboard/Settings/Risk Universe per UAT)
   AuditUser: [
-    // NO audit.dashboard - only AuditHead and AuditManager have dashboard access
+    // NO audit.dashboard - only AuditHead and Auditor have dashboard access
     { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
@@ -378,20 +367,20 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   ],
 
   // Auditor - Conducts audits (NO Dashboard/Settings/Risk Universe per UAT)
+  // Auditor - Same access as former Auditor: full access EXCEPT Settings
   Auditor: [
-    // NO audit.dashboard - only AuditHead and AuditManager have dashboard access
-    { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
-    { resource: 'audit.risk-identification', actions: ['view'], scope: 'all' },
-    { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
-    { resource: 'audit.planning', actions: ['view'], scope: 'all' },
-    { resource: 'audit.fieldwork', actions: ['view', 'create', 'edit'], scope: 'all' },
-    { resource: 'audit.reports', actions: ['view', 'create'], scope: 'all' },
-    { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'all' },
-    { resource: 'audit.documents', actions: ['view', 'create'], scope: 'all' },
-    { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'organization.process', actions: ['view'], scope: 'all' },
+    { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
+    { resource: 'audit.planning', actions: ['*'], scope: 'all' },
+    { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
+    { resource: 'audit.reports', actions: ['*'], scope: 'all' },
+    { resource: 'audit.capa', actions: ['*'], scope: 'all' },
+    { resource: 'audit.documents', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
+    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
     { resource: 'organization.department', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
   ],
 
   // Auditee - Responds to audits (department-scoped access)

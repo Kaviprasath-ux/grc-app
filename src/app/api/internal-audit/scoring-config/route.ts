@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getAuditHeadId, resolveAuditHeadIdForCreate } from "@/lib/api-auth";
 
 // GET scoring config
 // Multi-tenant: Filter by customerAccountId and auditHeadId

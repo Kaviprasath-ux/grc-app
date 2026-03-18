@@ -71,15 +71,16 @@ interface Department {
 
 // Role restrictions:
 // - CustomerAdmin can ONLY create AuditHead users
-// - AuditHead can create AuditHead, AuditManager and Auditee users
-const CUSTOMER_ADMIN_ALLOWED_ROLES = ["AuditHead"];
-const AUDIT_HEAD_ALLOWED_ROLES = ["AuditHead", "AuditManager", "Auditee"];
+// - AuditHead can create AuditHead, Auditor and Auditee users
+const CUSTOMER_ADMIN_ALLOWED_ROLES = ["AuditHead", "Auditor", "Auditee"];
+const AUDIT_HEAD_ALLOWED_ROLES = ["AuditHead", "Auditor", "Auditee"];
 
 export default function UserManagementPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
+  const { canCreate, canEdit, canDelete } = usePermissions('audit.settings');
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -97,12 +98,12 @@ export default function UserManagementPage() {
   const getAllowedRoles = (): string[] => {
     if (isGRCAdmin) {
       // GRC Admin can create all audit roles
-      return ["AuditHead", "AuditManager", "Auditee"];
+      return ["AuditHead", "Auditor", "Auditee"];
     } else if (isCustomerAdmin) {
-      // Customer Admin can ONLY create AuditHead
+      // Customer Admin can create AuditHead, Auditor and Auditee
       return CUSTOMER_ADMIN_ALLOWED_ROLES;
     } else if (isAuditHead) {
-      // Audit Head can create AuditHead, AuditManager and Auditee
+      // Audit Head can create AuditHead, Auditor and Auditee
       return AUDIT_HEAD_ALLOWED_ROLES;
     }
     return [];
@@ -537,10 +538,12 @@ export default function UserManagementPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("User Management")}</h1>
-        <Button size="sm" onClick={openAddDialog}>
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("New User")}
-        </Button>
+        {canCreate && (
+          <Button size="sm" onClick={openAddDialog}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New User")}
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -590,24 +593,28 @@ export default function UserManagementPage() {
                   </TableCell>
                   <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditDialog(user)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(user)}
-                        title={t("Delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => openEditDialog(user)}
+                          title={t("Edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          onClick={() => openDeleteDialog(user)}
+                          title={t("Delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -785,7 +792,7 @@ export default function UserManagementPage() {
                 {formErrors.roles && <p className="text-sm text-red-500 mt-1">{formErrors.roles}</p>}
                 {allowedRoles.length === 1 && (
                   <p className="text-xs text-slate-500 mt-1">
-                    {isCustomerAdmin ? t("As Customer Administrator, you can only create Audit Head users.") : ""}
+                    {isCustomerAdmin ? t("As Customer Administrator, you can create Audit Head, Audit Manager and Auditee users.") : ""}
                   </p>
                 )}
               </div>

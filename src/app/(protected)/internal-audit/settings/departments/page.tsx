@@ -65,6 +65,7 @@ export default function DepartmentsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
+  const { canCreate, canEdit, canDelete } = usePermissions('audit.settings');
   const [items, setItems] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -285,10 +286,12 @@ export default function DepartmentsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Department")}</h1>
-        <Button size="sm" onClick={openAddDialog}>
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("New Department")}
-        </Button>
+        {canCreate && (
+          <Button size="sm" onClick={openAddDialog}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New Department")}
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -328,24 +331,28 @@ export default function DepartmentsPage() {
                   <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{item.name}</TableCell>
                   <TableCell className="py-3 ltr:pr-5 rtl:pl-5">
                     <div className="flex items-center gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditDialog(item)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(item)}
-                        title={t("Delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={() => openEditDialog(item)}
+                          title={t("Edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                          onClick={() => openDeleteDialog(item)}
+                          title={t("Delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getCustomerAccountId, getAuditHeadId } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getAuditHeadId, resolveAuditHeadIdForCreate } from '@/lib/api-auth';
 
 // GET /api/internal-audit/processes - Get all internal audit processes for the audit head
 export const GET = withAuth(
@@ -44,7 +44,7 @@ export const POST = withAuth(
       }
 
       const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
+      const auditHeadId = await resolveAuditHeadIdForCreate(session);
 
       // Check if process with same name exists for this audit head
       const existing = await prisma.internalAuditProcess.findFirst({

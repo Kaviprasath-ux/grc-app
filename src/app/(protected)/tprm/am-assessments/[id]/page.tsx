@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -145,6 +145,17 @@ export default function AMResponseQuestionnairePage() {
   // Translation hooks — must be before any early returns
   const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMMasterQuestion' });
   const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'TPRMDomain' });
+
+  // Vendor name translation
+  const vendorArray = useMemo(() => assessment?.vendor ? [assessment.vendor] : [], [assessment]);
+  const { data: translatedVendors } = useTranslatedData(vendorArray, { modelName: 'TPRMVendor' });
+  const translatedVendorName = translatedVendors[0]?.name || assessment?.vendor?.name || "";
+
+  // Domain name lookup for question badges
+  const tDomain = useCallback((domainName: string) => {
+    const found = translatedDomains.find(d => d.name === domainName || domains.find(od => od.name === domainName && od.id === d.id));
+    return found?.name || domainName;
+  }, [translatedDomains, domains]);
 
   // SME assignment state
   const [smeList, setSmeList] = useState<SME[]>([]);
@@ -746,12 +757,12 @@ export default function AMResponseQuestionnairePage() {
           <div>
             <h1 className="text-2xl font-semibold">{t("Response Questionnaire")}</h1>
             <p className="text-sm text-muted-foreground">
-              {assessment.assessmentCode} - {assessment.vendor.name}
+              {assessment.assessmentCode} - {translatedVendorName}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Badge className="text-sm">{t(assessment.status)}</Badge>
+          <Badge className="text-sm">{t(assessment.status.replace(/_/g, " "))}</Badge>
           <span className="text-sm text-muted-foreground">
             {answeredQuestions}/{totalQuestions} {t("answered")}
           </span>
@@ -772,7 +783,7 @@ export default function AMResponseQuestionnairePage() {
                 </DropdownMenuItem>
                 {selectedDomain !== "all" && (
                   <DropdownMenuItem onClick={() => handleExport(true)}>
-                    {t("Export")} {domains.find(d => d.id === selectedDomain)?.name}
+                    {t("Export")} {translatedDomains.find(d => d.id === selectedDomain)?.name}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -864,7 +875,7 @@ export default function AMResponseQuestionnairePage() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium text-muted-foreground">Q{idx + 1}</span>
                         {q.domainName && (
-                          <Badge variant="outline" className="text-xs">{q.domainName}</Badge>
+                          <Badge variant="outline" className="text-xs">{tDomain(q.domainName)}</Badge>
                         )}
                         {q.mandatoryQuestion && (
                           <Badge variant="destructive" className="text-xs">{t("Mandatory")}</Badge>

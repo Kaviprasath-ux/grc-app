@@ -24,6 +24,7 @@ export default function EscalationConfigPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
+  const { canEdit } = usePermissions('audit.settings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<EscalationConfig | null>(null);
@@ -294,9 +295,11 @@ export default function EscalationConfigPage() {
           <Button variant="outline" onClick={() => router.push("/internal-audit/settings")}>
             {t("Cancel")}
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? t("Saving...") : t("Save Changes")}
-          </Button>
+          {canEdit && (
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? t("Saving...") : t("Save Changes")}
+            </Button>
+          )}
         </div>
       </div>
     </div>

@@ -286,7 +286,7 @@ export default function AMFollowUpsPage() {
 
       {/* Main Tabs */}
       <Tabs value={mainTab} onValueChange={setMainTab}>
-        <TabsList>
+        <TabsList className="ltr:justify-start rtl:justify-end">
           <TabsTrigger value="clarifications">
             <MessageSquare className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
             {t("Clarifications")}

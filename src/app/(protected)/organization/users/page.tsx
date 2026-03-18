@@ -98,20 +98,20 @@ interface User {
 const rolesByFunction: Record<string, string[]> = {
   Business: ["DepartmentReviewer", "DepartmentContributor"],
   Security: ["Reviewer"],
-  Audit: ["AuditHead", "AuditManager", "Auditor", "Auditee", "AuditUser"],
+  Audit: ["AuditHead", "Auditor", "Auditor", "Auditee", "AuditUser"],
 };
 
 // CustomerAdmin can only create AuditHead when selecting Audit function
 const customerAdminAuditRoles = ["AuditHead"];
-// AuditHead can only create AuditManager and Auditee when selecting Audit function
-const auditHeadAuditRoles = ["AuditManager", "Auditee"];
+// AuditHead can only create Auditor and Auditee when selecting Audit function
+const auditHeadAuditRoles = ["Auditor", "Auditee"];
 
 // All assignable roles for filtering (excludes GRCAdministrator)
 // Note: Contributor role is hidden/disabled - not available for filtering
 const allUserRoles = [
   "CustomerAdministrator",
   "AuditHead",
-  "AuditManager",
+  "Auditor",
   "AuditUser",
   "Auditor",
   "Auditee",

@@ -1106,7 +1106,7 @@ export const helpArticles: HelpArticle[] = [
       "Click on an audit row in the Annual Plan to view its details",
     ],
     relatedLinks: [{ label: "Audit Dashboard", href: "/internal-audit/dashboard" }],
-    roles: ["AuditHead", "AuditManager"],
+    roles: ["AuditHead", "Auditor"],
   },
   {
     id: "audit-dashboard-risk-chart",

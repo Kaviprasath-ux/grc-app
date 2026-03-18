@@ -27,9 +27,8 @@ export const GET = withAuth(
       const userRoles = session.roles || [];
       const isAuditee = userRoles.includes('Auditee');
       const isAuditHead = userRoles.includes('AuditHead');
-      const isAuditManager = userRoles.includes('AuditManager');
       const isAuditor = userRoles.includes('Auditor');
-      const hasAuditRole = isAuditHead || isAuditManager || isAuditor;
+      const hasAuditRole = isAuditHead || isAuditor;
 
       // If user is only an Auditee, filter to show only engagements where they have evidence requests
       if (isAuditee && !hasAuditRole) {

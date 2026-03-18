@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getAuditHeadId, resolveAuditHeadIdForCreate } from "@/lib/api-auth";
 import { translateRecord } from '@/lib/translation-service';
 
 // GET all nature of controls
@@ -47,7 +47,7 @@ export const POST = withAuth(
       }
 
       const tenantFilter = getTenantFilter(session);
-      const auditHeadId = getAuditHeadId(session);
+      const auditHeadId = await resolveAuditHeadIdForCreate(session);
 
       // Check for duplicate within same tenant and audit head
       const existing = await prisma.auditNatureOfControl.findFirst({

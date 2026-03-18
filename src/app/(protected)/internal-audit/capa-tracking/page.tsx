@@ -117,10 +117,9 @@ export default function CAPATrackingPage() {
   const { t, locale } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const isAuditHead = useHasRole("AuditHead");
-  const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
   const isAuditee = useHasRole("Auditee");
-  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  const isAuditTeam = isAuditHead || isAuditor;
   const isAuditeeOnly = isAuditee && !isAuditTeam;
 
   const [loading, setLoading] = useState(true);

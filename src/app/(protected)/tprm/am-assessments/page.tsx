@@ -125,7 +125,7 @@ export default function AMAssessmentsPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="ltr:justify-start rtl:justify-end">
           <TabsTrigger value="active">{t("Active")}</TabsTrigger>
           <TabsTrigger value="submitted">{t("Submitted")}</TabsTrigger>
           <TabsTrigger value="past">{t("Past")}</TabsTrigger>
@@ -162,8 +162,8 @@ export default function AMAssessmentsPage() {
                       {translatedAssessments.map(a => (
                         <TableRow key={a.id}>
                           <TableCell className="font-medium">{a.assessmentCode}</TableCell>
-                          <TableCell>{a.vendor.name}</TableCell>
-                          <TableCell>{a.assessmentType}</TableCell>
+                          <TableCell>{a.vendor?.name || "-"}</TableCell>
+                          <TableCell>{t(a.assessmentType)}</TableCell>
                           <TableCell>{a.questionnaireTemplate || "-"}</TableCell>
                           <TableCell>{a.initiatedBy?.fullName || "-"}</TableCell>
                           <TableCell>

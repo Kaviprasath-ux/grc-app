@@ -215,7 +215,7 @@ export default function InternalAuditDashboard() {
 
   const canDrillDown =
     session?.user?.roles?.includes("AuditHead") ||
-    session?.user?.roles?.includes("AuditManager");
+    session?.user?.roles?.includes("Auditor");
 
   // Dynamic data translation for audit plan entries
   const { data: translatedAuditPlan } = useTranslatedData(data?.annualAuditPlan || [], { modelName: 'AuditEngagement' });

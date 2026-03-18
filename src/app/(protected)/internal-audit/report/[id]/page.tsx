@@ -80,7 +80,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
   const router = useRouter();
   const { t, locale } = useLanguage();
   const isAuditHead = useHasRole("AuditHead");
-  const isAuditManager = useHasRole("AuditManager");
+  const isAuditor = useHasRole("Auditor");
   const isAuditee = useHasRole("Auditee");
 
   const [loading, setLoading] = useState(true);
@@ -630,7 +630,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-bold text-base">{t("Auditee Comment")}</h2>
-            {isAuditee && !isAuditHead && !isAuditManager && !isEditingAuditeeComment && (
+            {isAuditee && !isAuditHead && !isAuditor && !isEditingAuditeeComment && (
               <Button
                 size="sm"
                 variant="outline"
@@ -695,7 +695,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
           <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Download Report")}
         </Button>
-        {(isAuditHead || isAuditManager) && (
+        {(isAuditHead || isAuditor) && (
           <>
             {!isEditing ? (
               <Button

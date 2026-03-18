@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId, resolveAuditHeadIdForCreate } from "@/lib/api-auth";
 
 // GET all nature of implementations - filtered by audit head
 export const GET = withAuth(
@@ -31,7 +31,7 @@ export const POST = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
+      const auditHeadId = await resolveAuditHeadIdForCreate(session);
       const body = await req.json();
       const { name } = body;
 

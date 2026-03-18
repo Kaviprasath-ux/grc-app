@@ -3,6 +3,7 @@ import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { notificationService } from '@/lib/notification-service';
+import { translateRecord } from '@/lib/translation-service';
 
 // GET /api/tprm/am-sme-management — List SMEs created by this AM
 export const GET = withAuth(
@@ -129,6 +130,9 @@ export const POST = withAuth(
         tprmRole: 'SME',
       });
 
+      // Trigger dynamic translation
+      if (customerAccountId) void translateRecord(customerAccountId, 'User', sme.id, { fullName, firstName: fName, lastName: lName });
+
       return NextResponse.json(sme, { status: 201 });
     } catch (error) {
       console.error('AM SME POST error:', error);
@@ -190,6 +194,8 @@ export const PATCH = withAuth(
         select: {
           id: true,
           fullName: true,
+          firstName: true,
+          lastName: true,
           email: true,
           userName: true,
           isActive: true,
@@ -197,6 +203,13 @@ export const PATCH = withAuth(
           tprmFunctionCategory: true,
           createdAt: true,
         },
+      });
+
+      // Trigger dynamic translation
+      if (customerAccountId) void translateRecord(customerAccountId, 'User', updated.id, {
+        fullName: updated.fullName || '',
+        firstName: updated.firstName || '',
+        lastName: updated.lastName || '',
       });
 
       return NextResponse.json(updated);

@@ -77,9 +77,9 @@ async function main() {
   });
 
   const auditManagerRole = await prisma.role.upsert({
-    where: { name: "AuditManager" },
+    where: { name: "Auditor" },
     update: {},
-    create: { name: "AuditManager", description: "Manages audits, assigns auditors, reviews findings", isSystem: true },
+    create: { name: "Auditor", description: "Manages audits, assigns auditors, reviews findings", isSystem: true },
   });
 
   const auditorRole = await prisma.role.upsert({
@@ -210,8 +210,8 @@ async function main() {
     },
     {
       userId: "QPOST-AM-001", userName: "qpost.auditmgr", email: "auditmgr@qpost.qa",
-      firstName: "Nasser", lastName: "Al-Hajri", designation: "Audit Manager",
-      role: "AuditManager", function: "Audit", roleId: auditManagerRole.id,
+      firstName: "Nasser", lastName: "Al-Hajri", designation: "Auditor",
+      role: "Auditor", function: "Audit", roleId: auditManagerRole.id,
     },
     {
       userId: "QPOST-AUD-001", userName: "qpost.auditor", email: "auditor@qpost.qa",

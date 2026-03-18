@@ -63,11 +63,11 @@ export default function DashboardPage() {
   useEffect(() => {
     if (session?.user?.roles?.includes("GRCAdministrator")) {
       router.replace("/grc");
-    } else if (session?.user?.roles?.includes("AuditHead") || session?.user?.roles?.includes("AuditManager")) {
+    } else if (session?.user?.roles?.includes("AuditHead") || session?.user?.roles?.includes("Auditor")) {
       router.replace("/internal-audit/dashboard");
     } else if (session?.user?.roles?.includes("Auditee") &&
       !session?.user?.roles?.includes("AuditHead") &&
-      !session?.user?.roles?.includes("AuditManager") &&
+      !session?.user?.roles?.includes("Auditor") &&
       !session?.user?.roles?.includes("Auditor")) {
       router.replace("/internal-audit/fieldwork");
     }

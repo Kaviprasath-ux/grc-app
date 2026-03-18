@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,6 +80,9 @@ export default function AMSmeManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingSme, setDeletingSme] = useState<SME | null>(null);
 
+  // Translation hooks — must be before any early returns
+  const { data: translatedSmes } = useTranslatedData(smes, { modelName: 'User' });
+
   const fetchSmes = useCallback(async () => {
     setLoading(true);
     try {
@@ -131,10 +135,9 @@ export default function AMSmeManagementPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        if (!res.ok) {
-          const json = await res.json();
-          throw new Error(json.error || "Failed");
-        }
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed");
+        triggerTranslation('User', editingSme.id, { fullName: form.fullName, firstName: form.firstName, lastName: form.lastName });
         toast({ title: t("Success"), description: t("SME updated successfully") });
       } else {
         body.userName = form.userName;
@@ -144,9 +147,10 @@ export default function AMSmeManagementPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        if (!res.ok) {
-          const json = await res.json();
-          throw new Error(json.error || "Failed");
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed");
+        if (json?.id) {
+          triggerTranslation('User', json.id, { fullName: form.fullName, firstName: form.firstName, lastName: form.lastName });
         }
         toast({ title: t("Success"), description: t("SME created successfully") });
       }
@@ -256,7 +260,7 @@ export default function AMSmeManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {smes.map(sme => (
+                {translatedSmes.map(sme => (
                   <TableRow key={sme.id}>
                     <TableCell className="font-medium">{sme.fullName}</TableCell>
                     <TableCell>{sme.email}</TableCell>

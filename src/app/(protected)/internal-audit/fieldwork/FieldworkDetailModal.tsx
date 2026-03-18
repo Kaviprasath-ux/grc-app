@@ -190,12 +190,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const { t, locale } = useLanguage();
   const currentUserId = session?.user?.id;
   const isAuditHead = useHasRole("AuditHead");
-  const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
   const isAuditee = useHasRole("Auditee");
 
   const isViewMode = mode === "view";
-  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  const isAuditTeam = isAuditHead || isAuditor;
   const isAuditeeOnly = isAuditee && !isAuditTeam;
 
   const getAIReviewStatusIcon = (status: string | null | undefined) => {

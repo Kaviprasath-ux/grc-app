@@ -15,11 +15,11 @@ export const GET = withAuth(
 
       const isAuditee = session.roles.includes('Auditee') &&
                         !session.roles.includes('AuditHead') &&
-                        !session.roles.includes('AuditManager') &&
+                        !session.roles.includes('Auditor') &&
                         !session.roles.includes('Auditor');
 
       const hasAuditRole = session.roles.includes('AuditHead') ||
-                           session.roles.includes('AuditManager') ||
+                           session.roles.includes('Auditor') ||
                            session.roles.includes('Auditor');
 
       const whereClause: Record<string, unknown> = { ...tenantFilter };
@@ -29,7 +29,7 @@ export const GET = withAuth(
         whereClause.status = 'Published';
         whereClause.auditeeId = session.id;
       } else if (hasAuditRole) {
-        // For AuditHead/AuditManager/Auditor, filter by auditHeadId directly on report
+        // For AuditHead/Auditor/Auditor, filter by auditHeadId directly on report
         // Reports are NOT shared between Audit Heads
         Object.assign(whereClause, auditHeadFilter);
         if (status && status !== 'all') {

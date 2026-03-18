@@ -278,6 +278,15 @@ export default function AssessmentWorkspacePage() {
   // Translation hooks — must be before any early returns
   const { data: translatedAssessments } = useTranslatedData(assessments, { modelName: 'TPRMAssessment' });
 
+  // Extract unique vendors for translation
+  const uniqueVendors = useMemo(() => {
+    const map = new Map<string, Assessment["vendor"]>();
+    assessments.forEach(a => { if (a.vendor) map.set(a.vendor.id, a.vendor); });
+    return Array.from(map.values());
+  }, [assessments]);
+  const { data: translatedVendors } = useTranslatedData(uniqueVendors, { modelName: 'TPRMVendor' });
+  const tVendor = useCallback((id: string) => translatedVendors.find(v => v.id === id)?.name, [translatedVendors]);
+
   const fetchAssessments = useCallback(async () => {
     try {
       setLoading(true);
@@ -386,7 +395,7 @@ export default function AssessmentWorkspacePage() {
     {
       accessorKey: "vendor.name",
       header: t("Vendor"),
-      cell: ({ row }) => row.original.vendor?.name || "-",
+      cell: ({ row }) => tVendor(row.original.vendor?.id) || row.original.vendor?.name || "-",
     },
     {
       accessorKey: "vendorSubmissionDate",
@@ -398,7 +407,7 @@ export default function AssessmentWorkspacePage() {
       header: t("Status"),
       cell: ({ row }) => (
         <Badge variant={getStatusVariant(row.getValue("status"))}>
-          {t(row.getValue("status"))}
+          {t((row.getValue("status") as string).replace(/_/g, " "))}
         </Badge>
       ),
     },
@@ -451,14 +460,14 @@ export default function AssessmentWorkspacePage() {
     {
       accessorKey: "vendor.name",
       header: t("Vendor"),
-      cell: ({ row }) => row.original.vendor?.name || "-",
+      cell: ({ row }) => tVendor(row.original.vendor?.id) || row.original.vendor?.name || "-",
     },
     {
       accessorKey: "status",
       header: t("Status"),
       cell: ({ row }) => (
         <Badge variant={getStatusVariant(row.getValue("status"))}>
-          {t(row.getValue("status"))}
+          {t((row.getValue("status") as string).replace(/_/g, " "))}
         </Badge>
       ),
     },
@@ -498,7 +507,7 @@ export default function AssessmentWorkspacePage() {
       <SelectContent>
         <SelectItem value="all">{t("All Statuses")}</SelectItem>
         {uniqueStatuses.map((status) => (
-          <SelectItem key={status} value={status}>{t(status)}</SelectItem>
+          <SelectItem key={status} value={status}>{t(status.replace(/_/g, " "))}</SelectItem>
         ))}
       </SelectContent>
     </Select>
@@ -593,13 +602,13 @@ export default function AssessmentWorkspacePage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-slate-700">{t("Vendor")}</label>
-                  <p className="text-sm text-slate-800">{selectedAssessment.vendor.name}</p>
+                  <p className="text-sm text-slate-800">{tVendor(selectedAssessment.vendor?.id) || selectedAssessment.vendor.name}</p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-slate-700">{t("Status")}</label>
                   <div>
                     <Badge variant={getStatusVariant(selectedAssessment.status)}>
-                      {t(selectedAssessment.status)}
+                      {t(selectedAssessment.status.replace(/_/g, " "))}
                     </Badge>
                   </div>
                 </div>

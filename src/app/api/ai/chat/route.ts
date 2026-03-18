@@ -40,7 +40,7 @@ interface ChatRequest {
 
 // ==================== HELPERS ====================
 
-const AUDIT_ROLES = new Set(["AuditHead", "AuditManager", "Auditor", "Auditee"]);
+const AUDIT_ROLES = new Set(["AuditHead", "Auditor", "Auditor", "Auditee"]);
 const ADMIN_ROLES = new Set(["GRCAdministrator", "CustomerAdministrator"]);
 
 function buildProductFlags(session: AuthenticatedRequest["user"]): ProductFlags {

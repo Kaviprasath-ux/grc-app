@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getAuditHeadId, resolveAuditHeadIdForCreate } from "@/lib/api-auth";
 import { translateRecord } from "@/lib/translation-service";
 
 // GET all scoring ranges
@@ -46,7 +46,7 @@ export const POST = withAuth(
       const body = await req.json();
       const { label, lowValue, highValue, calculationType } = body;
       const tenantFilter = getTenantFilter(session);
-      const auditHeadId = getAuditHeadId(session);
+      const auditHeadId = await resolveAuditHeadIdForCreate(session);
 
       if (!label) {
         return NextResponse.json(

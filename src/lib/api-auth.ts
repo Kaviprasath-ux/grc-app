@@ -280,7 +280,7 @@ export function validateTenantAccess(
  *
  * Returns:
  * - AuditHead: their own ID (they are the head, their ID is the auditHeadId)
- * - AuditManager: session.auditHeadId (they belong to an Audit Head)
+ * - Auditor: session.auditHeadId (they belong to an Audit Head)
  * - Auditor/Auditee: session.auditHeadId (they belong to an Audit Head)
  * - Admins (GRCAdministrator, CustomerAdministrator): null (see all data within tenant)
  *
@@ -302,8 +302,8 @@ export function getAuditHeadId(session: AuthenticatedRequest['user']): string | 
     return session.id;
   }
 
-  // AuditManager, Auditor, Auditee: use their assigned auditHeadId
-  const auditRoles = ['AuditManager', 'Auditor', 'Auditee', 'AuditUser'];
+  // Auditor, Auditee: use their assigned auditHeadId
+  const auditRoles = ['Auditor', 'Auditee', 'AuditUser'];
   if (session.roles.some(role => auditRoles.includes(role))) {
     // Return the user's assigned auditHeadId for data isolation
     return session.auditHeadId || null;
@@ -314,9 +314,44 @@ export function getAuditHeadId(session: AuthenticatedRequest['user']): string | 
 }
 
 /**
+ * Resolve the auditHeadId for data creation.
+ * For CustomerAdministrator: looks up the AuditHead user in their customer account
+ * so that created data is visible to the AuditHead.
+ * For AuditHead: returns their own ID.
+ * For other audit roles: returns their assigned auditHeadId.
+ */
+export async function resolveAuditHeadIdForCreate(session: AuthenticatedRequest['user']): Promise<string | null> {
+  // AuditHead creates data under their own ID
+  if (session.roles.includes('AuditHead')) {
+    return session.id;
+  }
+
+  // Auditor, Auditee etc: use their assigned auditHeadId
+  const auditRoles = ['Auditor', 'Auditee', 'AuditUser'];
+  if (session.roles.some(role => auditRoles.includes(role))) {
+    return session.auditHeadId || null;
+  }
+
+  // CustomerAdministrator: find the AuditHead for their customer account
+  if (session.roles.includes('CustomerAdministrator') && session.customerAccountId) {
+    const auditHead = await prisma.user.findFirst({
+      where: {
+        customerAccountId: session.customerAccountId,
+        userRoles: { some: { role: { name: 'AuditHead' } } },
+        isActive: true,
+      },
+      select: { id: true },
+    });
+    return auditHead?.id || null;
+  }
+
+  return null;
+}
+
+/**
  * Get filter for Internal Audit data isolation by AuditHead.
  *
- * For AuditHead/AuditManager roles, returns filter to only show data
+ * For AuditHead/Auditor roles, returns filter to only show data
  * where auditHeadId matches their user ID.
  *
  * GRCAdministrator and CustomerAdministrator see all data within their tenant.

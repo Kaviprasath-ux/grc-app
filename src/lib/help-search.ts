@@ -22,7 +22,7 @@ export interface ScoredResult {
  */
 const AUDIT_ROLES = new Set([
   "AuditHead",
-  "AuditManager",
+  "Auditor",
   "Auditor",
   "Auditee",
 ]);
@@ -34,7 +34,7 @@ const AUDIT_ROLES = new Set([
 export interface ProductFlags {
   isGrcAdded: boolean;
   isTprmAdded: boolean;
-  /** User has at least one audit role (AuditHead/AuditManager/Auditor/Auditee) */
+  /** User has at least one audit role (AuditHead/Auditor/Auditor/Auditee) */
   isAuditUser: boolean;
   /** User has ONLY audit roles — should not see GRC modules like Org/Compliance/Risk/Assets */
   isAuditOnly: boolean;

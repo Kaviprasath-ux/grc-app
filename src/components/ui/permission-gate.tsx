@@ -199,7 +199,7 @@ interface RoleGateProps {
  * </RoleGate>
  *
  * // Show to any audit role
- * <RoleGate roles={['AuditHead', 'AuditManager', 'Auditor']}>
+ * <RoleGate roles={['AuditHead', 'Auditor', 'Auditor']}>
  *   <AuditSpecificFeature />
  * </RoleGate>
  * ```
