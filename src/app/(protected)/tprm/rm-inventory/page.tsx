@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
@@ -278,8 +278,13 @@ export default function RMInventoryPage() {
   const [profileAnswers, setProfileAnswers] = useState<Record<string, string>>({});
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
 
+  // ── Cross-tenant validation state ──
+  const [showValidationConfirm, setShowValidationConfirm] = useState(false);
+  const [validationMessages, setValidationMessages] = useState<string[]>([]);
+  const validationConfirmedRef = useRef(false);
+
   // ── Existing vendor / engagement selection state ──
-  const [vendorSuggestions, setVendorSuggestions] = useState<string[]>([]);
+  const [vendorSuggestions, setVendorSuggestions] = useState<{ name: string; vendorUrl: string | null }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isExistingVendor, setIsExistingVendor] = useState(false);
   const [existingEngagements, setExistingEngagements] = useState<Vendor[]>([]);
@@ -354,9 +359,9 @@ export default function RMInventoryPage() {
       try {
         const res = await fetch(`/api/tprm/vendors?mode=suggest&search=${encodeURIComponent(value.trim())}`);
         if (res.ok) {
-          const names: string[] = await res.json();
-          setVendorSuggestions(names);
-          setShowSuggestions(names.length > 0);
+          const suggestions: { name: string; vendorUrl: string | null }[] = await res.json();
+          setVendorSuggestions(suggestions);
+          setShowSuggestions(suggestions.length > 0);
         }
       } catch { /* ignore */ }
     } else {
@@ -365,8 +370,9 @@ export default function RMInventoryPage() {
     }
   }, []);
 
-  const selectExistingVendor = useCallback(async (name: string) => {
+  const selectExistingVendor = useCallback(async (name: string, vendorUrl?: string | null) => {
     setVendorName(name);
+    if (vendorUrl) setVendorUrl(vendorUrl);
     setShowSuggestions(false);
     setIsExistingVendor(true);
     try {
@@ -396,6 +402,14 @@ export default function RMInventoryPage() {
     })));
     setServiceCategory(eng.serviceCategory || "");
     setServiceDescription(eng.serviceDescription || "");
+    setVendorUrl(eng.vendorUrl || "");
+    // Auto-populate onboarding answers from selected engagement
+    if (eng.onboardingAnswers) {
+      try {
+        const parsed = JSON.parse(eng.onboardingAnswers);
+        setQuestionAnswers(parsed);
+      } catch { /* ignore */ }
+    }
   }, [existingEngagements]);
 
   const filteredEngagements = useMemo(() => {
@@ -510,8 +524,49 @@ export default function RMInventoryPage() {
   };
 
   // ── CRUD handlers ──────────────────────────────────
+  // ── Cross-tenant validation before create ──
+  const runCrossTenantValidation = async (): Promise<boolean> => {
+    if (validationConfirmedRef.current) { validationConfirmedRef.current = false; return true; }
+    try {
+      const amEmails = managers.map((m) => m.email).filter(Boolean);
+      const res = await fetch("/api/tprm/vendors/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vendorName: vendorName.trim(), amEmails }),
+      });
+      if (!res.ok) return true;
+      const data = await res.json();
+      const messages: string[] = [];
+      // Vendor being onboarded by other customers is expected — no confirmation needed
+      if (data.amEmails) {
+        for (const [email, info] of Object.entries(data.amEmails)) {
+          const amInfo = info as { existsElsewhere: boolean; details: string[] };
+          if (amInfo.existsElsewhere && amInfo.details.length > 0) {
+            const parts: string[] = [];
+            for (const d of amInfo.details) {
+              if (d.includes("other customer account")) {
+                parts.push(`This email is already registered as an Account Manager under another customer account.`);
+              } else {
+                parts.push(d);
+              }
+            }
+            messages.push(`Account Manager (${email}): ${parts.join(". ")}. Are you sure you want to proceed with this user?`);
+          }
+        }
+      }
+      if (messages.length > 0) {
+        setValidationMessages(messages);
+        setShowValidationConfirm(true);
+        return false;
+      }
+    } catch { /* skip on error */ }
+    return true;
+  };
+
   const handleCreate = async () => {
     if (!validateForm()) return;
+    const canProceed = await runCrossTenantValidation();
+    if (!canProceed) return;
     setSaving(true);
     try {
       // Calculate VRR from onboarding answers before sending
@@ -895,15 +950,15 @@ export default function RMInventoryPage() {
           {/* Vendor name suggestions dropdown */}
           {showSuggestions && vendorSuggestions.length > 0 && (
             <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
-              {vendorSuggestions.map((name) => (
+              {vendorSuggestions.map((s) => (
                 <button
-                  key={name}
+                  key={s.name}
                   type="button"
                   className="w-full ltr:text-left rtl:text-right px-3 py-2 text-sm hover:bg-primary-50 hover:text-primary-700 transition-colors"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => selectExistingVendor(name)}
+                  onClick={() => selectExistingVendor(s.name, s.vendorUrl)}
                 >
-                  {name}
+                  {s.name}
                 </button>
               ))}
             </div>
@@ -1245,6 +1300,32 @@ export default function RMInventoryPage() {
       </AlertDialog>
 
       {/* Success Popup - "Your response has been successfully updated" */}
+      {/* Cross-tenant validation confirmation */}
+      <Dialog open={showValidationConfirm} onOpenChange={setShowValidationConfirm}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t("Confirmation Required")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <p className="text-sm text-slate-600">{t("The following items are already in use:")}</p>
+            {validationMessages.map((msg, i) => (
+              <div key={i} className="text-sm p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-800">
+                {msg}
+              </div>
+            ))}
+            <p className="text-sm font-medium text-slate-700">{t("Do you want to continue?")}</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowValidationConfirm(false)}>{t("Cancel")}</Button>
+            <Button onClick={() => {
+              setShowValidationConfirm(false);
+              validationConfirmedRef.current = true;
+              handleCreate();
+            }}>{t("Yes, Continue")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
         <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
           <div className="border-b border-slate-100 px-6 py-5">

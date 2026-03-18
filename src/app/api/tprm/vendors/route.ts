@@ -18,18 +18,27 @@ export const GET = withAuth(
 
       const tenantFilter = getTenantFilter(session);
 
-      // Mode: suggest — return distinct vendor names matching search
+      // Mode: suggest — return distinct vendor names + URL matching search (global across all customers)
       if (mode === "suggest" && search) {
         const vendors = await prisma.tPRMVendor.findMany({
-          where: { ...tenantFilter, name: { contains: search, mode: "insensitive" } },
-          select: { name: true },
-          distinct: ["name"],
-          take: 10,
+          where: { name: { contains: search, mode: "insensitive" } },
+          select: { name: true, vendorUrl: true },
+          orderBy: { createdAt: "desc" },
+          take: 20,
         });
-        return NextResponse.json(vendors.map((v) => v.name));
+        // Deduplicate by name, keep the one with a URL if possible
+        const nameMap = new Map<string, string | null>();
+        for (const v of vendors) {
+          if (!nameMap.has(v.name) || (v.vendorUrl && !nameMap.get(v.name))) {
+            nameMap.set(v.name, v.vendorUrl);
+          }
+        }
+        return NextResponse.json(
+          Array.from(nameMap.entries()).slice(0, 10).map(([name, vendorUrl]) => ({ name, vendorUrl }))
+        );
       }
 
-      // Mode: engagements — return all engagements (vendor rows) for a given vendor name
+      // Mode: engagements — return engagements for a vendor name within same customer (with onboarding answers)
       if (mode === "engagements" && search) {
         const engagements = await prisma.tPRMVendor.findMany({
           where: { ...tenantFilter, name: { equals: search, mode: "insensitive" } },

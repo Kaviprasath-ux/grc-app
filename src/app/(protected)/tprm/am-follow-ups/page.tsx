@@ -35,6 +35,7 @@ interface Clarification {
   status: string;
   createdAt: string;
   assessment: { assessmentCode: string; vendor: { name: string } };
+  customerAccount?: { name: string };
   requestedBy: { fullName: string } | null;
 }
 
@@ -62,6 +63,7 @@ interface IssueRemediation {
   status: string;
   createdAt: string;
   assessment: { assessmentCode: string; vendor: { name: string } };
+  customerAccount?: { name: string };
 }
 
 interface VendorIssue {
@@ -74,6 +76,7 @@ interface VendorIssue {
   status: string;
   createdAt: string;
   vendor: { name: string; vendorCode: string };
+  customerAccount?: { name: string };
   reportedBy: { fullName: string } | null;
 }
 
@@ -330,6 +333,7 @@ export default function AMFollowUpsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("Assessment")}</TableHead>
+                      <TableHead>{t("Customer")}</TableHead>
                       <TableHead>{t("Vendor")}</TableHead>
                       <TableHead>{t("Question No")}</TableHead>
                       <TableHead>{t("Domain")}</TableHead>
@@ -342,6 +346,7 @@ export default function AMFollowUpsPage() {
                     {translatedClarifications.map(c => (
                       <TableRow key={c.id}>
                         <TableCell>{c.assessment.assessmentCode}</TableCell>
+                        <TableCell>{c.customerAccount?.name || "-"}</TableCell>
                         <TableCell>{c.assessment.vendor.name}</TableCell>
                         <TableCell>{c.questionNo || "-"}</TableCell>
                         <TableCell>{c.domainName || "-"}</TableCell>
@@ -385,6 +390,7 @@ export default function AMFollowUpsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("Issue ID")}</TableHead>
+                      <TableHead>{t("Customer")}</TableHead>
                       <TableHead>{t("Assessment ID")}</TableHead>
                       <TableHead>{t("Domain")}</TableHead>
                       <TableHead>{t("Severity")}</TableHead>
@@ -408,6 +414,7 @@ export default function AMFollowUpsPage() {
                             )}
                           </div>
                         </TableCell>
+                        <TableCell>{r.customerAccount?.name || "-"}</TableCell>
                         <TableCell className="font-mono text-sm">{r.assessment.assessmentCode}</TableCell>
                         <TableCell>{r.domainName || "-"}</TableCell>
                         <TableCell>
@@ -465,6 +472,7 @@ export default function AMFollowUpsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("Title")}</TableHead>
+                      <TableHead>{t("Customer")}</TableHead>
                       <TableHead>{t("Vendor")}</TableHead>
                       <TableHead>{t("Severity")}</TableHead>
                       <TableHead>{t("Description")}</TableHead>
@@ -477,6 +485,7 @@ export default function AMFollowUpsPage() {
                     {translatedVendorIssues.map(i => (
                       <TableRow key={i.id}>
                         <TableCell className="font-medium">{i.title}</TableCell>
+                        <TableCell>{i.customerAccount?.name || "-"}</TableCell>
                         <TableCell>{i.vendor.name}</TableCell>
                         <TableCell>
                           {i.severity ? (

@@ -39,6 +39,7 @@ export const GET = withAuth(
         },
         include: {
           vendor: { select: { name: true, vendorCode: true } },
+          customerAccount: { select: { name: true } },
           reportedBy: { select: { id: true, fullName: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -91,6 +92,7 @@ export const POST = withAuth(
         },
         include: {
           vendor: { select: { name: true, vendorCode: true } },
+          customerAccount: { select: { name: true } },
           reportedBy: { select: { id: true, fullName: true } },
         },
       });
@@ -171,6 +173,7 @@ export const PATCH = withAuth(
         data: updateData,
         include: {
           vendor: { select: { name: true, vendorCode: true } },
+          customerAccount: { select: { name: true } },
           reportedBy: { select: { id: true, fullName: true } },
         },
       });

@@ -26,6 +26,7 @@ interface Assessment {
   updatedAt: string;
   vendorSubmissionDate: string | null;
   vendor: { id: string; name: string; vendorCode: string };
+  customerAccount?: { id: string; name: string };
   initiatedBy: { id: string; fullName: string } | null;
   assessor: { id: string; fullName: string } | null;
 }
@@ -149,6 +150,7 @@ export default function AMAssessmentsPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t("Assessment Code")}</TableHead>
+                        <TableHead>{t("Customer")}</TableHead>
                         <TableHead>{t("Vendor")}</TableHead>
                         <TableHead>{t("Type")}</TableHead>
                         <TableHead>{t("Template")}</TableHead>
@@ -162,6 +164,7 @@ export default function AMAssessmentsPage() {
                       {translatedAssessments.map(a => (
                         <TableRow key={a.id}>
                           <TableCell className="font-medium">{a.assessmentCode}</TableCell>
+                          <TableCell>{a.customerAccount?.name || "-"}</TableCell>
                           <TableCell>{a.vendor?.name || "-"}</TableCell>
                           <TableCell>{t(a.assessmentType)}</TableCell>
                           <TableCell>{a.questionnaireTemplate || "-"}</TableCell>

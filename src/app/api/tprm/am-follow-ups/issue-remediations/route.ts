@@ -54,6 +54,7 @@ export const GET = withAuth(
           assessment: {
             select: { assessmentCode: true, vendor: { select: { name: true } } },
           },
+          customerAccount: { select: { name: true } },
         },
         orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
       });

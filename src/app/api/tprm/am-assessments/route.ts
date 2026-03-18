@@ -61,6 +61,7 @@ export const GET = withAuth(
           where,
           include: {
             vendor: { select: { id: true, name: true, vendorCode: true } },
+            customerAccount: { select: { id: true, name: true } },
             initiatedBy: { select: { id: true, fullName: true } },
             assessor: { select: { id: true, fullName: true } },
           },
