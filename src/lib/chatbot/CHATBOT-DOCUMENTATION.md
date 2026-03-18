@@ -1,7 +1,7 @@
 # AI Help Chatbot — Complete Documentation
 
-> **Last Updated:** 2026-03-13
-> **Status:** Production-ready with 6-layer security pipeline
+> **Last Updated:** 2026-03-18
+> **Status:** Production-ready with 6-layer security pipeline + Agent Mode (record updates)
 > **AI Provider:** OpenAI (gpt-4o-mini, text-embedding-3-small)
 
 ---
@@ -23,9 +23,11 @@
 13. [Database Models](#13-database-models)
 14. [Configuration Reference](#14-configuration-reference)
 15. [API Reference](#15-api-reference)
-16. [Future Roadmap](#16-future-roadmap)
-17. [Known Issues & Design Decisions](#17-known-issues--design-decisions)
-18. [Changelog](#18-changelog)
+16. [Agent Mode — Record Updates](#16-agent-mode--record-updates)
+17. [Conversation Context & Translation-Aware Queries](#17-conversation-context--translation-aware-queries)
+18. [Future Roadmap](#18-future-roadmap)
+19. [Known Issues & Design Decisions](#19-known-issues--design-decisions)
+20. [Changelog](#20-changelog)
 
 ---
 
@@ -35,15 +37,19 @@ The GRC AI Help Chatbot is an intelligent assistant embedded in the GRC applicat
 
 - **Help & Guidance** — "How do I create a risk?", "What is a risk assessment?"
 - **Data Queries** — "How many risks do we have?", "Show me controls for IT department"
+- **Record Updates (Agent Mode)** — "Change the owner of RSK-001 to John Doe", "Update department of this audit to IT Operations"
 - **General Conversation** — "Hi", "Thanks", "Goodbye"
 
 The chatbot uses a hybrid approach:
 - **Vector RAG** (Retrieval Augmented Generation) for help/how-to questions
 - **NLP-to-SQL** for database queries (converts natural language to Prisma queries)
+- **Agent Mode** for record updates with 2-step confirmation and field-level safety
 - **Self-Reflection** to evaluate and improve answer quality
 - **LLM-based intent classification** to understand any natural language phrasing
+- **Conversation context** for follow-up questions ("what is its status?", "change the department of this")
+- **Translation-aware queries** — finds records even when data is in a different language than the query
 - **6-layer security pipeline** with input/output guardrails, PII scanning, and audit logging
-- **Role-based access control** that mirrors the UI permission matrix
+- **Role-based access control** that mirrors the UI permission matrix for both read and edit
 
 ---
 
@@ -76,22 +82,24 @@ User Message
 │  • Regex fast-path for greetings        │
 │  • gpt-4o-mini for all other queries    │
 │  • Classifies: data_query / kb_search / │
-│    general_chat                         │
-└──────┬───────────┬──────────┬───────────┘
-       │           │          │
-       ▼           ▼          ▼
-┌──────────┐ ┌──────────┐ ┌──────────────────┐
-│ General  │ │  Data    │ │   KB RAG Search   │
-│  Chat    │ │  Query   │ │                   │
-│ (static) │ │(NLP→SQL) │ │ Vector similarity │
-│          │ │          │ │ + LLM answer gen  │
-│          │ │ Role     │ │ + Self-reflection │
-│          │ │ check →  │ │                   │
-│          │ │ Prisma   │ │ Fallback: keyword │
-│          │ │ query    │ │ search (Phase 1)  │
-└──────┬───┘ └────┬─────┘ └────────┬─────────┘
-       │          │                │
-       ▼          ▼                ▼
+│    general_chat / agent_update          │
+│  • Conversation history for follow-ups  │
+└──┬────┬───────────┬──────────┬──────────┘
+   │    │           │          │
+   ▼    ▼           ▼          ▼
+┌────┐┌──────────┐┌──────────┐┌──────────────────┐
+│Chat││  Agent   ││  Data    ││   KB RAG Search   │
+│    ││  Update  ││  Query   ││                   │
+│    ││(when ON) ││(NLP→SQL) ││ Vector similarity │
+│    ││          ││          ││ + LLM answer gen  │
+│    ││ LLM →   ││ Role     ││ + Self-reflection │
+│    ││ UpdateSpec│ check →  ││                   │
+│    ││ → RBAC  ││ Prisma   ││ Fallback: keyword │
+│    ││ → Confirm│ query    ││ search (Phase 1)  │
+│    ││ → Execute│          ││ Translation-aware  │
+└──┬─┘└────┬─────┘└────┬─────┘└────────┬─────────┘
+   │       │           │                │
+   ▼       ▼           ▼                ▼
 ┌─────────────────────────────────────────┐
 │  LAYER 5: Output Guardrails             │
 │  • Block credentials/secrets            │
@@ -130,13 +138,19 @@ User Message
 |-------|---------|--------|-------------|
 | Phase 1 | Keyword Search | Done | TF-IDF scoring, fuzzy matching, 80+ help articles |
 | Phase 2A | RAG Pipeline | Done | Vector embeddings + LLM answer generation |
-| Phase 2B | NLP-to-SQL | Done | Natural language → Prisma queries for 10 models |
+| Phase 2B | NLP-to-SQL | Done | Natural language → Prisma queries for 14 models |
 | Phase 2D | Self-Reflective RAG | Done | AI evaluates own answers, retries with 3 strategies |
-| — | LLM Intent Router | Done | Replaced regex routing with gpt-4o-mini classification |
-| — | RBAC Enforcement | Done | Role-based model access matching UI permissions |
+| — | LLM Intent Router | Done | Replaced regex routing with gpt-4o-mini classification (4 intents) |
+| — | RBAC Enforcement | Done | Role-based model access matching UI permissions (view + edit) |
 | — | 6-Layer Security | Done | Input/PII/Output guardrails + audit logging |
 | — | Markdown Rendering | Done | Bold, lists, headings in chat responses |
 | — | UI Components | Done | Floating widget, module browsing, confidence indicators |
+| — | **Agent Mode** | Done | Toggle-based record updates with 2-step confirmation, RBAC edit roles, field-level safety (~95 editable fields across 8 models) |
+| — | **Conversation Context** | Done | Router + data query engine + agent receive last 4-6 conversation turns for follow-up resolution |
+| — | **Translation-Aware Queries** | Done | Searches DynamicTranslation table when direct name match fails (all languages) |
+| — | **Organization Models** | Done | Department, User, Process added as queryable (User is view-only, not editable for security) |
+| — | **Smart Model Fallback** | Done | Risk → InternalAuditRisk auto-redirect for audit users |
+| — | **Comprehensive Fields** | Done | All user-visible fields: assignee, owner, custodian, approver, description, category, group, classification, sensitivity, RACI |
 
 ### Not Yet Implemented
 
@@ -144,7 +158,6 @@ User Message
 |-------|---------|--------|-------------|
 | Phase 2C | Document Q&A | Skipped | Answer from uploaded PDFs/policies (user deferred) |
 | Phase 3A | Streaming Responses | Planned | Token-by-token streaming for better UX |
-| Phase 3B | Conversation Memory | Planned | Deep multi-turn context (follow-up questions) |
 | Phase 3C | Admin KB Panel | Planned | UI for managing help articles + reseeding |
 | Phase 3D | User Feedback | Planned | Thumbs up/down on answers |
 | Phase 3E | Arabic Query Support | Planned | Explicit multilingual query handling |
@@ -159,12 +172,13 @@ User Message
 
 | File | Purpose | Key Exports |
 |------|---------|-------------|
-| `query-router.ts` | LLM-based intent classification | `routeQuery()`, `getGeneralChatResponse()` |
+| `query-router.ts` | LLM-based intent classification (4 intents) | `routeQuery()`, `getGeneralChatResponse()` |
 | `kb-embeddings.ts` | Vector search with pgvector | `searchKB()`, `seedKBEmbeddings()`, `generateEmbedding()` |
 | `answer-generator.ts` | LLM answer generation from KB context | `generateAnswer()`, `getNoResultsResponse()` |
 | `self-reflect.ts` | Self-reflective RAG with retry | `generateReflectiveAnswer()` |
-| `data-query-engine.ts` | NLP-to-SQL pipeline | `processDataQuery()` |
-| `schema-metadata.ts` | Queryable model definitions + RBAC | `QUERYABLE_MODELS`, `buildSchemaPrompt()` |
+| `data-query-engine.ts` | NLP-to-SQL pipeline + translation-aware search | `processDataQuery()` |
+| `schema-metadata.ts` | 14 queryable models, RBAC (view+edit), field metadata | `QUERYABLE_MODELS`, `buildSchemaPrompt()`, `buildEditableSchemaPrompt()`, `getEditableModelNames()` |
+| `agent-update-engine.ts` | Agent Mode: LLM → UpdateSpec → validate → confirm → execute | `processAgentUpdate()`, `executeConfirmedUpdate()`, `getPendingUpdate()` |
 
 ### Guardrails (`src/lib/chatbot/guardrails/`)
 
@@ -187,7 +201,7 @@ User Message
 
 | File | Purpose |
 |------|---------|
-| `src/hooks/useHelpChatbot.ts` | Chat state management, API calls, keyboard shortcuts |
+| `src/hooks/useHelpChatbot.ts` | Chat state, API calls, agent mode toggle, update confirmation |
 | `src/data/help-knowledge-base.ts` | 80+ help articles across 8 modules |
 | `src/lib/help-search.ts` | Phase 1 keyword search engine (fallback) |
 
@@ -756,11 +770,14 @@ Articles are filtered before vector similarity computation, so users never see h
 - `messages: ChatMessage[]` — Full conversation history
 - `isTyping: boolean` — Typing indicator
 - `activeModule: HelpModule | null` — Module browsing state
+- `agentMode: boolean` — Whether agent mode is enabled (toggle switch)
 - `userRoles: string[]` — From session
 - `productFlags` — isGrcAdded, isTprmAdded, isAuditUser, isAuditOnly
 
 **Actions:**
-- `sendMessage(text)` — Calls `/api/ai/chat`, handles loading/error states
+- `sendMessage(text)` — Calls `/api/ai/chat` with `agentMode` flag, handles loading/error states
+- `confirmUpdate(updateId, confirm)` — Confirms or cancels a pending agent update
+- `setAgentMode(on)` — Toggle agent mode on/off
 - `selectArticle(article)` — Direct article display (Phase 1 style)
 - `clearChat()` — Reset to welcome message
 - `browseModule(module)` — Enter module browsing mode
@@ -958,7 +975,156 @@ Compliance audit trail for every chatbot interaction.
 
 ---
 
-## 16. Future Roadmap
+## 16. Agent Mode — Record Updates
+
+### Overview
+
+Agent Mode allows the chatbot to **update existing records** via natural language commands. It is toggled on/off via a switch in the chatbot header.
+
+**Key Principles:**
+- **Update only** — No create, no delete
+- **User-editable fields only** — Only fields that have a text input or dropdown in the frontend edit form. Status fields, computed scores, and system fields are NOT updatable
+- **2-step confirmation** — User sees exactly what will change before it executes
+- **RBAC enforced** — Separate edit role groups per model (stricter than view roles)
+- **Single record only** — No bulk/batch updates
+- **5-minute TTL** — Pending updates expire if not confirmed within 5 minutes
+
+### Architecture Flow
+
+```
+User: "Change the owner of risk RSK-001 to John Doe"
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│ Router classifies as agent_update       │
+│ (only when agentMode toggle is ON)      │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│ LLM generates UpdateSpec:               │
+│ { model: "Risk",                        │
+│   recordIdentifier: {riskId: "RSK-001"},│
+│   updates: [{field:"ownerId",           │
+│              value:"John Doe"}] }       │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│ VALIDATE                                │
+│ • Role has edit permission? ✓           │
+│ • Field is editable? ✓                  │
+│ • Enum value valid? ✓                   │
+│ • Record exists? ✓ (translation-aware)  │
+│ • Single record match? ✓               │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│ CONFIRM (shown to user):                │
+│ "I'm about to update Risk 'Data Breach  │
+│  Risk': Owner: Mike Wilson → John Doe.  │
+│  Do you want to proceed?"              │
+│                                         │
+│ [Yes, Update]  [Cancel]                 │
+└──────────────┬──────────────────────────┘
+               │ (user clicks Yes)
+               ▼
+┌─────────────────────────────────────────┐
+│ EXECUTE                                 │
+│ prisma.risk.update({                    │
+│   where: { id: "..." },                │
+│   data: { ownerId: "resolved-user-id" } │
+│ })                                      │
+│                                         │
+│ "Successfully updated Risk 'Data Breach │
+│  Risk'. Changed: Risk owner."           │
+└─────────────────────────────────────────┘
+```
+
+### Edit Role Groups
+
+| Role Group | Roles | Models |
+|------------|-------|--------|
+| `ORG_EDIT_ROLES` | GRCAdmin, CustomerAdmin | Department, Process |
+| `RISK_EDIT_ROLES` | GRCAdmin, CustomerAdmin, Reviewer, DepartmentReviewer, DepartmentContributor, Contributor | Risk |
+| `COMPLIANCE_EDIT_ROLES` | GRCAdmin, CustomerAdmin, Reviewer, Contributor | Control, Policy, Evidence |
+| `ASSET_EDIT_ROLES` | GRCAdmin, CustomerAdmin, Reviewer, DepartmentReviewer, DepartmentContributor, Contributor | Asset |
+| `AUDIT_EDIT_ROLES` | GRCAdmin, CustomerAdmin, AuditHead, AuditManager | AuditEngagement, InternalAuditFinding |
+| `TPRM_EDIT_ROLES` | GRCAdmin, CustomerAdmin, TPRMAdmin, RelationshipManager | TPRMVendor |
+| *(none)* | — | User (view-only, not editable via chatbot for security) |
+
+### Editable Fields Per Model
+
+**Risk** (~11 fields): name, description, riskSources, responseStrategy, treatmentPlan, departmentId, categoryId, typeId, ownerId, impactedAssetId
+
+**Control** (~8 fields): controlCode, name, description, status, scope, functionalGrouping, departmentId, assigneeId
+
+**Policy** (~4 fields): name, documentType, departmentId, assigneeId
+
+**Evidence** (~5 fields): name, description, departmentId, assigneeId, reviewDate
+
+**Asset** (~11 fields): name, location, categoryId, subCategoryId, groupId, lifecycleStatusId, departmentId, ownerId, custodianId, acquisitionDate, nextReviewDate
+
+**Process** (~14 fields): name, description, processFrequency, natureOfImplementation, operationalComplexity, assetDependency, externalDependency, piiCapture, departmentId, ownerId, responsibleId, accountableId, consultedId, informedId, lastAuditDate
+
+**AuditEngagement** (~10 fields): engagementTitle, description, engagementObjective, engagementScope, priority, auditType, departmentId, assignedAuditorId, auditeeId, plannedStartDate, plannedEndDate
+
+**InternalAuditFinding** (~10 fields): finding, description, severity, recommendation, responsiblePerson, criteria, condition, cause, effect, targetDate
+
+**TPRMVendor** (~14 fields): name, serviceCategory, serviceDescription, contactEmail, contactPhone, departmentId, cloud, pii, accessToData, accessToNetwork, contractStartDate, contractEndDate, businessJustification
+
+### Fields NOT Updatable (by design)
+
+| Category | Examples | Why |
+|----------|----------|-----|
+| **Status fields** | status, assessmentStatus, responseStatus | Changed by workflow actions (submit, approve, upload) |
+| **Computed scores** | riskScore, inherentRiskScore, residualRiskScore, compliancePercentage | Calculated from other data |
+| **Auto-generated codes** | riskId, controlCode (initial), assetId, vendorCode, processCode | System-generated identifiers |
+| **System timestamps** | createdAt, updatedAt | Managed by Prisma |
+| **System identifiers** | id, customerAccountId | Internal keys |
+| **User credentials** | password, userName, email | Security — never exposed |
+| **VRR (Vendor Risk Rating)** | vrr | Calculated from assessments |
+
+### Frontend Components
+
+- **Toggle switch** in chatbot header: "Agent" label + Switch component (amber when ON)
+- **Confirmation buttons**: [Yes, Update] (green) and [Cancel] (red) rendered below the confirmation message
+- **Badges**: "Agent Update" badge (amber) on proposal messages, "Updated" badge (amber) on success messages
+
+---
+
+## 17. Conversation Context & Translation-Aware Queries
+
+### Conversation Context
+
+The chatbot maintains conversation context by passing the last 4-6 messages to the LLM at each step:
+- **Query Router** — Sees conversation so follow-ups about data records are classified as `data_query` (not `kb_search`)
+- **Data Query Engine** — Resolves "this", "it", "that control" from conversation context
+- **Agent Update Engine** — Resolves "change the department of this" from previous messages
+
+**Example:**
+1. User: "Who is the assignee of Consent Management System Implementation?"
+2. Bot: "Athar Imam"
+3. User: "What is the functional grouping of this?" → LLM resolves "this" = the control from message 1
+
+### Translation-Aware Queries
+
+When the database stores records in one language (e.g. Arabic) but the user asks in another (e.g. English), the chatbot searches the `DynamicTranslation` table to find matching records.
+
+**How it works:**
+1. Direct name search: `Asset.name CONTAINS "Cloud storage"` → no match (data is Arabic)
+2. Translation search: `DynamicTranslation WHERE translatedText CONTAINS "Cloud storage"` → finds recordId
+3. Re-query with record IDs: `Asset WHERE id IN [found IDs]` → returns the Arabic-named asset
+
+**Applied in:**
+- `data-query-engine.ts` — `executeQuery()` uses OR clause (original text OR translated IDs)
+- `data-query-engine.ts` — `resolveRelationFilters()` falls back to translation search for relation lookups
+- `agent-update-engine.ts` — `findRecord()` and `resolveUpdateRelations()` both support translation fallback
+
+---
+
+## 18. Future Roadmap
 
 ### Phase 2C — Document Q&A (Deferred)
 
@@ -986,19 +1152,19 @@ Compliance audit trail for every chatbot interaction.
 
 **Benefit:** Perceived faster response time, especially for longer answers.
 
-### Phase 3B — Deep Conversation Memory
+### Phase 3B — Deep Conversation Memory (Partially Done)
 
-**Goal:** Make follow-up questions work naturally. Example:
-- User: "Show me risks for IT department"
-- User: "What about finance?" (should understand = "Show me risks for Finance department")
+**Goal:** Make follow-up questions work naturally.
 
-**What It Would Involve:**
-- The `conversationHistory` is already passed through the pipeline
-- Enhance the LLM prompts (router, data query engine, answer generator) to use conversation context
-- Add context-aware query reformulation (e.g., resolve "what about X" references)
-- Consider conversation summarization for long chats
+**What's Done:**
+- Conversation history (last 4-6 messages) is passed to router, data query engine, and agent update engine
+- LLM resolves "this", "it", "that control" from conversation context
+- Follow-ups like "what is its status?" work after asking about a specific record
 
-**Current State:** `conversationHistory` is passed to `generateAnswer()` but not deeply used for contextual understanding.
+**What's Remaining:**
+- Context switching: "What about finance?" after asking about IT department
+- Conversation summarization for long chats (currently uses last 4-6 raw messages)
+- Entity tracking across many turns
 
 ### Phase 3C — Admin KB Management Panel
 
@@ -1091,6 +1257,12 @@ Compliance audit trail for every chatbot interaction.
 | Greeting detection | 0 | $0 (regex only) |
 | **Total (general_chat)** | **0** | **$0** |
 
+| Step | Tokens | Cost (gpt-4o-mini) |
+|------|--------|---------------------|
+| Intent classification | ~150 | ~$0.00002 |
+| UpdateSpec generation | ~600 | ~$0.00009 |
+| **Total (agent_update)** | **~750** | **~$0.00011** |
+
 ### With Self-Reflection Retry (Worst Case)
 
 If the initial answer quality is below threshold and all 3 strategies are tried:
@@ -1109,39 +1281,81 @@ Estimated cost per worst-case message: ~$0.0009 (~1/10th of a cent)
 
 ---
 
-## 17. Known Issues & Design Decisions
+## 19. Known Issues & Design Decisions
 
 ### Design Decisions
 
-1. **No raw SQL** — All database queries go through Prisma ORM for safety. The LLM generates a structured JSON `QuerySpec`, never SQL.
+1. **No raw SQL** — All database queries go through Prisma ORM for safety. The LLM generates a structured JSON `QuerySpec` or `UpdateSpec`, never SQL.
 
-2. **Schema prompt shows all models** — `buildSchemaPrompt()` includes all 10 models in the LLM prompt regardless of user role. Access control is enforced at the validation layer, not the prompt layer. This ensures users get clear "access denied" messages instead of generic "not supported" errors.
+2. **Schema prompt shows all models** — `buildSchemaPrompt()` includes all 14 models in the LLM prompt regardless of user role. Access control is enforced at the validation layer, not the prompt layer. This ensures users get clear "access denied" messages instead of generic "not supported" errors.
 
 3. **Self-reflection overrides similarity-based confidence** — The evaluation score from `self-reflect.ts` is more accurate than raw cosine similarity, so it takes precedence when determining the confidence level shown to users.
 
 4. **Regex fast-path for greetings only** — The LLM router only uses regex for obvious greetings (hi, thanks, bye). Everything else goes through gpt-4o-mini for accurate intent classification, even though this adds ~150 tokens of cost per query.
 
-5. **Tenant isolation is mandatory** — Every Prisma query in the data query engine includes `customerAccountId` in the WHERE clause. There is no code path that can skip this.
+5. **Tenant isolation is mandatory** — Every Prisma query in the data query engine and agent update engine includes `customerAccountId` in the WHERE clause. There is no code path that can skip this.
 
 6. **Audit logging never blocks** — `logChatbotInteraction()` is called with `void` (fire-and-forget) so a logging failure never breaks the chat response.
 
+7. **Agent Mode: editable vs non-editable fields** — Status fields are NOT editable via the chatbot because they change as side-effects of workflows (upload → status becomes "Uploaded"). Only fields that users can type/select in frontend edit forms are marked `editable: true`. This prevents breaking workflow state.
+
+8. **Agent Mode: User model is not editable** — Even though admins can view User data, updating User records via chatbot is blocked for security reasons. User management should go through the dedicated admin UI.
+
+9. **Agent Mode: 2-step confirmation is mandatory** — Every update requires explicit user confirmation. The pending update is stored in-memory with a 5-minute TTL. This prevents accidental or prompt-injection-driven updates.
+
+10. **Translation-aware queries search DynamicTranslation** — Instead of requiring records to be in the user's language, the chatbot searches translations as a fallback. This adds one extra DB query but makes the chatbot work seamlessly in a multilingual environment.
+
+11. **Smart model fallback for Risk** — When an audit user asks about "risks", the system redirects to InternalAuditRisk (their module) instead of denying access. Field names are automatically remapped (e.g., `name` → `riskName`).
+
 ### Known Limitations
 
-1. **Conversation context is shallow** — `conversationHistory` is passed to the answer generator but the data query engine and router don't use it for context-aware follow-ups (e.g., "what about finance?" after asking about IT department).
+1. **No streaming** — Responses wait for the full LLM answer before displaying. Self-reflection adds extra latency (2-3 evaluation calls in worst case).
 
-2. **No streaming** — Responses wait for the full LLM answer before displaying. Self-reflection adds extra latency (2-3 evaluation calls in worst case).
+2. **English-optimized** — The LLM handles multilingual queries to some extent, but the KB articles, intent classification prompt, and schema descriptions are all in English. Arabic/Latvian queries may not route or match as accurately.
 
-3. **English-optimized** — The LLM handles multilingual queries to some extent, but the KB articles, intent classification prompt, and schema descriptions are all in English. Arabic/Latvian queries may not route or match as accurately.
+3. **KB articles are static** — The 80+ help articles are defined in `help-knowledge-base.ts` and require code changes to update. There's no admin UI to manage them (only a seed API endpoint).
 
-4. **KB articles are static** — The 80+ help articles are defined in `help-knowledge-base.ts` and require code changes to update. There's no admin UI to manage them (only a seed API endpoint).
+4. **No caching** — Every data query and KB search hits the database and OpenAI API. Repeated identical queries cost the same tokens each time.
 
-5. **No caching** — Every data query and KB search hits the database and OpenAI API. Repeated identical queries cost the same tokens each time.
+5. **Rate limiting is in-memory** — The rate limiter in `input-guard.ts` uses an in-memory Map, so it resets on server restart and doesn't work across multiple server instances.
 
-6. **Rate limiting is in-memory** — The rate limiter in `input-guard.ts` uses an in-memory Map, so it resets on server restart and doesn't work across multiple server instances.
+6. **Pending updates are in-memory** — Agent Mode's pending update store is an in-memory Map. Updates are lost on server restart. This is acceptable because the TTL is only 5 minutes.
+
+7. **Agent Mode doesn't trigger dynamic translations** — When a record is updated via agent mode, `translateRecord()` is not called. The translation will be triggered the next time the record is edited via the UI.
+
+8. **Department-scoped edits not enforced** — DepartmentReviewer and DepartmentContributor can technically update records outside their department via the chatbot. The UI enforces department scope, but the chatbot currently doesn't check `scope: 'department'`.
 
 ---
 
-## 18. Changelog
+## 20. Changelog
+
+### 2026-03-18 — Agent Mode + Organization Models + Conversation Context + Translation-Aware Queries
+
+**Major Features:**
+- **Agent Mode** — Toggle-based record updates via chatbot. LLM generates UpdateSpec, validates RBAC edit permissions + field editability + enum values, 2-step confirmation with [Yes, Update] / [Cancel] buttons. ~95 editable fields across 8 models. New file: `agent-update-engine.ts`
+- **Organization models** — Added Department (view for most roles), User (view-only for admins, NOT editable), Process (view+edit with RACI fields) as queryable models
+- **Conversation context** — Router, data query engine, and agent engine all receive last 4-6 conversation turns. Follow-ups like "what is its status?" and "change the department of this" resolve from prior context
+- **Translation-aware queries** — `DynamicTranslation` table searched when direct name match fails. Works for data queries, relation resolution, and agent record lookup. Supports all languages
+- **Smart model fallback** — Risk → InternalAuditRisk auto-redirect for audit users with field remapping
+- **Comprehensive field coverage** — All user-visible fields added: assignee, owner, custodian, approver, description, category, group, classification, sensitivity, lifecycle status, RACI, dates. Total: 14 queryable models
+
+**Bug Fixes:**
+- Fixed User `displayField: "name"` → `"fullName"` (User model has `fullName`, not `name` — caused Prisma "Unknown field" error)
+- Fixed Prisma `relationField` for models with multiple User relations (owner + assignee on same model)
+- Fixed `agentMode` stale closure in `sendMessage` useCallback (was always `false`)
+- Fixed AuditEngagement `departmentId` missing `editable: true` (caused "Could not find User matching IT Operations")
+
+**Files Created:**
+- `src/lib/chatbot/agent-update-engine.ts`
+
+**Files Modified:**
+- `src/lib/chatbot/schema-metadata.ts` — 14 models (was 10), `editable` flag, `allowedEditRoles`, 6 edit role groups, new helpers
+- `src/lib/chatbot/query-router.ts` — `agent_update` intent, `agentMode` parameter, conversation history
+- `src/lib/chatbot/data-query-engine.ts` — Conversation context, translation-aware search, model fallback, relation field fix
+- `src/app/api/ai/chat/route.ts` — Agent mode handling, confirmation flow, conversation history passing
+- `src/hooks/useHelpChatbot.ts` — `agentMode` state, `confirmUpdate()`, agent message properties, dependency fix
+- `src/components/help-chatbot/help-chatbot.tsx` — Agent toggle switch (Switch component), `confirmUpdate` prop
+- `src/components/help-chatbot/chat-message.tsx` — Agent Update/Updated badges, [Yes, Update]/[Cancel] buttons
 
 ### 2026-03-13 — RBAC Enforcement + LLM Router + Documentation
 

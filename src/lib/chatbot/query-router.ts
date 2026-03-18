@@ -48,6 +48,45 @@ const GENERAL_CHAT_PATTERNS = [
   /^(yes|no|yep|nope|yeah|nah)\b$/i,
 ];
 
+// ==================== DATA QUERY SIGNAL DETECTION ====================
+
+/**
+ * Detect if a query has strong signals that it's asking for actual data
+ * (not help/guidance). Used as a safety net when the LLM misclassifies.
+ *
+ * Pattern: data signal word + entity name = data_query
+ */
+const DATA_SIGNAL_WORDS = [
+  /\b(how many|count|total|number of)\b/i,
+  /\b(which|what)\b.+\b(department|most|least|highest|lowest|top)\b/i,
+  /\b(list|show me|give me|tell me about|get me)\b/i,
+  /\b(group by|grouped by|by department|by category|by status|by rating|by severity)\b/i,
+  /\b(who is the|who are the)\b.+\b(owner|assignee|custodian|approver|auditor|auditee)\b/i,
+  /\b(what is the|what are the)\b.+\b(status|description|rating|score|level|group|category|department)\b.+\b(of|for)\b/i,
+  /\b(i want to know|i need to see|i need to know|can you tell me)\b/i,
+];
+
+const ENTITY_WORDS = [
+  /\b(risk|risks|control|controls|vendor|vendors|asset|assets|finding|findings|audit|audits|engagement|engagements|policy|policies|evidence|framework|requirement|department|user|process)\b/i,
+];
+
+const KB_OVERRIDE_WORDS = [
+  /\b(how do I|how to|how can I|steps to|guide me|walk me through)\b/i,
+  /\b(what is a|what does .+ mean|explain what|define)\b/i,
+  /\b(where can I find|where is the page|navigate to|go to)\b/i,
+];
+
+function hasDataQuerySignals(query: string): boolean {
+  // If query has explicit KB signals (how do I, what is a), don't override
+  if (KB_OVERRIDE_WORDS.some((p) => p.test(query))) return false;
+
+  // Check if query has data signal + entity name
+  const hasDataSignal = DATA_SIGNAL_WORDS.some((p) => p.test(query));
+  const hasEntity = ENTITY_WORDS.some((p) => p.test(query));
+
+  return hasDataSignal && hasEntity;
+}
+
 // ==================== LLM INTENT CLASSIFICATION ====================
 
 function buildRouterPrompt(agentMode: boolean = false): string {
@@ -61,7 +100,7 @@ function buildRouterPrompt(agentMode: boolean = false): string {
 INTENTS:
 
 1. **data_query** — The user wants to retrieve, count, list, filter, compare, or get statistics about ACTUAL DATA from the system's database.
-   Examples: "how many risks do we have", "show controls for IT", "I need to see all vendors", "give me controls", "what are our open risks", "controls in finance department", "risks with high rating", "requirements under GDPR", "total assets", "which department has the most findings"
+   Examples: "how many risks do we have", "show controls for IT", "I need to see all vendors", "give me controls", "what are our open risks", "controls in finance department", "risks with high rating", "requirements under GDPR", "total assets", "which department has the most findings", "which department has the most high risks", "show me risks by department", "group risks by category", "list high severity findings", "how many open audits do we have", "risks grouped by rating", "who owns risk RSK-001", "what is the status of this control", "tell me about vendor ABC"
 
    The system can query these entities:
 ${entities}
@@ -69,20 +108,38 @@ ${entities}
    ANY question that asks about quantities, lists, statuses, or details of these entities from the database is a data_query — regardless of how the user phrases it.
 
 2. **kb_search** — The user wants HELP, GUIDANCE, or EXPLANATIONS about how to use the GRC application. They want to learn HOW to do something, WHAT a feature is, WHERE to find something, or understand a PROCESS/WORKFLOW.
-   Examples: "how do I create a risk", "what is a risk assessment", "where can I find evidence", "explain the audit workflow", "what permissions do I need", "how to upload documents", "what is the difference between risk response strategies"
+   Examples: "how do I create a risk", "what is a risk assessment", "where can I find evidence", "explain the audit workflow", "what permissions do I need", "how to upload documents", "what is the difference between risk response strategies", "how do I navigate to the dashboard", "what steps to approve a policy"
 
 3. **general_chat** — Simple greetings, thanks, acknowledgments, or non-GRC conversation.
    Examples: "hi", "thanks", "ok got it", "bye"
 
-KEY DISTINCTION:
-- "what are our risks" → data_query (wants to see actual risk records)
-- "what is a risk" → kb_search (wants to understand the concept)
-- "controls for IT department" → data_query (wants actual control records)
-- "how to create a control" → kb_search (wants process guidance)
-- "give me controls" → data_query (wants actual data)
-- "I need to see IT controls" → data_query (wants actual data)
-- "requirements for GDPR" → data_query (wants actual requirement records)
-- "how to add a requirement" → kb_search (wants help with the process)
+CRITICAL PRIORITY RULE — data_query WINS OVER kb_search when ambiguous:
+If a question COULD be either data_query or kb_search, ALWAYS choose data_query. The user gets more value from actual data than navigation instructions. Only classify as kb_search when the user is CLEARLY asking HOW to do something or WHAT something means — not when they want to SEE actual records.
+
+DATA QUERY SIGNAL WORDS (if ANY of these are present with an entity name, it is ALMOST ALWAYS data_query):
+- "which", "how many", "count", "total", "list", "show me", "give me", "tell me"
+- "most", "least", "highest", "lowest", "top", "group by", "by department", "by category"
+- "who is the owner/assignee/custodian of", "what is the status/description/rating of"
+- "I want to know", "I need to see", "what are our", "do we have"
+- Any specific record name, code, or identifier (e.g. "RSK-001", "Consent Management", "ABC Corp")
+
+KB SEARCH SIGNAL WORDS (these indicate the user wants help/guidance):
+- "how do I", "how to", "how can I", "steps to", "guide me"
+- "what is a", "what does X mean", "explain", "what is the difference between"
+- "where can I find", "where is the page for", "navigate to"
+- "what permissions do I need", "who can access"
+
+KEY DISTINCTION EXAMPLES:
+- "what are our risks" → data_query (wants actual risk records)
+- "what is a risk" → kb_search (wants concept explanation)
+- "which department has the most high risks" → data_query (wants actual data from database)
+- "how do I view the risk dashboard" → kb_search (wants navigation help)
+- "show me risks by department" → data_query (wants actual grouped data)
+- "risks in IT department" → data_query (wants filtered data)
+- "I want to know which department have most risks" → data_query (wants actual data)
+- "how to create a control" → kb_search (wants step-by-step guide)
+- "tell me about vendor ABC" → data_query (wants vendor record details)
+- "what is a vendor risk rating" → kb_search (wants concept explanation)
 
 FOLLOW-UP CONTEXT: Conversation history may be included. If the user asks a follow-up about a previously discussed entity (e.g. "what is its status", "show me the functional grouping of this", "who owns it"), classify based on what they are asking about — if the previous context was about database records, the follow-up is also a data_query.
 ${agentMode ? `
@@ -148,10 +205,16 @@ async function classifyWithLLM(
       return { intent: "kb_search", confidence: 0.5 };
     }
 
-    return {
-      intent,
-      confidence: Math.min(1, Math.max(0, parsed.confidence || 0.7)),
-    };
+    const confidence = Math.min(1, Math.max(0, parsed.confidence || 0.7));
+
+    // Code-level safety net: if LLM said kb_search but the query has strong
+    // data_query signals, override to data_query. This prevents KB articles
+    // from "stealing" data questions that should return actual database results.
+    if (intent === "kb_search" && hasDataQuerySignals(query)) {
+      return { intent: "data_query", confidence: Math.max(confidence, 0.75) };
+    }
+
+    return { intent, confidence };
   } catch {
     // If LLM response fails to parse, default to kb_search
     return { intent: "kb_search", confidence: 0.5 };

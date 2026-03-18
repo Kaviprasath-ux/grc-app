@@ -57,6 +57,36 @@ function buildProductFlags(session: AuthenticatedRequest["user"]): ProductFlags 
   };
 }
 
+// ==================== DATA QUERY SIGNAL DETECTION ====================
+
+const DATA_SIGNALS = [
+  /\b(how many|count|total|number of)\b/i,
+  /\b(which|what)\b.+\b(department|most|least|highest|lowest|top)\b/i,
+  /\b(list|show me|give me|tell me about|get me)\b/i,
+  /\b(group by|grouped by|by department|by category|by status|by rating|by severity)\b/i,
+  /\b(who is the|who are the)\b.+\b(owner|assignee|custodian|approver)\b/i,
+  /\b(i want to know|i need to see|i need to know|can you tell me)\b/i,
+];
+
+const ENTITY_NAMES = /\b(risk|risks|control|controls|vendor|vendors|asset|assets|finding|findings|audit|audits|engagement|engagements|policy|policies|evidence|framework|requirement|department|departments|user|users|process|processes)\b/i;
+
+const KB_PHRASES = [
+  /\b(how do I|how to|how can I|steps to|guide me|walk me through)\b/i,
+  /\b(what is a |what does .+ mean|explain what|define )\b/i,
+  /\b(where can I find|where is the page|navigate to|go to )\b/i,
+];
+
+/**
+ * Check if a query looks like it wants actual data (not help/guidance).
+ * Used as a safety net when the LLM router misclassifies.
+ */
+function looksLikeDataQuery(query: string): boolean {
+  // If query has explicit KB phrases, don't override
+  if (KB_PHRASES.some((p) => p.test(query))) return false;
+  // Must have both a data signal word AND an entity name
+  return DATA_SIGNALS.some((p) => p.test(query)) && ENTITY_NAMES.test(query);
+}
+
 // ==================== ROUTE HANDLER ====================
 
 export const POST = withAuthOnly(
@@ -176,6 +206,14 @@ export const POST = withAuthOnly(
       // ═══════════════════════════════════════════════════════════════
       const routeResult = await routeQuery(processedQuery, conversationHistory, agentMode);
       intent = routeResult.intent;
+
+      // Safety net: override kb_search → data_query when query has strong data signals
+      // This catches cases where the LLM misclassifies data questions as help questions
+      if (intent === "kb_search" && looksLikeDataQuery(processedQuery)) {
+        console.log(`[AI Chat] OVERRIDE: kb_search → data_query for: "${processedQuery}"`);
+        intent = "data_query";
+      }
+
       console.log(`[AI Chat] Routed to: ${intent} (confidence: ${routeResult.confidence}, agentMode: ${agentMode})`);
 
       // --- Agent Update (when agent mode is ON) ---

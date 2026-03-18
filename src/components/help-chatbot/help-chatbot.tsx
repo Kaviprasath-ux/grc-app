@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bot, MessageCircleQuestion, Send, Trash2, X } from "lucide-react";
+import { MessageCircleQuestion, Send, Trash2, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHelpChatbot } from "@/hooks/useHelpChatbot";
@@ -102,21 +103,20 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setAgentMode(!agentMode)}
-              className={cn(
-                "h-7 w-7 rounded-full transition-colors",
-                agentMode
-                  ? "text-yellow-300 bg-yellow-500/20 hover:bg-yellow-500/30"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
-              )}
-              title={agentMode ? t("Agent Mode ON - Can update records") : t("Enable Agent Mode")}
-            >
-              <Bot className="w-3.5 h-3.5" />
-            </Button>
+          <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 ltr:mr-1 rtl:ml-1" title={agentMode ? t("Agent Mode ON - Can update records") : t("Enable Agent Mode")}>
+              <span className={cn(
+                "text-[10px] font-medium uppercase tracking-wider transition-colors",
+                agentMode ? "text-amber-300" : "text-white/40"
+              )}>
+                {t("Agent")}
+              </span>
+              <Switch
+                checked={agentMode}
+                onCheckedChange={setAgentMode}
+                className="h-4 w-7 data-[state=checked]:bg-amber-400 data-[state=unchecked]:bg-white/20"
+              />
+            </div>
             <Button
               variant="ghost"
               size="icon"
