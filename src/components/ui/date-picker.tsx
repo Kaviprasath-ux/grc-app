@@ -24,6 +24,7 @@ interface DatePickerProps {
   placeholder?: string
   className?: string
   disabled?: boolean
+  compact?: boolean
 }
 
 export function DatePicker({
@@ -32,6 +33,7 @@ export function DatePicker({
   placeholder = "Select date",
   className,
   disabled,
+  compact,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   const { locale } = useLanguage()
@@ -69,7 +71,7 @@ export function DatePicker({
           )}
         >
           <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
-          {dateValue ? format(dateValue, "PPP", { locale: dateFnsLocale }) : <span>{placeholder}</span>}
+          {dateValue ? format(dateValue, compact ? "dd/MM/yy" : "PPP", { locale: dateFnsLocale }) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent

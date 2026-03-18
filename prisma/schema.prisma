@@ -721,10 +721,22 @@ model Requirement {
   justification        String?
   implementationStatus String? // Yes, No, Ongoing, N/A
   controlCompliance    String? // Compliant, Non Compliant, Partial Compliant
+  // Gap Assessment fields
+  gapCurrentState      String?
+  gapExpectedRequirement String?
+  gapEvidence          String?
+  gapIdentified        String?
+  gapRiskLevel         String?
+  gapRecommendation    String?
+  gapOwner             String?
+  gapTargetDate        String?
+  gapStatus            String?
+  gapCompliant         Boolean  @default(false)
   // Relations
   controls             RequirementControl[]
   exceptions           RequirementException[]
   complianceExceptions Exception[]
+  gapPolicies          RequirementPolicy[]
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
 
@@ -742,6 +754,18 @@ model RequirementControl {
   createdAt     DateTime    @default(now())
 
   @@unique([requirementId, controlId])
+}
+
+// Gap Assessment - Requirement-Policy Many-to-Many Junction Table
+model RequirementPolicy {
+  id            String      @id @default(cuid())
+  requirementId String
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  policyId      String
+  policy        Policy      @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([requirementId, policyId])
 }
 
 // Requirement Exceptions (for compliance exceptions from requirements)
@@ -1139,6 +1163,7 @@ model Policy {
   policyExceptions      PolicyException[]
   exceptions            Exception[]        @relation("PolicyExceptions")
   vaultDocumentLinks    GovernanceVaultDocumentLink[]
+  requirementPolicies   RequirementPolicy[]
 
   @@unique([customerAccountId, code])
   @@index([customerAccountId])

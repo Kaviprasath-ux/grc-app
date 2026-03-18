@@ -1095,7 +1095,7 @@
   "No assets": "Nav aktīvu",
   "Add New Asset": "Pievienot jaunu aktīvu",
   "Enter Asset Name": "Ievadiet aktīva nosaukumu",
-  "Select Department": "Izvēlieties nodaļu",
+  "Select Department": "Izvēlēties nodaļu",
   "Select Asset Owner": "Izvēlieties aktīva īpašnieku",
   "Select Department first": "Vispirms izvēlieties nodaļu",
   "Select Category": "Izvēlieties kategoriju",
@@ -2578,7 +2578,7 @@
   "Risk Mapping": "Riska kartēšana",
   "Link controls to risk": "Saistīt kontroles ar risku",
   "Enter Risk Name": "Ievadiet riska nosaukumu",
-  "Select Owner": "Izvēlieties īpašnieku",
+  "Select Owner": "Izvēlēties īpašnieku",
   "Enter risk sources": "Ievadiet riska avotus",
   "Impacted Asset": "Ietekmētais aktīvs",
   "Select Impacted Asset": "Izvēlieties ietekmēto aktīvu",
@@ -5071,5 +5071,6 @@
   "What is the Task Queue?": "Kas ir Uzdevumu rinda?",
   "The Task Queue shows pending assessment tasks assigned to you. You can process assessments, initiate reassessments for expired evaluations, and handle returned assessment items.": "Uzdevumu rinda parāda jums piešķirtos neizpildītos novērtēšanas uzdevumus.",
   "How do I set up assessment domains?": "Kā iestatīt novērtēšanas jomas?",
-  "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires.": "Dodieties uz Pamatdatu pārvaldība > Jomas."
+  "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires.": "Dodieties uz Pamatdatu pārvaldība > Jomas.",
+  "Pick date": "Izvēlēties datumu"
 }

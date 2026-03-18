@@ -221,6 +221,13 @@ export const GET = withAuth(
                   },
                 },
               },
+              gapPolicies: {
+                include: {
+                  policy: {
+                    select: { id: true, code: true, name: true, status: true },
+                  },
+                },
+              },
             },
             orderBy: { sortOrder: "asc" },
           },

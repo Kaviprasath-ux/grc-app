@@ -74,6 +74,17 @@ export const PUT = withAuth(
         justification,
         implementationStatus,
         controlCompliance,
+        // Gap Assessment fields
+        gapCurrentState,
+        gapExpectedRequirement,
+        gapEvidence,
+        gapIdentified,
+        gapRiskLevel,
+        gapRecommendation,
+        gapOwner,
+        gapTargetDate,
+        gapStatus,
+        gapCompliant,
       } = body;
 
       // Check if requirement exists
@@ -93,23 +104,36 @@ export const PUT = withAuth(
         return forbidden("Access denied");
       }
 
+      // Build update data, only including fields that are explicitly provided
+      const updateData: Record<string, unknown> = {};
+      if (code !== undefined) updateData.code = code;
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (categoryId !== undefined) updateData.categoryId = categoryId;
+      if (parentId !== undefined) updateData.parentId = parentId;
+      if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
+      if (requirementType !== undefined) updateData.requirementType = requirementType;
+      if (chapterType !== undefined) updateData.chapterType = chapterType;
+      if (level !== undefined) updateData.level = level;
+      if (applicability !== undefined) updateData.applicability = applicability;
+      if (justification !== undefined) updateData.justification = justification;
+      if (implementationStatus !== undefined) updateData.implementationStatus = implementationStatus;
+      if (controlCompliance) updateData.controlCompliance = controlCompliance;
+      // Gap Assessment fields
+      if (gapCurrentState !== undefined) updateData.gapCurrentState = gapCurrentState;
+      if (gapExpectedRequirement !== undefined) updateData.gapExpectedRequirement = gapExpectedRequirement;
+      if (gapEvidence !== undefined) updateData.gapEvidence = gapEvidence;
+      if (gapIdentified !== undefined) updateData.gapIdentified = gapIdentified;
+      if (gapRiskLevel !== undefined) updateData.gapRiskLevel = gapRiskLevel;
+      if (gapRecommendation !== undefined) updateData.gapRecommendation = gapRecommendation;
+      if (gapOwner !== undefined) updateData.gapOwner = gapOwner;
+      if (gapTargetDate !== undefined) updateData.gapTargetDate = gapTargetDate;
+      if (gapStatus !== undefined) updateData.gapStatus = gapStatus;
+      if (gapCompliant !== undefined) updateData.gapCompliant = gapCompliant;
+
       const requirement = await prisma.requirement.update({
         where: { id },
-        data: {
-          code,
-          name,
-          description,
-          categoryId,
-          parentId,
-          sortOrder,
-          requirementType,
-          chapterType,
-          level,
-          applicability,
-          justification,
-          implementationStatus,
-          ...(controlCompliance && { controlCompliance }),
-        },
+        data: updateData,
         include: {
           framework: true,
           category: true,

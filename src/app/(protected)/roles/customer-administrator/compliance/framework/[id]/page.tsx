@@ -48,7 +48,10 @@ import {
   User,
   Shield,
   Settings,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import Link from "next/link";
@@ -90,6 +93,18 @@ interface Requirement {
   justification?: string;
   implementationStatus?: string;
   controlCompliance?: string;
+  // Gap Assessment fields
+  gapCurrentState?: string;
+  gapExpectedRequirement?: string;
+  gapEvidence?: string;
+  gapIdentified?: string;
+  gapRiskLevel?: string;
+  gapRecommendation?: string;
+  gapOwner?: string;
+  gapTargetDate?: string;
+  gapStatus?: string;
+  gapCompliant?: boolean;
+  gapPolicies?: { id: string; policy: { id: string; code: string; name: string; status: string } }[];
   children?: Requirement[];
   controls?: RequirementControl[];
 }
@@ -833,6 +848,23 @@ export default function CustomerAdminFrameworkDetailPage({
   const [soaSearch, setSoaSearch] = useState("");
   const [soaStatusFilter, setSoaStatusFilter] = useState("all");
 
+  // Gap Assessment state
+  const [gapExpandedCats, setGapExpandedCats] = useState<string[]>([]);
+  const [gapSearch, setGapSearch] = useState("");
+  const [gapSaving, setGapSaving] = useState(false);
+  const [gapEdits, setGapEdits] = useState<Record<string, Record<string, string | boolean>>>({});
+  const [gapPolicyDialogOpen, setGapPolicyDialogOpen] = useState(false);
+  const [gapPolicyReqId, setGapPolicyReqId] = useState<string | null>(null);
+  const [gapPolicySearch, setGapPolicySearch] = useState("");
+  const [gapSelectedPolicyIds, setGapSelectedPolicyIds] = useState<string[]>([]);
+  const [allPolicies, setAllPolicies] = useState<{ id: string; code: string; name: string; status: string }[]>([]);
+  const [policiesLoading, setPoliciesLoading] = useState(false);
+  const [gapDeptUsers, setGapDeptUsers] = useState<{ deptId: string; deptName: string; users: { id: string; fullName: string }[] }[]>([]);
+  const [gapOwnerDialogOpen, setGapOwnerDialogOpen] = useState(false);
+  const [gapOwnerReqId, setGapOwnerReqId] = useState<string | null>(null);
+  const [gapOwnerDeptId, setGapOwnerDeptId] = useState("");
+  const [gapOwnerUserId, setGapOwnerUserId] = useState("");
+
   // Audit Logs state
   const [auditLogSearch, setAuditLogSearch] = useState("");
   const [auditLogActionFilter, setAuditLogActionFilter] = useState("all");
@@ -1351,6 +1383,181 @@ export default function CustomerAdminFrameworkDetailPage({
     }
   };
 
+  // Track gap assessment edits locally (saved on Save button click)
+  const handleGapEdit = (requirementId: string, field: string, value: string | boolean) => {
+    setGapEdits(prev => ({
+      ...prev,
+      [requirementId]: {
+        ...(prev[requirementId] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  // Get the current value for a gap field (edited value or DB value)
+  const getGapValue = (req: Requirement, field: keyof Requirement) => {
+    const edited = gapEdits[req.id]?.[field as string];
+    if (edited !== undefined) return edited;
+    return req[field] ?? "";
+  };
+
+  // Mark requirement as compliant in gap assessment (tracked in edits)
+  const handleMarkCompliant = (requirementId: string, currentValue: boolean) => {
+    handleGapEdit(requirementId, "gapCompliant", !currentValue);
+  };
+
+  // Batch save all gap assessment edits
+  const handleSaveGap = async () => {
+    if (Object.keys(gapEdits).length === 0) {
+      toast({ title: t("No changes"), description: t("No changes to save.") });
+      return;
+    }
+    setGapSaving(true);
+    try {
+      const updatePromises = Object.entries(gapEdits).map(([requirementId, changes]) =>
+        fetch(`/api/requirements/${requirementId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(changes),
+        })
+      );
+      const results = await Promise.all(updatePromises);
+      const allSuccess = results.every(res => res.ok);
+      if (allSuccess) {
+        toast({ title: t("Success"), description: t("Gap assessment saved successfully.") });
+        setGapEdits({});
+        fetchFramework();
+      } else {
+        toast({ title: t("Error"), description: t("Some changes failed to save."), variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error saving gap assessment:", error);
+      toast({ title: t("Error"), description: t("Failed to save changes."), variant: "destructive" });
+    } finally {
+      setGapSaving(false);
+    }
+  };
+
+  // Fetch all governance policies for the link policy dialog
+  const fetchPolicies = async () => {
+    setPoliciesLoading(true);
+    try {
+      const res = await fetch("/api/policies?limit=500");
+      if (res.ok) {
+        const json = await res.json();
+        // API returns { data: [...], pagination: {...} }
+        const list = json.data || json.policies || json;
+        setAllPolicies(Array.isArray(list) ? list : []);
+      }
+    } catch (error) {
+      console.error("Error fetching policies:", error);
+    } finally {
+      setPoliciesLoading(false);
+    }
+  };
+
+  // Fetch departments + users for owner dropdown (grouped)
+  const fetchGapDeptUsers = async () => {
+    try {
+      const deptRes = await fetch("/api/departments");
+      if (!deptRes.ok) return;
+      const depts = await deptRes.json();
+      if (!Array.isArray(depts)) return;
+
+      const results = await Promise.all(
+        depts.map(async (d: { id: string; name: string }) => {
+          const uRes = await fetch(`/api/users?departmentId=${d.id}`);
+          const users = uRes.ok ? await uRes.json() : [];
+          return { deptId: d.id, deptName: d.name, users: Array.isArray(users) ? users : [] };
+        })
+      );
+      setGapDeptUsers(results.filter(r => r.users.length > 0));
+    } catch (error) {
+      console.error("Error fetching dept users:", error);
+    }
+  };
+
+  // Load on gap assessment tab activation
+  useEffect(() => {
+    if (activeTab === "gap-assessment" && gapDeptUsers.length === 0) {
+      fetchGapDeptUsers();
+    }
+  }, [activeTab]);
+
+  // Open policy link dialog for a requirement
+  const openPolicyDialog = (reqId: string, existingPolicyIds: string[]) => {
+    setGapPolicyReqId(reqId);
+    setGapSelectedPolicyIds(existingPolicyIds);
+    setGapPolicySearch("");
+    setGapPolicyDialogOpen(true);
+    if (allPolicies.length === 0) fetchPolicies();
+  };
+
+  // Save linked policies
+  const handleSavePolicies = async () => {
+    if (!gapPolicyReqId) return;
+    setGapSaving(true);
+    try {
+      // Get current linked policy IDs
+      const currentReq = (framework?.requirements || []).find(r => r.id === gapPolicyReqId);
+      const currentPolicyIds = (currentReq?.gapPolicies || []).map(gp => gp.policy.id);
+
+      // Determine adds and removes
+      const toAdd = gapSelectedPolicyIds.filter(id => !currentPolicyIds.includes(id));
+      const toRemove = currentPolicyIds.filter(id => !gapSelectedPolicyIds.includes(id));
+
+      // Add new links
+      if (toAdd.length > 0) {
+        await fetch(`/api/requirements/${gapPolicyReqId}/policies`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ policyIds: toAdd }),
+        });
+      }
+
+      // Remove unlinked
+      for (const policyId of toRemove) {
+        await fetch(`/api/requirements/${gapPolicyReqId}/policies?policyId=${policyId}`, {
+          method: "DELETE",
+        });
+      }
+
+      setGapPolicyDialogOpen(false);
+      fetchFramework();
+    } catch (error) {
+      console.error("Error saving policies:", error);
+    } finally {
+      setGapSaving(false);
+    }
+  };
+
+  // Gap Assessment export
+  const handleExportGap = () => {
+    if (!framework) return;
+    const rows = (framework.requirements || [])
+      .filter(r => r.level >= 2)
+      .map(r => ({
+        [t("Control ID")]: r.code,
+        [t("Framework")]: framework.name,
+        [t("Requirement Description")]: r.description || r.name,
+        [t("Current State")]: r.gapCurrentState || "",
+        [t("Expected Requirement")]: r.gapExpectedRequirement || "",
+        [t("Linked Policies")]: (r.gapPolicies || []).map(gp => gp.policy.name).join("; "),
+        [t("Evidence")]: r.gapEvidence || "",
+        [t("Gap Identified")]: r.gapIdentified || "",
+        [t("Risk Level")]: r.gapRiskLevel || "",
+        [t("Recommendation")]: r.gapRecommendation || "",
+        [t("Owner")]: (r.gapOwner || "").includes(":") ? (r.gapOwner || "").split(":")[2] || "" : r.gapOwner || "",
+        [t("Target Date")]: r.gapTargetDate || "",
+        [t("Status")]: r.gapStatus || "",
+        [t("Compliant")]: r.gapCompliant ? t("Yes") : t("No"),
+      }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Gap Assessment");
+    XLSX.writeFile(wb, `${framework.name}_Gap_Assessment.xlsx`);
+  };
+
   // Filter controls for linking
   const filteredControls = controls.filter((control) => {
     if (
@@ -1493,6 +1700,33 @@ export default function CustomerAdminFrameworkDetailPage({
     setSoaExpandedCats(prev => {
       // If using default (all expanded), initialize with all then toggle
       const current = prev.length === 0 ? soaCategories.map(c => c.id) : prev;
+      return current.includes(catId)
+        ? current.filter(id => id !== catId)
+        : [...current, catId];
+    });
+  };
+
+  // Gap Assessment data - grouped by category with search
+  const gapCategories = soaHierarchy.map(cat => {
+    const filtered = (cat.children || []).filter(req => {
+      if (!gapSearch) return true;
+      const s = gapSearch.toLowerCase();
+      return req.name.toLowerCase().includes(s) ||
+        req.code.toLowerCase().includes(s) ||
+        (req.description || "").toLowerCase().includes(s);
+    });
+    return { ...cat, children: filtered };
+  }).filter(cat => (cat.children || []).length > 0);
+
+  const gapTotalRequirements = gapCategories.reduce((sum, cat) => sum + (cat.children?.length || 0), 0);
+
+  const gapEffectiveExpanded = gapExpandedCats.length === 0 && gapCategories.length > 0
+    ? gapCategories.map(c => c.id)
+    : gapExpandedCats;
+
+  const toggleGapCat = (catId: string) => {
+    setGapExpandedCats(prev => {
+      const current = prev.length === 0 ? gapCategories.map(c => c.id) : prev;
       return current.includes(catId)
         ? current.filter(id => id !== catId)
         : [...current, catId];
@@ -2064,13 +2298,393 @@ export default function CustomerAdminFrameworkDetailPage({
 
         {/* Gap Assessment Tab */}
         <TabsContent value="gap-assessment" className="mt-6">
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="p-4 bg-primary-50 rounded-full mb-4">
-              <Search className="h-8 w-8 text-primary-400" />
+          {/* Top bar */}
+          <div className="flex flex-wrap items-center gap-3 mb-4" style={isRTL ? { direction: 'rtl' } : undefined}>
+            <span className="text-sm text-slate-500">{gapTotalRequirements} {t("requirements")}</span>
+            <div className="relative w-full sm:w-56 sm:ms-auto">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder={t("Search requirements...")}
+                value={gapSearch}
+                onChange={(e) => setGapSearch(e.target.value)}
+                className="w-full ps-9 pe-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors"
+              />
             </div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-1">{t("Gap Assessment")}</h3>
-            <p className="text-sm text-slate-500">{t("Coming soon")}</p>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExportGap}>
+              <Download className="h-4 w-4 me-2" />
+              {t("Download Report")}
+            </Button>
+            {Object.keys(gapEdits).length > 0 && (
+              <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                {Object.keys(gapEdits).length} {t("unsaved")}
+              </span>
+            )}
+            <Button size="sm" className="w-full sm:w-auto" onClick={handleSaveGap} disabled={gapSaving || Object.keys(gapEdits).length === 0}>
+              {gapSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
+              {t("Save")}
+            </Button>
           </div>
+
+          {/* Category accordion cards */}
+          <div className="space-y-4">
+            {gapCategories.map((cat) => {
+              const isExpanded = gapEffectiveExpanded.includes(cat.id);
+              const requirements = cat.children || [];
+              return (
+                <div key={cat.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
+                  {/* Card Header */}
+                  <button
+                    onClick={() => toggleGapCat(cat.id)}
+                    className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/60 transition-colors"
+                  >
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? "" : "-rotate-90"}`} />
+                    <span className="text-sm font-semibold text-slate-800">{tCat(cat.id, cat.name)}</span>
+                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                      {requirements.length}
+                    </span>
+                  </button>
+
+                  {/* Expanded table */}
+                  {isExpanded && (
+                    <div className="overflow-x-auto border-t border-slate-100">
+                      <Table className="min-w-[1400px]">
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="w-[80px] text-xs">{t("Control ID")}</TableHead>
+                            <TableHead className="w-[100px] text-xs">{t("Framework")}</TableHead>
+                            <TableHead className="w-[180px] text-xs">{t("Requirement Description")}</TableHead>
+                            <TableHead className="w-[140px] text-xs">{t("Current State")}</TableHead>
+                            <TableHead className="w-[140px] text-xs">{t("Expected Requirement")}</TableHead>
+                            <TableHead className="w-[100px] text-xs">{t("Policy")}</TableHead>
+                            <TableHead className="w-[180px] text-xs">{t("Evidence")}</TableHead>
+                            <TableHead className="w-[140px] text-xs">{t("Gap Identified")}</TableHead>
+                            <TableHead className="w-[110px] text-xs">{t("Risk Level")}</TableHead>
+                            <TableHead className="w-[140px] text-xs">{t("Recommendation")}</TableHead>
+                            <TableHead className="w-[150px] text-xs">{t("Owner")}</TableHead>
+                            <TableHead className="w-[110px] text-xs">{t("Target Date")}</TableHead>
+                            <TableHead className="w-[110px] text-xs">{t("Status")}</TableHead>
+                            <TableHead className="w-[90px] text-xs text-center">{t("Compliant")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {requirements.map((req) => {
+                            const linkedPolicies = (req.gapPolicies || []).map(gp => gp.policy);
+                            return (
+                              <TableRow key={req.id} className={getGapValue(req, "gapCompliant") ? "bg-green-50/40" : ""}>
+                                {/* Control ID - auto */}
+                                <TableCell className="text-xs font-medium text-slate-800 align-top py-2.5">{req.code}</TableCell>
+                                {/* Framework - auto */}
+                                <TableCell className="text-xs text-slate-600 align-top py-2.5">{framework?.name}</TableCell>
+                                {/* Requirement Description - auto */}
+                                <TableCell className="text-xs text-slate-600 align-top py-2.5 leading-snug">{req.description || req.name}</TableCell>
+                                {/* Current State - free text */}
+                                <TableCell className="align-top py-2">
+                                  <input
+                                    type="text"
+                                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-md placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
+                                    value={String(getGapValue(req, "gapCurrentState") || "")}
+                                    onChange={(e) => handleGapEdit(req.id, "gapCurrentState", e.target.value)}
+                                    placeholder={t("Enter current state...")}
+                                  />
+                                </TableCell>
+                                {/* Expected Requirement - free text */}
+                                <TableCell className="align-top py-2">
+                                  <input
+                                    type="text"
+                                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-md placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
+                                    value={String(getGapValue(req, "gapExpectedRequirement") || "")}
+                                    onChange={(e) => handleGapEdit(req.id, "gapExpectedRequirement", e.target.value)}
+                                    placeholder={t("Enter expected requirement...")}
+                                  />
+                                </TableCell>
+                                {/* Policy - hyperlink to open dialog + linked list */}
+                                <TableCell className="align-top py-2">
+                                  <button
+                                    type="button"
+                                    className="text-xs text-primary-600 hover:text-primary-800 underline hover:no-underline transition-colors"
+                                    onClick={() => openPolicyDialog(req.id, linkedPolicies.map(p => p.id))}
+                                  >
+                                    {t("Link Policy")}
+                                  </button>
+                                  {linkedPolicies.length > 0 && (
+                                    <div className="mt-1 space-y-0.5">
+                                      {linkedPolicies.map(p => (
+                                        <div key={p.id} className="text-[10px] text-primary-600 truncate" title={`${p.code} - ${p.name}`}>
+                                          {p.code}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                {/* Evidence - free text */}
+                                <TableCell className="align-top py-2">
+                                  <input
+                                    type="text"
+                                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-md placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
+                                    value={String(getGapValue(req, "gapEvidence") || "")}
+                                    onChange={(e) => handleGapEdit(req.id, "gapEvidence", e.target.value)}
+                                    placeholder={t("Enter evidence...")}
+                                  />
+                                </TableCell>
+                                {/* Gap Identified - free text */}
+                                <TableCell className="align-top py-2">
+                                  <input
+                                    type="text"
+                                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-md placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
+                                    value={String(getGapValue(req, "gapIdentified") || "")}
+                                    onChange={(e) => handleGapEdit(req.id, "gapIdentified", e.target.value)}
+                                    placeholder={t("Enter gap...")}
+                                  />
+                                </TableCell>
+                                {/* Risk Level - dropdown: High, Medium, Low */}
+                                <TableCell className="align-top py-2">
+                                  <Select
+                                    value={String(getGapValue(req, "gapRiskLevel") || "")}
+                                    onValueChange={(v) => handleGapEdit(req.id, "gapRiskLevel", v)}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs bg-white border-slate-200 w-full">
+                                      <SelectValue placeholder="-" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" sideOffset={4}>
+                                      <SelectItem value="High">{t("High")}</SelectItem>
+                                      <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                                      <SelectItem value="Low">{t("Low")}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                {/* Recommendation - free text */}
+                                <TableCell className="align-top py-2">
+                                  <input
+                                    type="text"
+                                    className="w-full h-8 px-2 text-xs bg-slate-50 border border-slate-200 rounded-md placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
+                                    value={String(getGapValue(req, "gapRecommendation") || "")}
+                                    onChange={(e) => handleGapEdit(req.id, "gapRecommendation", e.target.value)}
+                                    placeholder={t("Recommendation...")}
+                                  />
+                                </TableCell>
+                                {/* Owner - hyperlink + selected name below */}
+                                <TableCell className="align-top py-2">
+                                  <button
+                                    type="button"
+                                    className="text-xs text-primary-600 hover:text-primary-800 underline hover:no-underline transition-colors"
+                                    onClick={() => {
+                                      setGapOwnerReqId(req.id);
+                                      const val = String(getGapValue(req, "gapOwner") || "");
+                                      const parts = val.split(":");
+                                      setGapOwnerDeptId(parts.length >= 3 ? parts[0] : "");
+                                      setGapOwnerUserId(parts.length >= 3 ? parts[1] : "");
+                                      setGapOwnerDialogOpen(true);
+                                    }}
+                                  >
+                                    {t("Select Owner")}
+                                  </button>
+                                  {(() => {
+                                    const val = String(getGapValue(req, "gapOwner") || "");
+                                    if (!val) return null;
+                                    const parts = val.split(":");
+                                    const name = parts.length >= 3 ? parts[2] : val;
+                                    if (!name) return null;
+                                    return (
+                                      <div className="mt-1 text-[11px] text-slate-700 font-medium truncate" title={name}>
+                                        {name}
+                                      </div>
+                                    );
+                                  })()}
+                                </TableCell>
+                                {/* Target Date - compact calendar picker */}
+                                <TableCell className="align-top py-2">
+                                  <DatePicker
+                                    value={String(getGapValue(req, "gapTargetDate") || "")}
+                                    onChange={(date) => handleGapEdit(req.id, "gapTargetDate", date ? date.toISOString().split("T")[0] : "")}
+                                    className="h-8 text-xs px-2"
+                                    placeholder={t("Pick date")}
+                                    compact
+                                  />
+                                </TableCell>
+                                {/* Status - dropdown: Open, In Progress, Closed */}
+                                <TableCell className="align-top py-2">
+                                  <Select
+                                    value={String(getGapValue(req, "gapStatus") || "")}
+                                    onValueChange={(v) => handleGapEdit(req.id, "gapStatus", v)}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs bg-white border-slate-200 w-full">
+                                      <SelectValue placeholder="-" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" sideOffset={4}>
+                                      <SelectItem value="Open">{t("Open")}</SelectItem>
+                                      <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                                      <SelectItem value="Closed">{t("Closed")}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                {/* Mark as Compliant - action button */}
+                                <TableCell className="align-top py-2 text-center">
+                                  <Button
+                                    variant={getGapValue(req, "gapCompliant") ? "default" : "outline"}
+                                    size="sm"
+                                    className={`h-7 text-xs ${getGapValue(req, "gapCompliant") ? "bg-green-600 hover:bg-green-700 text-white" : "text-slate-600 hover:text-green-700 hover:border-green-300"}`}
+                                    onClick={() => handleMarkCompliant(req.id, !!getGapValue(req, "gapCompliant"))}
+                                  >
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {gapCategories.length === 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                <p className="text-sm text-slate-400">{t("No requirements match your search.")}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Link Policy Dialog */}
+          <Dialog open={gapPolicyDialogOpen} onOpenChange={setGapPolicyDialogOpen}>
+            <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>{t("Link Policies")}</DialogTitle>
+              </DialogHeader>
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={t("Search policies...")}
+                  value={gapPolicySearch}
+                  onChange={(e) => setGapPolicySearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-1 min-h-0 max-h-[50vh]">
+                {policiesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                  </div>
+                ) : (
+                  allPolicies
+                    .filter(p => {
+                      if (!gapPolicySearch) return true;
+                      const s = gapPolicySearch.toLowerCase();
+                      return p.name.toLowerCase().includes(s) || p.code.toLowerCase().includes(s);
+                    })
+                    .map(p => (
+                      <label
+                        key={p.id}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+                      >
+                        <Checkbox
+                          checked={gapSelectedPolicyIds.includes(p.id)}
+                          onCheckedChange={(checked) => {
+                            setGapSelectedPolicyIds(prev =>
+                              checked
+                                ? [...prev, p.id]
+                                : prev.filter(id => id !== p.id)
+                            );
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-slate-800">{p.code}</span>
+                          <span className="text-sm text-slate-600 ms-2 truncate">{p.name}</span>
+                        </div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          p.status === "Approved" || p.status === "Published"
+                            ? "bg-green-50 text-green-600"
+                            : p.status === "Draft"
+                            ? "bg-amber-50 text-amber-600"
+                            : "bg-slate-100 text-slate-500"
+                        }`}>
+                          {t(p.status)}
+                        </span>
+                      </label>
+                    ))
+                )}
+                {!policiesLoading && allPolicies.length === 0 && (
+                  <p className="text-sm text-slate-400 text-center py-8">{t("No policies found")}</p>
+                )}
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <Button variant="outline" size="sm" onClick={() => setGapPolicyDialogOpen(false)}>
+                  {t("Cancel")}
+                </Button>
+                <Button size="sm" onClick={handleSavePolicies} disabled={gapSaving}>
+                  {gapSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
+                  {t("Save")}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Select Owner Dialog */}
+          <Dialog open={gapOwnerDialogOpen} onOpenChange={setGapOwnerDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>{t("Select Owner")}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Department dropdown */}
+                <div>
+                  <Label className="text-xs font-medium text-slate-600 mb-1.5 block">{t("Department")}</Label>
+                  <Select
+                    value={gapOwnerDeptId}
+                    onValueChange={(v) => { setGapOwnerDeptId(v); setGapOwnerUserId(""); }}
+                  >
+                    <SelectTrigger className="h-9 text-sm bg-white border-slate-200 w-full">
+                      <SelectValue placeholder={t("Select Department")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {gapDeptUsers.map(d => (
+                        <SelectItem key={d.deptId} value={d.deptId}>{d.deptName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Owner dropdown - enabled after department selection */}
+                <div>
+                  <Label className="text-xs font-medium text-slate-600 mb-1.5 block">{t("Owner")}</Label>
+                  <Select
+                    value={gapOwnerUserId}
+                    onValueChange={setGapOwnerUserId}
+                    disabled={!gapOwnerDeptId}
+                  >
+                    <SelectTrigger className="h-9 text-sm bg-white border-slate-200 w-full">
+                      <SelectValue placeholder={gapOwnerDeptId ? t("Select owner") : t("Select Department first")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {(gapDeptUsers.find(d => d.deptId === gapOwnerDeptId)?.users || []).map(u => (
+                        <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t mt-4">
+                <Button variant="outline" size="sm" onClick={() => setGapOwnerDialogOpen(false)}>
+                  {t("Cancel")}
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!gapOwnerUserId}
+                  onClick={() => {
+                    if (!gapOwnerReqId || !gapOwnerUserId) return;
+                    const dept = gapDeptUsers.find(d => d.deptId === gapOwnerDeptId);
+                    const user = dept?.users.find(u => u.id === gapOwnerUserId);
+                    handleGapEdit(gapOwnerReqId, "gapOwner", `${gapOwnerDeptId}:${gapOwnerUserId}:${user?.fullName || ""}`);
+                    setGapOwnerDialogOpen(false);
+                  }}
+                >
+                  {t("Save")}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Audit Logs Tab */}

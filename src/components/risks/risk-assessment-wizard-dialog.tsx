@@ -51,6 +51,7 @@ interface AssessmentFormData {
   threatImpacts: Record<string, Record<string, number>>;
   vulnerabilityRatings: Record<string, number>;
   lastStep?: number;
+  lastStepKey?: string;
 }
 
 interface Threat {
@@ -116,13 +117,14 @@ export function RiskAssessmentWizardDialog({
   const { t } = useLanguage();
   const { canView, canCreate, canEdit } = usePermissions('risk.assessment');
 
-  const assessmentSteps = [
-    { id: 1, key: "context", name: t("Risk Context"), icon: assessmentStepIcons[0] },
-    { id: 2, key: "likelihood", name: t("Likelihood"), icon: assessmentStepIcons[1] },
-    { id: 3, key: "impact", name: t("Impact"), icon: assessmentStepIcons[2] },
-    { id: 4, key: "vulnerability", name: t("Vulnerability"), icon: assessmentStepIcons[3] },
-    { id: 5, key: "rating", name: t("Risk Rating"), icon: assessmentStepIcons[4] },
-    { id: 6, key: "summary", name: t("Summary"), icon: assessmentStepIcons[5] },
+  // All possible steps (static reference)
+  const allSteps = [
+    { id: 1, key: "context", name: t("Risk Context"), icon: assessmentStepIcons[0], alwaysShow: true },
+    { id: 2, key: "likelihood", name: t("Likelihood"), icon: assessmentStepIcons[1], alwaysShow: false },
+    { id: 3, key: "impact", name: t("Impact"), icon: assessmentStepIcons[2], alwaysShow: false },
+    { id: 4, key: "vulnerability", name: t("Vulnerability"), icon: assessmentStepIcons[3], alwaysShow: false },
+    { id: 5, key: "rating", name: t("Risk Rating"), icon: assessmentStepIcons[4], alwaysShow: true },
+    { id: 6, key: "summary", name: t("Summary"), icon: assessmentStepIcons[5], alwaysShow: true },
   ];
 
   const [risk, setRisk] = useState<Risk | null>(null);
@@ -147,6 +149,17 @@ export function RiskAssessmentWizardDialog({
   const [assetScoreValue, setAssetScoreValue] = useState<number>(0);
   const [assetScoreLabel, setAssetScoreLabel] = useState<string>("");
 
+  // Dynamic steps based on risk methodology config
+  const assessmentSteps = useMemo(() => {
+    return allSteps.filter(step => {
+      if (step.alwaysShow) return true;
+      if (step.key === "likelihood") return useLikelihood;
+      if (step.key === "impact") return useImpact;
+      if (step.key === "vulnerability") return useVulnerabilityScore;
+      return true;
+    }).map((step, index) => ({ ...step, id: index + 1 }));
+  }, [useLikelihood, useImpact, useVulnerabilityScore]);
+
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -157,6 +170,21 @@ export function RiskAssessmentWizardDialog({
   const [threatLikelihoods, setThreatLikelihoods] = useState<Record<string, number>>({});
   const [threatImpacts, setThreatImpacts] = useState<Record<string, Record<string, number>>>({});
   const [vulnerabilityRatingsForm, setVulnerabilityRatingsForm] = useState<Record<string, number>>({});
+
+  // Fetch asset score whenever we land on rating or summary step (resume, next, or previous)
+  useEffect(() => {
+    if ((currentStepKey === "rating" || currentStepKey === "summary") && useAssetScore && risk && assetScoreValue === 0) {
+      fetch(`/api/risks/${risk.id}/asset-score`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) {
+            setAssetScoreValue(data.assetScore || 0);
+            setAssetScoreLabel(data.assetScoreLabel || "");
+          }
+        })
+        .catch(() => {});
+    }
+  }, [currentStepKey, useAssetScore, risk]);
 
   // Risk Response dialog state
   const [showResponseDialog, setShowResponseDialog] = useState(false);
@@ -253,6 +281,7 @@ export function RiskAssessmentWizardDialog({
       threatImpacts,
       vulnerabilityRatings: vulnerabilityRatingsForm,
       lastStep: currentStep,
+      lastStepKey: currentStepKey,
     };
 
     try {
@@ -350,9 +379,19 @@ export function RiskAssessmentWizardDialog({
             if (savedFormData.vulnerabilityRatings) {
               setVulnerabilityRatingsForm(savedFormData.vulnerabilityRatings);
             }
-            // Resume from last saved step
-            if (savedFormData.lastStep) {
-              setCurrentStep(savedFormData.lastStep);
+            // Resume from last saved step (use key-based lookup for dynamic steps)
+            if (savedFormData.lastStepKey) {
+              // Find step by key in current dynamic steps
+              const targetStep = assessmentSteps.find(s => s.key === savedFormData.lastStepKey);
+              if (targetStep) {
+                setCurrentStep(targetStep.id);
+              } else {
+                // Step was disabled in config, go to the last available step
+                setCurrentStep(assessmentSteps.length);
+              }
+            } else if (savedFormData.lastStep) {
+              // Legacy fallback: clamp to valid range
+              setCurrentStep(Math.min(savedFormData.lastStep, assessmentSteps.length));
             }
           } catch (e) {
             console.error("Failed to parse assessment form data:", e);
@@ -450,6 +489,7 @@ export function RiskAssessmentWizardDialog({
       threatImpacts,
       vulnerabilityRatings: vulnerabilityRatingsForm,
       lastStep: currentStep,
+      lastStepKey: currentStepKey,
     };
 
     try {
@@ -477,11 +517,14 @@ export function RiskAssessmentWizardDialog({
 
   const handleNext = async () => {
     if (currentStep < assessmentSteps.length) {
-      if (currentStep >= 2 && currentStep <= 4) {
+      // Save progress on assessment data steps (likelihood, impact, vulnerability)
+      const dataSteps = ["likelihood", "impact", "vulnerability"];
+      if (dataSteps.includes(currentStepKey)) {
         await saveProgress();
       }
-      // Fetch asset score when moving from Vulnerability (step 4) to Risk Rating (step 5)
-      if (currentStep === 4 && useAssetScore && risk) {
+      // Fetch asset score when moving to Risk Rating step from the last data step
+      const nextStepKey = assessmentSteps[currentStep]?.key;
+      if (nextStepKey === "rating" && useAssetScore && risk) {
         try {
           const res = await fetch(`/api/risks/${risk.id}/asset-score`);
           if (res.ok) {
@@ -497,8 +540,22 @@ export function RiskAssessmentWizardDialog({
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
     if (currentStep > 1) {
+      const prevStepKey = assessmentSteps[currentStep - 2]?.key;
+      // Fetch asset score when navigating back to Rating step
+      if (prevStepKey === "rating" && useAssetScore && risk) {
+        try {
+          const res = await fetch(`/api/risks/${risk.id}/asset-score`);
+          if (res.ok) {
+            const data = await res.json();
+            setAssetScoreValue(data.assetScore || 0);
+            setAssetScoreLabel(data.assetScoreLabel || "");
+          }
+        } catch (error) {
+          console.error("Failed to fetch asset score:", error);
+        }
+      }
       setCurrentStep(currentStep - 1);
     }
   };
@@ -572,6 +629,7 @@ export function RiskAssessmentWizardDialog({
       threatImpacts,
       vulnerabilityRatings: vulnerabilityRatingsForm,
       lastStep: currentStep,
+      lastStepKey: currentStepKey,
     };
 
     // Determine statuses based on whether response strategy is needed
@@ -816,14 +874,30 @@ export function RiskAssessmentWizardDialog({
                       <div
                         className={cn(
                           "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                          currentStep > step.id
-                            ? "bg-success text-white"
-                            : currentStep === step.id
-                            ? "bg-primary-600 text-white"
-                            : "bg-slate-100 text-slate-400 border border-slate-200"
+                          (() => {
+                            if (currentStep === step.id) return "bg-primary-600 text-white";
+                            if (currentStep <= step.id) return "bg-slate-100 text-slate-400 border border-slate-200";
+                            // Past step - check if it has data
+                            const hasData =
+                              step.key === "context" ? true :
+                              step.key === "likelihood" ? Object.keys(threatLikelihoods).length > 0 :
+                              step.key === "impact" ? Object.keys(threatImpacts).length > 0 :
+                              step.key === "vulnerability" ? Object.keys(vulnerabilityRatingsForm).length > 0 :
+                              true; // rating/summary always count as completed if past
+                            return hasData ? "bg-success text-white" : "bg-amber-100 text-amber-600 border border-amber-200";
+                          })()
                         )}
                       >
-                        {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                        {(() => {
+                          if (currentStep <= step.id) return step.id;
+                          const hasData =
+                            step.key === "context" ? true :
+                            step.key === "likelihood" ? Object.keys(threatLikelihoods).length > 0 :
+                            step.key === "impact" ? Object.keys(threatImpacts).length > 0 :
+                            step.key === "vulnerability" ? Object.keys(vulnerabilityRatingsForm).length > 0 :
+                            true;
+                          return hasData ? <Check className="h-4 w-4" /> : step.id;
+                        })()}
                       </div>
                       <span
                         className={cn(

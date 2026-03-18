@@ -374,6 +374,16 @@ CREATE TABLE "Requirement" (
     "justification" TEXT,
     "implementationStatus" TEXT,
     "controlCompliance" TEXT,
+    "gapCurrentState" TEXT,
+    "gapExpectedRequirement" TEXT,
+    "gapEvidence" TEXT,
+    "gapIdentified" TEXT,
+    "gapRiskLevel" TEXT,
+    "gapRecommendation" TEXT,
+    "gapOwner" TEXT,
+    "gapTargetDate" TEXT,
+    "gapStatus" TEXT,
+    "gapCompliant" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -388,6 +398,16 @@ CREATE TABLE "RequirementControl" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "RequirementControl_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RequirementPolicy" (
+    "id" TEXT NOT NULL,
+    "requirementId" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RequirementPolicy_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -3765,6 +3785,9 @@ CREATE UNIQUE INDEX "Requirement_frameworkId_code_key" ON "Requirement"("framewo
 CREATE UNIQUE INDEX "RequirementControl_requirementId_controlId_key" ON "RequirementControl"("requirementId", "controlId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "RequirementPolicy_requirementId_policyId_key" ON "RequirementPolicy"("requirementId", "policyId");
+
+-- CreateIndex
 CREATE INDEX "RequirementException_customerAccountId_idx" ON "RequirementException"("customerAccountId");
 
 -- CreateIndex
@@ -4861,6 +4884,12 @@ ALTER TABLE "RequirementControl" ADD CONSTRAINT "RequirementControl_requirementI
 
 -- AddForeignKey
 ALTER TABLE "RequirementControl" ADD CONSTRAINT "RequirementControl_controlId_fkey" FOREIGN KEY ("controlId") REFERENCES "Control"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RequirementPolicy" ADD CONSTRAINT "RequirementPolicy_requirementId_fkey" FOREIGN KEY ("requirementId") REFERENCES "Requirement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RequirementPolicy" ADD CONSTRAINT "RequirementPolicy_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "Policy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RequirementException" ADD CONSTRAINT "RequirementException_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

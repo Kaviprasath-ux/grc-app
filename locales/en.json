@@ -5071,5 +5071,6 @@
   "What is the Task Queue?": "What is the Task Queue?",
   "The Task Queue shows pending assessment tasks assigned to you. You can process assessments, initiate reassessments for expired evaluations, and handle returned assessment items.": "The Task Queue shows pending assessment tasks assigned to you. You can process assessments, initiate reassessments for expired evaluations, and handle returned assessment items.",
   "How do I set up assessment domains?": "How do I set up assessment domains?",
-  "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires.": "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires."
+  "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires.": "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires.",
+  "Pick date": "Pick date"
 }

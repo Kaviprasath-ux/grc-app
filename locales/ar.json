@@ -5071,5 +5071,6 @@
   "What is the Task Queue?": "ما هي قائمة المهام؟",
   "The Task Queue shows pending assessment tasks assigned to you. You can process assessments, initiate reassessments for expired evaluations, and handle returned assessment items.": "تعرض قائمة المهام مهام التقييم المعلقة المعينة لك.",
   "How do I set up assessment domains?": "كيف أقوم بإعداد مجالات التقييم؟",
-  "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires.": "انتقل إلى إدارة البيانات الرئيسية > المجالات لإنشاء وإدارة فئات مجالات التقييم."
+  "Go to Master Data Management > Domains to create and manage assessment domain categories used in questionnaires.": "انتقل إلى إدارة البيانات الرئيسية > المجالات لإنشاء وإدارة فئات مجالات التقييم.",
+  "Pick date": "اختر تاريخ"
 }
