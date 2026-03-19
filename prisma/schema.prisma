@@ -4401,6 +4401,19 @@ model QPostRequirement {
   justification        String?
   implementationStatus String?
   controlCompliance    String?
+  soaPolicy            String?
+  soaEvidence          String?
+  // Gap Assessment fields
+  gapCurrentState        String?
+  gapExpectedRequirement String?
+  gapEvidence            String?
+  gapIdentified          String?
+  gapRiskLevel           String?
+  gapRecommendation      String?
+  gapOwner               String?
+  gapTargetDate          String?
+  gapStatus              String?
+  gapCompliant           Boolean                     @default(false)
   evidences            QPostRequirementEvidence[]
   policies             QPostRequirementPolicy[]
   exceptions           QPostRequirementException[]

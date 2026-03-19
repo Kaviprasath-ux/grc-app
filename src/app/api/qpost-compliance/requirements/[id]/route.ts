@@ -86,6 +86,19 @@ export const PUT = withAuth(
         justification,
         implementationStatus,
         controlCompliance,
+        soaPolicy,
+        soaEvidence,
+        // Gap Assessment fields
+        gapCurrentState,
+        gapExpectedRequirement,
+        gapEvidence,
+        gapIdentified,
+        gapRiskLevel,
+        gapRecommendation,
+        gapOwner,
+        gapTargetDate,
+        gapStatus,
+        gapCompliant,
       } = body;
 
       const requirement = await prisma.qPostRequirement.update({
@@ -104,6 +117,19 @@ export const PUT = withAuth(
           ...(justification !== undefined && { justification }),
           ...(implementationStatus !== undefined && { implementationStatus }),
           ...(controlCompliance !== undefined && { controlCompliance }),
+          ...(soaPolicy !== undefined && { soaPolicy }),
+          ...(soaEvidence !== undefined && { soaEvidence }),
+          // Gap Assessment fields
+          ...(gapCurrentState !== undefined && { gapCurrentState }),
+          ...(gapExpectedRequirement !== undefined && { gapExpectedRequirement }),
+          ...(gapEvidence !== undefined && { gapEvidence }),
+          ...(gapIdentified !== undefined && { gapIdentified }),
+          ...(gapRiskLevel !== undefined && { gapRiskLevel }),
+          ...(gapRecommendation !== undefined && { gapRecommendation }),
+          ...(gapOwner !== undefined && { gapOwner }),
+          ...(gapTargetDate !== undefined && { gapTargetDate }),
+          ...(gapStatus !== undefined && { gapStatus }),
+          ...(gapCompliant !== undefined && { gapCompliant }),
         },
         include: {
           framework: true,

@@ -3950,6 +3950,24 @@ const translations: [string, string, string][] = [
   ['Send Reply', 'إرسال الرد', 'Nosūtīt atbildi'],
 
   // ==========================================
+  // QPOST: Gap Assessment
+  // ==========================================
+  ['Current State', 'الحالة الراهنة', 'Pašreizējais stāvoklis'],
+  ['Expected Requirement', 'المتطلب المتوقع', 'Paredzamā prasība'],
+  ['Gap Identified', 'الفجوة المحددة', 'Identificētā nepilnība'],
+  ['Risk Level', 'مستوى المخاطر', 'Riska līmenis'],
+  ['Target Date', 'التاريخ المستهدف', 'Mērķa datums'],
+  ['Link Policies', 'ربط السياسات', 'Saistīt politikas'],
+  ['Search policies...', 'البحث في السياسات...', 'Meklēt politikas...'],
+  ['Gap assessment saved successfully', 'تم حفظ تقييم الفجوات بنجاح', 'Nepilnību novērtējums veiksmīgi saglabāts'],
+  ['Failed to save gap assessment', 'فشل في حفظ تقييم الفجوات', 'Neizdevās saglabāt nepilnību novērtējumu'],
+  ['Some changes failed to save', 'فشل حفظ بعض التغييرات', 'Dažas izmaiņas neizdevās saglabāt'],
+  ['Policies updated', 'تم تحديث السياسات', 'Politikas atjauninātas'],
+  ['Failed to update policies', 'فشل في تحديث السياسات', 'Neizdevās atjaunināt politikas'],
+  ['Control ID', 'معرف الضابطة', 'Kontroles ID'],
+  ['Enter policy', 'أدخل السياسة', 'Ievadiet politiku'],
+
+  // ==========================================
   // QPOST: "Requirement" → "Control" label renaming
   // ==========================================
   ['Control Type', 'نوع الضابطة', 'Kontroles veids'],

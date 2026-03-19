@@ -115,7 +115,7 @@ export const GET = withAuth(
               policies: {
                 include: {
                   policy: {
-                    select: { id: true, status: true },
+                    select: { id: true, code: true, name: true, status: true },
                   },
                 },
               },
