@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
+import { AI_ENDPOINTS, getEndpointName } from '@/lib/ai-endpoints';
 import path from 'path';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
@@ -13,6 +14,39 @@ interface RouteContext {
 // Polling configuration
 const POLL_INTERVAL_MS = 2000; // 2 seconds
 const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Generate unique request ID for correlation
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/**
+ * Format FormData for logging as JSON-like object
+ */
+function formatFormDataForLog(formData: FormData): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    if (value instanceof Blob) {
+      result[key] = { type: 'File', size: `${value.size} bytes` };
+    } else {
+      result[key] = value;
+    }
+  });
+  return result;
+}
+
+/**
+ * Safely stringify any value for logging
+ */
+function safeJsonStringify(value: unknown, indent: number = 2): string {
+  try {
+    return JSON.stringify(value, null, indent);
+  } catch {
+    return String(value);
+  }
+}
 
 /**
  * Resolve stored filePath to absolute disk path
@@ -125,12 +159,16 @@ export const POST = withAuth(
         );
       }
 
-      console.log(
-        `[CAPA AI Review] Finding ${findingId} has ${finding.attachments.length} attachments`
-      );
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[CAPA AI REVIEW] CAPA Finding Evidence Review`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[CAPA AI Review] Finding ID: ${findingId}`);
+      console.log(`[CAPA AI Review] Customer ID: ${finding.customerAccountId}`);
+      console.log(`[CAPA AI Review] Attachments: ${finding.attachments.length}`);
+      console.log(`${'─'.repeat(80)}`);
 
       // ==================== STEP 1: INGEST ====================
-      // Build FormData for RunPod /api/audit_ingest
+      // Build FormData for RunPod audit_ingest
       const form = new FormData();
       form.append('customer_id', finding.customerAccountId);
       form.append('audit_id', finding.engagement?.auditId || finding.engagementId);
@@ -158,9 +196,21 @@ export const POST = withAuth(
         );
       }
 
-      // Call RunPod POST /api/audit_ingest
-      const ingestUrl = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_ingest');
-      console.log(`[CAPA AI Review] Step 1: Calling ingest: ${ingestUrl}, files=${appended}`);
+      // Call RunPod audit_ingest
+      const ingestUrl = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.AUDIT_INGEST);
+      const ingestRequestId = generateRequestId();
+      const ingestEndpointName = getEndpointName(AI_ENDPOINTS.AUDIT_INGEST);
+      const ingestStartTime = Date.now();
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${ingestEndpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${ingestRequestId}] Calling: POST ${AI_ENDPOINTS.AUDIT_INGEST}`);
+      console.log(`[${ingestRequestId}] Full URL: ${ingestUrl}`);
+      console.log(`[${ingestRequestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${ingestRequestId}] Payload:`);
+      console.log(safeJsonStringify(formatFormDataForLog(form), 2));
+      console.log(`${'─'.repeat(80)}`);
 
       const ingestRes = await fetch(ingestUrl, {
         method: 'POST',
@@ -168,16 +218,35 @@ export const POST = withAuth(
         body: form,
       });
 
+      const ingestText = await ingestRes.text();
+      const ingestLatency = Date.now() - ingestStartTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${ingestEndpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${ingestRequestId}] Status: ${ingestRes.status} ${ingestRes.statusText}`);
+      console.log(`[${ingestRequestId}] Latency: ${ingestLatency}ms`);
+      console.log(`[${ingestRequestId}] Response:`);
+      console.log(ingestText);
+      console.log(`${'═'.repeat(80)}\n`);
+
       if (!ingestRes.ok) {
-        const errText = await ingestRes.text();
-        console.error(`[CAPA AI Review] Ingest failed: ${ingestRes.status} ${errText}`);
+        console.error(`[CAPA AI Review] ❌ Ingest failed: ${ingestRes.status}`);
         return NextResponse.json(
-          { error: 'AI ingest failed: ' + errText },
+          { error: 'AI ingest failed: ' + ingestText },
           { status: 502 }
         );
       }
 
-      const ingestData = (await ingestRes.json()) as { job_id?: string };
+      let ingestData: { job_id?: string };
+      try {
+        ingestData = JSON.parse(ingestText) as { job_id?: string };
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid JSON response from RunPod audit_ingest' },
+          { status: 502 }
+        );
+      }
       const jobId = ingestData.job_id;
 
       if (!jobId) {
@@ -190,35 +259,45 @@ export const POST = withAuth(
       console.log(`[CAPA AI Review] Ingest job_id=${jobId}, polling status...`);
 
       // ==================== STEP 2: POLL STATUS ====================
-      const statusUrl = getExternalApiUrl(
-        'PYTHON_BACKEND',
-        `/api/audit_ingest_status/${encodeURIComponent(jobId)}`
-      );
       const startedAt = Date.now();
       let status = 'queued';
+      let pollCount = 0;
 
       while (Date.now() - startedAt < POLL_TIMEOUT_MS) {
+        pollCount++;
+        const statusEndpoint = `${AI_ENDPOINTS.AUDIT_INGEST_STATUS}/${encodeURIComponent(jobId)}`;
+        const statusUrl = getExternalApiUrl('PYTHON_BACKEND', statusEndpoint);
+
         const statusRes = await fetch(statusUrl, {
           method: 'GET',
           headers: { auth: secret },
         });
 
+        const statusText = await statusRes.text();
+        console.log(`[CAPA AI Review] Poll #${pollCount}: GET ${statusEndpoint} → ${statusRes.status} ${statusText.slice(0, 100)}`);
+
         if (!statusRes.ok) {
-          const errText = await statusRes.text();
-          console.error(`[CAPA AI Review] Status check failed: ${statusRes.status}`);
+          console.error(`[CAPA AI Review] ❌ Status check failed: ${statusRes.status}`);
           return NextResponse.json(
-            { error: 'Status check failed: ' + errText },
+            { error: 'Status check failed: ' + statusText },
             { status: 502 }
           );
         }
 
-        const statusPayload = (await statusRes.json()) as { status?: string; error?: string };
+        let statusPayload: { status?: string; error?: string };
+        try {
+          statusPayload = JSON.parse(statusText) as { status?: string; error?: string };
+        } catch {
+          return NextResponse.json(
+            { error: 'Invalid JSON from status endpoint' },
+            { status: 502 }
+          );
+        }
         status = (statusPayload.status || '').toLowerCase();
-
-        console.log(`[CAPA AI Review] Step 2: Job ${jobId} status: ${status}`);
 
         if (status === 'completed') break;
         if (status === 'error' || status === 'failed') {
+          console.error(`[CAPA AI Review] ❌ Ingest job failed: ${statusPayload.error}`);
           return NextResponse.json(
             { error: statusPayload.error || 'AI ingest job failed' },
             { status: 502 }
@@ -237,12 +316,10 @@ export const POST = withAuth(
       }
 
       // ==================== STEP 3: GET INGEST RESULT ====================
-      const resultUrl = getExternalApiUrl(
-        'PYTHON_BACKEND',
-        `/api/audit_ingest_result/${encodeURIComponent(jobId)}`
-      );
+      const resultEndpoint = `${AI_ENDPOINTS.AUDIT_INGEST_RESULT}/${encodeURIComponent(jobId)}`;
+      const resultUrl = getExternalApiUrl('PYTHON_BACKEND', resultEndpoint);
 
-      console.log(`[CAPA AI Review] Step 3: Fetching ingest result from: ${resultUrl}`);
+      console.log(`[CAPA AI Review] Step 3: Fetching ingest result: GET ${resultEndpoint}`);
 
       const resultRes = await fetch(resultUrl, {
         method: 'GET',
@@ -298,7 +375,11 @@ export const POST = withAuth(
       }
 
       // ==================== STEP 4: CALL AUDIT QUERY ====================
-      const queryUrl = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_query');
+      const queryUrl = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.AUDIT_QUERY);
+      const queryRequestId = generateRequestId();
+      const queryEndpointName = getEndpointName(AI_ENDPOINTS.AUDIT_QUERY);
+      const queryStartTime = Date.now();
+
       const question = buildReviewQuestion({
         finding: finding.finding,
         criteria: finding.criteria,
@@ -306,15 +387,22 @@ export const POST = withAuth(
         recommendation: finding.recommendation,
       });
 
-      console.log(`[CAPA AI Review] Step 4: Calling audit_query: ${queryUrl}`);
-      console.log(`[CAPA AI Review] Question: ${question.slice(0, 200)}...`);
-
       const queryPayload = {
         question,
         customer_id: finding.customerAccountId,
         audit_id: finding.engagement?.auditId || finding.engagementId,
         artifact_id: finding.id,
       };
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${queryEndpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${queryRequestId}] Calling: POST ${AI_ENDPOINTS.AUDIT_QUERY}`);
+      console.log(`[${queryRequestId}] Full URL: ${queryUrl}`);
+      console.log(`[${queryRequestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${queryRequestId}] Payload:`);
+      console.log(safeJsonStringify(queryPayload, 2));
+      console.log(`${'─'.repeat(80)}`);
 
       const queryRes = await fetch(queryUrl, {
         method: 'POST',
@@ -325,25 +413,43 @@ export const POST = withAuth(
         body: JSON.stringify(queryPayload),
       });
 
+      const queryText = await queryRes.text();
+      const queryLatency = Date.now() - queryStartTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${queryEndpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${queryRequestId}] Status: ${queryRes.status} ${queryRes.statusText}`);
+      console.log(`[${queryRequestId}] Latency: ${queryLatency}ms`);
+      console.log(`[${queryRequestId}] Response Size: ${queryText.length} bytes`);
+      console.log(`[${queryRequestId}] Response:`);
+      console.log(queryText.slice(0, 1000) + (queryText.length > 1000 ? '...(truncated)' : ''));
+      console.log(`${'═'.repeat(80)}\n`);
+
       if (!queryRes.ok) {
-        const errText = await queryRes.text();
-        console.error(`[CAPA AI Review] Query failed: ${queryRes.status} ${errText}`);
+        console.error(`[CAPA AI Review] ❌ Query failed: ${queryRes.status}`);
         return NextResponse.json(
-          { error: 'AI query failed: ' + errText },
+          { error: 'AI query failed: ' + queryText },
           { status: 502 }
         );
       }
 
-      const queryData = (await queryRes.json()) as {
+      let queryData: {
         status_code?: number;
         question?: string;
         answer?: string;
         score?: number;
-        status?: string; // "satisfactory" | "unsatisfactory"
+        status?: string;
         uuid?: string;
       };
-
-      console.log(`[CAPA AI Review] Query response:`, JSON.stringify(queryData).slice(0, 500));
+      try {
+        queryData = JSON.parse(queryText);
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid JSON response from RunPod audit_query' },
+          { status: 502 }
+        );
+      }
 
       // ==================== STEP 5: DETERMINE STATUS FROM QUERY ====================
       // Extract status from query response
@@ -370,7 +476,7 @@ export const POST = withAuth(
         },
       });
 
-      console.log(`[CAPA AI Review] Step 6: Finding ${findingId} updated with AI review`);
+      console.log(`[CAPA AI Review] ✓ SUCCESS - Finding ${findingId} updated with AI review: ${reviewStatus}`);
 
       return NextResponse.json({
         success: true,
@@ -383,7 +489,11 @@ export const POST = withAuth(
         jobId,
       });
     } catch (error) {
-      console.error('[CAPA AI Review] Error:', error);
+      console.error(`\n${'═'.repeat(80)}`);
+      console.error(`[CAPA AI REVIEW ERROR]`);
+      console.error(`${'═'.repeat(80)}`);
+      console.error('[CAPA AI Review] ❌ ERROR:', error);
+      console.error(`${'═'.repeat(80)}\n`);
       return NextResponse.json(
         { error: 'Failed to generate AI review' },
         { status: 500 }

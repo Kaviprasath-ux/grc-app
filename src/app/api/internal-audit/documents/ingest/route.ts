@@ -5,7 +5,40 @@ import { existsSync } from 'fs';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
-import { AI_ENDPOINTS } from '@/lib/ai-endpoints';
+import { AI_ENDPOINTS, getEndpointName } from '@/lib/ai-endpoints';
+
+/**
+ * Generate unique request ID for correlation
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/**
+ * Format FormData for logging as JSON-like object
+ */
+function formatFormDataForLog(formData: FormData): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    if (value instanceof Blob) {
+      result[key] = { type: 'File', size: `${value.size} bytes` };
+    } else {
+      result[key] = value;
+    }
+  });
+  return result;
+}
+
+/**
+ * Safely stringify any value for logging
+ */
+function safeJsonStringify(value: unknown, indent: number = 2): string {
+  try {
+    return JSON.stringify(value, null, indent);
+  } catch {
+    return String(value);
+  }
+}
 
 /**
  * Resolve stored filePath to absolute disk path.
@@ -78,15 +111,19 @@ export const POST = withAuth(
         );
       }
 
-      console.log(
-        '[Document Ingest] documentIds=' + JSON.stringify(documentIds) +
-        ', found=' + documents.length
-      );
+      // Use customerAccountId for proper tenant isolation
+      const customerId = customerAccountId || 'document-library';
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[DOCUMENT LIBRARY INGEST] Document Ingest`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[Document Ingest] Customer ID: ${customerId}`);
+      console.log(`[Document Ingest] Document IDs: ${JSON.stringify(documentIds)}`);
+      console.log(`[Document Ingest] Documents Found: ${documents.length}`);
+      console.log(`${'─'.repeat(80)}`);
 
       // Build FormData
       const form = new FormData();
-      // Use customerAccountId or a default identifier
-      const customerId = customerAccountId || 'default';
       form.append('customer_id', customerId);
 
       let appended = 0;
@@ -139,7 +176,19 @@ export const POST = withAuth(
       }
 
       const url = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.SIMPLE_INGEST);
-      console.log('[Document Ingest] Calling RunPod ' + url + ', files=' + appended);
+      const requestId = generateRequestId();
+      const endpointName = getEndpointName(AI_ENDPOINTS.SIMPLE_INGEST);
+      const startTime = Date.now();
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${endpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${requestId}] Calling: POST ${AI_ENDPOINTS.SIMPLE_INGEST}`);
+      console.log(`[${requestId}] Full URL: ${url}`);
+      console.log(`[${requestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${requestId}] Payload:`);
+      console.log(safeJsonStringify(formatFormDataForLog(form), 2));
+      console.log(`${'─'.repeat(80)}`);
 
       let res: Response;
       try {
@@ -150,7 +199,8 @@ export const POST = withAuth(
           signal: AbortSignal.timeout(120000), // 2 minute timeout
         });
       } catch (fetchError) {
-        console.error('[Document Ingest] Network error calling RunPod:', fetchError);
+        console.error(`[${requestId}] ❌ NETWORK ERROR:`, fetchError);
+        console.log(`${'═'.repeat(80)}\n`);
         return NextResponse.json(
           { error: 'AI service is unreachable. Please check if the RunPod server is running.' },
           { status: 503 }
@@ -158,11 +208,19 @@ export const POST = withAuth(
       }
 
       const resText = await res.text();
-      console.log('[Document Ingest] RunPod response status: ' + res.status);
-      console.log('[Document Ingest] RunPod response body: ' + resText);
+      const latency = Date.now() - startTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${endpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${requestId}] Status: ${res.status} ${res.statusText}`);
+      console.log(`[${requestId}] Latency: ${latency}ms`);
+      console.log(`[${requestId}] Response:`);
+      console.log(resText);
+      console.log(`${'═'.repeat(80)}\n`);
 
       if (!res.ok) {
-        let errBody: { error?: string; detail?: unknown } = { error: 'Simple ingest failed' };
+        const errBody: { error?: string; detail?: unknown } = { error: 'Simple ingest failed' };
         try {
           const j = JSON.parse(resText);
           if (j.detail) errBody.detail = j.detail;
@@ -205,15 +263,20 @@ export const POST = withAuth(
         )
       );
 
-      console.log('[Document Ingest] Success, job_id=' + jobId + ', created ' + ingestJobs.length + ' job records');
+      console.log(`[Document Ingest] ✓ SUCCESS - job_id=${jobId}, created ${ingestJobs.length} job records`);
 
       return NextResponse.json({
         job_id: jobId,
         documents_count: appended,
         jobs_created: ingestJobs.length,
+        customer_id: customerId,
       });
     } catch (error) {
-      console.error('[Document Ingest] Error:', error);
+      console.error(`\n${'═'.repeat(80)}`);
+      console.error(`[DOCUMENT INGEST ERROR]`);
+      console.error(`${'═'.repeat(80)}`);
+      console.error('[Document Ingest] ❌ ERROR:', error);
+      console.error(`${'═'.repeat(80)}\n`);
       return NextResponse.json(
         { error: 'Failed to run document ingest' },
         { status: 500 }

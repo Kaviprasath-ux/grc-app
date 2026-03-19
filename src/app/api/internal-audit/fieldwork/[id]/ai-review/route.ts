@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import prisma from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
+import { AI_ENDPOINTS, getEndpointName } from '@/lib/ai-endpoints';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -12,6 +13,39 @@ interface RouteContext {
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * Generate unique request ID for correlation
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/**
+ * Format FormData for logging as JSON-like object
+ */
+function formatFormDataForLog(formData: FormData): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    if (value instanceof Blob) {
+      result[key] = { type: 'File', size: `${value.size} bytes` };
+    } else {
+      result[key] = value;
+    }
+  });
+  return result;
+}
+
+/**
+ * Safely stringify any value for logging
+ */
+function safeJsonStringify(value: unknown, indent: number = 2): string {
+  try {
+    return JSON.stringify(value, null, indent);
+  } catch {
+    return String(value);
+  }
+}
 
 /**
  * Resolve stored filePath (e.g. /uploads/fieldwork/.../file.pdf) to absolute disk path.
@@ -112,10 +146,17 @@ export const POST = withAuth(
         er.attachments.map((a) => ({ ...a, evidenceRequestId: er.id }))
       );
 
-      console.log('[AI Review] evidenceRequestIds=' + JSON.stringify(evidenceRequestIds) + ', requests=' + evidenceRequests.length + ', totalAttachments=' + allAttachments.length);
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI REVIEW] Fieldwork Evidence Review`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[AI Review] Engagement ID: ${engagementId}`);
+      console.log(`[AI Review] Customer ID: ${engagement.customerAccountId}`);
+      console.log(`[AI Review] Evidence Request IDs: ${JSON.stringify(evidenceRequestIds)}`);
+      console.log(`[AI Review] Requests Found: ${evidenceRequests.length}, Total Attachments: ${allAttachments.length}`);
       evidenceRequests.forEach((er) => {
-        console.log('[AI Review] request ' + er.id + ' "' + er.title + '": ' + er.attachments.length + ' attachment(s)');
+        console.log(`[AI Review]   → Request ${er.id} "${er.title}": ${er.attachments.length} attachment(s)`);
       });
+      console.log(`${'─'.repeat(80)}`);
 
       if (allAttachments.length === 0) {
         return NextResponse.json(
@@ -163,9 +204,20 @@ export const POST = withAuth(
       }
 
       // Step 1: Call RunPod audit_ingest directly
-      const ingestUrl = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_ingest');
-      console.log('[AI Review] Starting ingest -> audit_query flow, engagementId=' + engagementId);
-      console.log('[AI Review] Calling RunPod POST ' + ingestUrl + ' with ' + appended + ' file(s)');
+      const ingestUrl = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.AUDIT_INGEST);
+      const ingestRequestId = generateRequestId();
+      const ingestEndpointName = getEndpointName(AI_ENDPOINTS.AUDIT_INGEST);
+      const ingestStartTime = Date.now();
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${ingestEndpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${ingestRequestId}] Calling: POST ${AI_ENDPOINTS.AUDIT_INGEST}`);
+      console.log(`[${ingestRequestId}] Full URL: ${ingestUrl}`);
+      console.log(`[${ingestRequestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${ingestRequestId}] Payload:`);
+      console.log(safeJsonStringify(formatFormDataForLog(form), 2));
+      console.log(`${'─'.repeat(80)}`);
 
       const ingestRes = await fetch(ingestUrl, {
         method: 'POST',
@@ -174,11 +226,19 @@ export const POST = withAuth(
       });
 
       const ingestText = await ingestRes.text();
-      console.log('[AI Review] RunPod audit_ingest response status: ' + ingestRes.status);
-      console.log('[AI Review] RunPod audit_ingest response body: ' + ingestText);
+      const ingestLatency = Date.now() - ingestStartTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${ingestEndpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${ingestRequestId}] Status: ${ingestRes.status} ${ingestRes.statusText}`);
+      console.log(`[${ingestRequestId}] Latency: ${ingestLatency}ms`);
+      console.log(`[${ingestRequestId}] Response:`);
+      console.log(ingestText);
+      console.log(`${'═'.repeat(80)}\n`);
 
       if (!ingestRes.ok) {
-        let errBody: { error?: string } = { error: 'Audit ingest failed' };
+        const errBody: { error?: string } = { error: 'Audit ingest failed' };
         try {
           const j = JSON.parse(ingestText);
           if (j.error) errBody.error = j.error;
@@ -207,22 +267,27 @@ export const POST = withAuth(
         );
       }
 
-      console.log('[AI Review] Ingest job_id=' + jobId + ', polling status...');
+      console.log(`[AI Review] Ingest job_id=${jobId}, polling status...`);
 
       // Step 2: Poll RunPod audit_ingest_status directly
       const startedAt = Date.now();
       let status: string = 'queued';
+      let pollCount = 0;
 
       while (Date.now() - startedAt < POLL_TIMEOUT_MS) {
-        const statusUrl = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_ingest_status/' + encodeURIComponent(jobId));
+        pollCount++;
+        const statusEndpoint = `${AI_ENDPOINTS.AUDIT_INGEST_STATUS}/${encodeURIComponent(jobId)}`;
+        const statusUrl = getExternalApiUrl('PYTHON_BACKEND', statusEndpoint);
         const statusRes = await fetch(statusUrl, {
           method: 'GET',
           headers: { auth: secret },
         });
 
         const statusText = await statusRes.text();
+        console.log(`[AI Review] Poll #${pollCount}: GET ${statusEndpoint} → ${statusRes.status} ${statusText.slice(0, 100)}`);
+
         if (!statusRes.ok) {
-          let errBody: { error?: string } = { error: 'Ingest status check failed' };
+          const errBody: { error?: string } = { error: 'Ingest status check failed' };
           try {
             const j = JSON.parse(statusText);
             if (j.error) errBody.error = j.error;
@@ -243,10 +308,10 @@ export const POST = withAuth(
         }
 
         status = (statusPayload.status || '').toLowerCase();
-        console.log('[AI Review] Poll status: ' + status);
 
         if (status === 'completed') break;
         if (status === 'error' || status === 'failed') {
+          console.error(`[AI Review] ❌ Ingest job failed: ${statusPayload.error}`);
           return NextResponse.json(
             { error: statusPayload.error || 'Ingest job failed' },
             { status: 502 }
@@ -272,7 +337,7 @@ export const POST = withAuth(
 
       if (!resultRes.ok) {
         const resultText = await resultRes.text();
-        let errBody: { error?: string } = { error: 'Ingest result fetch failed' };
+        const errBody: { error?: string } = { error: 'Ingest result fetch failed' };
         try {
           const j = JSON.parse(resultText);
           if (j.error) errBody.error = j.error;
@@ -293,10 +358,12 @@ export const POST = withAuth(
       // Get target language from request body or cookie (defaults to 'en')
       const targetLanguage = body.target_language || req.cookies.get('NEXT_LOCALE')?.value || 'en';
 
-      console.log('[AI Review] Ingest completed, calling audit_query...');
-      console.log('[AI Review] Target language:', targetLanguage);
+      // Step 4: Call RunPod audit_query
+      const queryUrl = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.AUDIT_QUERY);
+      const queryRequestId = generateRequestId();
+      const queryEndpointName = getEndpointName(AI_ENDPOINTS.AUDIT_QUERY);
+      const queryStartTime = Date.now();
 
-      const queryUrl = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_query');
       const queryPayload = {
         question,
         customer_id: customerId,
@@ -305,8 +372,15 @@ export const POST = withAuth(
         target_language: targetLanguage,
       };
 
-      console.log('[AI Review] Calling RunPod POST ' + queryUrl);
-      console.log('[AI Review] question=' + question.slice(0, 80) + (question.length > 80 ? '...' : ''));
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${queryEndpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${queryRequestId}] Calling: POST ${AI_ENDPOINTS.AUDIT_QUERY}`);
+      console.log(`[${queryRequestId}] Full URL: ${queryUrl}`);
+      console.log(`[${queryRequestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${queryRequestId}] Payload:`);
+      console.log(safeJsonStringify(queryPayload, 2));
+      console.log(`${'─'.repeat(80)}`);
 
       const queryRes = await fetch(queryUrl, {
         method: 'POST',
@@ -318,11 +392,20 @@ export const POST = withAuth(
       });
 
       const queryText = await queryRes.text();
-      console.log('[AI Review] RunPod audit_query response status: ' + queryRes.status);
-      console.log('[AI Review] RunPod audit_query response body: ' + queryText.slice(0, 500) + (queryText.length > 500 ? '...' : ''));
+      const queryLatency = Date.now() - queryStartTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${queryEndpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${queryRequestId}] Status: ${queryRes.status} ${queryRes.statusText}`);
+      console.log(`[${queryRequestId}] Latency: ${queryLatency}ms`);
+      console.log(`[${queryRequestId}] Response Size: ${queryText.length} bytes`);
+      console.log(`[${queryRequestId}] Response:`);
+      console.log(queryText.slice(0, 1000) + (queryText.length > 1000 ? '...(truncated)' : ''));
+      console.log(`${'═'.repeat(80)}\n`);
 
       if (!queryRes.ok) {
-        let errBody: { error?: string } = { error: 'AI query failed' };
+        const errBody: { error?: string } = { error: 'AI query failed' };
         try {
           const j = JSON.parse(queryText);
           if (j.error) errBody.error = j.error;
@@ -360,7 +443,7 @@ export const POST = withAuth(
         }
       }
 
-      console.log('[AI Review] Success, returning review to client');
+      console.log(`[AI Review] ✓ SUCCESS - Review completed for ${evidenceRequests.length} evidence request(s)`);
 
       return NextResponse.json({
         review,
@@ -372,7 +455,11 @@ export const POST = withAuth(
         generatedAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('[AI Review] Error:', error);
+      console.error(`\n${'═'.repeat(80)}`);
+      console.error(`[AI REVIEW ERROR]`);
+      console.error(`${'═'.repeat(80)}`);
+      console.error('[AI Review] ❌ ERROR:', error);
+      console.error(`${'═'.repeat(80)}\n`);
       return NextResponse.json(
         { error: 'Failed to generate AI review' },
         { status: 500 }

@@ -5,6 +5,40 @@ import { existsSync } from 'fs';
 import prisma from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
+import { AI_ENDPOINTS, getEndpointName } from '@/lib/ai-endpoints';
+
+/**
+ * Generate unique request ID for correlation
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/**
+ * Format FormData for logging as JSON-like object
+ */
+function formatFormDataForLog(formData: FormData): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    if (value instanceof Blob) {
+      result[key] = { type: 'File', size: `${value.size} bytes` };
+    } else {
+      result[key] = value;
+    }
+  });
+  return result;
+}
+
+/**
+ * Safely stringify any value for logging
+ */
+function safeJsonStringify(value: unknown, indent: number = 2): string {
+  try {
+    return JSON.stringify(value, null, indent);
+  } catch {
+    return String(value);
+  }
+}
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -95,14 +129,17 @@ export const POST = withAuth(
         er.attachments.map((a) => ({ ...a, evidenceRequestId: er.id }))
       );
 
-      console.log(
-        '[RunPod audit_ingest] evidenceRequestIds=' + JSON.stringify(evidenceRequestIds) +
-        ', requests=' + evidenceRequests.length +
-        ', totalAttachments=' + allAttachments.length
-      );
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AUDIT INGEST] Fieldwork Evidence Ingest`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[Audit Ingest] Engagement ID: ${engagementId}`);
+      console.log(`[Audit Ingest] Customer ID: ${engagement.customerAccountId}`);
+      console.log(`[Audit Ingest] Evidence Request IDs: ${JSON.stringify(evidenceRequestIds)}`);
+      console.log(`[Audit Ingest] Requests Found: ${evidenceRequests.length}, Total Attachments: ${allAttachments.length}`);
       evidenceRequests.forEach((er) => {
-        console.log('[RunPod audit_ingest] request ' + er.id + ' ("' + er.title + '"): ' + er.attachments.length + ' attachment(s)');
+        console.log(`[Audit Ingest]   → Request ${er.id} "${er.title}": ${er.attachments.length} attachment(s)`);
       });
+      console.log(`${'─'.repeat(80)}`);
 
       if (allAttachments.length === 0) {
         return NextResponse.json(
@@ -150,10 +187,20 @@ export const POST = withAuth(
         );
       }
 
-      const url = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_ingest');
-      console.log('[RunPod audit_ingest] POST /api/internal-audit/fieldwork/[id]/audit-ingest received');
-      console.log('[RunPod audit_ingest] engagementId=' + engagementId + ', customerId=' + customerId + ', auditId=' + auditId + ', documentId=' + documentId + ', files=' + appended);
-      console.log('[RunPod audit_ingest] Calling RunPod ' + url);
+      const url = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.AUDIT_INGEST);
+      const requestId = generateRequestId();
+      const endpointName = getEndpointName(AI_ENDPOINTS.AUDIT_INGEST);
+      const startTime = Date.now();
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${endpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${requestId}] Calling: POST ${AI_ENDPOINTS.AUDIT_INGEST}`);
+      console.log(`[${requestId}] Full URL: ${url}`);
+      console.log(`[${requestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${requestId}] Payload:`);
+      console.log(safeJsonStringify(formatFormDataForLog(form), 2));
+      console.log(`${'─'.repeat(80)}`);
 
       const res = await fetch(url, {
         method: 'POST',
@@ -162,11 +209,19 @@ export const POST = withAuth(
       });
 
       const resText = await res.text();
-      console.log('[RunPod audit_ingest] RunPod response status: ' + res.status);
-      console.log('[RunPod audit_ingest] RunPod response body: ' + resText);
+      const latency = Date.now() - startTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${endpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${requestId}] Status: ${res.status} ${res.statusText}`);
+      console.log(`[${requestId}] Latency: ${latency}ms`);
+      console.log(`[${requestId}] Response:`);
+      console.log(resText);
+      console.log(`${'═'.repeat(80)}\n`);
 
       if (!res.ok) {
-        let errBody: { error?: string; detail?: unknown } = { error: 'Audit ingest failed' };
+        const errBody: { error?: string; detail?: unknown } = { error: 'Audit ingest failed' };
         try {
           const j = JSON.parse(resText);
           if (j.detail) errBody.detail = j.detail;
@@ -195,10 +250,14 @@ export const POST = withAuth(
         );
       }
 
-      console.log('[RunPod audit_ingest] Success, job_id=' + jobId);
+      console.log(`[Audit Ingest] ✓ SUCCESS - job_id=${jobId}`);
       return NextResponse.json({ job_id: jobId });
     } catch (error) {
-      console.error('[RunPod audit_ingest] Error:', error);
+      console.error(`\n${'═'.repeat(80)}`);
+      console.error(`[AUDIT INGEST ERROR]`);
+      console.error(`${'═'.repeat(80)}`);
+      console.error('[Audit Ingest] ❌ ERROR:', error);
+      console.error(`${'═'.repeat(80)}\n`);
       return NextResponse.json(
         { error: 'Failed to run audit ingest' },
         { status: 500 }

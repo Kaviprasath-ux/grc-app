@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
+import { AI_ENDPOINTS, getEndpointName } from '@/lib/ai-endpoints';
 import prisma from '@/lib/prisma';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+/**
+ * Generate unique request ID for correlation
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/**
+ * Safely stringify any value for logging
+ */
+function safeJsonStringify(value: unknown, indent: number = 2): string {
+  try {
+    return JSON.stringify(value, null, indent);
+  } catch {
+    return String(value);
+  }
 }
 
 /**
@@ -54,7 +73,8 @@ export const POST = withAuth(
         );
       }
 
-      const customerId = body.customer_id ?? engagement.id;
+      // Use customerAccountId for tenant isolation (must match what was used in ingest)
+      const customerId = body.customer_id ?? engagement.customerAccountId;
       const contextStatus = body.context_status !== false;
 
       const payload = {
@@ -62,12 +82,21 @@ export const POST = withAuth(
         customer_id: customerId,
         context_status: contextStatus,
       };
-      console.log(payload);
 
-      const url = getExternalApiUrl('PYTHON_BACKEND', '/api/simple_query');
-      console.log('[RunPod simple_query] POST /api/internal-audit/fieldwork/[id]/simple-query received');
-      console.log('[RunPod simple_query] engagementId=' + engagementId + ', question=' + question.slice(0, 80) + '...');
-      console.log('[RunPod simple_query] Calling RunPod POST ' + url);
+      const url = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.SIMPLE_QUERY);
+      const requestId = generateRequestId();
+      const endpointName = getEndpointName(AI_ENDPOINTS.SIMPLE_QUERY);
+      const startTime = Date.now();
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${endpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${requestId}] Calling: POST ${AI_ENDPOINTS.SIMPLE_QUERY}`);
+      console.log(`[${requestId}] Full URL: ${url}`);
+      console.log(`[${requestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${requestId}] Payload:`);
+      console.log(safeJsonStringify(payload, 2));
+      console.log(`${'─'.repeat(80)}`);
 
       const res = await fetch(url, {
         method: 'POST',
@@ -79,11 +108,20 @@ export const POST = withAuth(
       });
 
       const resText = await res.text();
-      console.log('[RunPod simple_query] RunPod response status: ' + res.status);
-      console.log('[RunPod simple_query] RunPod response body: ' + resText.slice(0, 500) + (resText.length > 500 ? '...' : ''));
+      const latency = Date.now() - startTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${endpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${requestId}] Status: ${res.status} ${res.statusText}`);
+      console.log(`[${requestId}] Latency: ${latency}ms`);
+      console.log(`[${requestId}] Response Size: ${resText.length} bytes`);
+      console.log(`[${requestId}] Response:`);
+      console.log(resText.slice(0, 1000) + (resText.length > 1000 ? '...(truncated)' : ''));
+      console.log(`${'═'.repeat(80)}\n`);
 
       if (!res.ok) {
-        let errBody: { error?: string; detail?: unknown } = { error: 'Simple query failed' };
+        const errBody: { error?: string; detail?: unknown } = { error: 'Simple query failed' };
         try {
           const j = JSON.parse(resText);
           if (j.detail) errBody.detail = j.detail;
@@ -106,7 +144,11 @@ export const POST = withAuth(
 
       return NextResponse.json(data);
     } catch (error) {
-      console.error('[RunPod simple_query] Error:', error);
+      console.error(`\n${'═'.repeat(80)}`);
+      console.error(`[SIMPLE QUERY ERROR]`);
+      console.error(`${'═'.repeat(80)}`);
+      console.error('[Simple Query] ❌ ERROR:', error);
+      console.error(`${'═'.repeat(80)}\n`);
       return NextResponse.json(
         { error: 'Failed to run simple query' },
         { status: 500 }

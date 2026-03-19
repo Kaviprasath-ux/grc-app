@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
+import { AI_ENDPOINTS, getEndpointName } from '@/lib/ai-endpoints';
 import prisma from '@/lib/prisma';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+/**
+ * Generate unique request ID for correlation
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/**
+ * Safely stringify any value for logging
+ */
+function safeJsonStringify(value: unknown, indent: number = 2): string {
+  try {
+    return JSON.stringify(value, null, indent);
+  } catch {
+    return String(value);
+  }
 }
 
 /**
@@ -67,11 +86,20 @@ export const POST = withAuth(
         artifact_id: artifactId,
       };
 
-      const url = getExternalApiUrl('PYTHON_BACKEND', '/api/audit_query');
-      console.log('[RunPod audit_query] POST /api/internal-audit/fieldwork/[id]/audit-query received');
-      console.log('[RunPod audit_query] engagementId=' + engagementId + ', customerId=' + customerId + ', auditId=' + auditId);
-      console.log('[RunPod audit_query] question=' + question.slice(0, 80) + '...');
-      console.log('[RunPod audit_query] Calling RunPod POST ' + url);
+      const url = getExternalApiUrl('PYTHON_BACKEND', AI_ENDPOINTS.AUDIT_QUERY);
+      const requestId = generateRequestId();
+      const endpointName = getEndpointName(AI_ENDPOINTS.AUDIT_QUERY);
+      const startTime = Date.now();
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${endpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${requestId}] Calling: POST ${AI_ENDPOINTS.AUDIT_QUERY}`);
+      console.log(`[${requestId}] Full URL: ${url}`);
+      console.log(`[${requestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${requestId}] Payload:`);
+      console.log(safeJsonStringify(payload, 2));
+      console.log(`${'─'.repeat(80)}`);
 
       const res = await fetch(url, {
         method: 'POST',
@@ -83,11 +111,20 @@ export const POST = withAuth(
       });
 
       const resText = await res.text();
-      console.log('[RunPod audit_query] RunPod response status: ' + res.status);
-      console.log('[RunPod audit_query] RunPod response body: ' + resText.slice(0, 500) + (resText.length > 500 ? '...' : ''));
+      const latency = Date.now() - startTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${endpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${requestId}] Status: ${res.status} ${res.statusText}`);
+      console.log(`[${requestId}] Latency: ${latency}ms`);
+      console.log(`[${requestId}] Response Size: ${resText.length} bytes`);
+      console.log(`[${requestId}] Response:`);
+      console.log(resText.slice(0, 1000) + (resText.length > 1000 ? '...(truncated)' : ''));
+      console.log(`${'═'.repeat(80)}\n`);
 
       if (!res.ok) {
-        let errBody: { error?: string; detail?: unknown } = { error: 'Audit query failed' };
+        const errBody: { error?: string; detail?: unknown } = { error: 'Audit query failed' };
         try {
           const j = JSON.parse(resText);
           if (j.detail) errBody.detail = j.detail;
@@ -110,7 +147,11 @@ export const POST = withAuth(
 
       return NextResponse.json(data);
     } catch (error) {
-      console.error('[RunPod audit_query] Error:', error);
+      console.error(`\n${'═'.repeat(80)}`);
+      console.error(`[AUDIT QUERY ERROR]`);
+      console.error(`${'═'.repeat(80)}`);
+      console.error('[Audit Query] ❌ ERROR:', error);
+      console.error(`${'═'.repeat(80)}\n`);
       return NextResponse.json(
         { error: 'Failed to run audit query' },
         { status: 500 }

@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth } from "@/lib/api-auth";
+import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from "@/config/external-apis";
+import { AI_ENDPOINTS, getEndpointName } from "@/lib/ai-endpoints";
 
-const DOC_LIB_CUSTOMER_ID =
-  process.env.DOCUMENT_LIBRARY_CUSTOMER_ID || "document-library";
+/**
+ * Generate unique request ID for correlation
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/**
+ * Safely stringify any value for logging
+ */
+function safeJsonStringify(value: unknown, indent: number = 2): string {
+  try {
+    return JSON.stringify(value, null, indent);
+  } catch {
+    return String(value);
+  }
+}
 
 function extractResultFromSimpleQueryResponse(data: unknown): string {
   if (typeof data === "string") return data;
@@ -34,7 +50,7 @@ export const POST = withAuth(
   async (
     request: NextRequest,
     _context: { params?: Promise<unknown> },
-    session: { id?: string }
+    session
   ) => {
     try {
       const body = await request.json();
@@ -55,19 +71,30 @@ export const POST = withAuth(
         );
       }
 
+      // Use the same customer_id that was used during ingest for proper data isolation
+      const customerAccountId = getCustomerAccountId(session);
+      const customerId = customerAccountId || "document-library";
+
       const payload = {
         question: query.trim(),
-        customer_id: DOC_LIB_CUSTOMER_ID,
+        customer_id: customerId,
         context_status: true,
       };
 
-      const url = getExternalApiUrl("PYTHON_BACKEND", "/api/simple_query");
-      console.log(
-        "[RunPod simple_query] Document Library search, question=" +
-        query.slice(0, 80) +
-        "..."
-      );
-      console.log("[RunPod simple_query] Calling RunPod POST " + url);
+      const url = getExternalApiUrl("PYTHON_BACKEND", AI_ENDPOINTS.SIMPLE_QUERY);
+      const requestId = generateRequestId();
+      const endpointName = getEndpointName(AI_ENDPOINTS.SIMPLE_QUERY);
+      const startTime = Date.now();
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`[AI API REQUEST] ${endpointName}`);
+      console.log(`${'═'.repeat(80)}`);
+      console.log(`[${requestId}] Calling: POST ${AI_ENDPOINTS.SIMPLE_QUERY}`);
+      console.log(`[${requestId}] Full URL: ${url}`);
+      console.log(`[${requestId}] Timestamp: ${new Date().toISOString()}`);
+      console.log(`[${requestId}] Payload:`);
+      console.log(safeJsonStringify(payload, 2));
+      console.log(`${'─'.repeat(80)}`);
 
       const res = await fetch(url, {
         method: "POST",
@@ -79,14 +106,17 @@ export const POST = withAuth(
       });
 
       const resText = await res.text();
-      console.log(
-        "[RunPod simple_query] Document Library response status: " + res.status
-      );
-      console.log(
-        "[RunPod simple_query] Document Library response body: " +
-        resText.slice(0, 300) +
-        (resText.length > 300 ? "..." : "")
-      );
+      const latency = Date.now() - startTime;
+
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[AI API RESPONSE] ${endpointName}`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(`[${requestId}] Status: ${res.status} ${res.statusText}`);
+      console.log(`[${requestId}] Latency: ${latency}ms`);
+      console.log(`[${requestId}] Response Size: ${resText.length} bytes`);
+      console.log(`[${requestId}] Response:`);
+      console.log(resText.slice(0, 500) + (resText.length > 500 ? "...(truncated)" : ""));
+      console.log(`${'═'.repeat(80)}\n`);
 
       let result: string;
       let status: string;
@@ -145,6 +175,8 @@ export const POST = withAuth(
         },
       });
 
+      console.log(`[Document Search] ✓ SUCCESS - Found ${documents.length} matching documents, status: ${status}`);
+
       return NextResponse.json({
         id: search.id,
         query: query.trim(),
@@ -152,9 +184,14 @@ export const POST = withAuth(
         status,
         documents,
         timestamp: search.createdAt,
+        customer_id: customerId,
       });
     } catch (error) {
-      console.error("Error searching documents:", error);
+      console.error(`\n${'═'.repeat(80)}`);
+      console.error(`[DOCUMENT SEARCH ERROR]`);
+      console.error(`${'═'.repeat(80)}`);
+      console.error("[Document Search] ❌ ERROR:", error);
+      console.error(`${'═'.repeat(80)}\n`);
       return NextResponse.json(
         { error: "Failed to search documents" },
         { status: 500 }
