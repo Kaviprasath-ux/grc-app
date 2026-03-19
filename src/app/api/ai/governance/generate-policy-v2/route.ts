@@ -241,6 +241,7 @@ export async function POST(req: NextRequest) {
         fileType: 'docx',
         fileSize: docxBuffer.length,
         filePath: relativePath,
+        uploadedById: session.user.id,
       },
     });
 

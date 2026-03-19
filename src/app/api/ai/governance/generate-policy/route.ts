@@ -271,6 +271,7 @@ export async function POST(req: NextRequest) {
                 fileType: "docx",
                 fileSize: buffer.length,
                 filePath: publicPath,
+                uploadedById: userId,
             }
         });
 
