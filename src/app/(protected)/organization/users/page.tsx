@@ -98,7 +98,7 @@ interface User {
 const rolesByFunction: Record<string, string[]> = {
   Business: ["DepartmentReviewer", "DepartmentContributor"],
   Security: ["Reviewer"],
-  Audit: ["AuditHead", "Auditor", "Auditor", "Auditee", "AuditUser"],
+  Audit: ["AuditHead", "Auditor", "Auditee"],
 };
 
 // CustomerAdmin can only create AuditHead when selecting Audit function
@@ -111,8 +111,6 @@ const auditHeadAuditRoles = ["Auditor", "Auditee"];
 const allUserRoles = [
   "CustomerAdministrator",
   "AuditHead",
-  "Auditor",
-  "AuditUser",
   "Auditor",
   "Auditee",
   "Reviewer",

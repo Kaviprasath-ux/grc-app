@@ -3707,6 +3707,25 @@ CREATE TABLE "ChatbotAuditLog" (
 );
 
 -- CreateTable
+CREATE TABLE "ScheduledTask" (
+    "id" TEXT NOT NULL,
+    "queueId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "taskFunction" TEXT NOT NULL,
+    "description" TEXT,
+    "schedule" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Idle',
+    "lastRunAt" TIMESTAMP(3),
+    "nextRunAt" TIMESTAMP(3),
+    "contextData" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ScheduledTask_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_EngagementTeamMembers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
@@ -4767,6 +4786,15 @@ CREATE INDEX "ChatbotAuditLog_userId_idx" ON "ChatbotAuditLog"("userId");
 
 -- CreateIndex
 CREATE INDEX "ChatbotAuditLog_createdAt_idx" ON "ChatbotAuditLog"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ScheduledTask_queueId_key" ON "ScheduledTask"("queueId");
+
+-- CreateIndex
+CREATE INDEX "ScheduledTask_status_idx" ON "ScheduledTask"("status");
+
+-- CreateIndex
+CREATE INDEX "ScheduledTask_isActive_idx" ON "ScheduledTask"("isActive");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");

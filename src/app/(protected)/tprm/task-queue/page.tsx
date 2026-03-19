@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { DataGrid } from "@/components/shared/data-grid";
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, RotateCcw, UserPlus, Home, ChevronRight } from "lucide-react";
+import { Loader2, Eye, RotateCcw, UserPlus, Home, ChevronRight, Trash2, Clock, Play } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 
@@ -32,6 +33,20 @@ interface TaskQueueItem {
   initiatedBy: { id: string; fullName: string } | null;
   assessor: { id: string; fullName: string } | null;
   approver: { id: string; fullName: string } | null;
+}
+
+interface ScheduledTask {
+  id: string;
+  queueId: string;
+  name: string;
+  taskFunction: string;
+  description: string | null;
+  schedule: string | null;
+  status: string;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+  isActive: boolean;
+  createdAt: string;
 }
 
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
@@ -60,6 +75,8 @@ export default function TaskQueuePage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const router = useRouter();
+  const { data: session } = useSession();
+  const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
   const [activeTab, setActiveTab] = useState("unassigned");
   const [items, setItems] = useState<TaskQueueItem[]>([]);
   const { data: translatedItems } = useTranslatedData(items, { modelName: 'TPRMAssessment' });
@@ -69,6 +86,49 @@ export default function TaskQueuePage() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // System scheduled tasks (for GRCAdministrator)
+  const [systemTasks, setSystemTasks] = useState<ScheduledTask[]>([]);
+  const [systemLoading, setSystemLoading] = useState(true);
+
+  const fetchSystemTasks = useCallback(async () => {
+    try {
+      setSystemLoading(true);
+      const res = await fetch("/api/system/task-queue");
+      if (res.ok) {
+        const data = await res.json();
+        setSystemTasks(data);
+      }
+    } catch (error) {
+      console.error("Error fetching system tasks:", error);
+    } finally {
+      setSystemLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isGRCAdmin) {
+      fetchSystemTasks();
+    }
+  }, [isGRCAdmin, fetchSystemTasks]);
+
+  const handleDeleteSystemTask = async (taskId: string) => {
+    try {
+      const res = await fetch("/api/system/task-queue", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: taskId }),
+      });
+      if (res.ok) {
+        toast({ title: t("Task deleted successfully") });
+        fetchSystemTasks();
+      } else {
+        toast({ title: t("Failed to delete task"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Failed to delete task"), variant: "destructive" });
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -299,6 +359,61 @@ export default function TaskQueuePage() {
     },
   ];
 
+  // System scheduled task columns (for GRCAdministrator)
+  const systemColumns: ColumnDef<ScheduledTask>[] = [
+    {
+      accessorKey: "queueId",
+      header: t("Queue ID"),
+      cell: ({ row }) => <span className="font-mono text-xs text-slate-500 truncate max-w-[180px] inline-block">{row.getValue("queueId")}</span>,
+    },
+    {
+      accessorKey: "name",
+      header: t("Name"),
+      cell: ({ row }) => <span className="text-sm">{row.getValue("name")}</span>,
+    },
+    {
+      accessorKey: "taskFunction",
+      header: t("Function"),
+      cell: ({ row }) => <span className="text-sm font-medium text-primary-700">{row.getValue("taskFunction")}</span>,
+    },
+    {
+      accessorKey: "schedule",
+      header: t("Schedule"),
+      cell: ({ row }) => (
+        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">{row.getValue("schedule") || "-"}</span>
+      ),
+    },
+    {
+      accessorKey: "createdAt",
+      header: t("Created Date"),
+      cell: ({ row }) => formatDate(row.getValue("createdAt")),
+    },
+    {
+      accessorKey: "status",
+      header: t("Status"),
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string;
+        const variant = status === "Running" ? "secondary" : status === "Failed" ? "destructive" : status === "Completed" ? "default" : "outline";
+        return <Badge variant={variant}>{t(status)}</Badge>;
+      },
+    },
+    {
+      id: "actions",
+      header: t("Action"),
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
+          onClick={() => handleDeleteSystemTask(row.original.id)}
+          title={t("Delete")}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
   const getColumns = () => {
     switch (activeTab) {
       case "unassigned":
@@ -363,6 +478,41 @@ export default function TaskQueuePage() {
       />
     );
   };
+
+  // GRCAdministrator sees system scheduled tasks
+  if (isGRCAdmin) {
+    return (
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>{t("TPRM")}</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{t("Task Queue")}</span>
+        </nav>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Task Queue")}</h1>
+            <p className="text-sm text-muted-foreground mt-1">{t("System scheduled tasks and background jobs")}</p>
+          </div>
+        </div>
+
+        {systemLoading ? (
+          <div className="flex items-center justify-center min-h-[200px]">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <DataGrid
+            columns={systemColumns}
+            data={systemTasks}
+            searchPlaceholder={t("Search tasks...")}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
