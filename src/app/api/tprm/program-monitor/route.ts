@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma';
 export const GET = withAuth(
   async (req, context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       // Get assessment counts grouped by type
       const assessmentCounts = await prisma.tPRMAssessment.groupBy({

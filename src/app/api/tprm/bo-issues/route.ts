@@ -13,7 +13,7 @@ import { translateRecord } from "@/lib/translation-service";
 export const GET = withAuth(
   async (req, context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
       const customerAccountId = getCustomerAccountId(session);
       const { searchParams } = new URL(req.url);
       const tab = searchParams.get("tab") || "register";

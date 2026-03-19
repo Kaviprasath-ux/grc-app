@@ -11,7 +11,7 @@ export const GET = withAuth<RouteContext>(
   async (_req, context, session) => {
     try {
       const { id: vendorId } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       // Verify vendor exists and belongs to this tenant
       const vendor = await prisma.tPRMVendor.findFirst({

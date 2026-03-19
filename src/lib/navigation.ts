@@ -76,6 +76,12 @@ export const navigation: NavItem[] = [
     permission: "grc.customer-accounts:view",
     children: [
       {
+        name: "GRC Administration",
+        href: "/grc",
+        icon: LayoutDashboard,
+        permission: "grc.customer-accounts:view",
+      },
+      {
         name: "Customer Accounts",
         href: "/grc/customer-accounts",
         icon: UserPlus,

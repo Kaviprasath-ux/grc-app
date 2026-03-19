@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw, PanelLeftClose, PanelLeftOpen, MessageCircleQuestion, Palette } from "lucide-react";
+import { Bell, Menu, ChevronDown, LogOut, User, Calendar, Clock, ChevronLeft, Globe, Check, AlertTriangle, CheckCircle, Info, MessageSquare, RotateCcw, PanelLeftClose, PanelLeftOpen, MessageCircleQuestion, Palette, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,6 +35,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const dateFnsLocales: Record<string, typeof enUS> = { en: enUS, ar, lv };
 
@@ -76,6 +85,15 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
   const { locale, setLocale, t, locales, localeNames, localeFlags } = useLanguage();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileData, setProfileData] = useState({ fullName: "", email: "", designation: "", department: "", company: "" });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const { toast } = useToast();
   const dateFnsLocale = dateFnsLocales[locale] || enUS;
 
   // Theme (only for CustomerAdministrator)
@@ -123,6 +141,58 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  // Profile modal handlers
+  const openProfileModal = async () => {
+    setShowProfileModal(true);
+    setShowChangePassword(false);
+    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setProfileLoading(true);
+    try {
+      const res = await fetch("/api/users/me");
+      if (res.ok) {
+        const data = await res.json();
+        setProfileData({
+          fullName: data.fullName || "",
+          email: data.email || "",
+          designation: data.designation || "",
+          department: data.department?.name || "",
+          company: data.customerAccount?.name || "",
+        });
+      }
+    } catch { /* ignore */ } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    setProfileSaving(true);
+    try {
+      const payload: Record<string, string> = { fullName: profileData.fullName, email: profileData.email };
+      if (showChangePassword && passwordData.newPassword) {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+          toast({ title: t("Passwords do not match"), variant: "destructive" });
+          setProfileSaving(false);
+          return;
+        }
+        payload.currentPassword = passwordData.currentPassword;
+        payload.newPassword = passwordData.newPassword;
+      }
+      const res = await fetch("/api/users/me", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (res.ok) {
+        toast({ title: t("Profile updated successfully") });
+        setShowProfileModal(false);
+        setShowChangePassword(false);
+      } else {
+        const err = await res.json();
+        toast({ title: err.error || t("Failed to update profile"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Failed to update profile"), variant: "destructive" });
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   // Handle notification click
@@ -435,7 +505,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="py-2.5 cursor-pointer">
+            <DropdownMenuItem className="py-2.5 cursor-pointer" onClick={openProfileModal}>
               <User className="me-3 h-4 w-4 text-slate-500" />
               <span className="text-sm">{t("Profile")}</span>
             </DropdownMenuItem>
@@ -449,10 +519,6 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
                   </span>
                 )}
               </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="py-2.5 cursor-pointer">
-              <Settings className="me-3 h-4 w-4 text-slate-500" />
-              <span className="text-sm">{t("Settings")}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -486,6 +552,119 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Profile Modal */}
+      <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Profile")}</DialogTitle>
+          </DialogHeader>
+          {profileLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {/* Avatar */}
+              <div className="flex justify-center">
+                <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-2xl font-bold border-4 border-primary-100">
+                  {profileData.fullName ? getInitials(profileData.fullName) : "U"}
+                </div>
+              </div>
+
+              {/* Full Name */}
+              <div className="space-y-1.5">
+                <Label>{t("Full Name")}</Label>
+                <Input value={profileData.fullName} onChange={(e) => setProfileData(p => ({ ...p, fullName: e.target.value }))} />
+              </div>
+
+              {/* Email */}
+              <div className="space-y-1.5">
+                <Label>{t("Email")}</Label>
+                <Input value={profileData.email} onChange={(e) => setProfileData(p => ({ ...p, email: e.target.value }))} />
+              </div>
+
+              {/* Company (read-only) */}
+              {profileData.company && (
+                <div className="space-y-1.5">
+                  <Label>{t("Company Name")}</Label>
+                  <Input value={profileData.company} disabled className="bg-slate-50" />
+                </div>
+              )}
+
+              {/* Department (read-only) */}
+              {profileData.department && (
+                <div className="space-y-1.5">
+                  <Label>{t("Department")}</Label>
+                  <Input value={profileData.department} disabled className="bg-slate-50" />
+                </div>
+              )}
+
+              {/* Designation (read-only) */}
+              {profileData.designation && (
+                <div className="space-y-1.5">
+                  <Label>{t("Designation")}</Label>
+                  <Input value={profileData.designation} disabled className="bg-slate-50" />
+                </div>
+              )}
+
+              {/* Change Password Toggle */}
+              {!showChangePassword ? (
+                <Button variant="outline" size="sm" className="text-primary-600 border-primary-200" onClick={() => setShowChangePassword(true)}>
+                  {t("Change Password")}
+                </Button>
+              ) : (
+                <div className="space-y-3 border rounded-lg p-4 bg-slate-50">
+                  <h4 className="text-sm font-semibold">{t("Change Password")}</h4>
+                  <div className="space-y-1.5">
+                    <Label>{t("Current Password")}</Label>
+                    <div className="relative">
+                      <Input
+                        type={showCurrentPw ? "text" : "password"}
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData(p => ({ ...p, currentPassword: e.target.value }))}
+                      />
+                      <button type="button" className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" onClick={() => setShowCurrentPw(!showCurrentPw)}>
+                        {showCurrentPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("New Password")}</Label>
+                    <div className="relative">
+                      <Input
+                        type={showNewPw ? "text" : "password"}
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData(p => ({ ...p, newPassword: e.target.value }))}
+                      />
+                      <button type="button" className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" onClick={() => setShowNewPw(!showNewPw)}>
+                        {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t("Confirm Password")}</Label>
+                    <Input
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData(p => ({ ...p, confirmPassword: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setShowProfileModal(false)}>{t("Close")}</Button>
+                <Button onClick={handleUpdateProfile} disabled={profileSaving} className="bg-primary-600 hover:bg-primary-700 text-white">
+                  {profileSaving && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+                  {t("Update Profile")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

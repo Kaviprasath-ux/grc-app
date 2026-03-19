@@ -8,7 +8,7 @@ export const GET = withAuth(
     try {
       const { searchParams } = new URL(req.url);
       const tab = searchParams.get("tab") || "register";
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
       const customerAccountId = getCustomerAccountId(session);
 
       // ==================== FLAT LIST (for dashboard charts) ====================

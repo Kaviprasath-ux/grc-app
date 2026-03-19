@@ -14,7 +14,56 @@ import {
   Home,
   ChevronRight,
   ChevronDown,
+  Search,
 } from "lucide-react";
+
+interface FAQItem { question: string; answer: string; category: string; }
+
+const RM_FAQS: FAQItem[] = [
+  // Getting Started
+  { category: "Getting Started", question: "What is the role of a Relationship Manager (RM) in TPRM?", answer: "The Relationship Manager acts as the liaison between the Business Owner and the TPRM team. RMs can onboard vendors, initiate assessments, manage contracts, handle issue remediation by routing issues to appropriate stakeholders (BO, IT, or back to vendor), and monitor vendor security posture." },
+  { category: "Getting Started", question: "What menus are available for a Relationship Manager?", answer: "As an RM, you have access to: Dashboard (vendor criticality and assessment status), Vendor Inventory (onboard and manage vendors), Assessments (track ongoing, completed, and offboard assessments), Issue Management (issue register and remediation), Contracts (manage and renew vendor contracts), Monitoring (continuous vendor security monitoring), and Support." },
+  { category: "Getting Started", question: "How do I navigate the RM Dashboard?", answer: "The RM Dashboard provides two main visual charts: Vendor Criticality (distribution of vendors across VRR levels — Critical, High, Moderate, Low, Nominal) and Assessment Status (tracks the progress of ongoing assessments). Click on chart elements to drill down for details." },
+  { category: "Getting Started", question: "How is the RM role different from the Business Owner (BO)?", answer: "The RM has similar access to the BO but cannot manage users (create/edit RMs). The RM acts as a liaison between the business side and the TPRM team, handling day-to-day vendor management tasks delegated by the BO. The BO retains final approval authority for offboarding and vendor termination decisions." },
+
+  // Vendor Onboarding
+  { category: "Vendor Onboarding", question: "How do I onboard a new vendor?", answer: "Go to Vendor Inventory, click 'Onboard New Vendor'. Fill in Vendor Name, Engagements, Service Description, and Contact Number. Select or create an Account Manager (AM). Choose the Service Category and fill in additional fields. Then respond to the Onboarding Questions — the VRR will be calculated and questionnaires recommended for assessment." },
+  { category: "Vendor Onboarding", question: "What is a Vendor Risk Rating (VRR)?", answer: "The VRR is an automatically calculated risk classification based on onboarding questionnaire responses and assessment results. VRR levels are: Critical, High, Moderate, Low, and Nominal. The VRR determines assessment cadence (how often periodic assessments are triggered) and remediation periods for identified issues." },
+  { category: "Vendor Onboarding", question: "Can I import vendors in bulk?", answer: "Yes, you can bulk import vendors using a CSV file. Go to Vendor Inventory, click the Import button, download the template first, fill in vendor details in the template format, then upload the completed file. The system will validate and create vendor records for each row." },
+  { category: "Vendor Onboarding", question: "What happens after vendor onboarding?", answer: "After onboarding, the vendor status changes to 'Onboarded'. If you clicked 'Initiate Assessment' during onboarding, an assessment request is sent to the Account Manager (AM) to respond to the questionnaire. The assessment then follows the review cycle: AM responds → Assessor reviews → Approver approves → Risk rating finalized." },
+  { category: "Vendor Onboarding", question: "How do I create an Account Manager (AM) during onboarding?", answer: "During vendor onboarding, if the AM is not already listed, you can fill in the AM's name and email address directly in the onboarding form. The system will create the AM account and associate it with the vendor." },
+
+  // Assessments
+  { category: "Assessments", question: "What types of assessments are available?", answer: "There are four types: (1) Onboarding/Due Diligence Assessment — initiated during vendor onboarding. (2) On-Demand Assessment — initiated any time for existing vendors with active contracts. (3) Periodic Assessment — automatically triggered based on VRR cadence configuration. (4) Offboard Assessment — initiated during vendor offboarding or 30 days before contract expiry." },
+  { category: "Assessments", question: "How do I initiate an On-Demand assessment?", answer: "Go to Vendor Inventory, select the existing vendor engagement, and click 'Initiate Assessment'. Choose the questionnaire template(s) to include. The assessment request will be submitted to the Assessor for further processing." },
+  { category: "Assessments", question: "How are Periodic Assessments scheduled?", answer: "Periodic assessments are automatically scheduled based on VRR cadence configuration set by the administrator. Typical cadences: Critical — every 1 month, High — every 3 months, Moderate — every 6 months, Low — every 24 months, Nominal — every 36 months. If an On-Demand assessment occurs before a scheduled periodic one, the next periodic is rescheduled." },
+  { category: "Assessments", question: "What do the assessment statuses mean?", answer: "Draft — created but not sent. Awaiting Response — sent to vendor. Submitted — vendor has responded. In Progress — assessor reviewing. Returned — sent back to vendor for more info. Reviewed — assessor completed review. Approved — approver approved. Completed — fully done with risk rating calculated." },
+  { category: "Assessments", question: "How do I track assessment progress?", answer: "Use the Assessments menu which organizes assessments into: Ongoing Assessments (currently in progress), Completed Assessments (finished with final risk ratings), and Offboard Assessments (related to vendor offboarding). Each assessment shows its current status, vendor name, and dates." },
+
+  // Issue Management
+  { category: "Issue Management", question: "How does issue remediation work for an RM?", answer: "After an assessment is completed, the Approver generates a report listing identified issues. These appear in your Issue Management section. As RM, you act as liaison: you can reject issues back to the vendor, assign issues to IT for remediation, or escalate issues to the BO for risk acceptance or vendor termination decisions." },
+  { category: "Issue Management", question: "What are the issue tabs in Issue Management?", answer: "Issue Management has multiple tabs: Open Issues — issues assigned by the Assessor to the RM. Assigned to IT — issues forwarded to the internal IT team. Assigned to BO — issues escalated to the Business Owner for decisions. Issue Register — overview of all issues across all vendors." },
+  { category: "Issue Management", question: "What are the issue severity levels?", answer: "Issues are classified as High, Medium, or Low severity. High severity issues require urgent remediation within the shortest timeframe. The remediation deadline is automatically calculated based on the vendor's VRR and severity level, as configured in the Control Center by the administrator." },
+  { category: "Issue Management", question: "Can I reject an issue back to the vendor?", answer: "Yes. From the Open Issues tab, you can reject issues which sends them back to the vendor (Account Manager) for further action or remediation. The vendor will then need to address the issue and respond." },
+
+  // Contracts
+  { category: "Contracts", question: "How do I manage vendor contracts?", answer: "The Contracts menu shows 'All Vendor Contracts' for active contracts and 'Expiring Contracts' for those with less than 30 days to expiry. You can view contract details, track expiry dates, and initiate renewal or offboarding processes." },
+  { category: "Contracts", question: "How do I renew an expiring contract?", answer: "Contracts with less than 30 days to expiry appear in the Expiring Contracts section. Click 'Renew Contract' and a scope change check will be performed. If no scope changes, extend by adding a new date. If scope changes exist, a new engagement is created for due diligence. Contracts are automatically terminated if no action is taken before expiry." },
+  { category: "Contracts", question: "When should a contract be added?", answer: "Contracts should be added only after the assessment is completed and approved. You will receive a notification when the assessment is done. Go to Vendor Inventory, select the vendor engagement, and click 'Add Contract' to upload the signed contract." },
+  { category: "Contracts", question: "Can I request deletion of a contract?", answer: "Contract deletion requires a formal request process for audit trail purposes. You can submit a contract deletion request, which will be reviewed and approved by the administrator before the contract document is removed." },
+
+  // Offboarding
+  { category: "Offboarding", question: "How do I initiate vendor offboarding?", answer: "Vendor offboarding is done through an Offboarding Assessment. As an RM, you can initiate it during the due diligence stage or when a contract is expiring. The vendor responds to the offboard questionnaire, the Assessor reviews it, then you approve, and finally the BO gives final approval." },
+  { category: "Offboarding", question: "What is the offboarding approval chain?", answer: "Offboarding follows a multi-step process: (1) Account Manager fills the offboard questionnaire, (2) Assessor reviews responses, (3) Relationship Manager approves, (4) Business Owner gives final approval. The vendor is only marked as 'Offboarded' after all steps complete." },
+
+  // Monitoring
+  { category: "Monitoring", question: "What is Continuous Monitoring?", answer: "Continuous Monitoring provides ongoing security assessment of vendors between formal assessments. It tracks KPI metrics including Network Security, DNS Health, Patching, IP Reputation, Email Security, SSL/TLS, Privacy, and Breach Information. The system generates an overall security posture score." },
+  { category: "Monitoring", question: "How do I view monitoring results?", answer: "Go to the Monitoring menu to see the list of vendors being monitored. Click on any vendor to view their security posture score, threat exposure details, KPI breakdowns, and any vulnerabilities detected. You can also trigger manual scans from this page." },
+
+  // Reports
+  { category: "Reports", question: "What reports are available?", answer: "The Reports section provides assessment reports for completed assessments, vendor risk summaries, issue remediation status, and trend analysis. Reports can be viewed on-screen or downloaded for offline review." },
+  { category: "Reports", question: "How do I access a specific assessment report?", answer: "Go to Vendor Inventory, select the vendor engagement, and navigate to the Report Library. Assessment reports for all completed assessments are stored here. You can also access reports from the Assessments menu under Completed Assessments." },
+];
 
 interface SubItem {
   id: string;
@@ -253,6 +302,9 @@ export default function RMSupportPage() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({ "process-flows": true });
   const [selectedId, setSelectedId] = useState<string | null>("process-flows");
 
+  const [expandedFaqs, setExpandedFaqs] = useState<Set<number>>(new Set());
+  const [faqSearch, setFaqSearch] = useState("");
+
   const [contactName, setContactName] = useState(session?.user?.name || "");
   const [contactPhone, setContactPhone] = useState("");
   const [contactCompany, setContactCompany] = useState(session?.user?.customerAccountName || "");
@@ -263,6 +315,21 @@ export default function RMSupportPage() {
     setExpandedSections((prev) => ({ ...prev, [sectionId]: isOpening }));
     if (isOpening) setSelectedId(sectionId);
   };
+
+  const toggleFaq = (index: number) => {
+    setExpandedFaqs((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const filteredFaqs = faqSearch.trim()
+    ? RM_FAQS.filter(f => f.question.toLowerCase().includes(faqSearch.toLowerCase()) || f.answer.toLowerCase().includes(faqSearch.toLowerCase()) || f.category.toLowerCase().includes(faqSearch.toLowerCase()))
+    : RM_FAQS;
+
+  const faqCategories = [...new Set(filteredFaqs.map(f => f.category))];
 
   const [sending, setSending] = useState(false);
 
@@ -352,7 +419,51 @@ export default function RMSupportPage() {
         </TabsContent>
 
         <TabsContent value="faqs">
-          <Card><CardContent className="p-6"><h2 className="text-lg font-semibold">{t("Frequently Asked Questions")}</h2></CardContent></Card>
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold">{t("Frequently Asked Questions")}</h2>
+                <div className="relative w-72">
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder={t("Search FAQs...")}
+                    value={faqSearch}
+                    onChange={(e) => { setFaqSearch(e.target.value); setExpandedFaqs(new Set()); }}
+                    className="ltr:pl-9 rtl:pr-9"
+                  />
+                </div>
+              </div>
+              {faqCategories.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">{t("No FAQs match your search.")}</p>
+              ) : (
+                faqCategories.map((category) => {
+                  const categoryFaqs = filteredFaqs.filter(f => f.category === category);
+                  return (
+                    <div key={category} className="space-y-2">
+                      <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{t(category)}</h3>
+                      {categoryFaqs.map((faq) => {
+                        const globalIndex = RM_FAQS.indexOf(faq);
+                        return (
+                          <div key={globalIndex} className="border rounded-lg bg-white">
+                            <button
+                              onClick={() => toggleFaq(globalIndex)}
+                              className="w-full flex items-center justify-between px-4 py-3 ltr:text-left rtl:text-right hover:bg-muted/30 transition-colors"
+                            >
+                              <span className="font-medium text-sm">{t(faq.question)}</span>
+                              <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expandedFaqs.has(globalIndex) ? "rotate-0" : "-rotate-90"}`} />
+                            </button>
+                            {expandedFaqs.has(globalIndex) && (
+                              <div className="border-t px-4 py-3 text-sm text-muted-foreground leading-relaxed">{t(faq.answer)}</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="contact-us">

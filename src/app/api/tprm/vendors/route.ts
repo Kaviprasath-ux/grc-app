@@ -16,7 +16,7 @@ export const GET = withAuth(
       const offset = parseInt(searchParams.get("offset") || "0");
       const mode = searchParams.get("mode"); // "suggest" for vendor name autocomplete, "engagements" for listing engagements by name
 
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       // Mode: suggest — return distinct vendor names + URL matching search (global across all customers)
       if (mode === "suggest" && search) {

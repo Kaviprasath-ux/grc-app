@@ -12,7 +12,7 @@ export const DELETE = withAuth<RouteContext>(
   async (req: NextRequest, context, session) => {
     try {
       const { id, docId } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       const vendor = await prisma.tPRMVendor.findFirst({
         where: { id, ...tenantFilter },

@@ -21,7 +21,7 @@ const ASSESSMENT_STATUSES = ["Initiated", "In Progress", "Completed"] as const;
 export const GET = withAuth(
   async (req, _context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       // Dataview microflow (image 24):
       // Retrieve list of Assessment → check if non-empty → IsEnable

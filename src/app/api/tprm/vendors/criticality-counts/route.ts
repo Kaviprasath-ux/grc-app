@@ -48,7 +48,7 @@ function resolveVrrLevel(vrr: string | null): VrrLevel | null {
 export const GET = withAuth(
   async (req, _context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       // Fetch all vendors' vrr values for this tenant
       const vendors = await prisma.tPRMVendor.findMany({

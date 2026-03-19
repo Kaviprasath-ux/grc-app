@@ -17,7 +17,7 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get("limit") || "50");
       const offset = parseInt(searchParams.get("offset") || "0");
 
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       const where: Record<string, unknown> = {
         ...tenantFilter,

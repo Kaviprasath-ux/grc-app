@@ -13,7 +13,7 @@ export const GET = withAuth<RouteContext>(
   async (req, context, session) => {
     try {
       const { id } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       const vendor = await prisma.tPRMVendor.findFirst({
         where: { id, ...tenantFilter },
@@ -50,7 +50,7 @@ export const PATCH = withAuth<RouteContext>(
   async (req, context, session) => {
     try {
       const { id } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
       const body = await req.json();
 
       const existing = await prisma.tPRMVendor.findFirst({
@@ -212,7 +212,7 @@ export const DELETE = withAuth<RouteContext>(
   async (req, context, session) => {
     try {
       const { id } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       const existing = await prisma.tPRMVendor.findFirst({
         where: { id, ...tenantFilter },

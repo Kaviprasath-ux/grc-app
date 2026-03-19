@@ -87,7 +87,7 @@ async function recalcAssessmentScores(
 export const GET = withAuth(
   async (req, _context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
       const customerAccountId = getCustomerAccountId(session);
       const { searchParams } = new URL(req.url);
       const search = searchParams.get("search") || "";

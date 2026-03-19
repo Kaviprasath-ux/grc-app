@@ -15,21 +15,30 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get("limit") || "50");
       const offset = parseInt(searchParams.get("offset") || "0");
 
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       const where: Record<string, unknown> = { ...tenantFilter };
+      const isGRCAdmin = session.roles.includes('GRCAdministrator');
 
       // Tab-specific filters
       switch (tab) {
         case "unassigned":
           // Submitted assessments with no assessor assigned (ready for assessor to claim)
           where.assessorId = null;
-          where.status = "Submitted";
+          // GRCAdmin sees all pending assessments (including Awaiting_Response)
+          where.status = isGRCAdmin
+            ? { in: ["Submitted", "Awaiting_Response", "Draft"] }
+            : "Submitted";
           break;
         case "my-queue":
-          // Assessments assigned to current user (as assessor) that are in active states
-          where.assessorId = session.id;
-          where.status = { in: ["Draft", "In Progress", "Submitted", "Under Review"] };
+          if (isGRCAdmin) {
+            // GRCAdmin sees all active assessments across all assessors
+            where.status = { in: ["Draft", "In Progress", "Submitted", "Under Review", "Awaiting_Response"] };
+          } else {
+            // Assessments assigned to current user (as assessor) that are in active states
+            where.assessorId = session.id;
+            where.status = { in: ["Draft", "In Progress", "Submitted", "Under Review"] };
+          }
           break;
         case "reassessment":
           // Completed assessments that can be reassessed

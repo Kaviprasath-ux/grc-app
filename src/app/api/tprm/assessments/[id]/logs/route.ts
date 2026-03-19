@@ -11,7 +11,7 @@ export const GET = withAuth<RouteContext>(
   async (req, context, session) => {
     try {
       const { id } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       // Verify assessment belongs to tenant
       const assessment = await prisma.tPRMAssessment.findFirst({

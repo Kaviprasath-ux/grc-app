@@ -11,7 +11,7 @@ export const GET = withAuth(
   async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
       console.log(`[ASR] GET /asr-assessments/${id} — user=${session.email}`);
 
       const assessment = await prisma.tPRMAssessment.findFirst({

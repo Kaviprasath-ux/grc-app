@@ -6,7 +6,7 @@ import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth"
 export const GET = withAuth(
   async (_req, _context, session) => {
     try {
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       // 1. Assessment Progress — count by status (Initiated, In Progress, Completed)
       const assessmentStatusCounts = await prisma.tPRMAssessment.groupBy({

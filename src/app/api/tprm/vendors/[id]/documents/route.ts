@@ -13,7 +13,7 @@ export const GET = withAuth<RouteContext>(
   async (req, context, session) => {
     try {
       const { id } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
       const vendor = await prisma.tPRMVendor.findFirst({
         where: { id, ...tenantFilter },
@@ -50,7 +50,7 @@ export const POST = withAuth<RouteContext>(
   async (req: NextRequest, context, session) => {
     try {
       const { id } = await context.params;
-      const tenantFilter = getTenantFilter(session);
+      const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
       const customerAccountId = getCustomerAccountId(session);
 
       const vendor = await prisma.tPRMVendor.findFirst({
