@@ -134,7 +134,7 @@ export default function CAPATrackingPage() {
 
   // Filters
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
-  const [engagementStatusFilter, setEngagementStatusFilter] = useState<string>("Completed");
+  const [engagementStatusFilter, setEngagementStatusFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Delete dialog

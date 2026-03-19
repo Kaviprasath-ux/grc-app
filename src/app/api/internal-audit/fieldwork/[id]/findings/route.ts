@@ -123,6 +123,14 @@ export const POST = withAuth(
         );
       }
 
+      // Validate required fields
+      if (!body.responsiblePersonId) {
+        return NextResponse.json(
+          { error: 'Responsible person is required' },
+          { status: 400 }
+        );
+      }
+
       // Generate finding ID - scoped to customer account
       const findingId = await generateFindingId(customerAccountId);
 

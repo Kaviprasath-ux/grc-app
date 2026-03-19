@@ -30,7 +30,7 @@ export const GET = withAuth(
       const isAuditor = userRoles.includes('Auditor');
       const hasAuditRole = isAuditHead || isAuditor;
 
-      // If user is only an Auditee, filter to show only engagements where they have evidence requests
+      // If user is only an Auditee, filter to show engagements assigned to them
       if (isAuditee && !hasAuditRole) {
         const userId = session.id;
         console.log('[ENGAGEMENTS API] Auditee user filtering - userId:', userId);
@@ -42,23 +42,34 @@ export const GET = withAuth(
           },
           select: {
             engagementId: true,
-            auditeeId: true,
-            auditeeName: true,
           },
           distinct: ['engagementId'],
         });
 
-        console.log('[ENGAGEMENTS API] Found evidence requests for auditee:', engagementsWithUserRequests);
+        const evidenceEngagementIds = engagementsWithUserRequests.map(er => er.engagementId);
 
-        const engagementIds = engagementsWithUserRequests.map(er => er.engagementId);
+        // Also include engagements where this user is the assigned auditee at engagement level
+        const directlyAssignedEngagements = await prisma.auditEngagement.findMany({
+          where: {
+            ...tenantFilter,
+            auditeeId: userId,
+          },
+          select: { id: true },
+        });
 
-        if (engagementIds.length === 0) {
-          // No engagements for this auditee
+        const directEngagementIds = directlyAssignedEngagements.map(e => e.id);
+
+        // Combine both sets of engagement IDs (deduplicated)
+        const allEngagementIds = [...new Set([...evidenceEngagementIds, ...directEngagementIds])];
+
+        console.log('[ENGAGEMENTS API] Auditee engagements - evidence:', evidenceEngagementIds.length, 'direct:', directEngagementIds.length, 'total:', allEngagementIds.length);
+
+        if (allEngagementIds.length === 0) {
           console.log('[ENGAGEMENTS API] No engagements found for auditee');
           return NextResponse.json([]);
         }
 
-        whereClause.id = { in: engagementIds };
+        whereClause.id = { in: allEngagementIds };
       }
 
       if (departmentId && departmentId !== 'all') {

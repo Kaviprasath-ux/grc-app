@@ -101,3 +101,6 @@ uploads/
 
 .env*.local
 inline-validation-changes.patch
+
+# Screenshots
+*.png

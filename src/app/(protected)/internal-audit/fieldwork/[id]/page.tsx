@@ -1988,7 +1988,7 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setWorkpapersOpen(!workpapersOpen)}
       >
         <div className="space-y-4">
-          {isAuditHead && (
+          {isAuditTeam && (
             <div className="flex ltr:justify-end rtl:justify-start">
               <Button
                 size="sm"
@@ -2041,7 +2041,7 @@ export default function FieldworkDetailsPage() {
                     >
                       <Download className="h-5 w-5 text-slate-600" />
                     </Button>
-                    {isAuditHead && (
+                    {isAuditTeam && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -2074,7 +2074,7 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setAiWorkpapersOpen(!aiWorkpapersOpen)}
       >
         <div className="space-y-4">
-          {isAuditHead && (
+          {isAuditTeam && (
             <div className="flex ltr:justify-end rtl:justify-start">
               <Button
                 size="sm"
@@ -2105,7 +2105,7 @@ export default function FieldworkDetailsPage() {
                   <TableHead className="text-slate-700 font-semibold w-[250px]">{t("Steps")}</TableHead>
                   <TableHead className="text-slate-700 font-semibold w-[120px]">{t("Question Checklist")}</TableHead>
                   <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Comments")}</TableHead>
-                  {isAuditHead && (
+                  {isAuditTeam && (
                     <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Action")}</TableHead>
                   )}
                 </TableRow>
@@ -2170,7 +2170,7 @@ export default function FieldworkDetailsPage() {
                     <TableCell className="align-top py-4 text-center">
                       {wp.comments || "-"}
                     </TableCell>
-                    {isAuditHead && (
+                    {isAuditTeam && (
                       <TableCell className="align-top py-4">
                         <div className="flex items-center gap-1">
                           <Button
@@ -2240,7 +2240,7 @@ export default function FieldworkDetailsPage() {
                   <TableHead className="text-xs font-semibold text-slate-600 w-[200px]">{t("Document")}</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-600 w-[100px] text-center">{t("Executed")}</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-600">{t("Comments")}</TableHead>
-                  {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[100px]">{t("Action")}</TableHead>}
+                  {isAuditTeam && <TableHead className="text-xs font-semibold text-slate-600 w-[100px]">{t("Action")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -2338,7 +2338,7 @@ export default function FieldworkDetailsPage() {
                           className="border-slate-300"
                         />
                       </TableCell>
-                      {isAuditHead && (
+                      {isAuditTeam && (
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Button
@@ -2370,7 +2370,7 @@ export default function FieldworkDetailsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={isAuditHead ? 6 : 5} className="text-center py-8 text-slate-500">
+                    <TableCell colSpan={isAuditTeam ? 6 : 5} className="text-center py-8 text-slate-500">
                       {t("No tasks found. Click \"Add Task\" to create one.")}
                     </TableCell>
                   </TableRow>
@@ -2393,7 +2393,7 @@ export default function FieldworkDetailsPage() {
           {!isAuditeeOnly && (
             <div className="flex justify-between items-center">
               <div>
-                {isAuditHead && selectedEvidenceIds.length > 0 && (
+                {isAuditTeam && selectedEvidenceIds.length > 0 && (
                   <Button
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-700"
@@ -2414,7 +2414,7 @@ export default function FieldworkDetailsPage() {
                   </Button>
                 )}
               </div>
-              {isAuditHead && (
+              {isAuditTeam && (
                 <Button
                   size="sm"
                   onClick={() => setAddEvidenceDialogOpen(true)}
@@ -2557,7 +2557,7 @@ export default function FieldworkDetailsPage() {
                 <Table>
                 <TableHeader>
                   <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                    {isAuditHead && (
+                    {isAuditTeam && (
                       <TableHead className="text-xs font-semibold text-slate-600 w-[50px]">
                         <Checkbox
                           checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0}
@@ -2578,7 +2578,7 @@ export default function FieldworkDetailsPage() {
                 <TableBody>
                   {filteredEvidenceRequests.map((er) => (
                     <TableRow key={er.id} className="hover:bg-slate-50">
-                      {isAuditHead && (
+                      {isAuditTeam && (
                         <TableCell>
                           <Checkbox
                             checked={selectedEvidenceIds.includes(er.id)}
@@ -2632,7 +2632,7 @@ export default function FieldworkDetailsPage() {
                             <Eye className="h-4 w-4 text-slate-600" />
                           </Button>
                           {/* Auditees can upload attachments to their own evidence requests */}
-                          {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && (
+                          {(isAuditTeam || (isAuditee && er.auditeeId === currentUserId)) && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -2642,8 +2642,8 @@ export default function FieldworkDetailsPage() {
                               <Upload className="h-4 w-4 text-green-600" />
                             </Button>
                           )}
-                          {/* Only Audit Heads can edit and delete */}
-                          {isAuditHead && (
+                          {/* Audit team (AuditHead + Auditor) can edit and delete */}
+                          {isAuditTeam && (
                             <>
                               <Button
                                 variant="ghost"
@@ -2742,7 +2742,7 @@ export default function FieldworkDetailsPage() {
                           >
                             <Eye className="h-4 w-4 text-slate-600" />
                           </Button>
-                          {isAuditHead && (
+                          {isAuditTeam && (
                             <>
                               <Button
                                 variant="ghost"
@@ -2854,7 +2854,7 @@ export default function FieldworkDetailsPage() {
                           >
                             <Eye className="h-4 w-4 text-slate-600" />
                           </Button>
-                          {isAuditHead && (
+                          {isAuditTeam && (
                             <>
                               <Button
                                 variant="ghost"
@@ -4317,8 +4317,8 @@ export default function FieldworkDetailsPage() {
               {isEditingEvidence ? t("Cancel") : t("Close")}
             </Button>
             <div className="flex gap-2">
-              {/* Approve/Need Clarification buttons for Audit Head when evidence has attachments */}
-              {!isEditingEvidence && isAuditHead && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
+              {/* Approve/Need Clarification buttons for Audit Team when evidence has attachments */}
+              {!isEditingEvidence && isAuditTeam && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
                 <>
                   <Button
                     variant="outline"

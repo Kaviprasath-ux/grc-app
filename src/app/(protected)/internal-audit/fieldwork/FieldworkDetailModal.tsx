@@ -261,6 +261,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [editFinding, setEditFinding] = useState({ findingTitle: "", severity: "", criteria: "", condition: "", cause: "", effect: "", recommendation: "", responsiblePersonId: "", status: "", targetClosureDate: "" });
   const [savingEditFinding, setSavingEditFinding] = useState(false);
   const [editFindingTitleError, setEditFindingTitleError] = useState("");
+  const [editFindingResponsibleError, setEditFindingResponsibleError] = useState("");
 
   // Other Documents states
   const [newDocumentDialogOpen, setNewDocumentDialogOpen] = useState(false);
@@ -352,6 +353,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
   const [generatedWorkpapersError, setGeneratedWorkpapersError] = useState("");
   const [findingTitleError, setFindingTitleError] = useState("");
   const [fullFindingTitleError, setFullFindingTitleError] = useState("");
+  const [fullFindingResponsibleError, setFullFindingResponsibleError] = useState("");
   const [newDocumentTitleError, setNewDocumentTitleError] = useState("");
   const [newDocumentFileError, setNewDocumentFileError] = useState("");
   const [editDocumentTitleError, setEditDocumentTitleError] = useState("");
@@ -366,12 +368,10 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       fetchEngagementDetails();
       fetchEvidenceRequests();
       fetchFindings();
-      if (!isAuditeeOnly) {
-        fetchWorkpapers();
-        fetchAIWorkpapers();
-        fetchTaskList();
-        fetchOtherDocuments();
-      }
+      fetchWorkpapers();
+      fetchAIWorkpapers();
+      fetchTaskList();
+      fetchOtherDocuments();
     }
     if (!open) {
       setEngagement(null);
@@ -388,7 +388,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   // Fetch auditees after engagement is loaded (to use department filter)
   useEffect(() => {
-    if (open && engagement && !isAuditeeOnly) {
+    if (open && engagement) {
       fetchAuditees();
     }
   }, [open, engagement?.id, isAuditeeOnly]);
@@ -630,6 +630,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     if (!fullFinding.findingTitle.trim()) { setFullFindingTitleError(t("Finding title is required")); return; }
     if (!isValidName(fullFinding.findingTitle.trim())) { setFullFindingTitleError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setFullFindingTitleError("");
+    if (!fullFinding.responsiblePersonId) { setFullFindingResponsibleError(t("Responsible person is required")); return; }
+    setFullFindingResponsibleError("");
     setSavingFullFinding(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: fullFinding.findingTitle, severity: fullFinding.severity || "Medium", criteria: fullFinding.criteria || null, condition: fullFinding.condition || null, cause: fullFinding.cause || null, effect: fullFinding.effect || null, recommendation: fullFinding.recommendation || null, responsiblePersonId: fullFinding.responsiblePersonId || null, status: fullFinding.status || "Open", targetDate: fullFinding.targetClosureDate || null }) });
@@ -661,6 +663,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
     if (!editFinding.findingTitle.trim()) { setEditFindingTitleError(t("Finding title is required")); return; }
     if (!isValidName(editFinding.findingTitle.trim())) { setEditFindingTitleError(t("Only letters, spaces, and hyphens are allowed")); return; }
     setEditFindingTitleError("");
+    if (!editFinding.responsiblePersonId) { setEditFindingResponsibleError(t("Responsible person is required")); return; }
+    setEditFindingResponsibleError("");
     setSavingEditFinding(true);
     try {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings/${selectedFindingId}`, {
@@ -1050,35 +1054,31 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                       {t("Overview")}
                     </TabsTrigger>
                     {!isAuditeeOnly && (
-                      <>
-                        <TabsTrigger
-                          value="workpapers"
-                          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                        >
-                          {t("Workpapers")}
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="tasks"
-                          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                        >
-                          {t("Tasks")}
-                        </TabsTrigger>
-                      </>
+                      <TabsTrigger
+                        value="workpapers"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                      >
+                        {t("Workpapers")}
+                      </TabsTrigger>
                     )}
+                    <TabsTrigger
+                      value="tasks"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                    >
+                      {t("Tasks")}
+                    </TabsTrigger>
                     <TabsTrigger
                       value="evidence"
                       className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
                     >
                       {t("Evidence")}
                     </TabsTrigger>
-                    {!isAuditeeOnly && (
-                      <TabsTrigger
-                        value="documents"
-                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                      >
-                        {t("Documents")}
-                      </TabsTrigger>
-                    )}
+                    <TabsTrigger
+                      value="documents"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                    >
+                      {t("Documents")}
+                    </TabsTrigger>
                     <TabsTrigger
                       value="findings"
                       className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary-600 data-[state=active]:bg-transparent data-[state=active]:text-primary-700 px-6 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
@@ -1145,7 +1145,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-slate-800">{t("Workpapers")}</h3>
-                            {isAuditHead && !isReadOnly && (
+                            {isAuditTeam && !isReadOnly && (
                               <Button size="sm" onClick={() => { setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); }}>
                                 {t("Upload Workpaper")}
                               </Button>
@@ -1174,7 +1174,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                           <div className="flex items-center gap-0.5">
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("View")} onClick={() => window.open(`/api${wp.filePath}`, "_blank")}><Eye className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Download")} onClick={() => { const link = document.createElement("a"); link.href = `/api${wp.filePath}`; link.download = wp.fileName; link.click(); }}><Download className="h-4 w-4" /></Button>
-                                            {isAuditHead && (
+                                            {isAuditTeam && (
                                               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setWorkpaperToDelete(wp); setDeleteWorkpaperDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button>
                                             )}
                                           </div>
@@ -1185,7 +1185,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                 </Table>
                               </div>
                               {/* Inline upload zone below table */}
-                              {isAuditHead && !isReadOnly && (
+                              {isAuditTeam && !isReadOnly && (
                                 <div
                                   className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all group ${isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-200 hover:border-primary-400 hover:bg-primary-50/30"}`}
                                   onClick={() => { setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); }}
@@ -1217,12 +1217,12 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                             </div>
                           ) : (
                             <div
-                              className={`border-2 border-dashed rounded-xl p-10 text-center transition-all ${isAuditHead && !isReadOnly ? (isDragOver ? "border-primary-500 bg-primary-50 cursor-pointer" : "cursor-pointer hover:border-primary-400 hover:bg-primary-50/30 border-slate-300") : "border-slate-200"}`}
-                              onClick={() => { if (isAuditHead && !isReadOnly) { setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); } }}
-                              onDragOver={(e) => { if (isAuditHead && !isReadOnly) { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); } }}
+                              className={`border-2 border-dashed rounded-xl p-10 text-center transition-all ${isAuditTeam && !isReadOnly ? (isDragOver ? "border-primary-500 bg-primary-50 cursor-pointer" : "cursor-pointer hover:border-primary-400 hover:bg-primary-50/30 border-slate-300") : "border-slate-200"}`}
+                              onClick={() => { if (isAuditTeam && !isReadOnly) { setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); } }}
+                              onDragOver={(e) => { if (isAuditTeam && !isReadOnly) { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); } }}
                               onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); }}
                               onDrop={(e) => {
-                                if (!isAuditHead || isReadOnly) return;
+                                if (!isAuditTeam || isReadOnly) return;
                                 e.preventDefault(); e.stopPropagation(); setIsDragOver(false);
                                 const files = Array.from(e.dataTransfer.files);
                                 if (files.length > 0) {
@@ -1239,7 +1239,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                               </div>
                               <p className="text-sm font-medium text-slate-600 mb-1">{t("No workpapers uploaded yet")}</p>
                               <p className="text-xs text-slate-400 mb-4">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
-                              {isAuditHead && !isReadOnly && (
+                              {isAuditTeam && !isReadOnly && (
                                 <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setUploadCategory("workpapers"); setUploadedFiles([]); setUploadDialogOpen(true); }}>
                                   <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                                   {t("Browse Files")}
@@ -1253,7 +1253,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                         <div className="space-y-4 pt-6 border-t border-slate-200">
                           <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-slate-800">{t("AI-Generated Workpapers")}</h3>
-                            {isAuditHead && (
+                            {isAuditTeam && (
                               <Button size="sm" onClick={() => { setGeneratedWorkpapers([]); setSelectedGeneratedIds([]); setGeneratedWorkpapersError(""); setGenerateAIDialogOpen(true); }} disabled={isReadOnly}>
                                 {t("Generate Workpaper with AI")}
                               </Button>
@@ -1269,7 +1269,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[250px]">{t("Steps")}</TableHead>
                                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[120px]">{t("Question Checklist")}</TableHead>
                                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[100px]">{t("Comments")}</TableHead>
-                                    {isAuditHead && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>}
+                                    {isAuditTeam && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>}
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1285,7 +1285,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                       <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.steps)}</div></TableCell>
                                       <TableCell className="align-top py-4"><div className="text-sm text-slate-700 space-y-1">{renderJsonList(wp.questionChecklist)}</div></TableCell>
                                       <TableCell className="align-top py-4 text-center">{wp.comments || "-"}</TableCell>
-                                      {isAuditHead && (
+                                      {isAuditTeam && (
                                         <TableCell className="align-top py-4 pe-5">
                                           <div className="flex items-center gap-0.5">
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Edit")} onClick={() => handleOpenEditAIWorkpaper(wp)} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button>
@@ -1311,12 +1311,11 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                       </TabsContent>
                     )}
 
-                    {/* Tab 3: Tasks - Hidden for auditees */}
-                    {!isAuditeeOnly && (
-                      <TabsContent value="tasks" className="mt-0 px-6 pt-6 space-y-4">
+                    {/* Tab 3: Tasks - Read-only for auditees */}
+                    <TabsContent value="tasks" className="mt-0 px-6 pt-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-semibold text-slate-800">{t("Audit Engagement Task List")}</h3>
-                          {!isReadOnly && (
+                          {!isReadOnly && !isAuditeeOnly && (
                             <Button size="sm" onClick={handleAddTask} disabled={addingTask}>
                               {addingTask ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : null}
                               {t("Add Task")}
@@ -1332,7 +1331,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[180px]">{t("Document")}</TableHead>
                                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[90px] text-center">{t("Executed")}</TableHead>
                                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Comments")}</TableHead>
-                                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>
+                                {!isAuditeeOnly && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[100px]">{t("Action")}</TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1347,7 +1346,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                       onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)}
                                       placeholder={t("Enter task description")}
                                       className="border-slate-300 text-sm"
-                                      readOnly={isReadOnly}
+                                      readOnly={isReadOnly || isAuditeeOnly}
                                     />
                                   </TableCell>
                                   <TableCell className="py-2">
@@ -1356,7 +1355,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                         <a href={`/api${task.document}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm truncate max-w-[100px]" title={task.documentName || t("Document")}>
                                           {task.documentName || t("View")}
                                         </a>
-                                        {!isReadOnly && (
+                                        {!isReadOnly && !isAuditeeOnly && (
                                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
                                             const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
                                             input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click();
@@ -1366,23 +1365,27 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                         )}
                                       </div>
                                     ) : (
-                                      <Button
-                                        variant="outline" size="sm" className="text-xs"
-                                        disabled={uploadingTaskDocument === task.id || isReadOnly}
-                                        onClick={() => {
-                                          const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
-                                          input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click();
-                                        }}
-                                      >
-                                        {uploadingTaskDocument === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Upload className="h-3 w-3 ltr:mr-1 rtl:ml-1" />{t("Upload")}</>}
-                                      </Button>
+                                      !isAuditeeOnly ? (
+                                        <Button
+                                          variant="outline" size="sm" className="text-xs"
+                                          disabled={uploadingTaskDocument === task.id || isReadOnly}
+                                          onClick={() => {
+                                            const input = document.createElement("input"); input.type = "file"; input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
+                                            input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) handleUploadTaskDocument(task.id, file); }; input.click();
+                                          }}
+                                        >
+                                          {uploadingTaskDocument === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Upload className="h-3 w-3 ltr:mr-1 rtl:ml-1" />{t("Upload")}</>}
+                                        </Button>
+                                      ) : (
+                                        <span className="text-sm text-slate-400">-</span>
+                                      )
                                     )}
                                   </TableCell>
                                   <TableCell className="py-2 text-center">
                                     <Checkbox
                                       checked={task.executed}
                                       onCheckedChange={(checked) => handleUpdateTask(task.id, "executed", checked === true)}
-                                      disabled={isReadOnly}
+                                      disabled={isReadOnly || isAuditeeOnly}
                                     />
                                   </TableCell>
                                   <TableCell className="py-2">
@@ -1391,9 +1394,10 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                       onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
                                       placeholder={t("Enter comments")}
                                       className="border-slate-300 text-sm"
-                                      readOnly={isReadOnly}
+                                      readOnly={isReadOnly || isAuditeeOnly}
                                     />
                                   </TableCell>
+                                  {!isAuditeeOnly && (
                                   <TableCell className="py-2 pe-5">
                                     {!isReadOnly && (
                                       <div className="flex items-center gap-1">
@@ -1406,15 +1410,16 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                       </div>
                                     )}
                                   </TableCell>
+                                  )}
                                 </TableRow>
                               )) : (
                                 <TableRow className="hover:bg-transparent">
-                                  <TableCell colSpan={6} className="py-16 text-center">
+                                  <TableCell colSpan={isAuditeeOnly ? 5 : 6} className="py-16 text-center">
                                     <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                                       <FileText className="h-6 w-6 text-primary-400" />
                                     </div>
                                     <p className="text-sm font-medium text-slate-600 mb-1">{t("No tasks yet")}</p>
-                                    <p className="text-xs text-slate-400">{t("Click \"Add Task\" to create one")}</p>
+                                    {!isAuditeeOnly && <p className="text-xs text-slate-400">{t("Click \"Add Task\" to create one")}</p>}
                                   </TableCell>
                                 </TableRow>
                               )}
@@ -1422,25 +1427,24 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                           </Table>
                         </div>
                       </TabsContent>
-                    )}
 
                     {/* Tab 4: Evidence Requests - Visible for all */}
                     <TabsContent value="evidence" className="mt-0 px-6 pt-6 space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-semibold text-slate-800">{t("Evidence Request")}</h3>
-                          {!isAuditeeOnly && isAuditHead && selectedEvidenceIds.length > 0 && (
+                          {!isAuditeeOnly && isAuditTeam && selectedEvidenceIds.length > 0 && (
                             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 ltr:ml-3 rtl:mr-3" onClick={handleAIReview} disabled={generatingAIReview || isReadOnly}>
                               {generatingAIReview ? t("Generating...") : `${t("AI Review")} (${selectedEvidenceIds.length})`}
                             </Button>
                           )}
-                          {!isAuditeeOnly && isAuditHead && selectedEvidenceIds.length === 0 && (
+                          {!isAuditeeOnly && isAuditTeam && selectedEvidenceIds.length === 0 && (
                             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 ltr:ml-3 rtl:mr-3" onClick={handleAIReview} disabled={generatingAIReview || isReadOnly}>
                               {generatingAIReview ? t("Generating...") : t("AI Review")}
                             </Button>
                           )}
                         </div>
-                        {!isAuditeeOnly && isAuditHead && (
+                        {!isAuditeeOnly && isAuditTeam && (
                           <Button size="sm" onClick={() => setAddEvidenceDialogOpen(true)} disabled={isReadOnly}>
                             {t("Add Evidence Request")}
                           </Button>
@@ -1498,7 +1502,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                             <Table>
                               <TableHeader>
                                 <TableRow className="border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                                  {isAuditHead && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 w-[50px]"><Checkbox checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0} onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)} /></TableHead>}
+                                  {isAuditTeam && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ps-5 w-[50px]"><Checkbox checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0} onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)} /></TableHead>}
                                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
                                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Description")}</TableHead>
                                   <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditee")}</TableHead>
@@ -1511,7 +1515,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                               <TableBody>
                                 {filteredEvidenceRequests.map((er) => (
                                   <TableRow key={er.id} className="hover:bg-slate-50">
-                                    {isAuditHead && <TableCell><Checkbox checked={selectedEvidenceIds.includes(er.id)} onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)} /></TableCell>}
+                                    {isAuditTeam && <TableCell><Checkbox checked={selectedEvidenceIds.includes(er.id)} onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)} /></TableCell>}
                                     <TableCell className="font-medium">{er.title}</TableCell>
                                     <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
                                     <TableCell>{er.auditee || "-"}</TableCell>
@@ -1525,8 +1529,8 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                     <TableCell className="pe-5">
                                       <div className="flex items-center gap-0.5">
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("View")} onClick={() => handleOpenViewEvidence(er, false)}><Eye className="h-4 w-4" /></Button>
-                                        {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)}><Upload className="h-4 w-4" /></Button>}
-                                        {isAuditHead && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Edit")} onClick={() => handleOpenViewEvidence(er, true)} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setEvidenceToDelete(er); setDeleteEvidenceDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
+                                        {(isAuditTeam || (isAuditee && er.auditeeId === currentUserId)) && <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Add Attachment")} onClick={() => handleOpenAttachmentDialog(er)}><Upload className="h-4 w-4" /></Button>}
+                                        {isAuditTeam && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Edit")} onClick={() => handleOpenViewEvidence(er, true)} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setEvidenceToDelete(er); setDeleteEvidenceDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
                                       </div>
                                     </TableCell>
                                   </TableRow>
@@ -1546,14 +1550,15 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                       )}
                     </TabsContent>
 
-                    {/* Tab 5: Other Documents - Hidden for auditees */}
-                    {!isAuditeeOnly && (
-                      <TabsContent value="documents" className="mt-0 px-6 pt-6 space-y-4">
+                    {/* Tab 5: Other Documents - Read-only for auditees */}
+                    <TabsContent value="documents" className="mt-0 px-6 pt-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-semibold text-slate-800">{t("Other Documents")}</h3>
-                          <Button size="sm" onClick={() => { setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentDialogOpen(true); }} disabled={isReadOnly}>
-                            {t("Upload Document")}
-                          </Button>
+                          {!isAuditeeOnly && (
+                            <Button size="sm" onClick={() => { setUploadedFiles([]); setNewDocument({ title: "", documentType: "", description: "" }); setNewDocumentDialogOpen(true); }} disabled={isReadOnly}>
+                              {t("Upload Document")}
+                            </Button>
+                          )}
                         </div>
                         {otherDocuments.length > 0 ? (
                           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -1579,7 +1584,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                     <TableCell className="py-3 pe-5">
                                       <div className="flex items-center gap-0.5">
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("View")} onClick={() => handleOpenViewDocument(doc, false)}><Eye className="h-4 w-4" /></Button>
-                                        {isAuditHead && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Edit")} onClick={() => handleOpenViewDocument(doc, true)} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setDocumentToDelete(doc); setDeleteDocumentDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
+                                        {isAuditTeam && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Edit")} onClick={() => handleOpenViewDocument(doc, true)} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" title={t("Delete")} onClick={() => { setDocumentToDelete(doc); setDeleteDocumentDialogOpen(true); }} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
                                       </div>
                                     </TableCell>
                                   </TableRow>
@@ -1597,7 +1602,6 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                           </div>
                         )}
                       </TabsContent>
-                    )}
 
                     {/* Tab 6: Findings - Visible for all */}
                     <TabsContent value="findings" className="mt-0 px-6 pt-6 space-y-4">
@@ -1633,7 +1637,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                                   <TableCell className="py-3 pe-5">
                                     <div className="flex items-center gap-0.5">
                                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("view"); fetchFindingDetails(finding.id); setFindingDetailDialogOpen(true); }} title={t("View")}><Eye className="h-4 w-4" /></Button>
-                                      {isAuditHead && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("edit"); fetchFindingDetails(finding.id, "edit"); setFindingDetailDialogOpen(true); }} title={t("Edit")} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setFindingToDelete(finding); setDeleteFindingDialogOpen(true); }} title={t("Delete")} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
+                                      {isAuditTeam && (<><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => { setSelectedFindingId(finding.id); setFindingDetailMode("edit"); fetchFindingDetails(finding.id, "edit"); setFindingDetailDialogOpen(true); }} title={t("Edit")} disabled={isReadOnly}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => { setFindingToDelete(finding); setDeleteFindingDialogOpen(true); }} title={t("Delete")} disabled={isReadOnly}><Trash2 className="h-4 w-4" /></Button></>)}
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -1995,12 +1999,14 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">{t("Responsible Person")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t("Responsible Person")} <span className="text-red-500">*</span>
+                  </Label>
                   <Select
                     value={fullFinding.responsiblePersonId}
-                    onValueChange={(value) => setFullFinding({ ...fullFinding, responsiblePersonId: value })}
+                    onValueChange={(value) => { setFullFinding({ ...fullFinding, responsiblePersonId: value }); setFullFindingResponsibleError(""); }}
                   >
-                    <SelectTrigger className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200">
+                    <SelectTrigger className={`w-full bg-white focus:border-primary-500 focus:ring-primary-200 ${fullFindingResponsibleError ? "border-red-500" : "border-slate-300"}`}>
                       <SelectValue placeholder={t("Select responsible person")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -2014,6 +2020,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                       ))}
                     </SelectContent>
                   </Select>
+                  {fullFindingResponsibleError && <p className="text-sm text-red-500 mt-1">{fullFindingResponsibleError}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -2437,7 +2444,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
           <div dir="ltr" className="flex-shrink-0 flex justify-between items-center px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" onClick={() => { setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); setIsEditingEvidence(false); setEditEvidenceTitleError(""); }}>{isEditingEvidence ? t("Cancel") : t("Close")}</Button>
             <div className="flex gap-3">
-              {!isEditingEvidence && isAuditHead && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
+              {!isEditingEvidence && isAuditTeam && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
                 <><Button variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-50" onClick={() => { if (selectedEvidence) handleOpenClarificationDialog(selectedEvidence); }}>{t("Need Clarification")}</Button><Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { if (selectedEvidence) { handleApproveEvidence(selectedEvidence.id); setViewEditEvidenceDialogOpen(false); setSelectedEvidence(null); } }}>{t("Approve")}</Button></>
               )}
               {isEditingEvidence && <Button onClick={handleUpdateEvidence} disabled={savingEvidence || isReadOnly}>{savingEvidence ? t("Saving...") : t("Save")}</Button>}
@@ -2648,15 +2655,16 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                   </div>
                   <div className="space-y-5">
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">{t("Responsible Person")}</Label>
-                      <Select value={editFinding.responsiblePersonId} onValueChange={(value) => setEditFinding({ ...editFinding, responsiblePersonId: value })}>
-                        <SelectTrigger className="w-full bg-white border-slate-300 focus:border-primary-500 focus:ring-primary-200"><SelectValue placeholder={t("Select responsible person")} /></SelectTrigger>
+                      <Label className="text-sm font-medium text-slate-700">{t("Responsible Person")} <span className="text-red-500">*</span></Label>
+                      <Select value={editFinding.responsiblePersonId} onValueChange={(value) => { setEditFinding({ ...editFinding, responsiblePersonId: value }); setEditFindingResponsibleError(""); }}>
+                        <SelectTrigger className={`w-full bg-white focus:border-primary-500 focus:ring-primary-200 ${editFindingResponsibleError ? "border-red-500" : "border-slate-300"}`}><SelectValue placeholder={t("Select responsible person")} /></SelectTrigger>
                         <SelectContent>
                           {auditees.map((user) => (
                             <SelectItem key={user.id} value={user.id}>{user.fullName}{user.department?.name && (<span className="text-slate-500 text-xs ml-2">({user.department.name})</span>)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {editFindingResponsibleError && <p className="text-sm text-red-500 mt-1">{editFindingResponsibleError}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>

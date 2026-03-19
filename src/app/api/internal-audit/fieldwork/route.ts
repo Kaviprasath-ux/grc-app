@@ -29,8 +29,11 @@ export const GET = withAuth(
       const whereClause: Record<string, unknown> = {};
 
       if (isAuditee) {
-        // Auditee can only see evidence requests assigned to them
-        whereClause.auditeeId = session.id;
+        // Auditee can see evidence requests assigned to them OR from engagements where they are the auditee
+        whereClause.OR = [
+          { auditeeId: session.id },
+          { engagement: { auditeeId: session.id } },
+        ];
       } else if (hasAuditRole) {
         // AuditHead/Auditor/Auditor - filter through engagement
         whereClause.engagement = {
