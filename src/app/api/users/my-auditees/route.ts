@@ -3,23 +3,30 @@ import prisma from "@/lib/prisma";
 import { withAuthOnly, getTenantFilter } from "@/lib/api-auth";
 
 // GET auditees within the current user's tenant
-// Note: User model doesn't have auditHeadId field yet - returning all auditees within tenant
+// Optional query param: ?departmentId=xxx to filter by department
 export const GET = withAuthOnly(async (req: NextRequest, context: {}, session) => {
   try {
     const tenantFilter = getTenantFilter(session);
+    const { searchParams } = new URL(req.url);
+    const departmentId = searchParams.get("departmentId");
 
-    // Return all auditees within the tenant
-    const auditees = await prisma.user.findMany({
-      where: {
-        ...tenantFilter,
-        userRoles: {
-          some: {
-            role: {
-              name: "Auditee",
-            },
+    // Return auditees within the tenant, optionally filtered by department
+    const whereClause: Record<string, unknown> = {
+      ...tenantFilter,
+      userRoles: {
+        some: {
+          role: {
+            name: "Auditee",
           },
         },
       },
+    };
+    if (departmentId) {
+      whereClause.departmentId = departmentId;
+    }
+
+    const auditees = await prisma.user.findMany({
+      where: whereClause,
       include: {
         department: true,
         userRoles: {

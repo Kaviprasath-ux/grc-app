@@ -444,10 +444,16 @@ export default function FieldworkDetailsPage() {
         fetchAIWorkpapers();
         fetchTaskList();
         fetchOtherDocuments();
-        fetchAuditees();
       }
     }
   }, [engagementId, isAuditeeOnly]);
+
+  // Fetch auditees after engagement is loaded (to use department filter)
+  useEffect(() => {
+    if (engagement && !isAuditeeOnly) {
+      fetchAuditees();
+    }
+  }, [engagement?.id, isAuditeeOnly]);
 
   const fetchEngagementDetails = async () => {
     try {
@@ -601,7 +607,9 @@ export default function FieldworkDetailsPage() {
 
   const fetchAuditees = async () => {
     try {
-      const response = await fetch("/api/users/my-auditees");
+      const deptId = engagement?.department?.id;
+      const url = deptId ? `/api/users/my-auditees?departmentId=${deptId}` : "/api/users/my-auditees";
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         const auditeeList = data.auditees || [];

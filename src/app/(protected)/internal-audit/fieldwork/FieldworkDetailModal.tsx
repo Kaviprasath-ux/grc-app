@@ -371,7 +371,6 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
         fetchAIWorkpapers();
         fetchTaskList();
         fetchOtherDocuments();
-        fetchAuditees();
       }
     }
     if (!open) {
@@ -386,6 +385,13 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
       setActiveTab("overview"); // Reset to overview tab when opening
     }
   }, [open, engagementId]);
+
+  // Fetch auditees after engagement is loaded (to use department filter)
+  useEffect(() => {
+    if (open && engagement && !isAuditeeOnly) {
+      fetchAuditees();
+    }
+  }, [open, engagement?.id, isAuditeeOnly]);
 
   const fetchEngagementDetails = async () => {
     try {
@@ -480,7 +486,9 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
 
   const fetchAuditees = async () => {
     try {
-      const response = await fetch("/api/users/my-auditees");
+      const deptId = engagement?.department?.id;
+      const url = deptId ? `/api/users/my-auditees?departmentId=${deptId}` : "/api/users/my-auditees";
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         const auditeeList = data.auditees || [];

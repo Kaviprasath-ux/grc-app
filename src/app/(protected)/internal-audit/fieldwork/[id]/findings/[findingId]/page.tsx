@@ -96,6 +96,7 @@ function ViewFindingContent() {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(editMode);
   const [users, setUsers] = useState<User[]>([]);
+  const [engagementDeptId, setEngagementDeptId] = useState<string | undefined>(undefined);
 
   const [formData, setFormData] = useState<Finding | null>(null);
 
@@ -114,8 +115,13 @@ function ViewFindingContent() {
     const loadData = async () => {
       if (engagementId && findingId) {
         try {
+          // Fetch engagement to get department for user filtering
+          const engRes = await fetch(`/api/internal-audit/engagements/${engagementId}`);
+          if (engRes.ok) {
+            const engData = await engRes.json();
+            setEngagementDeptId(engData.department?.id || "");
+          }
           await fetchFinding();
-          await fetchUsers();
           await fetchAttachments();
         } catch (error) {
           console.error('Error loading finding data:', error);
@@ -126,6 +132,14 @@ function ViewFindingContent() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engagementId, findingId]);
+
+  // Fetch users after engagement department is known
+  useEffect(() => {
+    if (engagementDeptId !== undefined) {
+      fetchUsers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engagementDeptId]);
 
   // Update edit mode when search params change
   useEffect(() => {
@@ -152,9 +166,8 @@ function ViewFindingContent() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch only auditees associated with the current audit head
-      // Skip for auditees (they don't need to see this dropdown)
-      const response = await fetch("/api/users/my-auditees");
+      const url = engagementDeptId ? `/api/users/my-auditees?departmentId=${engagementDeptId}` : "/api/users/my-auditees";
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setUsers(data.auditees || data || []);

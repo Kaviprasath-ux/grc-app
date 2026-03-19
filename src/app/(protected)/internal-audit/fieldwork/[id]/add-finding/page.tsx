@@ -41,6 +41,7 @@ interface Engagement {
   id: string;
   auditId: string;
   engagementTitle: string;
+  department?: { id: string; name: string } | null;
 }
 
 interface UploadedFile {
@@ -85,15 +86,19 @@ export default function AddFindingPage() {
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
 
   useEffect(() => {
-    const loadData = async () => {
-      if (engagementId) {
-        await fetchEngagement();
-        await fetchUsers();
-      }
-    };
-    loadData();
+    if (engagementId) {
+      fetchEngagement();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engagementId]);
+
+  // Fetch users after engagement is loaded (to use department filter)
+  useEffect(() => {
+    if (engagement) {
+      fetchUsers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engagement?.id]);
 
   const fetchEngagement = async () => {
     try {
@@ -111,8 +116,9 @@ export default function AddFindingPage() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch only auditees associated with the current audit head
-      const response = await fetch("/api/users/my-auditees");
+      const deptId = engagement?.department?.id;
+      const url = deptId ? `/api/users/my-auditees?departmentId=${deptId}` : "/api/users/my-auditees";
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setUsers(data.auditees || data || []);

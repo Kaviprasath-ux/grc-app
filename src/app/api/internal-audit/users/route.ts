@@ -45,7 +45,7 @@ export const GET = withAuth(
       }
 
       if (roleFilter === "Auditee") {
-        // Return only auditees associated with this audit head
+        // Return auditees - when departmentId is provided, return all auditees in that department
         whereClause = {
           ...whereClause,
           userRoles: {
@@ -54,13 +54,21 @@ export const GET = withAuth(
             },
           },
         };
-        if (auditHeadId) {
+        if (!departmentIdFilter && auditHeadId) {
           whereClause.auditHeadId = auditHeadId;
         }
       } else if (roleFilter === "auditors") {
-        // Return audit head + audit managers for auditor dropdown
-        // This includes the audit head themselves and their audit managers
-        if (auditHeadId) {
+        // Return all auditors in the tenant for auditor dropdown
+        // When departmentId is provided, return all AuditHead/Auditor users in that department
+        // This ensures the dropdown shows all available auditors regardless of auditHeadId
+        if (departmentIdFilter) {
+          // Department-scoped: show all Auditor users in that department
+          whereClause.userRoles = {
+            some: {
+              role: { name: "Auditor" },
+            },
+          };
+        } else if (auditHeadId) {
           whereClause.OR = [
             { id: auditHeadId }, // Include the audit head themselves
             {
