@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ function getRiskBadge(rating: string | null, t: (key: string) => string) {
 
 export default function AsrInventoryPage() {
   const { t } = useLanguage();
+  const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -148,7 +150,7 @@ export default function AsrInventoryPage() {
                     )}
                   </button>
                   {isExpanded && (
-                    <div className="p-4 border-t bg-muted/20">
+                    <div className="p-4 border-t bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors" onClick={() => router.push(`/tprm/asr-inventory/${vendor.id}`)}>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <span className="text-muted-foreground">{t("Vendor Code")}:</span>

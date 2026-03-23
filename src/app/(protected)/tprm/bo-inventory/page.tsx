@@ -128,11 +128,11 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
 
 // ── Vendor Accordion Item ───────────────────────────────────────────────────
 function VendorAccordionItem({
-  group, isExpanded, onToggle, onExport, onInitiateAssessment, onReportIssue, t,
+  group, isExpanded, onToggle, onExport, onInitiateAssessment, onReportIssue, onRowClick, t,
 }: {
   group: VendorGroup; isExpanded: boolean; onToggle: () => void;
   onExport: (v: Vendor) => void; onInitiateAssessment: (v: Vendor) => void;
-  onReportIssue: () => void; t: (s: string) => string;
+  onReportIssue: () => void; onRowClick: (v: Vendor) => void; t: (s: string) => string;
 }) {
   // Use the highest VRR across all engagements for the group header
   const headerVrr = group.vrr;
@@ -173,7 +173,7 @@ function VendorAccordionItem({
               </thead>
               <tbody>
                 {group.vendors.map((vendor) => (
-                  <tr key={vendor.id} className="border-b border-slate-100 hover:bg-slate-50/50">
+                  <tr key={vendor.id} className="border-b border-slate-100 hover:bg-slate-50/50 cursor-pointer" onClick={() => onRowClick(vendor)}>
                     <td className="px-4 py-3 font-medium text-primary">{vendor.name}</td>
                     <td className="px-4 py-3 text-slate-600">{vendor.engagementId || vendor.vendorCode || "—"}</td>
                     <td className="px-4 py-3 text-slate-600">{vendor.department?.name || "—"}</td>
@@ -190,7 +190,7 @@ function VendorAccordionItem({
                     </td>
                     <td className="px-4 py-3">
                       {vendor.vrr && vendor.vrr !== "Nominal" && (
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => onInitiateAssessment(vendor)}>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); onInitiateAssessment(vendor); }}>
                           <Play className="h-4 w-4 text-primary" />
                         </Button>
                       )}
@@ -1152,6 +1152,7 @@ export default function BOInventoryPage() {
                 }}
                 onInitiateAssessment={openAssessmentForVendor}
                 onReportIssue={() => router.push("/tprm/bo-issues")}
+                onRowClick={(v) => router.push(`/tprm/bo-inventory/${v.id}`)}
                 t={t}
               />
             ))}
