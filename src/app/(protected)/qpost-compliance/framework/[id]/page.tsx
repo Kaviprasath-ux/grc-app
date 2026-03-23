@@ -1975,7 +1975,7 @@ export default function FrameworkDetailPage({
                                         {((getGapValue(req, "gapOwner") as string) || "").split(":")[2] || t("Select")}
                                       </button>
                                     </td>
-                                    <td className="px-2 py-1"><input type="date" className="w-full px-1 py-1 text-xs border border-slate-200 rounded bg-white" value={(getGapValue(req, "gapTargetDate") as string) || ""} onChange={(e) => handleGapEdit(req.id, "gapTargetDate", e.target.value)} /></td>
+                                    <td className="px-2 py-1"><input type="date" className="w-full px-1 py-1 text-xs border border-slate-200 rounded bg-white" value={(getGapValue(req, "gapTargetDate") as string) || ""} onChange={(e) => handleGapEdit(req.id, "gapTargetDate", e.target.value)} min={new Date().toISOString().split("T")[0]} /></td>
                                     <td className="px-2 py-1">
                                       <select className="w-full px-1 py-1 text-xs border border-slate-200 rounded bg-white" value={(getGapValue(req, "gapStatus") as string) || ""} onChange={(e) => handleGapEdit(req.id, "gapStatus", e.target.value)}>
                                         <option value="">-</option>

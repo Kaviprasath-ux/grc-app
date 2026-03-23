@@ -25,6 +25,7 @@ interface DatePickerProps {
   className?: string
   disabled?: boolean
   compact?: boolean
+  minDate?: Date
 }
 
 export function DatePicker({
@@ -34,6 +35,7 @@ export function DatePicker({
   className,
   disabled,
   compact,
+  minDate,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   const { locale } = useLanguage()
@@ -87,6 +89,7 @@ export function DatePicker({
           onSelect={handleSelect}
           autoFocus
           locale={dateFnsLocale}
+          {...(minDate ? { disabled: { before: minDate } } : {})}
         />
       </PopoverContent>
     </Popover>

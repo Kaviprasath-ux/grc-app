@@ -2500,6 +2500,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                     className="h-8 text-xs px-2"
                                     placeholder={t("Pick date")}
                                     compact
+                                    minDate={new Date(new Date().setHours(0,0,0,0))}
                                   />
                                 </TableCell>
                                 {/* Status - dropdown: Open, In Progress, Closed */}
