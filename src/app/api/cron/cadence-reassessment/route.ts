@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { startCronRun, finishCronRun } from '@/lib/cron-logger';
 
 /**
  * Cadence-Based Reassessment Cron Job
@@ -55,6 +56,8 @@ export async function GET(req: NextRequest) {
   let triggered = 0;
   let skipped = 0;
   const errors: { assessmentId: string; error: string }[] = [];
+  const triggeredBy = req.headers.get('x-triggered-by') === 'manual' ? 'manual' : 'schedule';
+  const runId = await startCronRun({ taskFunction: 'cadence-reassessment', name: 'Cadence Reassessment', schedule: '0 7 * * *', triggeredBy });
 
   console.log('[CadenceReassessment] Starting cadence reassessment check...');
   console.log(`[CadenceReassessment] Today: ${today.toISOString()}`);
@@ -246,6 +249,9 @@ export async function GET(req: NextRequest) {
 
     console.log(`[CadenceReassessment] Done. triggered=${triggered}, skipped=${skipped}, errors=${errors.length}`);
 
+    await finishCronRun(runId, 'Completed', { triggered, skipped, errorCount: errors.length },
+      `Created ${triggered} periodic reassessment(s), skipped ${skipped}, errors ${errors.length}`);
+
     return NextResponse.json({
       success: true,
       message: 'Cadence reassessment check complete',
@@ -256,6 +262,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('[CadenceReassessment] Critical error:', error);
+    await finishCronRun(runId, 'Failed', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       {
         success: false,

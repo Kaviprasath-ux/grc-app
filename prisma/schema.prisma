@@ -4985,22 +4985,24 @@ model ChatbotAuditLog {
 // ============================================================
 
 model ScheduledTask {
-  id            String   @id @default(cuid())
-  queueId       String   @unique @default(uuid())
-  name          String                          // e.g., "System.ScheduledEvent"
-  taskFunction  String                          // e.g., "DueReminders", "AssessmentCadence"
-  description   String?                         // Human-readable description
-  schedule      String?                         // Cron expression e.g., "0 8 * * *"
-  status        String   @default("Idle")       // Idle, Running, Completed, Failed
-  lastRunAt     DateTime?
-  nextRunAt     DateTime?
-  contextData   String?                         // Optional JSON context
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id            String    @id @default(cuid())
+  queueId       String    @unique @default(uuid())
+  name          String                           // e.g., "Cadence Reassessment"
+  taskFunction  String                           // e.g., "cadence-reassessment"
+  description   String?                          // Human-readable summary of what ran
+  schedule      String?                          // Cron expression e.g., "0 8 * * *"
+  status        String    @default("Running")    // Running, Completed, Failed
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  contextData   String?                          // JSON result: { triggered, skipped, errors }
+  triggeredBy   String    @default("schedule")   // "schedule" or "manual"
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
+  @@index([taskFunction])
   @@index([status])
-  @@index([isActive])
+  @@index([createdAt])
 }
 
 // ============================================================

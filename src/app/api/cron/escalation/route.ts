@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS, NOTIFICATION_PRIORITIES } from '@/lib/notification-service';
+import { startCronRun, finishCronRun } from '@/lib/cron-logger';
 
 /**
  * Escalation Cron Job API
@@ -37,6 +38,8 @@ export async function GET(req: NextRequest) {
     acknowledgmentEscalation: 0,
   };
   const errors: EscalationError[] = [];
+  const triggeredBy = req.headers.get('x-triggered-by') === 'manual' ? 'manual' : 'schedule';
+  const runId = await startCronRun({ taskFunction: 'escalation', name: 'Escalation', schedule: '0 9 * * *', triggeredBy });
 
   console.log('[Escalation] Starting escalation processing...');
 
@@ -325,6 +328,10 @@ export async function GET(req: NextRequest) {
       console.warn(`[Escalation] Encountered ${errors.length} errors during processing`);
     }
 
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    await finishCronRun(runId, 'Completed', { counts, errorCount: errors.length },
+      `Processed ${total} escalation(s): fieldwork=${counts.fieldworkResponse}, clarificationReminder=${counts.clarificationReminder}, clarificationEscalation=${counts.clarificationEscalation}, acknowledgment=${counts.acknowledgmentEscalation}`);
+
     return NextResponse.json({
       success: true,
       message: 'Escalation processing complete',
@@ -335,6 +342,7 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('[Escalation] Critical error during processing:', error);
+    await finishCronRun(runId, 'Failed', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: 'Failed to process escalations',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { startCronRun, finishCronRun } from '@/lib/cron-logger';
 
 /**
  * Due Date Reminder Cron Job API
@@ -48,6 +49,8 @@ export async function GET(req: NextRequest) {
   };
 
   const errors: ReminderError[] = [];
+  const triggeredBy = req.headers.get('x-triggered-by') === 'manual' ? 'manual' : 'schedule';
+  const runId = await startCronRun({ taskFunction: 'due-reminders', name: 'Due Date Reminders', schedule: '0 8 * * *', triggeredBy });
 
   console.log('[DueReminders] Starting due date reminder processing...');
   console.log(`[DueReminders] Date range: ${today.toISOString()} to ${tomorrow.toISOString()}`);
@@ -449,6 +452,10 @@ export async function GET(req: NextRequest) {
       console.warn(`[DueReminders] Encountered ${errors.length} errors during processing`);
     }
 
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    await finishCronRun(runId, 'Completed', { counts, errorCount: errors.length },
+      `Sent ${total} reminder(s): evidence=${counts.evidence}, capa=${counts.capa}, review=${counts.review}, tprmAssessment=${counts.tprmAssessment}, tprmRemediation=${counts.tprmRemediation}, tprmContract=${counts.tprmContract}, sme=${counts.tprmSme}`);
+
     return NextResponse.json({
       success: true,
       message: 'Due date reminders sent',
@@ -459,6 +466,7 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('[DueReminders] Critical error during processing:', error);
+    await finishCronRun(runId, 'Failed', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({
       success: false,
       error: 'Failed to process due date reminders',

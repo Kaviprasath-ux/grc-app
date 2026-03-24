@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { notificationService } from '@/lib/notification-service';
+import { startCronRun, finishCronRun } from '@/lib/cron-logger';
 
 /**
  * Remediation Due-Date Reminder Cron Job
@@ -49,6 +50,8 @@ export async function GET(req: NextRequest) {
   let reminded = 0;
   let skipped = 0;
   const errors: { remediationId: string; error: string }[] = [];
+  const triggeredBy = req.headers.get('x-triggered-by') === 'manual' ? 'manual' : 'schedule';
+  const runId = await startCronRun({ taskFunction: 'remediation-reminders', name: 'Remediation Due Reminders', schedule: '0 8 * * *', triggeredBy });
 
   console.log('[RemediationReminders] Starting remediation reminder check...');
   console.log(`[RemediationReminders] Today: ${today.toISOString()}`);
@@ -186,6 +189,9 @@ export async function GET(req: NextRequest) {
 
     console.log(`[RemediationReminders] Done. reminded=${reminded}, skipped=${skipped}, errors=${errors.length}`);
 
+    await finishCronRun(runId, 'Completed', { reminded, skipped, errorCount: errors.length },
+      `Sent ${reminded} remediation reminder(s), skipped ${skipped}, errors ${errors.length}`);
+
     return NextResponse.json({
       success: true,
       message: 'Remediation reminder check complete',
@@ -196,6 +202,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('[RemediationReminders] Critical error:', error);
+    await finishCronRun(runId, 'Failed', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
       {
         success: false,

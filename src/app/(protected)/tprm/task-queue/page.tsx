@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, RotateCcw, UserPlus, Home, ChevronRight, Trash2, Clock, Play } from "lucide-react";
+import { Loader2, Eye, RotateCcw, UserPlus, Home, ChevronRight, Play } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 
@@ -35,18 +35,25 @@ interface TaskQueueItem {
   approver: { id: string; fullName: string } | null;
 }
 
-interface ScheduledTask {
+interface ScheduledCron {
   id: string;
-  queueId: string;
+  name: string;
+  description: string;
+  schedule: string;
+  scheduleHuman: string;
+  path: string;
+}
+
+interface CronRun {
+  id: string;
   name: string;
   taskFunction: string;
   description: string | null;
-  schedule: string | null;
   status: string;
-  lastRunAt: string | null;
-  nextRunAt: string | null;
-  isActive: boolean;
-  createdAt: string;
+  startedAt: string;
+  completedAt: string | null;
+  triggeredBy: string;
+  contextData: string | null;
 }
 
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
@@ -87,46 +94,71 @@ export default function TaskQueuePage() {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // System scheduled tasks (for GRCAdministrator)
-  const [systemTasks, setSystemTasks] = useState<ScheduledTask[]>([]);
+  // System scheduled crons (for GRCAdministrator)
+  const [systemCrons, setSystemCrons] = useState<ScheduledCron[]>([]);
   const [systemLoading, setSystemLoading] = useState(true);
+  const [runningCron, setRunningCron] = useState<string | null>(null);
 
-  const fetchSystemTasks = useCallback(async () => {
+  // Run history
+  const [cronRuns, setCronRuns] = useState<CronRun[]>([]);
+  const [runsLoading, setRunsLoading] = useState(true);
+  const [selectedCronId, setSelectedCronId] = useState<string | null>(null);
+
+  const fetchSystemCrons = useCallback(async () => {
     try {
       setSystemLoading(true);
       const res = await fetch("/api/system/task-queue");
       if (res.ok) {
         const data = await res.json();
-        setSystemTasks(data);
+        setSystemCrons(data);
       }
     } catch (error) {
-      console.error("Error fetching system tasks:", error);
+      console.error("Error fetching system crons:", error);
     } finally {
       setSystemLoading(false);
     }
   }, []);
 
+  const fetchCronRuns = useCallback(async (cronId?: string | null) => {
+    try {
+      setRunsLoading(true);
+      const params = new URLSearchParams({ history: 'true' });
+      if (cronId) params.set('cronId', cronId);
+      const res = await fetch(`/api/system/task-queue?${params}`);
+      if (res.ok) setCronRuns(await res.json());
+    } catch (error) {
+      console.error("Error fetching cron runs:", error);
+    } finally {
+      setRunsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isGRCAdmin) {
-      fetchSystemTasks();
+      fetchSystemCrons();
+      fetchCronRuns();
     }
-  }, [isGRCAdmin, fetchSystemTasks]);
+  }, [isGRCAdmin, fetchSystemCrons, fetchCronRuns]);
 
-  const handleDeleteSystemTask = async (taskId: string) => {
+  const handleRunNow = async (cronId: string) => {
     try {
+      setRunningCron(cronId);
       const res = await fetch("/api/system/task-queue", {
-        method: "DELETE",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: taskId }),
+        body: JSON.stringify({ id: cronId }),
       });
-      if (res.ok) {
-        toast({ title: t("Task deleted successfully") });
-        fetchSystemTasks();
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast({ title: t("Cron job triggered successfully") });
+        fetchCronRuns(selectedCronId);
       } else {
-        toast({ title: t("Failed to delete task"), variant: "destructive" });
+        toast({ title: t("Failed to trigger cron job"), variant: "destructive" });
       }
     } catch {
-      toast({ title: t("Failed to delete task"), variant: "destructive" });
+      toast({ title: t("Failed to trigger cron job"), variant: "destructive" });
+    } finally {
+      setRunningCron(null);
     }
   };
 
@@ -359,58 +391,106 @@ export default function TaskQueuePage() {
     },
   ];
 
-  // System scheduled task columns (for GRCAdministrator)
-  const systemColumns: ColumnDef<ScheduledTask>[] = [
-    {
-      accessorKey: "queueId",
-      header: t("Queue ID"),
-      cell: ({ row }) => <span className="font-mono text-xs text-slate-500 truncate max-w-[180px] inline-block">{row.getValue("queueId")}</span>,
-    },
+  // Scheduled cron columns (for GRCAdministrator)
+  const systemColumns: ColumnDef<ScheduledCron>[] = [
     {
       accessorKey: "name",
       header: t("Name"),
-      cell: ({ row }) => <span className="text-sm">{row.getValue("name")}</span>,
+      size: 200,
+      cell: ({ row }) => <span className="font-medium text-sm">{row.getValue("name")}</span>,
     },
     {
-      accessorKey: "taskFunction",
-      header: t("Function"),
-      cell: ({ row }) => <span className="text-sm font-medium text-primary-700">{row.getValue("taskFunction")}</span>,
-    },
-    {
-      accessorKey: "schedule",
-      header: t("Schedule"),
+      accessorKey: "description",
+      header: t("Description"),
+      size: 420,
       cell: ({ row }) => (
-        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded">{row.getValue("schedule") || "-"}</span>
+        <span className="text-sm text-slate-600 leading-snug">{row.getValue("description")}</span>
       ),
     },
     {
-      accessorKey: "createdAt",
-      header: t("Created Date"),
-      cell: ({ row }) => formatDate(row.getValue("createdAt")),
-    },
-    {
-      accessorKey: "status",
-      header: t("Status"),
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        const variant = status === "Running" ? "secondary" : status === "Failed" ? "destructive" : status === "Completed" ? "default" : "outline";
-        return <Badge variant={variant}>{t(status)}</Badge>;
-      },
+      accessorKey: "scheduleHuman",
+      header: t("Schedule"),
+      size: 220,
+      cell: ({ row }) => (
+        <span className="text-sm whitespace-nowrap">{row.getValue("scheduleHuman")}</span>
+      ),
     },
     {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
-          onClick={() => handleDeleteSystemTask(row.original.id)}
-          title={t("Delete")}
+          variant="outline"
+          size="sm"
+          onClick={() => handleRunNow(row.original.id)}
+          disabled={runningCron === row.original.id}
         >
-          <Trash2 className="h-4 w-4" />
+          {runningCron === row.original.id ? (
+            <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />
+          ) : (
+            <Play className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          )}
+          {t("Run Now")}
         </Button>
       ),
+    },
+  ];
+
+  // Run history columns
+  const runColumns: ColumnDef<CronRun>[] = [
+    {
+      accessorKey: "name",
+      header: t("Job"),
+      size: 200,
+      cell: ({ row }) => <span className="font-medium text-sm">{row.getValue("name")}</span>,
+    },
+    {
+      accessorKey: "description",
+      header: t("Result"),
+      size: 380,
+      cell: ({ row }) => (
+        <span className="text-sm text-slate-600">{row.getValue("description") || "-"}</span>
+      ),
+    },
+    {
+      accessorKey: "triggeredBy",
+      header: t("Triggered By"),
+      size: 120,
+      cell: ({ row }) => (
+        <Badge variant={row.getValue("triggeredBy") === "manual" ? "secondary" : "outline"}>
+          {t(row.getValue("triggeredBy") === "manual" ? "Manual" : "Schedule")}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "startedAt",
+      header: t("Started At"),
+      size: 160,
+      cell: ({ row }) => {
+        const v = row.getValue("startedAt") as string;
+        if (!v) return "-";
+        return <span className="text-sm whitespace-nowrap">{new Date(v).toLocaleString()}</span>;
+      },
+    },
+    {
+      accessorKey: "completedAt",
+      header: t("Completed At"),
+      size: 160,
+      cell: ({ row }) => {
+        const v = row.getValue("completedAt") as string | null;
+        if (!v) return <span className="text-slate-400 text-sm">-</span>;
+        return <span className="text-sm whitespace-nowrap">{new Date(v).toLocaleString()}</span>;
+      },
+    },
+    {
+      accessorKey: "status",
+      header: t("Status"),
+      size: 110,
+      cell: ({ row }) => {
+        const s = row.getValue("status") as string;
+        const variant = s === "Completed" ? "default" : s === "Failed" ? "destructive" : "secondary";
+        return <Badge variant={variant}>{t(s)}</Badge>;
+      },
     },
   ];
 
@@ -506,10 +586,55 @@ export default function TaskQueuePage() {
         ) : (
           <DataGrid
             columns={systemColumns}
-            data={systemTasks}
-            searchPlaceholder={t("Search tasks...")}
+            data={systemCrons}
+            searchPlaceholder={t("Search scheduled events...")}
           />
         )}
+
+        {/* Run History */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-slate-800">{t("Run History")}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("Recent executions of scheduled jobs")}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedCronId ?? "all"}
+                onValueChange={(v) => {
+                  const cronId = v === "all" ? null : v;
+                  setSelectedCronId(cronId);
+                  fetchCronRuns(cronId);
+                }}
+              >
+                <SelectTrigger className="w-[200px] h-9 text-sm border-slate-200">
+                  <SelectValue placeholder={t("All Jobs")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("All Jobs")}</SelectItem>
+                  {systemCrons.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={() => fetchCronRuns(selectedCronId)} disabled={runsLoading}>
+                {runsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+
+          {runsLoading ? (
+            <div className="flex items-center justify-center min-h-[120px]">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <DataGrid
+              columns={runColumns}
+              data={cronRuns}
+              searchPlaceholder={t("Search run history...")}
+            />
+          )}
+        </div>
       </div>
     );
   }
