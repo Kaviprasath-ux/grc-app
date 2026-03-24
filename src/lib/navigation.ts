@@ -149,7 +149,7 @@ export const navigation: NavItem[] = [
     name: "QPost Compliance",
     icon: Shield,
     children: [
-      { name: "Regulatory Intelligence Hub", href: "/qpost-compliance/regulatory-intelligence", icon: Radar, permission: "qpost-compliance.regulatory-intelligence:view" },
+      // { name: "Regulatory Intelligence Hub", href: "/qpost-compliance/regulatory-intelligence", icon: Radar, permission: "qpost-compliance.regulatory-intelligence:view" }, // HIDDEN for QPost — kept for future use
       { name: "Frameworks", href: "/qpost-compliance/framework", icon: Layers, permission: "qpost-compliance.framework:view" },
       { name: "Controls", href: "/qpost-compliance/requirements", icon: Link, permission: "qpost-compliance.controls:view" },
       { name: "Governance", href: "/qpost-compliance/governance", icon: FileCheck, permission: "qpost-compliance.governance:view" },
