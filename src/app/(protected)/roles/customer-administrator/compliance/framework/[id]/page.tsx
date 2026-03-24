@@ -2496,7 +2496,7 @@ export default function CustomerAdminFrameworkDetailPage({
                                 <TableCell className="align-top py-2">
                                   <DatePicker
                                     value={String(getGapValue(req, "gapTargetDate") || "")}
-                                    onChange={(date) => handleGapEdit(req.id, "gapTargetDate", date ? date.toISOString().split("T")[0] : "")}
+                                    onChange={(date) => handleGapEdit(req.id, "gapTargetDate", date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "")}
                                     className="h-8 text-xs px-2"
                                     placeholder={t("Pick date")}
                                     compact
@@ -3189,7 +3189,7 @@ export default function CustomerAdminFrameworkDetailPage({
                 <DatePicker
                   value={newException.endDate}
                   onChange={(date) => {
-                    setNewException({ ...newException, endDate: date ? date.toISOString().split("T")[0] : "" });
+                    setNewException({ ...newException, endDate: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "" });
                     if (excErrors.endDate) { setExcErrors((prev) => { const { endDate, ...rest } = prev; return rest; }); }
                   }}
                   placeholder={t("Select date")}

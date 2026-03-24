@@ -119,6 +119,13 @@ export default function EditProfilePage() {
     }
     if (!url.trim()) {
       newErrors.url = "URL is required";
+    } else {
+      try {
+        const parsed = new URL(url.trim().startsWith("http") ? url.trim() : `https://${url.trim()}`);
+        if (!parsed.hostname.includes(".")) throw new Error();
+      } catch {
+        newErrors.url = "Please enter a valid URL";
+      }
     }
     if (!country) {
       newErrors.country = "Country is required";

@@ -469,7 +469,7 @@ export function EditProfileWizard({
                   <div className="mt-1.5">
                     <DatePicker
                       value={formData.establishedDate}
-                      onChange={(date) => setFormData({ ...formData, establishedDate: date ? date.toISOString().split("T")[0] : "" })}
+                      onChange={(date) => setFormData({ ...formData, establishedDate: date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : "" })}
                       placeholder={t("Select date")}
                     />
                   </div>
