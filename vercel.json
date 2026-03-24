@@ -8,6 +8,14 @@
     {
       "path": "/api/cron/escalation",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/cadence-reassessment",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/remediation-reminders",
+      "schedule": "0 8 * * *"
     }
   ]
 }

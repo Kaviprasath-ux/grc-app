@@ -3553,6 +3553,7 @@ model TPRMAssessment {
   aiEvaluationStarted   DateTime?
   aiEvaluationCompleted DateTime?
   aiEvaluationError     String?         @db.Text
+  cadenceReassessmentTriggered Boolean  @default(false) // Set true once a cadence-based reassessment has been auto-created
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
   logs                  TPRMAssessmentLog[]

@@ -499,6 +499,8 @@ class NotificationService {
       [NOTIFICATION_EVENTS.TPRM_VENDOR_ISSUE_ESCALATED]: 'TPRM_VENDOR_ISSUE_ESCALATED',
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_DUE_REMINDER]: 'TPRM_ASSESSMENT_DUE_REMINDER',
       [NOTIFICATION_EVENTS.TPRM_SME_ASSIGNMENT_PENDING]: 'TPRM_SME_ASSIGNMENT_PENDING',
+      [NOTIFICATION_EVENTS.TPRM_CADENCE_REASSESSMENT]: 'TPRM_CADENCE_REASSESSMENT',
+      [NOTIFICATION_EVENTS.TPRM_REMEDIATION_DUE_REMINDER]: 'TPRM_REMEDIATION_DUE_REMINDER',
 
       // ===================== TPRM CONTRACT DELETION =====================
       [NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_REQUESTED]: 'TPRM_CONTRACT_DELETION_REQUESTED',
@@ -2169,6 +2171,59 @@ class NotificationService {
       link: `/tprm/asr-assessments/${params.assessmentId}`,
       channels: params.channels,
       metadata: { entityName: params.assessmentCode },
+    });
+  }
+
+  /**
+   * Notify when a cadence-based periodic reassessment is auto-created by the system.
+   */
+  async notifyTPRMCadenceReassessment(params: {
+    customerAccountId: string;
+    recipientIds: string[];
+    newAssessmentId: string;
+    newAssessmentCode: string;
+    vendorName: string;
+    vrrCategory: string;
+    cadenceMonths: number;
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: 'system',
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_CADENCE_REASSESSMENT,
+      title: 'Periodic reassessment created',
+      message: `A periodic reassessment (${params.newAssessmentCode}) has been automatically created for vendor ${params.vendorName} based on ${params.vrrCategory} risk cadence (${params.cadenceMonths} month${params.cadenceMonths !== 1 ? 's' : ''}).`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.newAssessmentId,
+      link: `/tprm/rm-assessments`,
+      metadata: { entityName: params.newAssessmentCode },
+    });
+  }
+
+  /**
+   * Notify all stakeholders that a remediation item is due soon (X days before dueDate).
+   */
+  async notifyTPRMRemediationDueReminder(params: {
+    customerAccountId: string;
+    recipientIds: string[];
+    remediationId: string;
+    issueCode: string;
+    vendorName: string;
+    questionTitle: string;
+    dueDate: string;
+    daysUntilDue: number;
+  }) {
+    return this.sendBulk({
+      customerAccountId: params.customerAccountId,
+      actorId: 'system',
+      recipientIds: params.recipientIds,
+      event: NOTIFICATION_EVENTS.TPRM_REMEDIATION_DUE_REMINDER,
+      title: 'Remediation due soon',
+      message: `Remediation ${params.issueCode} for vendor ${params.vendorName} is due in ${params.daysUntilDue} day${params.daysUntilDue !== 1 ? 's' : ''} (${params.dueDate}). Please complete and close the remediation.`,
+      relatedEntityType: 'remediation',
+      relatedEntityId: params.remediationId,
+      link: `/tprm/asr-follow-ups`,
+      metadata: { entityName: params.issueCode },
     });
   }
 

@@ -284,7 +284,7 @@ async function main() {
   const createdUsers: { [key: string]: string } = {};
   for (const user of users) {
     const created = await prisma.user.upsert({
-      where: { userId: user.userId },
+      where: { customerAccountId_userId: { customerAccountId, userId: user.userId } },
       update: {
         customerAccountId, // Update existing users with customer account
         password: hashedPassword1, // Ensure password is updated for existing users
@@ -378,7 +378,7 @@ async function main() {
 
   // Create Superadmin user (GRCAdministrator) with their own CustomerAccount for data isolation
   const superadminUser = await prisma.user.upsert({
-    where: { userId: "SUPERADMIN-001" },
+    where: { customerAccountId_userId: { customerAccountId: grcAdminCustomerAccountId, userId: "SUPERADMIN-001" } },
     update: {
       customerAccountId: grcAdminCustomerAccountId, // Ensure existing superadmin gets the account
       password: hashedPasswordBaarez, // Ensure password is updated for existing users
@@ -418,7 +418,7 @@ async function main() {
 
   // Create Second GRC Admin user for testing data isolation
   const grcAdmin2User = await prisma.user.upsert({
-    where: { userId: "GRCADMIN2-001" },
+    where: { customerAccountId_userId: { customerAccountId: grcAdmin2CustomerAccountId, userId: "GRCADMIN2-001" } },
     update: {
       customerAccountId: grcAdmin2CustomerAccountId,
       password: hashedPasswordBaarez, // Ensure password is updated for existing users
@@ -472,7 +472,7 @@ async function main() {
   const tprmAdminCustomerAccountId = tprmAdminCustomerAccount.id;
 
   const tadmUser = await prisma.user.upsert({
-    where: { userId: "TADM-001" },
+    where: { customerAccountId_userId: { customerAccountId: tprmAdminCustomerAccountId, userId: "TADM-001" } },
     update: {
       customerAccountId: tprmAdminCustomerAccountId,
       password: hashedPasswordBaarez,
@@ -4845,7 +4845,7 @@ async function main() {
   const tprmUserIds: Record<string, string> = {};
   for (const u of tprmRoleUsers) {
     const user = await prisma.user.upsert({
-      where: { userId: u.userId },
+      where: { customerAccountId_userId: { customerAccountId: grcAdminCustomerAccountId, userId: u.userId } },
       update: { password: hashedPassword1, customerAccountId: grcAdminCustomerAccountId, tprmRole: u.tprmRole },
       create: {
         userId: u.userId,

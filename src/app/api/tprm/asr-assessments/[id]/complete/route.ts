@@ -114,6 +114,11 @@ export const POST = withAuth(
           data: { status: 'Inactive' },
         });
 
+        // Load cadence/remediation config to calculate due dates
+        const ddConfig = await prisma.tPRMConfiguration.findUnique({
+          where: { customerAccountId },
+        });
+
         // Create issue remediations from unsatisfactory responses
         const responses = await prisma.tPRMAssessmentResponse.findMany({
           where: { assessmentId: id, customerAccountId },
@@ -151,6 +156,23 @@ export const POST = withAuth(
           }
         }
 
+        // Helper: map remediation severity to config remediation days
+        const getRemediationDays = (severity: string): number => {
+          const cfg = ddConfig as Record<string, unknown> | null;
+          if (!cfg) {
+            // Fallback defaults
+            if (severity === 'Critical') return 7;
+            if (severity === 'High') return 14;
+            if (severity === 'Medium') return 30;
+            return 60; // Low
+          }
+          if (severity === 'Critical') return (cfg.remediationCritical as number) || 7;
+          if (severity === 'High') return (cfg.remediationHigh as number) || 14;
+          if (severity === 'Medium') return (cfg.remediationModerate as number) || 30;
+          if (severity === 'Low') return (cfg.remediationLow as number) || 60;
+          return (cfg.remediationModerate as number) || 30;
+        };
+
         const now = new Date();
         const issueData = responses
           .filter(r => {
@@ -160,7 +182,7 @@ export const POST = withAuth(
           })
           .map(r => {
             const severity = r.assessorSeverity || r.poSeverity || 'Medium';
-            const dueDays = severity === 'High' ? 60 : severity === 'Medium' ? 50 : 40;
+            const dueDays = getRemediationDays(severity);
             const dueDate = new Date(now.getTime() + dueDays * 24 * 60 * 60 * 1000);
             const qInfo = questionMap.get(r.questionId);
             return {

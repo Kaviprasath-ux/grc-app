@@ -2525,6 +2525,7 @@ CREATE TABLE "TPRMAssessment" (
     "aiEvaluationStarted" TIMESTAMP(3),
     "aiEvaluationCompleted" TIMESTAMP(3),
     "aiEvaluationError" TEXT,
+    "cadenceReassessmentTriggered" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
