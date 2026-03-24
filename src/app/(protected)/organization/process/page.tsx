@@ -180,7 +180,7 @@ export default function ProcessPage() {
   const isCustomerAdministrator = userRoles.some((role) => role === "CustomerAdministrator");
   const isContributor = userRoles.some((role) => role === "Contributor");
   // Only these roles can add new processes
-  const canAddProcess = isCustomerAdministrator || isContributor || isDepartmentContributor;
+  const canAddProcess = isCustomerAdministrator || isReviewer || isContributor || isDepartmentContributor;
   const userDepartmentId = session?.user?.departmentId;
 
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "repository");
@@ -1675,8 +1675,7 @@ export default function ProcessPage() {
       header: t("Nature Of Implementation"),
       cell: ({ row }) => row.original.natureOfImplementation || "-",
     },
-    // Hide AI Risk column for Reviewer role
-    ...(!isReviewer ? [{
+    {
       id: "aiRisk",
       header: t("AI Risk"),
       cell: ({ row }: { row: { original: Process } }) => (
@@ -1695,9 +1694,9 @@ export default function ProcessPage() {
           {t("AI Risk Evaluation")}
         </Button>
       ),
-    }] : []),
-    // Hide actions column for Reviewer and DepartmentContributor roles
-    ...(!isDepartmentContributor && !isReviewer ? [{
+    },
+    // Hide actions column for DepartmentContributor role
+    ...(!isDepartmentContributor ? [{
       id: "actions",
       header: t("Actions"),
       cell: ({ row }: { row: { original: Process } }) => (

@@ -396,48 +396,50 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'department' },
   ],
 
-  // Reviewer - View access to compliance, risk, asset (no admin, settings, or audit access)
+  // Reviewer - Full CRUD same as CustomerAdministrator, but NO access to settings pages
   // Excluded: organization.profile, organization.users, organization.settings,
   //           compliance.settings (Master Data), asset.settings, risk.settings, audit.* (entire module)
+  // Note: risk.settings/asset.settings have view-only for dropdown data (categories, groups, etc.)
   Reviewer: [
-    // Organization - only dashboard, context, and process (NO profile, users, settings)
+    // Organization - only dashboard, context, process, departments (NO profile, users, settings)
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'organization.context', actions: ['view'], scope: 'all' },
-    { resource: 'organization.process', actions: ['view'], scope: 'all' },
-    { resource: 'organization.department', actions: ['view'], scope: 'all' }, // Needed for BIA department dropdown
-    // Compliance - view only (NO settings/Master Data)
+    { resource: 'organization.context', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'organization.process', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'organization.department', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    // Compliance - full CRUD (NO settings/Master Data page access)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.framework', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.governance', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.evidence', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.artifacts', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.exceptions', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.kpi', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.risk-matrix', actions: ['view'], scope: 'all' },
-    // QPost Compliance - view only
+    { resource: 'compliance.framework', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'compliance.controls', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'compliance.governance', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'compliance.evidence', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'compliance.artifacts', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'compliance.exceptions', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'compliance.kpi', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'compliance.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    // QPost Compliance - full CRUD
     { resource: 'qpost-compliance.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'qpost-compliance.framework', actions: ['view'], scope: 'all' },
-    { resource: 'qpost-compliance.controls', actions: ['view'], scope: 'all' },
-    { resource: 'qpost-compliance.governance', actions: ['view'], scope: 'all' },
-    { resource: 'qpost-compliance.evidence', actions: ['view'], scope: 'all' },
-    { resource: 'qpost-compliance.artifacts', actions: ['view'], scope: 'all' },
-    { resource: 'qpost-compliance.exceptions', actions: ['view'], scope: 'all' },
-    { resource: 'qpost-compliance.kpi', actions: ['view'], scope: 'all' },
-    { resource: 'qpost-compliance.risk-matrix', actions: ['view'], scope: 'all' },
-    // compliance.settings (Master Data) - EXCLUDED
-    // Asset Management - view only (NO settings)
+    { resource: 'qpost-compliance.framework', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'qpost-compliance.controls', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'qpost-compliance.governance', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'qpost-compliance.evidence', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'qpost-compliance.artifacts', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'qpost-compliance.exceptions', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'qpost-compliance.kpi', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'qpost-compliance.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    // compliance.settings (Master Data) - EXCLUDED from nav, but NO page access
+    // Asset Management - full CRUD (NO settings page, but view for dropdown data)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'asset.inventory', actions: ['view'], scope: 'all' },
-    { resource: 'asset.classification', actions: ['view'], scope: 'all' },
+    { resource: 'asset.inventory', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'asset.classification', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'asset.reports', actions: ['view'], scope: 'all' },
-    // Risk Management - same as CustomerAdmin (view, create, edit, delete) - NO approve
+    { resource: 'asset.settings', actions: ['view'], scope: 'all' }, // View-only for dropdown data (asset groups, types, etc.)
+    // Risk Management - full CRUD (NO settings page, but view for dropdown data)
     { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
-    { resource: 'risk.settings', actions: ['view'], scope: 'all' }, // Needed for risk category/threat/vulnerability/cause dropdowns
+    { resource: 'risk.settings', actions: ['view'], scope: 'all' }, // View-only for dropdown data (categories, threats, etc.)
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     // Internal Audit - NO ACCESS (entire module excluded)
   ],
