@@ -30,6 +30,7 @@ export interface AIResultData {
       control_name?: string;
       description?: string;
       control_description?: string;
+      control_question?: string;
       policy_procedures?: Array<{ policy_procedure_name: string; policy_procedure_type: string }>;
       evidences?: Array<{ evidence_name: string; evidence_description?: string; evidence_requirement?: string }>;
     }>;
@@ -62,6 +63,7 @@ function normalizeRunPodResult(aiResult: AIResultData): AIResultData {
         code: ctrl.code ?? `CTRL-${idx + 1}`,
         name: ctrl.control_name ?? ctrl.name,
         description: ctrl.control_description ?? ctrl.description,
+        control_question: ctrl.control_question,
         policy_procedures: ctrl.policy_procedures || [],
         evidences: ctrl.evidences || [],
       })),
@@ -278,6 +280,7 @@ export async function saveFrameworkFromAIResult(
                   controlCode: uniqueControlCode,
                   name: ctrlName,
                   description: ctrl.description,
+                  controlQuestion: ctrl.control_question || undefined,
                   status: "Non Compliant",
                   scope: "In-Scope",
                 },
