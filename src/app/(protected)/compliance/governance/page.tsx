@@ -269,6 +269,14 @@ export default function GovernancePage() {
     fetchFilterOptions();
   }, [session?.user?.id]);
 
+  // Non-CustomerAdmin roles don't have Dashboard tab — default to Policy
+  useEffect(() => {
+    if (!permissionsLoading && !isCustomerAdmin && activeTab === "Dashboard") {
+      setActiveTab("Policy");
+      setActiveDocType("Policy");
+    }
+  }, [permissionsLoading, isCustomerAdmin]);
+
   useEffect(() => {
     if (activeTab === "Dashboard") {
       fetchAllPoliciesForDashboard();
