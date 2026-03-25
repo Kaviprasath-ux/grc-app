@@ -5,7 +5,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, Home, Eye, Link2,
   ClipboardList, FolderTree, Building2, BookOpen, FileQuestion,
   Award, UserCheck, ArrowLeft, Download, Upload, X, Search,
-  ImageIcon, FileSpreadsheet, CheckSquare, Clock, Save, Loader2, Bot,
+  ImageIcon, FileSpreadsheet, CheckSquare, Loader2, Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,12 +190,11 @@ export default function ConfigurationsPage() {
   const { toast } = useToast();
   const { t, isRTL } = useLanguage();
   const [activeCard, setActiveCard] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   // ==================== LANDING PAGE ====================
   if (!activeCard) {
     return (
-      <div className="p-4 lg:p-6 space-y-6">
+      <div className="space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -205,11 +204,8 @@ export default function ConfigurationsPage() {
           <ChevronRight className={`h-3.5 w-3.5 text-slate-300 ${isRTL ? "rotate-180" : ""}`} />
           <span className="text-primary-700 font-medium">{t("Configurations")}</span>
         </nav>
-        <div className="flex flex-col gap-1">
+        <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Configurations")}</h1>
-          <p className="text-sm text-slate-500">
-            {t("Configure TPRM module settings and parameters")}
-          </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {configCards.map((card) => {
@@ -217,24 +213,22 @@ export default function ConfigurationsPage() {
             return (
               <button
                 key={card.id}
-                className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 ltr:text-left rtl:text-right hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
+                className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 ltr:text-left rtl:text-right hover:border-primary/30 transition-colors cursor-pointer"
                 onClick={() => setActiveCard(card.id)}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-sm text-slate-800 group-hover:text-primary transition-colors">
-                        {t(card.title)}
-                      </h4>
-                      <ChevronRight className={`h-4 w-4 text-slate-400 group-hover:text-primary transition-colors ${isRTL ? "rotate-180" : ""}`} />
-                    </div>
+                    <h4 className="font-semibold text-sm text-slate-800 group-hover:text-primary transition-colors">
+                      {t(card.title)}
+                    </h4>
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                       {t(card.description)}
                     </p>
                   </div>
+                  <ChevronRight className={`h-4 w-4 text-slate-400 group-hover:text-primary transition-colors flex-shrink-0 ${isRTL ? "rotate-180" : ""}`} />
                 </div>
               </button>
             );
@@ -248,7 +242,7 @@ export default function ConfigurationsPage() {
   const cardTitle = configCards.find((c) => c.id === activeCard)?.title || "";
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -266,18 +260,8 @@ export default function ConfigurationsPage() {
         <span className="text-primary-700 font-medium">{t(cardTitle)}</span>
       </nav>
 
-      {/* Back button + Title */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setActiveCard(null)}
-          className="h-8 w-8"
-        >
-          <ArrowLeft className={`h-4 w-4 ${isRTL ? "rotate-180" : ""}`} />
-        </Button>
-        <h1 className="text-xl font-bold">{t(cardTitle)}</h1>
-      </div>
+      {/* Page Title */}
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t(cardTitle)}</h1>
 
       {/* Render sub-page content */}
       {activeCard === "vendor-onboarding" && <VendorOnboardingSection />}
@@ -530,7 +514,7 @@ function VendorOnboardingSection() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-8 w-8 text-slate-400 hover:text-slate-600"
               onClick={() => {
                 setPfEditItem(field);
                 setPfFieldName(field.fieldName);
@@ -542,7 +526,7 @@ function VendorOnboardingSection() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-destructive"
+              className="h-8 w-8 text-slate-400 hover:text-red-600"
               onClick={() => handleDeleteProfileField(field.id)}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -594,7 +578,7 @@ function VendorOnboardingSection() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setObEditItem(row.original);
               setObForm({
@@ -613,7 +597,7 @@ function VendorOnboardingSection() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-red-600"
             onClick={() => handleDeleteObQuestion(row.original.id)}
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -638,12 +622,12 @@ function VendorOnboardingSection() {
         <TabsContent value="profile-fields" className="mt-4">
           <div className="flex items-center ltr:justify-end rtl:justify-start mb-4">
             <Button size="sm" onClick={() => { setPfEditItem(null); setPfFieldName(""); setPfDialogOpen(true); }}>
-              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
             </Button>
           </div>
           {pfLoading ? (
             <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <DataGrid columns={pfColumns} data={profileFields.map(f => f.isSystem ? f : (translatedProfileFields.find(tf => tf.id === f.id) || f))} searchPlaceholder={t("Search...")} />
@@ -661,12 +645,12 @@ function VendorOnboardingSection() {
               setObForm({ title: "", question: "", score: 0, questionType: "Parent", responseType: "Yes/No", parentId: "" });
               setObDialogOpen(true);
             }}>
-              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
             </Button>
           </div>
           {obLoading ? (
             <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <DataGrid columns={obColumns} data={translatedObQuestions} searchPlaceholder={t("Search...")} />
@@ -674,8 +658,8 @@ function VendorOnboardingSection() {
 
           {/* VRR Reference Table — fetched dynamically from Control Center */}
           {vrrReference.length > 0 && (
-            <div className="mt-6 border rounded-lg p-4 bg-slate-50">
-              <h3 className="text-sm font-semibold mb-3">{t("Vendor Risk Rating Reference")}</h3>
+            <div className="mt-6 border border-slate-200 rounded-xl bg-white overflow-hidden">
+              <div className="px-5 py-3 bg-primary-50 border-b border-slate-200"><span className="text-sm font-semibold text-slate-700">{t("Vendor Risk Rating Reference")}</span></div><div className="p-5">
               <div className="grid grid-cols-5 gap-2">
                 {vrrReference.map((item) => (
                   <div key={item.category} className="text-center p-2 bg-white rounded border">
@@ -684,6 +668,7 @@ function VendorOnboardingSection() {
                   </div>
                 ))}
               </div>
+              </div>
             </div>
           )}
         </TabsContent>
@@ -691,45 +676,52 @@ function VendorOnboardingSection() {
 
       {/* Profile Field Dialog */}
       <Dialog open={pfDialogOpen} onOpenChange={setPfDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>{pfEditItem ? t("Edit Field") : t("Add Field")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{pfEditItem ? t("Edit Field") : t("Add Field")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label>{t("Field Title")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Field Title")}</Label>
               <Input
+                className="mt-1.5 w-full"
                 value={pfFieldName}
                 onChange={(e) => setPfFieldName(sanitizeGeneral(e.target.value))}
                 placeholder={t("Enter field name")}
               />
             </div>
-            <div className="flex ltr:justify-end rtl:justify-start gap-2">
-              <Button variant="outline" onClick={() => setPfDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleSaveProfileField}>{t("Save")}</Button>
-            </div>
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setPfDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleSaveProfileField}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Onboarding Question Dialog */}
       <Dialog open={obDialogOpen} onOpenChange={setObDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{obEditItem ? t("Edit Question") : t("Add Question")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{obEditItem ? t("Edit Question") : t("Add Question")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label>{t("Title")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Title")}</Label>
               <Input
+                className="mt-1.5"
                 value={obForm.title}
                 onChange={(e) => setObForm({ ...obForm, title: sanitizeGeneral(e.target.value) })}
                 placeholder={t("Enter question title")}
               />
             </div>
             <div>
-              <Label>{t("Question")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Question")}</Label>
               <Textarea
+                className="mt-1.5"
                 value={obForm.question}
                 onChange={(e) => setObForm({ ...obForm, question: sanitizeGeneral(e.target.value) })}
                 placeholder={t("Enter question text")}
@@ -738,8 +730,9 @@ function VendorOnboardingSection() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>{t("Score")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Score")}</Label>
                 <Input
+                  className="mt-1.5"
                   type="number"
                   min={0}
                   max={maxVrrScore}
@@ -751,12 +744,12 @@ function VendorOnboardingSection() {
                 </p>
               </div>
               <div>
-                <Label>{t("Question Type")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Question Type")}</Label>
                 <Select
                   value={obForm.questionType}
                   onValueChange={(v) => setObForm({ ...obForm, questionType: v, parentId: v === "Parent" ? "" : obForm.parentId })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -769,12 +762,12 @@ function VendorOnboardingSection() {
             {/* Parent question dropdown - only visible when Child is selected */}
             {obForm.questionType === "Child" && (
               <div>
-                <Label>{t("Parent Question")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Parent Question")}</Label>
                 <Select
                   value={obForm.parentId}
                   onValueChange={(v) => setObForm({ ...obForm, parentId: v })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder={t("Select parent question")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -788,12 +781,12 @@ function VendorOnboardingSection() {
               </div>
             )}
             <div>
-              <Label>{t("Response Type")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Response Type")}</Label>
               <Select
                 value={obForm.responseType}
                 onValueChange={(v) => setObForm({ ...obForm, responseType: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5 w-full bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -802,10 +795,10 @@ function VendorOnboardingSection() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex ltr:justify-end rtl:justify-start gap-2">
-              <Button variant="outline" onClick={() => setObDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleSaveObQuestion}>{t("Save")}</Button>
-            </div>
+          </div>
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setObDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleSaveObQuestion}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -830,7 +823,6 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<SimpleItem | null>(null);
   const [name, setName] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
 
   const modelName = SIMPLE_CRUD_MODEL_MAP[type] || type;
   const { data: translatedItems } = useTranslatedData(items, { modelName });
@@ -907,10 +899,6 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
     }
   };
 
-  const filteredItems = searchTerm
-    ? translatedItems.filter((i) => i.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    : translatedItems;
-
   const columns: ColumnDef<SimpleItem>[] = [
     {
       accessorKey: "name",
@@ -925,7 +913,7 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditItem(row.original);
               setName(row.original.name);
@@ -937,7 +925,7 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-red-600"
             onClick={() => handleDelete(row.original.id)}
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -949,59 +937,47 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div className="relative w-64">
-          <Search className="absolute ltr:left-2.5 rtl:right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("Search...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="ltr:pl-9 rtl:pr-9"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => { setEditItem(null); setName(""); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
+      <div className="flex ltr:justify-end rtl:justify-start gap-2 mb-4">
+        {type === "service-categories" && (
+          <Button size="sm" variant="outline" onClick={handleDeleteAll}>
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete All")}
           </Button>
-          {type === "service-categories" && (
-            <Button size="sm" variant="outline" onClick={handleDeleteAll}>
-              <Trash2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Delete All")}
-            </Button>
-          )}
-        </div>
+        )}
+        <Button size="sm" onClick={() => { setEditItem(null); setName(""); setDialogOpen(true); }}>
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
+        </Button>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="flex items-center justify-center py-16 bg-white rounded-xl border border-slate-200">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <DataGrid columns={columns} data={filteredItems} hideSearch />
+        <DataGrid columns={columns} data={translatedItems} searchPlaceholder={t("Search...")} />
       )}
-
-      <div className="mt-2 text-xs text-muted-foreground">
-        {t("Total")}: {filteredItems.length} {t("items")}
-      </div>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>{editItem ? t("Edit") : t("Add")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{editItem ? t("Edit") : t("Add")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label>{t(nameLabel)}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t(nameLabel)}</Label>
               <Input
+                className="mt-1.5 w-full"
                 value={name}
                 onChange={(e) => setName(sanitizeGeneral(e.target.value))}
                 placeholder={t("Enter name")}
               />
             </div>
-            <div className="flex ltr:justify-end rtl:justify-start gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleSave}>{t("Save")}</Button>
-            </div>
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleSave}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1550,31 +1526,47 @@ function QuestionnaireManagementSection() {
 
   const renderQuestionDialog = () => (
     <Dialog open={questionDialogOpen} onOpenChange={setQuestionDialogOpen}>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editQuestionLink ? t("Edit Question") : t("Add Question")}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          {/* Is Parent Question */}
-          <div>
-            <Label>{t("Is Parent Question")}</Label>
-            <div className="flex items-center gap-4 mt-1">
-              {[true, false].map((val) => (
-                <label key={String(val)} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="isParent" checked={qForm.isParentQuestion === val}
-                    onChange={() => setQForm({ ...qForm, isParentQuestion: val, parentId: val ? "" : qForm.parentId })}
-                    className="accent-primary" />
-                  <span className="text-sm">{val ? t("Yes") : t("No")}</span>
-                </label>
-              ))}
+      <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{editQuestionLink ? t("Edit Question") : t("Add Question")}</DialogTitle>
+          </DialogHeader>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+          {/* Is Parent + Domain in 2 cols */}
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Is Parent Question")}</Label>
+              <div className="flex items-center gap-5 mt-2">
+                {[true, false].map((val) => (
+                  <label key={String(val)} className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="isParent" checked={qForm.isParentQuestion === val}
+                      onChange={() => setQForm({ ...qForm, isParentQuestion: val, parentId: val ? "" : qForm.parentId })}
+                      className="accent-primary" />
+                    <span className="text-sm">{val ? t("Yes") : t("No")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Domain")}</Label>
+              <Select value={qForm.domainId || "none"} onValueChange={(v) => setQForm({ ...qForm, domainId: v === "none" ? "" : v })}>
+                <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select domain")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("No Domain")}</SelectItem>
+                  {activeDomains.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {/* Parent Question (when not parent) */}
           {!qForm.isParentQuestion && (
             <div>
-              <Label>{t("Parent Question")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Parent Question")}</Label>
               <Select value={qForm.parentId || "none"} onValueChange={(v) => setQForm({ ...qForm, parentId: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder={t("Select parent question")} /></SelectTrigger>
+                <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select parent question")} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("None")}</SelectItem>
                   {parentQuestions.map((pq) => (
@@ -1586,97 +1578,66 @@ function QuestionnaireManagementSection() {
           )}
           {/* Question Title */}
           <div>
-            <Label>{t("Question Title")} *</Label>
-            <Textarea value={qForm.questionText} onChange={(e) => setQForm({ ...qForm, questionText: sanitizeGeneral(e.target.value) })}
+            <Label className="text-sm font-medium text-slate-700">{t("Question Title")} *</Label>
+            <Textarea className="mt-1.5 w-full" value={qForm.questionText} onChange={(e) => setQForm({ ...qForm, questionText: sanitizeGeneral(e.target.value) })}
               placeholder={t("Enter question text")} rows={3} />
           </div>
           {/* VerifAI Prompt */}
           <div>
-            <Label>{t("VerifAI Prompt Question")}</Label>
-            <Textarea value={qForm.verifaiPrompt} onChange={(e) => setQForm({ ...qForm, verifaiPrompt: sanitizeGeneral(e.target.value) })}
+            <Label className="text-sm font-medium text-slate-700">{t("VerifAI Prompt Question")}</Label>
+            <Textarea className="mt-1.5 w-full" value={qForm.verifaiPrompt} onChange={(e) => setQForm({ ...qForm, verifaiPrompt: sanitizeGeneral(e.target.value) })}
               placeholder={t("Enter VerifAI prompt")} rows={2} />
-          </div>
-          {/* Domain */}
-          <div>
-            <Label>{t("Domain")}</Label>
-            <Select value={qForm.domainId || "none"} onValueChange={(v) => setQForm({ ...qForm, domainId: v === "none" ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder={t("Select domain")} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">{t("No Domain")}</SelectItem>
-                {activeDomains.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           {/* Template (disabled) */}
           <div>
-            <Label>{t("Template")}</Label>
-            <Input value={templates.find((x) => x.id === selectedTemplateId)?.templateName || ""} disabled className="bg-muted" />
+            <Label className="text-sm font-medium text-slate-700">{t("Template")}</Label>
+            <Input value={templates.find((x) => x.id === selectedTemplateId)?.templateName || ""} disabled className="mt-1.5 w-full bg-muted" />
           </div>
-          {/* Boolean fields row */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label className="text-xs">{t("Mandatory Attachment")}</Label>
-              <div className="flex items-center gap-3 mt-1">
-                {[true, false].map((val) => (
-                  <label key={String(val)} className="flex items-center gap-1 cursor-pointer">
-                    <input type="radio" name="mandAtt" checked={qForm.mandatoryAttachment === val}
-                      onChange={() => setQForm({ ...qForm, mandatoryAttachment: val })} className="accent-primary" />
-                    <span className="text-xs">{val ? t("Yes") : t("No")}</span>
-                  </label>
-                ))}
+          {/* Boolean toggles */}
+          <div className="grid grid-cols-3 gap-5 border border-slate-100 rounded-lg p-4 bg-slate-50/50">
+            {[
+              { label: t("Mandatory Attachment"), name: "mandAtt", key: "mandatoryAttachment" as const },
+              { label: t("Validate Through AI"), name: "valAI", key: "validateThroughAI" as const },
+              { label: t("Mandatory Question"), name: "mandQ", key: "mandatoryQuestion" as const },
+            ].map(({ label, name, key }) => (
+              <div key={name}>
+                <Label className="text-sm font-medium text-slate-700">{label}</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  {[true, false].map((val) => (
+                    <label key={String(val)} className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="radio" name={name} checked={qForm[key] === val}
+                        onChange={() => setQForm({ ...qForm, [key]: val })} className="accent-primary" />
+                      <span className="text-sm">{val ? t("Yes") : t("No")}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <Label className="text-xs">{t("Validate Through AI")}</Label>
-              <div className="flex items-center gap-3 mt-1">
-                {[true, false].map((val) => (
-                  <label key={String(val)} className="flex items-center gap-1 cursor-pointer">
-                    <input type="radio" name="valAI" checked={qForm.validateThroughAI === val}
-                      onChange={() => setQForm({ ...qForm, validateThroughAI: val })} className="accent-primary" />
-                    <span className="text-xs">{val ? t("Yes") : t("No")}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">{t("Mandatory Question")}</Label>
-              <div className="flex items-center gap-3 mt-1">
-                {[true, false].map((val) => (
-                  <label key={String(val)} className="flex items-center gap-1 cursor-pointer">
-                    <input type="radio" name="mandQ" checked={qForm.mandatoryQuestion === val}
-                      onChange={() => setQForm({ ...qForm, mandatoryQuestion: val })} className="accent-primary" />
-                    <span className="text-xs">{val ? t("Yes") : t("No")}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
           {/* Evidence, Issue, Risk, Recommendation */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-5">
             <div>
-              <Label>{t("Evidence")}</Label>
-              <Input value={qForm.evidence} onChange={(e) => setQForm({ ...qForm, evidence: sanitizeGeneral(e.target.value) })} placeholder={t("Enter evidence")} />
+              <Label className="text-sm font-medium text-slate-700">{t("Evidence")}</Label>
+              <Input className="mt-1.5 w-full" value={qForm.evidence} onChange={(e) => setQForm({ ...qForm, evidence: sanitizeGeneral(e.target.value) })} placeholder={t("Enter evidence")} />
             </div>
             <div>
-              <Label>{t("Issue")}</Label>
-              <Input value={qForm.issue} onChange={(e) => setQForm({ ...qForm, issue: sanitizeGeneral(e.target.value) })} placeholder={t("Enter issue")} />
+              <Label className="text-sm font-medium text-slate-700">{t("Issue")}</Label>
+              <Input className="mt-1.5 w-full" value={qForm.issue} onChange={(e) => setQForm({ ...qForm, issue: sanitizeGeneral(e.target.value) })} placeholder={t("Enter issue")} />
             </div>
             <div>
-              <Label>{t("Risk")}</Label>
-              <Input value={qForm.risk} onChange={(e) => setQForm({ ...qForm, risk: sanitizeGeneral(e.target.value) })} placeholder={t("Enter risk")} />
+              <Label className="text-sm font-medium text-slate-700">{t("Risk")}</Label>
+              <Input className="mt-1.5 w-full" value={qForm.risk} onChange={(e) => setQForm({ ...qForm, risk: sanitizeGeneral(e.target.value) })} placeholder={t("Enter risk")} />
             </div>
             <div>
-              <Label>{t("Recommendation")}</Label>
-              <Input value={qForm.recommendation} onChange={(e) => setQForm({ ...qForm, recommendation: sanitizeGeneral(e.target.value) })} placeholder={t("Enter recommendation")} />
+              <Label className="text-sm font-medium text-slate-700">{t("Recommendation")}</Label>
+              <Input className="mt-1.5 w-full" value={qForm.recommendation} onChange={(e) => setQForm({ ...qForm, recommendation: sanitizeGeneral(e.target.value) })} placeholder={t("Enter recommendation")} />
             </div>
           </div>
           {/* Severity */}
           <div>
-            <Label>{t("Severity")}</Label>
+            <Label className="text-sm font-medium text-slate-700">{t("Severity")}</Label>
             <Select value={qForm.severity || "none"} onValueChange={(v) => setQForm({ ...qForm, severity: v === "none" ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder={t("Select severity")} /></SelectTrigger>
+              <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select severity")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">{t("None")}</SelectItem>
                 <SelectItem value="High">{t("High")}</SelectItem>
@@ -1685,10 +1646,10 @@ function QuestionnaireManagementSection() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex ltr:justify-end rtl:justify-start gap-2">
-            <Button variant="outline" onClick={() => setQuestionDialogOpen(false)}>{t("Cancel")}</Button>
-            <Button onClick={handleSaveQuestion}>{t("Save")}</Button>
-          </div>
+        </div>
+        <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <Button variant="outline" size="sm" onClick={() => setQuestionDialogOpen(false)}>{t("Cancel")}</Button>
+          <Button size="sm" onClick={handleSaveQuestion}>{t("Save")}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -1700,17 +1661,19 @@ function QuestionnaireManagementSection() {
     const available = getAvailableForLink();
     return (
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>{t("Link Existing Questions")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Link Existing Questions")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div className="relative">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder={t("Search questions...")} value={linkSearch}
                 onChange={(e) => setLinkSearch(e.target.value)} className="ltr:pl-9 rtl:pr-9" />
             </div>
-            <div className="max-h-[40vh] overflow-y-auto space-y-2 border rounded-md p-2">
+            <div className="space-y-2 border rounded-md p-2">
               {available.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">{t("No available questions")}</p>
               ) : available.map((q) => (
@@ -1730,15 +1693,13 @@ function QuestionnaireManagementSection() {
                 </label>
               ))}
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{selectedLinkIds.size} {t("selected")}</p>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>{t("Cancel")}</Button>
-                <Button onClick={handleLinkQuestions} disabled={selectedLinkIds.size === 0}>
-                  <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Link Selected")}
-                </Button>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground">{selectedLinkIds.size} {t("selected")}</p>
+          </div>
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setLinkDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleLinkQuestions} disabled={selectedLinkIds.size === 0}>
+              <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Link Selected")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1786,10 +1747,10 @@ function QuestionnaireManagementSection() {
         header: t("Action"),
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditQuestion(row.original)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditQuestion(row.original)}>
               <Pencil className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleUnlinkQuestion(row.original.id)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleUnlinkQuestion(row.original.id)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -1816,26 +1777,26 @@ function QuestionnaireManagementSection() {
             <Button size="sm" variant="outline"
               disabled={!selectedTemplateId || enablingAI === selectedTemplateId}
               onClick={() => selectedTemplateId && handleEnableAI(selectedTemplateId)}>
-              {enablingAI === selectedTemplateId ? <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" /> : <Bot className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
+              {enablingAI === selectedTemplateId ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : <Bot className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
               {enablingAI === selectedTemplateId ? t("Enabling...") : t("Enable AI Validation")}
+            </Button>
+            <Button size="sm" variant="outline">
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Export")}
             </Button>
             <Button size="sm" variant="outline" onClick={() => {
               setSelectedLinkIds(new Set()); setLinkSearch(""); setLinkDialogOpen(true);
             }}>
-              <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Link Existing")}
+              <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Link Existing")}
             </Button>
             <Button size="sm" onClick={openAddQuestion}>
-              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
-            </Button>
-            <Button size="sm" variant="outline">
-              <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Export")}
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
             </Button>
           </div>
         </div>
 
         {questionsLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : links.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
@@ -1884,15 +1845,15 @@ function QuestionnaireManagementSection() {
       header: t("Action"),
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" title={t("View Questions")}
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("View Questions")}
             onClick={() => { setSelectedTemplateId(row.original.id); setSubView("questions"); }}>
             <Eye className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" title={t("Cover Image")}
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" title={t("Cover Image")}
             onClick={() => setCoverImageTemplate(row.original)}>
             <ImageIcon className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7"
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditItem(row.original);
               setEditForm({
@@ -1904,7 +1865,7 @@ function QuestionnaireManagementSection() {
             }}>
             <Pencil className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600"
             onClick={() => handleDeleteTemplate(row.original.id)}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -1918,19 +1879,18 @@ function QuestionnaireManagementSection() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div />
+      <div className="flex ltr:justify-end rtl:justify-start mb-4">
         <Button size="sm" onClick={() => {
           resetWizard();
           setWizardOpen(true);
         }}>
-          <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
         </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <DataGrid columns={templateColumns} data={translatedTemplates} searchPlaceholder={t("Search...")} />
@@ -1938,10 +1898,13 @@ function QuestionnaireManagementSection() {
 
       {/* 3-Step Wizard Dialog */}
       <Dialog open={wizardOpen} onOpenChange={(v) => { if (!v) { setWizardOpen(false); resetWizard(); } }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("Add Questionnaire")}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Questionnaire")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
           {/* Wizard step circles with connecting lines */}
           <div className="flex items-center justify-center mb-6 px-4">
             {[1, 2, 3].map((s, idx) => (
@@ -1975,22 +1938,24 @@ function QuestionnaireManagementSection() {
 
           {/* ===== STEP 1: Template Details + Image Upload ===== */}
           {wizardStep === 1 && (
-            <div className="space-y-4">
-              <div>
-                <Label>{t("Template Name")} *</Label>
-                <Input value={wizardForm.templateName}
-                  onChange={(e) => setWizardForm({ ...wizardForm, templateName: sanitizeGeneral(e.target.value) })}
-                  placeholder={t("Enter template name")} />
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Template Name")} *</Label>
+                  <Input className="mt-1.5 w-full" value={wizardForm.templateName}
+                    onChange={(e) => setWizardForm({ ...wizardForm, templateName: sanitizeGeneral(e.target.value) })}
+                    placeholder={t("Enter template name")} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Framework")}</Label>
+                  <Input className="mt-1.5 w-full" value={wizardForm.frameworkName}
+                    onChange={(e) => setWizardForm({ ...wizardForm, frameworkName: sanitizeGeneral(e.target.value) })}
+                    placeholder={t("Enter framework name")} />
+                </div>
               </div>
               <div>
-                <Label>{t("Framework")}</Label>
-                <Input value={wizardForm.frameworkName}
-                  onChange={(e) => setWizardForm({ ...wizardForm, frameworkName: sanitizeGeneral(e.target.value) })}
-                  placeholder={t("Enter framework name")} />
-              </div>
-              <div>
-                <Label>{t("Template Category")}</Label>
-                <div className="flex items-center gap-4 mt-2">
+                <Label className="text-sm font-medium text-slate-700">{t("Template Category")}</Label>
+                <div className="flex items-center gap-6 mt-2">
                   {["Default", "ISMS", "Compliance"].map((cat) => (
                     <label key={cat} className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" name="wizardCategory" value={cat}
@@ -2004,7 +1969,7 @@ function QuestionnaireManagementSection() {
               </div>
               {/* Image Upload */}
               <div>
-                <Label>{t("Cover Image")} *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Cover Image")} *</Label>
                 <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { if (e.target.files?.[0]) handleImageSelect(e.target.files[0]); }} />
                 {wizardImagePreview ? (
@@ -2025,21 +1990,6 @@ function QuestionnaireManagementSection() {
                     <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WebP</p>
                   </div>
                 )}
-              </div>
-              <div className="flex ltr:justify-end rtl:justify-start">
-                <Button onClick={() => {
-                  if (!wizardForm.templateName.trim()) {
-                    toast({ title: t("Error"), description: t("Template name is required"), variant: "destructive" });
-                    return;
-                  }
-                  if (!wizardImage) {
-                    toast({ title: t("Error"), description: t("Cover image is required"), variant: "destructive" });
-                    return;
-                  }
-                  setWizardStep(2);
-                }}>
-                  {t("Next")}
-                </Button>
               </div>
             </div>
           )}
@@ -2100,10 +2050,6 @@ function QuestionnaireManagementSection() {
                     </Button>
                   )}
                 </div>
-              </div>
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setWizardStep(1)}>{t("Previous")}</Button>
-                <Button onClick={() => { loadOnboardingQuestions(); setWizardStep(3); }}>{t("Next")}</Button>
               </div>
             </div>
           )}
@@ -2177,39 +2123,67 @@ function QuestionnaireManagementSection() {
                   </div>
                 </>
               )}
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setWizardStep(2)}>{t("Previous")}</Button>
-                <Button onClick={handleWizardSave} disabled={wizardSaving}>
-                  {wizardSaving ? (
-                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ltr:mr-2 rtl:ml-2" /> {t("Creating...")}</>
-                  ) : t("Create")}
-                </Button>
-              </div>
             </div>
           )}
+          </div>
+          {/* Fixed Wizard Footer */}
+          <div className="flex-shrink-0 flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            {wizardStep === 1 ? (
+              <span />
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setWizardStep(wizardStep - 1)}>{t("Previous")}</Button>
+            )}
+            {wizardStep === 1 && (
+              <Button size="sm" onClick={() => {
+                if (!wizardForm.templateName.trim()) {
+                  toast({ title: t("Error"), description: t("Template name is required"), variant: "destructive" });
+                  return;
+                }
+                if (!wizardImage) {
+                  toast({ title: t("Error"), description: t("Cover image is required"), variant: "destructive" });
+                  return;
+                }
+                setWizardStep(2);
+              }}>{t("Next")}</Button>
+            )}
+            {wizardStep === 2 && (
+              <Button size="sm" onClick={() => { loadOnboardingQuestions(); setWizardStep(3); }}>{t("Next")}</Button>
+            )}
+            {wizardStep === 3 && (
+              <Button size="sm" onClick={handleWizardSave} disabled={wizardSaving}>
+                {wizardSaving ? (
+                  <><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> {t("Creating...")}</>
+                ) : t("Create")}
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Template Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{t("Edit Template")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <Label>{t("Template Name")}</Label>
-              <Input value={editForm.templateName}
-                onChange={(e) => setEditForm({ ...editForm, templateName: sanitizeGeneral(e.target.value) })} />
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Template")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Template Name")}</Label>
+                <Input className="mt-1.5 w-full" value={editForm.templateName}
+                  onChange={(e) => setEditForm({ ...editForm, templateName: sanitizeGeneral(e.target.value) })} />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Framework")}</Label>
+                <Input className="mt-1.5 w-full" value={editForm.frameworkName}
+                  onChange={(e) => setEditForm({ ...editForm, frameworkName: sanitizeGeneral(e.target.value) })} />
+              </div>
             </div>
             <div>
-              <Label>{t("Framework")}</Label>
-              <Input value={editForm.frameworkName}
-                onChange={(e) => setEditForm({ ...editForm, frameworkName: sanitizeGeneral(e.target.value) })} />
-            </div>
-            <div>
-              <Label>{t("Template Category")}</Label>
-              <div className="flex items-center gap-4 mt-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Template Category")}</Label>
+              <div className="flex items-center gap-6 mt-2">
                 {["Default", "ISMS", "Compliance"].map((cat) => (
                   <label key={cat} className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="editCategory" value={cat}
@@ -2221,20 +2195,23 @@ function QuestionnaireManagementSection() {
                 ))}
               </div>
             </div>
-            <div className="flex ltr:justify-end rtl:justify-start gap-2">
-              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleEditSave}>{t("Save")}</Button>
-            </div>
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleEditSave}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Cover Image Dialog */}
       <Dialog open={!!coverImageTemplate} onOpenChange={() => setCoverImageTemplate(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("Cover Image")} — {coverImageTemplate?.templateName}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Cover Image")} — {coverImageTemplate?.templateName}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
           <input ref={coverImageInputRef} type="file" accept="image/*" className="hidden"
             onChange={(e) => {
               if (e.target.files?.[0] && coverImageTemplate) {
@@ -2266,6 +2243,10 @@ function QuestionnaireManagementSection() {
               <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WebP</p>
             </div>
           )}
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setCoverImageTemplate(null)}>{t("Close")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
@@ -2373,7 +2354,7 @@ function OffboardingSection() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditItem(row.original);
               setForm({
@@ -2388,7 +2369,7 @@ function OffboardingSection() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-red-600"
             onClick={() => handleDelete(row.original.id)}
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -2400,22 +2381,19 @@ function OffboardingSection() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div />
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => {
-            setEditItem(null);
-            setForm({ title: "", question: "" });
-            setDialogOpen(true);
-          }}>
-            <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add")}
-          </Button>
-        </div>
+      <div className="flex ltr:justify-end rtl:justify-start mb-4">
+        <Button size="sm" onClick={() => {
+          setEditItem(null);
+          setForm({ title: "", question: "" });
+          setDialogOpen(true);
+        }}>
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
+        </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <DataGrid columns={columns} data={translatedQuestions} searchPlaceholder={t("Search...")} />
@@ -2423,32 +2401,36 @@ function OffboardingSection() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{editItem ? t("Edit Question") : t("Add Question")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{editItem ? t("Edit Question") : t("Add Question")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label>{t("Title")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Title")}</Label>
               <Input
+                className="mt-1.5 w-full"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: sanitizeGeneral(e.target.value) })}
                 placeholder={t("Enter title")}
               />
             </div>
             <div>
-              <Label>{t("Question")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Question")}</Label>
               <Textarea
+                className="mt-1.5 w-full"
                 value={form.question}
                 onChange={(e) => setForm({ ...form, question: sanitizeGeneral(e.target.value) })}
                 placeholder={t("Enter question")}
-                rows={3}
+                rows={4}
               />
             </div>
-            <div className="flex ltr:justify-end rtl:justify-start gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleSave}>{t("Save")}</Button>
-            </div>
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleSave}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -2642,7 +2624,7 @@ function ScorecardSection() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
           onClick={() => {
             setEditFactor(row.original);
             setEditForm({
@@ -2694,16 +2676,19 @@ function ScorecardSection() {
       </div>
 
       {/* Scoring Formula Section */}
-      <div className="border rounded-lg p-4 bg-white">
-        <h3 className="text-sm font-semibold mb-4">{t("Scoring Formula")}</h3>
+      <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+        <div className="px-5 py-3 bg-primary-50 border-b border-slate-200">
+          <span className="text-sm font-semibold text-slate-700">{t("Scoring Formula")}</span>
+        </div>
+        <div className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div>
-            <Label>{t("Formula")}</Label>
+            <Label className="text-sm font-medium text-slate-700">{t("Formula")}</Label>
             <Select
               value={config.scoringFormula}
               onValueChange={(v) => saveConfig({ scoringFormula: v })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="mt-1.5 w-full bg-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -2713,8 +2698,9 @@ function ScorecardSection() {
             </Select>
           </div>
           <div>
-            <Label>{t("Security Posture Score")} (%)</Label>
+            <Label className="text-sm font-medium text-slate-700">{t("Security Posture Score")} (%)</Label>
             <Input
+              className="mt-1.5"
               type="number"
               min={0}
               max={100}
@@ -2728,8 +2714,9 @@ function ScorecardSection() {
             />
           </div>
           <div>
-            <Label>{t("Threat Exposure Score")} (%)</Label>
+            <Label className="text-sm font-medium text-slate-700">{t("Threat Exposure Score")} (%)</Label>
             <Input
+              className="mt-1.5"
               type="number"
               min={0}
               max={100}
@@ -2745,18 +2732,17 @@ function ScorecardSection() {
         </div>
 
         {/* Monitoring Recurrence Schedule */}
-        <div className="mt-5 pt-4 border-t">
+        <div className="mt-5">
           <div className="flex items-center gap-2 mb-3">
-            <Clock className="h-4 w-4 text-primary" />
-            <h4 className="text-sm font-semibold">{t("Monitoring Recurrence Schedule")}</h4>
+            <h4 className="text-sm font-semibold text-slate-700">{t("Monitoring Recurrence Schedule")}</h4>
             {scheduleRecurrence !== "none" && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium capitalize">
                 {scheduleRecurrence === "custom" ? `${t("Every")} ${scheduleCustomDays} ${t("days")}` : t(scheduleRecurrence.charAt(0).toUpperCase() + scheduleRecurrence.slice(1))}
               </span>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div>
+          <div className="flex items-end gap-4">
+            <div className="w-64">
               <Label className="text-xs">{t("Frequency")}</Label>
               <Select value={scheduleRecurrence} onValueChange={setScheduleRecurrence}>
                 <SelectTrigger className="mt-1">
@@ -2772,7 +2758,7 @@ function ScorecardSection() {
               </Select>
             </div>
             {scheduleRecurrence === "custom" && (
-              <div>
+              <div className="w-36">
                 <Label className="text-xs">{t("Every N days")}</Label>
                 <Input
                   type="number"
@@ -2784,46 +2770,57 @@ function ScorecardSection() {
                 />
               </div>
             )}
-            <div>
-              <Button onClick={saveSchedule} disabled={scheduleSaving} size="sm" className="mt-1">
-                {scheduleSaving ? <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" /> : <Save className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
-                {scheduleSaving ? t("Saving...") : t("Save Schedule")}
-              </Button>
-            </div>
             {scheduleNextRun && scheduleRecurrence !== "none" && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground pb-1">
                 {t("Next scan")}: {new Date(scheduleNextRun).toLocaleDateString()}
               </div>
             )}
+            <div className="ltr:ml-auto rtl:mr-auto">
+              <Button onClick={saveSchedule} disabled={scheduleSaving} size="sm">
+                {scheduleSaving ? <><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</> : t("Save Schedule")}
+              </Button>
+            </div>
           </div>
+        </div>
         </div>
       </div>
 
       {/* Security Posture Score Matrix */}
-      <div className="border rounded-lg p-4 bg-white">
-        <h3 className="text-sm font-semibold mb-4">{t("Security Posture Score Matrix")}</h3>
+      <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+        <div className="px-5 py-3 bg-primary-50 border-b border-slate-200">
+          <span className="text-sm font-semibold text-slate-700">{t("Security Posture Score Matrix")}</span>
+        </div>
+        <div className="p-5">
         <DataGrid columns={factorColumns} data={securityPostureFactors} hideSearch />
+        </div>
       </div>
 
       {/* Threat Exposure Score Matrix */}
-      <div className="border rounded-lg p-4 bg-white">
-        <h3 className="text-sm font-semibold mb-4">{t("Threat Exposure Score Matrix")}</h3>
+      <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+        <div className="px-5 py-3 bg-primary-50 border-b border-slate-200">
+          <span className="text-sm font-semibold text-slate-700">{t("Threat Exposure Score Matrix")}</span>
+        </div>
+        <div className="p-5">
         <DataGrid columns={factorColumns} data={threatExposureFactors} hideSearch />
+        </div>
       </div>
 
       {/* Validation Results Dialog */}
       <Dialog open={validationResults !== null} onOpenChange={(open) => { if (!open) setValidationResults(null); }}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>{t("Configuration Validation")}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0">
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Configuration Validation")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
           {validationResults?.passed ? (
             <div className="flex flex-col items-center py-4 gap-2">
               <CheckSquare className="h-10 w-10 text-green-500" />
               <p className="text-sm font-medium text-green-700">{t("All validations passed. Configuration is ready to use.")}</p>
             </div>
           ) : (
-            <div className="space-y-3 py-2">
+            <div className="space-y-3">
               <p className="text-sm text-muted-foreground">{t("The following items need to be addressed")}:</p>
               <ul className="space-y-2">
                 {validationResults?.errors.map((err, i) => (
@@ -2835,47 +2832,54 @@ function ScorecardSection() {
               </ul>
             </div>
           )}
-          <div className="flex ltr:justify-end rtl:justify-start">
-            <Button variant="outline" onClick={() => setValidationResults(null)}>{t("Close")}</Button>
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setValidationResults(null)}>{t("Close")}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Factor Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>{t("Edit Factor")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <Label>{t("Name")}</Label>
-              <Input
-                value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: sanitizeGeneral(e.target.value) })}
-              />
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Factor")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")}</Label>
+                <Input
+                  className="mt-1.5 w-full"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: sanitizeGeneral(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Weightage")} (%)</Label>
+                <Input
+                  className="mt-1.5 w-full"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={editForm.weightage}
+                  onChange={(e) => setEditForm({ ...editForm, weightage: parseInt(e.target.value) || 0 })}
+                />
+              </div>
             </div>
-            <div>
-              <Label>{t("Weightage")} (%)</Label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={editForm.weightage}
-                onChange={(e) => setEditForm({ ...editForm, weightage: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 py-3 px-4 bg-slate-50 rounded-lg border border-slate-100">
               <Switch
                 checked={editForm.isMandatory}
                 onCheckedChange={(v) => setEditForm({ ...editForm, isMandatory: v })}
               />
-              <Label>{t("Mandatory")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Mandatory")}</Label>
             </div>
-            <div className="flex ltr:justify-end rtl:justify-start gap-2">
-              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleEditFactor}>{t("Save")}</Button>
-            </div>
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleEditFactor}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>

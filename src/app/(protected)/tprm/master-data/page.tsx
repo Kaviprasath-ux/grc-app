@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Pencil, Trash2, ChevronRight, Home,
-  HelpCircle, ClipboardList, Globe, ArrowLeft, Search, X,
-  ChevronDown, ChevronUp, Link2, Unlink,
+  HelpCircle, ClipboardList, Globe, Search, X,
+  ChevronDown, ChevronUp, Link2, Unlink, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,7 +111,7 @@ export default function MasterDataManagementPage() {
   // ==================== LANDING PAGE ====================
   if (!activeCard) {
     return (
-      <div className="p-4 lg:p-6 space-y-6">
+      <div className="space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -121,36 +121,25 @@ export default function MasterDataManagementPage() {
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-primary-700 font-medium">{t("Master Data")}</span>
         </nav>
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Master Data Management")}</h1>
-          <p className="text-sm text-slate-500">
-            {t("Manage master data for third-party risk management")}
-          </p>
-        </div>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Master Data Management")}</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {masterDataCards.map((card) => {
             const Icon = card.icon;
             return (
               <button
                 key={card.id}
-                className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 ltr:text-left rtl:text-right hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
+                className="group bg-white rounded-xl border border-slate-200 p-3 sm:p-5 ltr:text-left rtl:text-right hover:border-primary/30 transition-colors cursor-pointer"
                 onClick={() => setActiveCard(card.id)}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-sm text-slate-800 group-hover:text-primary transition-colors">
-                        {t(card.title)}
-                      </h4>
-                      <ChevronRight className={`h-4 w-4 text-slate-400 group-hover:text-primary transition-colors ${isRTL ? "rotate-180" : ""}`} />
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      {t(card.description)}
-                    </p>
+                    <h4 className="font-semibold text-sm text-slate-800 group-hover:text-primary transition-colors">{t(card.title)}</h4>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{t(card.description)}</p>
                   </div>
+                  <ChevronRight className={`h-4 w-4 text-slate-400 group-hover:text-primary transition-colors flex-shrink-0 ${isRTL ? "rotate-180" : ""}`} />
                 </div>
               </button>
             );
@@ -164,7 +153,7 @@ export default function MasterDataManagementPage() {
   const cardTitle = masterDataCards.find((c) => c.id === activeCard)?.title || "";
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
@@ -182,30 +171,17 @@ export default function MasterDataManagementPage() {
         <span className="text-primary-700 font-medium">{t(cardTitle)}</span>
       </nav>
 
-      {/* Back button + Title */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setActiveCard(null)}
-          className="h-8 w-8"
-        >
-          <ArrowLeft className={`h-4 w-4 ${isRTL ? "rotate-180" : ""}`} />
-        </Button>
-        <h1 className="text-xl font-bold">{t(cardTitle)}</h1>
-      </div>
-
       {/* Render sub-page content */}
-      {activeCard === "domains" && <DomainsSection />}
-      {activeCard === "questions" && <QuestionsSection />}
-      {activeCard === "questionnaires" && <QuestionnairesSection />}
+      {activeCard === "domains" && <DomainsSection title={t(cardTitle)} />}
+      {activeCard === "questions" && <QuestionsSection title={t(cardTitle)} />}
+      {activeCard === "questionnaires" && <QuestionnairesSection title={t(cardTitle)} />}
     </div>
   );
 }
 
 // ==================== DOMAINS SECTION ====================
 
-function DomainsSection() {
+function DomainsSection({ title }: { title: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -215,7 +191,6 @@ function DomainsSection() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formActive, setFormActive] = useState(true);
-  const [search, setSearch] = useState("");
 
   const { data: translatedDomains } = useTranslatedData(domains, { modelName: 'TPRMDomain' });
 
@@ -296,12 +271,6 @@ function DomainsSection() {
     }
   };
 
-  const filtered = translatedDomains.filter(
-    (d) =>
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      (d.description || "").toLowerCase().includes(search.toLowerCase())
-  );
-
   const columns: ColumnDef<Domain>[] = [
     { accessorKey: "name", header: t("Name"), cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
     { accessorKey: "description", header: t("Description"), cell: ({ row }) => <span className="text-muted-foreground text-sm line-clamp-2">{row.original.description || "-"}</span> },
@@ -319,10 +288,10 @@ function DomainsSection() {
       header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(row.original)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEdit(row.original)}>
             <Pencil className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(row.original.id)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(row.original.id)}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -331,53 +300,44 @@ function DomainsSection() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("Search domains...")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="ltr:pl-9 rtl:pr-9"
-          />
-          {search && (
-            <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
-              <X className="h-3.5 w-3.5 text-muted-foreground" />
-            </button>
-          )}
-        </div>
+    <>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
         <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add Domain")}
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add Domain")}
         </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <DataGrid columns={columns} data={filtered} hideSearch />
+        <DataGrid columns={columns} data={translatedDomains} searchPlaceholder={t("Search domains...")} />
       )}
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editItem ? t("Edit Domain") : t("Add Domain")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{editItem ? t("Edit Domain") : t("Add Domain")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label>{t("Name")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Name")}</Label>
               <Input
+                className="mt-1.5 w-full"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder={t("Enter domain name")}
               />
             </div>
             <div>
-              <Label>{t("Description")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
               <Textarea
+                className="mt-1.5 w-full"
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder={t("Enter description")}
@@ -387,23 +347,23 @@ function DomainsSection() {
             {editItem && (
               <div className="flex items-center gap-2">
                 <Switch checked={formActive} onCheckedChange={setFormActive} />
-                <Label>{t("Active")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Active")}</Label>
               </div>
             )}
-            <div className="flex ltr:justify-end rtl:justify-start gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleSave} disabled={!formName.trim()}>{t("Save")}</Button>
-            </div>
+          </div>
+          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleSave} disabled={!formName.trim()}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 
 // ==================== QUESTIONS SECTION ====================
 
-function QuestionsSection() {
+function QuestionsSection({ title }: { title: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [questions, setQuestions] = useState<MasterQuestion[]>([]);
@@ -411,7 +371,6 @@ function QuestionsSection() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<MasterQuestion | null>(null);
-  const [search, setSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState("all");
 
   const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMMasterQuestion' });
@@ -543,15 +502,9 @@ function QuestionsSection() {
   }, [translatedQSDomains]);
   const parentQuestions = questions.filter((q) => q.isParentQuestion && q.id !== editItem?.id);
 
-  const filtered = translatedQuestions.filter((q) => {
-    const matchesSearch =
-      q.questionText.toLowerCase().includes(search.toLowerCase()) ||
-      (q.verifaiPrompt || "").toLowerCase().includes(search.toLowerCase()) ||
-      (q.domain?.name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (q.evidence || "").toLowerCase().includes(search.toLowerCase());
-    const matchesDomain = domainFilter === "all" || q.domainId === domainFilter;
-    return matchesSearch && matchesDomain;
-  });
+  const filteredByDomain = domainFilter === "all"
+    ? translatedQuestions
+    : translatedQuestions.filter((q) => q.domainId === domainFilter);
 
   const columns: ColumnDef<MasterQuestion>[] = [
     {
@@ -597,10 +550,10 @@ function QuestionsSection() {
       header: t("Action"),
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(row.original)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEdit(row.original)}>
             <Pencil className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(row.original.id)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(row.original.id)}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -609,58 +562,51 @@ function QuestionsSection() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t("Search questions...")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="ltr:pl-9 rtl:pr-9"
-            />
-            {search && (
-              <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-          <Select value={domainFilter} onValueChange={setDomainFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={t("All Domains")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("All Domains")}</SelectItem>
-              {activeDomains.map((d) => (
-                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
         <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Add Question")}
+          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add Question")}
         </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <DataGrid columns={columns} data={filtered} hideSearch />
+        <DataGrid
+          columns={columns}
+          data={filteredByDomain}
+          searchPlaceholder={t("Search questions...")}
+          toolbarExtra={
+            <Select value={domainFilter} onValueChange={setDomainFilter}>
+              <SelectTrigger className="w-[180px] h-9 border-slate-200 bg-white text-sm">
+                <SelectValue placeholder={t("All Domains")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Domains")}</SelectItem>
+                {activeDomains.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
       )}
 
       {/* Rich Add/Edit Question Dialog (matching UAT) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editItem ? t("Edit Question") : t("Add Question")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{editItem ? t("Edit Question") : t("Add Question")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             {/* Is Parent Question */}
             <div>
-              <Label>{t("Is Parent Question")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Is Parent Question")}</Label>
               <div className="flex items-center gap-4 mt-1">
                 {[true, false].map((val) => (
                   <label key={String(val)} className="flex items-center gap-2 cursor-pointer">
@@ -675,9 +621,9 @@ function QuestionsSection() {
             {/* Parent Question (when not parent) */}
             {!qForm.isParentQuestion && (
               <div>
-                <Label>{t("Parent Question")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Parent Question")}</Label>
                 <Select value={qForm.parentId || "none"} onValueChange={(v) => setQForm({ ...qForm, parentId: v === "none" ? "" : v })}>
-                  <SelectTrigger><SelectValue placeholder={t("Select parent question")} /></SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select parent question")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("None")}</SelectItem>
                     {parentQuestions.map((pq) => (
@@ -689,21 +635,21 @@ function QuestionsSection() {
             )}
             {/* Question Title */}
             <div>
-              <Label>{t("Question Title")} *</Label>
-              <Textarea value={qForm.questionText} onChange={(e) => setQForm({ ...qForm, questionText: e.target.value })}
+              <Label className="text-sm font-medium text-slate-700">{t("Question Title")} *</Label>
+              <Textarea className="mt-1.5 w-full" value={qForm.questionText} onChange={(e) => setQForm({ ...qForm, questionText: e.target.value })}
                 placeholder={t("Enter question text")} rows={3} />
             </div>
             {/* VerifAI Prompt */}
             <div>
-              <Label>{t("VerifAI Prompt Question")}</Label>
-              <Textarea value={qForm.verifaiPrompt} onChange={(e) => setQForm({ ...qForm, verifaiPrompt: e.target.value })}
+              <Label className="text-sm font-medium text-slate-700">{t("VerifAI Prompt Question")}</Label>
+              <Textarea className="mt-1.5 w-full" value={qForm.verifaiPrompt} onChange={(e) => setQForm({ ...qForm, verifaiPrompt: e.target.value })}
                 placeholder={t("Enter VerifAI prompt")} rows={2} />
             </div>
             {/* Domain */}
             <div>
-              <Label>{t("Domain")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Domain")}</Label>
               <Select value={qForm.domainId || "none"} onValueChange={(v) => setQForm({ ...qForm, domainId: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder={t("Select domain")} /></SelectTrigger>
+                <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select domain")} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("No Domain")}</SelectItem>
                   {activeDomains.map((d) => (
@@ -754,27 +700,27 @@ function QuestionsSection() {
             {/* Evidence, Issue, Risk, Recommendation */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>{t("Evidence")}</Label>
-                <Input value={qForm.evidence} onChange={(e) => setQForm({ ...qForm, evidence: e.target.value })} placeholder={t("Enter evidence")} />
+                <Label className="text-sm font-medium text-slate-700">{t("Evidence")}</Label>
+                <Input className="mt-1.5 w-full" value={qForm.evidence} onChange={(e) => setQForm({ ...qForm, evidence: e.target.value })} placeholder={t("Enter evidence")} />
               </div>
               <div>
-                <Label>{t("Issue")}</Label>
-                <Input value={qForm.issue} onChange={(e) => setQForm({ ...qForm, issue: e.target.value })} placeholder={t("Enter issue")} />
+                <Label className="text-sm font-medium text-slate-700">{t("Issue")}</Label>
+                <Input className="mt-1.5 w-full" value={qForm.issue} onChange={(e) => setQForm({ ...qForm, issue: e.target.value })} placeholder={t("Enter issue")} />
               </div>
               <div>
-                <Label>{t("Risk")}</Label>
-                <Input value={qForm.risk} onChange={(e) => setQForm({ ...qForm, risk: e.target.value })} placeholder={t("Enter risk")} />
+                <Label className="text-sm font-medium text-slate-700">{t("Risk")}</Label>
+                <Input className="mt-1.5 w-full" value={qForm.risk} onChange={(e) => setQForm({ ...qForm, risk: e.target.value })} placeholder={t("Enter risk")} />
               </div>
               <div>
-                <Label>{t("Recommendation")}</Label>
-                <Input value={qForm.recommendation} onChange={(e) => setQForm({ ...qForm, recommendation: e.target.value })} placeholder={t("Enter recommendation")} />
+                <Label className="text-sm font-medium text-slate-700">{t("Recommendation")}</Label>
+                <Input className="mt-1.5 w-full" value={qForm.recommendation} onChange={(e) => setQForm({ ...qForm, recommendation: e.target.value })} placeholder={t("Enter recommendation")} />
               </div>
             </div>
             {/* Severity */}
             <div>
-              <Label>{t("Severity")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Severity")}</Label>
               <Select value={qForm.severity || "none"} onValueChange={(v) => setQForm({ ...qForm, severity: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder={t("Select severity")} /></SelectTrigger>
+                <SelectTrigger className="mt-1.5 w-full bg-white"><SelectValue placeholder={t("Select severity")} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("None")}</SelectItem>
                   <SelectItem value="High">{t("High")}</SelectItem>
@@ -787,23 +733,23 @@ function QuestionsSection() {
             {editItem && (
               <div className="flex items-center gap-2">
                 <Switch checked={qForm.isActive} onCheckedChange={(v) => setQForm({ ...qForm, isActive: v })} />
-                <Label>{t("Active")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Active")}</Label>
               </div>
             )}
-            <div className="flex ltr:justify-end rtl:justify-start gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
-              <Button onClick={handleSave} disabled={!qForm.questionText.trim()}>{t("Save")}</Button>
-            </div>
+          </div>
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleSave} disabled={!qForm.questionText.trim()}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 
 // ==================== QUESTIONNAIRES SECTION ====================
 
-function QuestionnairesSection() {
+function QuestionnairesSection({ title }: { title: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [templates, setTemplates] = useState<QuestionnaireWithLinks[]>([]);
@@ -949,15 +895,16 @@ function QuestionnairesSection() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
+    <>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
+        <div className="relative w-72">
           <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("Search templates...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="ltr:pl-9 rtl:pr-9"
+            className="ltr:pl-9 rtl:pr-9 h-9 border-slate-200"
           />
           {search && (
             <button className="absolute ltr:right-3 rtl:left-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
@@ -965,14 +912,11 @@ function QuestionnairesSection() {
             </button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">
-          {t("Templates are managed in Configurations")}
-        </p>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
@@ -985,7 +929,7 @@ function QuestionnairesSection() {
           {filtered.map((tmpl) => {
             const isExpanded = expandedId === tmpl.id;
             return (
-              <div key={tmpl.id} className="border rounded-lg bg-white">
+              <div key={tmpl.id} className="border border-slate-200 rounded-xl bg-white">
                 {/* Header */}
                 <button
                   className="w-full flex items-center justify-between p-4 ltr:text-left rtl:text-right hover:bg-muted/30 transition-colors"
@@ -1017,7 +961,7 @@ function QuestionnairesSection() {
                         {t("Linked Questions")} ({tmpl.masterQuestionLinks.length})
                       </p>
                       <Button size="sm" variant="outline" onClick={() => openLinkDialog(tmpl.id)}>
-                        <Link2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Add Questions")}
+                        <Link2 className="h-3.5 w-3.5 ltr:mr-2 rtl:ml-2" /> {t("Add Questions")}
                       </Button>
                     </div>
 
@@ -1043,7 +987,7 @@ function QuestionnairesSection() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-destructive flex-shrink-0"
+                              className="h-8 w-8 text-slate-400 hover:text-red-600 flex-shrink-0"
                               onClick={() => handleUnlink(link.id)}
                               title={t("Remove")}
                             >
@@ -1063,21 +1007,23 @@ function QuestionnairesSection() {
 
       {/* Link Questions Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>{t("Add Questions to Template")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Add Questions to Template")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div className="relative">
               <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("Search questions...")}
                 value={questionSearch}
                 onChange={(e) => setQuestionSearch(e.target.value)}
-                className="ltr:pl-9 rtl:pr-9"
+                className="mt-1.5 w-full ltr:pl-9 rtl:pr-9"
               />
             </div>
-            <div className="max-h-[40vh] overflow-y-auto space-y-2 border rounded-md p-2">
+            <div className="space-y-2 border rounded-md p-2">
               {getAvailableQuestions().length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   {t("No available questions")}
@@ -1103,20 +1049,18 @@ function QuestionnairesSection() {
                 ))
               )}
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {selectedQuestionIds.size} {t("selected")}
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>{t("Cancel")}</Button>
-                <Button onClick={handleAddLinks} disabled={selectedQuestionIds.size === 0}>
-                  <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Link Selected")}
-                </Button>
-              </div>
+          </div>
+          <div className="flex-shrink-0 flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+            <p className="text-sm text-slate-500">{selectedQuestionIds.size} {t("selected")}</p>
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" onClick={() => setLinkDialogOpen(false)}>{t("Cancel")}</Button>
+              <Button size="sm" onClick={handleAddLinks} disabled={selectedQuestionIds.size === 0}>
+                <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Link Selected")}
+              </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
