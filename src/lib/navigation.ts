@@ -172,7 +172,7 @@ export const navigation: NavItem[] = [
     children: [
       { name: "Asset Inventory", href: "/assets/inventory", icon: Package, permission: "asset.inventory:view" },
       { name: "Asset Classification", href: "/assets/classification", icon: Layers, permission: "asset.classification:view" },
-      { name: "Asset Settings", href: "/assets/settings", icon: Settings2, permission: "asset.settings:view" },
+      { name: "Asset Settings", href: "/assets/settings", icon: Settings2, permission: "asset.settings:create" },
       { name: "Reports", href: "/assets/reports", icon: FileText, permission: "asset.reports:view" },
     ],
   },
@@ -189,7 +189,7 @@ export const navigation: NavItem[] = [
       { name: "Risk Assessment", href: "/risks/assessment", icon: Search, permission: "risk.assessment:view" },
       { name: "Risk Response Strategy", href: "/risks/response", icon: CheckSquare, permission: "risk.response:view" },
       { name: "Risk Control Matrix", href: "/risks/risk-control-matrix", icon: AlertTriangle, permission: "risk.risk-matrix:view" },
-      { name: "Risk Settings", href: "/risks/settings", icon: Settings2, permission: "risk.settings:view" },
+      { name: "Risk Settings", href: "/risks/settings", icon: Settings2, permission: "risk.settings:create" },
       { name: "Reports", href: "/risks/reports", icon: FileText, permission: "risk.reports:view" },
     ],
   },

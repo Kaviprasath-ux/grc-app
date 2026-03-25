@@ -47,15 +47,15 @@ const reportTypes = [
     category: "compliance",
   },
   {
-    id: "requirement-effectiveness",
-    title: "Requirement Effectiveness Report",
-    description: "Analysis of requirement implementation and effectiveness",
+    id: "control-effectiveness",
+    title: "Control Effectiveness Report",
+    description: "Analysis of control implementation and effectiveness",
     category: "compliance",
   },
   {
     id: "framework-compliance",
     title: "Framework Compliance Report",
-    description: "Compliance status by framework and requirements",
+    description: "Compliance status by framework and controls",
     category: "compliance",
   },
   {

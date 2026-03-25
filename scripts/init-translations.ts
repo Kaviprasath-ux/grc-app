@@ -3955,8 +3955,6 @@ const translations: [string, string, string][] = [
   ['Current State', 'الحالة الراهنة', 'Pašreizējais stāvoklis'],
   ['Expected Requirement', 'المتطلب المتوقع', 'Paredzamā prasība'],
   ['Gap Identified', 'الفجوة المحددة', 'Identificētā nepilnība'],
-  ['Risk Level', 'مستوى المخاطر', 'Riska līmenis'],
-  ['Target Date', 'التاريخ المستهدف', 'Mērķa datums'],
   ['Link Policies', 'ربط السياسات', 'Saistīt politikas'],
   ['Search policies...', 'البحث في السياسات...', 'Meklēt politikas...'],
   ['Gap assessment saved successfully', 'تم حفظ تقييم الفجوات بنجاح', 'Nepilnību novērtējums veiksmīgi saglabāts'],
@@ -3964,8 +3962,35 @@ const translations: [string, string, string][] = [
   ['Some changes failed to save', 'فشل حفظ بعض التغييرات', 'Dažas izmaiņas neizdevās saglabāt'],
   ['Policies updated', 'تم تحديث السياسات', 'Politikas atjauninātas'],
   ['Failed to update policies', 'فشل في تحديث السياسات', 'Neizdevās atjaunināt politikas'],
-  ['Control ID', 'معرف الضابطة', 'Kontroles ID'],
   ['Enter policy', 'أدخل السياسة', 'Ievadiet politiku'],
+
+  // ==========================================
+  // QPOST: Report translation keys (only new ones not already in the file)
+  // ==========================================
+  ['Compliance %', 'نسبة الامتثال %', 'Atbilstība %'],
+  ['Policy %', 'نسبة السياسات %', 'Politika %'],
+  ['Evidence %', 'نسبة الأدلة %', 'Pierādījumi %'],
+  ['Overall Compliance Rate', 'معدل الامتثال الشامل', 'Kopējais atbilstības rādītājs'],
+  ['Total Items', 'إجمالي العناصر', 'Kopējie vienumi'],
+  ['Total Compliant', 'إجمالي المتوافق', 'Kopā atbilstoši'],
+  ['Effectiveness Rate', 'معدل الفعالية', 'Efektivitātes rādītājs'],
+  ['Total Frameworks', 'إجمالي الأطر', 'Kopējie ietvari'],
+  ['Collection Rate', 'معدل الجمع', 'Vākšanas rādītājs'],
+  ['Collected', 'تم جمعه', 'Savākts'],
+  ['Published Date', 'تاريخ النشر', 'Publicēšanas datums'],
+  ['Pending Review', 'بانتظار المراجعة', 'Gaida pārskatīšanu'],
+  ['Related Control', 'الضابطة ذات الصلة', 'Saistītā kontrole'],
+  ['Achievement Rate', 'معدل الإنجاز', 'Sasniegumu rādītājs'],
+  ['Achievement %', 'نسبة الإنجاز %', 'Sasniegumi %'],
+  ['Metric / Department', 'المقياس / القسم', 'Rādītājs / Nodaļa'],
+  ['Compliance Rate', 'معدل الامتثال', 'Atbilstības rādītājs'],
+  ['Total Evidence Items', 'إجمالي عناصر الأدلة', 'Kopējie pierādījumu vienumi'],
+  ['Total Exceptions', 'إجمالي الاستثناءات', 'Kopējie izņēmumi'],
+  ['Total Policies', 'إجمالي السياسات', 'Kopējās politikas'],
+  ['Total KPIs', 'إجمالي مؤشرات الأداء', 'Kopējie KPI'],
+  ['With Treatment Plan', 'مع خطة المعالجة', 'Ar ārstēšanas plānu'],
+  ['Treatment Completed', 'اكتملت المعالجة', 'Ārstēšana pabeigta'],
+  ['Unique Cells', 'خلايا فريدة', 'Unikālas šūnas'],
 
   // ==========================================
   // QPOST: "Requirement" → "Control" label renaming
@@ -4638,11 +4663,9 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['Review Questionnaire', 'مراجعة الاستبيان', 'Pārskatīt anketu'],
   ['Activity Logs', 'سجلات النشاط', 'Darbību žurnāli'],
-  ['Generate Report', 'إنشاء تقرير', 'Ģenerēt atskaiti'],
   ['Detailed Assessment', 'التقييم المفصّل', 'Detalizēts novērtējums'],
   ['Domain Summary', 'ملخص المجال', 'Domēna kopsavilkums'],
   ['VerifAI Summary', 'ملخص التحقق بالذكاء الاصطناعي', 'VerifAI kopsavilkums'],
-  ['AI Review', 'مراجعة الذكاء الاصطناعي', 'AI pārskats'],
   ['Confidence level of AI', 'مستوى ثقة الذكاء الاصطناعي', 'AI ticamības līmenis'],
   ['Override AI', 'تجاوز الذكاء الاصطناعي', 'Pārrakstīt AI'],
   ['Override AI Evaluation', 'تجاوز تقييم الذكاء الاصطناعي', 'Pārrakstīt AI novērtējumu'],
@@ -4662,11 +4685,7 @@ const translations: [string, string, string][] = [
   ['Vendor\'s Comment', 'تعليق المورد', 'Piegādātāja komentārs'],
   ['Internal Comments', 'التعليقات الداخلية', 'Iekšējie komentāri'],
   ['Type a comment...', 'اكتب تعليقاً...', 'Ierakstiet komentāru...'],
-  ['No comments yet', 'لا توجد تعليقات بعد', 'Komentāru vēl nav'],
-  ['Clarification', 'توضيح', 'Precizējums'],
-  ['Request Clarification', 'طلب توضيح', 'Pieprasīt precizējumu'],
   ['Clarification requested', 'تم طلب التوضيح', 'Precizējums pieprasīts'],
-  ['Enter your clarification request...', 'أدخل طلب التوضيح...', 'Ievadiet savu precizējuma pieprasījumu...'],
   ['Open Clarifications', 'التوضيحات المفتوحة', 'Atvērtie precizējumi'],
   ['There are open clarifications. Please resolve all clarifications before proceeding.', 'هناك توضيحات مفتوحة. يرجى حل جميع التوضيحات قبل المتابعة.', 'Ir atvērti precizējumi. Lūdzu atrisiniet visus precizējumus pirms turpināšanas.'],
   ['Select an approver to send this assessment for final approval.', 'اختر معتمداً لإرسال هذا التقييم للموافقة النهائية.', 'Izvēlieties apstiprinātāju, lai nosūtītu šo novērtējumu galīgajai apstiprināšanai.'],
@@ -4679,7 +4698,6 @@ const translations: [string, string, string][] = [
   ['Assessment approved', 'تمت الموافقة على التقييم', 'Novērtējums apstiprināts'],
   ['Download Excel Report', 'تحميل تقرير Excel', 'Lejupielādēt Excel atskaiti'],
   ['Download PDF Report', 'تحميل تقرير PDF', 'Lejupielādēt PDF atskaiti'],
-  ['Download Report', 'تحميل التقرير', 'Lejupielādēt atskaiti'],
   ['Assessment Report', 'تقرير التقييم', 'Novērtējuma atskaite'],
   ['Third Party Risk Management Team.', 'فريق إدارة مخاطر الطرف الثالث.', 'Trešo pušu risku pārvaldības komanda.'],
   ['Third Party Risk Management Team', 'فريق إدارة مخاطر الطرف الثالث', 'Trešo pušu risku pārvaldības komanda'],
@@ -4701,7 +4719,6 @@ const translations: [string, string, string][] = [
   ['RESPONSE', 'الاستجابة', 'ATBILDE'],
   ['COMPLIANCE', 'الامتثال', 'ATBILSTĪBA'],
   ['Que.No', 'رقم السؤال', 'Jaut.Nr.'],
-  ['Approve', 'الموافقة', 'Apstiprināt'],
   ['High Severity', 'شدة عالية', 'Augsta smaguma pakāpe'],
   ['Medium Severity', 'شدة متوسطة', 'Vidēja smaguma pakāpe'],
   ['Low Severity', 'شدة منخفضة', 'Zema smaguma pakāpe'],
@@ -4709,15 +4726,12 @@ const translations: [string, string, string][] = [
   ['Assign Assessment', 'تعيين التقييم', 'Piešķirt novērtējumu'],
   ['Reassign Assessment', 'إعادة تعيين التقييم', 'Pārpiešķirt novērtējumu'],
   ['Select Assessor', 'اختر المقيّم', 'Izvēlieties vērtētāju'],
-  ['Select Approver', 'اختر المعتمد', 'Izvēlieties apstiprinātāju'],
   ['Reassign', 'إعادة تعيين', 'Pārpiešķirt'],
   ['Unassigned Queue', 'قائمة الانتظار غير المعيّنة', 'Nepiešķirtā rinda'],
   ['Assigned Queue', 'قائمة الانتظار المعيّنة', 'Piešķirtā rinda'],
   ['Awaiting Response', 'في انتظار الرد', 'Gaida atbildi'],
   ['Due Diligence', 'العناية الواجبة', 'Uzticamības pārbaude'],
   ['Reassessments', 'إعادة التقييمات', 'Atkārtotie novērtējumi'],
-  ['Offboarding', 'إنهاء الخدمة', 'Izslēgšana'],
-  ['Offboard Approval', 'الموافقة على إنهاء الخدمة', 'Izslēgšanas apstiprināšana'],
   ['Terminated Vendors', 'الموردون المنتهية خدماتهم', 'Izbeigto piegādātāju saraksts'],
   ['Failed to load assessment', 'فشل في تحميل التقييم', 'Neizdevās ielādēt novērtējumu'],
   ['Failed to load assessors', 'فشل في تحميل المقيّمين', 'Neizdevās ielādēt vērtētājus'],
@@ -4725,7 +4739,6 @@ const translations: [string, string, string][] = [
   ['Failed to assign assessment', 'فشل في تعيين التقييم', 'Neizdevās piešķirt novērtējumu'],
   ['Failed to reassign assessment', 'فشل في إعادة تعيين التقييم', 'Neizdevās pārpiešķirt novērtējumu'],
   ['Failed to save override', 'فشل في حفظ التجاوز', 'Neizdevās saglabāt pārrakstīšanu'],
-  ['Failed to request clarification', 'فشل في طلب التوضيح', 'Neizdevās pieprasīt precizējumu'],
   ['Failed to post comment', 'فشل في نشر التعليق', 'Neizdevās publicēt komentāru'],
   ['Failed to send to approver', 'فشل في الإرسال إلى المعتمد', 'Neizdevās nosūtīt apstiprinātājam'],
   ['Failed to return assessment', 'فشل في إعادة التقييم', 'Neizdevās atgriezt novērtējumu'],
@@ -4789,7 +4802,6 @@ const translations: [string, string, string][] = [
   ['Edit Question', 'تعديل السؤال', 'Rediģēt jautājumu'],
   ['No questions linked yet', 'لم يتم ربط أسئلة بعد', 'Jautājumi vēl nav piesaistīti'],
   ['No available questions', 'لا توجد أسئلة متاحة', 'Nav pieejamu jautājumu'],
-  ['No questions match the selected filters', 'لا توجد أسئلة تطابق الفلاتر المحددة', 'Neviens jautājums neatbilst atlasītajiem filtriem'],
   ['Search questions...', 'البحث عن الأسئلة...', 'Meklēt jautājumus...'],
   ['Total questions', 'إجمالي الأسئلة', 'Kopā jautājumu'],
   ['Export All Questions', 'تصدير جميع الأسئلة', 'Eksportēt visus jautājumus'],
@@ -4806,7 +4818,6 @@ const translations: [string, string, string][] = [
   ['Select Domain', 'اختر المجال', 'Izvēlieties domēnu'],
   ['Domains', 'المجالات', 'Domēni'],
   ['Service Categories', 'فئات الخدمات', 'Pakalpojumu kategorijas'],
-  ['Mandatory Attachments', 'المرفقات الإلزامية', 'Obligātie pielikumi'],
   ['Mandatory Question', 'سؤال إلزامي', 'Obligāts jautājums'],
   ['Attachment Required', 'المرفق مطلوب', 'Pielikums ir obligāts'],
   ['Free Text', 'نص حر', 'Brīvs teksts'],
@@ -4856,7 +4867,6 @@ const translations: [string, string, string][] = [
   ['Issue assigned successfully', 'تم تعيين المشكلة بنجاح', 'Problēma veiksmīgi piešķirta'],
   ['Issue assigned to RM for', 'تم تعيين المشكلة لمدير العلاقات لـ', 'Problēma piešķirta AP priekš'],
   ['Create Issue', 'إنشاء مشكلة', 'Izveidot problēmu'],
-  ['No issues found', 'لم يتم العثور على مشكلات', 'Problēmas nav atrastas'],
   ['Open Issues', 'المشكلات المفتوحة', 'Atvērtās problēmas'],
   ['Closed Issues', 'المشكلات المغلقة', 'Slēgtās problēmas'],
   ['Rejected Issues', 'المشكلات المرفوضة', 'Noraidītās problēmas'],
@@ -4931,7 +4941,6 @@ const translations: [string, string, string][] = [
   ['Update Status', 'تحديث الحالة', 'Atjaunināt statusu'],
   ['Satisfied', 'مستوفى', 'Apmierināts'],
   ['Unsatisfied', 'غير مستوفى', 'Neapmierināts'],
-  ['Awaiting Response', 'في انتظار الرد', 'Gaida atbildi'],
   ['Awaiting Vendor', 'في انتظار المورد', 'Gaida piegādātāju'],
   ['Received Response', 'تم استلام الرد', 'Atbilde saņemta'],
   ['Previously marked as unsatisfactory', 'تم تصنيفه سابقاً على أنه غير مرضٍ', 'Iepriekš atzīmēts kā neapmierinošs'],
@@ -4942,7 +4951,6 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['Add a comment...', 'أضف تعليقاً...', 'Pievienot komentāru...'],
   ['Add your response or comment...', 'أضف ردك أو تعليقك...', 'Pievienojiet savu atbildi vai komentāru...'],
-  ['Internal Comments', 'التعليقات الداخلية', 'Iekšējie komentāri'],
   ['Reject Comment', 'تعليق الرفض', 'Noraidīšanas komentārs'],
   ['Explain why the response is unsatisfactory...', 'اشرح لماذا الرد غير مرضٍ...', 'Paskaidrojiet, kāpēc atbilde ir neapmierinoša...'],
   ['Explain why this is being sent back to IT...', 'اشرح لماذا يتم إرجاع هذا لتكنولوجيا المعلومات...', 'Paskaidrojiet, kāpēc tas tiek nosūtīts atpakaļ uz IT...'],
@@ -5051,11 +5059,9 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['Task Queue', 'قائمة المهام', 'Uzdevumu rinda'],
   ['Manage assessment assignments and workflow', 'إدارة تعيينات التقييم وسير العمل', 'Pārvaldīt novērtējumu piešķīrumus un darbplūsmu'],
-  ['Unassigned Queue', 'قائمة غير المعينة', 'Nepiešķirto rinda'],
   ['My Queue', 'مهامي', 'Mana rinda'],
   ['Control Center', 'مركز التحكم', 'Vadības centrs'],
   ['Due Diligence Configuration', 'تكوين العناية الواجبة', 'Padziļinātās izpētes iestatījumi'],
-  ['Due Diligence', 'العناية الواجبة', 'Padziļinātā izpēte'],
   ['Vendor Onboarding', 'تسجيل المورد', 'Piegādātāja reģistrācija'],
   ['Application Data Management', 'إدارة بيانات التطبيق', 'Lietojumprogrammas datu pārvaldība'],
   ['Program Monitor', 'مراقب البرنامج', 'Programmas uzraugs'],
@@ -5083,11 +5089,6 @@ const translations: [string, string, string][] = [
   ['View and generate TPRM reports', 'عرض وإنشاء تقارير إدارة مخاطر الطرف الثالث', 'Skatīt un ģenerēt TPRM pārskatus'],
   ['Criticality Rating', 'تصنيف الأهمية', 'Kritiskuma novērtējums'],
   ['Report Library', 'مكتبة التقارير', 'Pārskatu bibliotēka'],
-  ['For any further questions or follow-ups on this report, please reach out to us.', 'لأي أسئلة أو متابعات إضافية حول هذا التقرير، يرجى التواصل معنا.', 'Ja jums ir papildu jautājumi vai turpmākās darbības saistībā ar šo pārskatu, lūdzu sazinieties ar mums.'],
-  ['Sincerely,', 'مع خالص التحية،', 'Ar cieņu,'],
-  ['Third Party Risk Management Team', 'فريق إدارة مخاطر الطرف الثالث', 'Trešo pušu risku pārvaldības komanda'],
-  ['Third Party Risk Management Team conducted a due diligence review of', 'أجرى فريق إدارة مخاطر الطرف الثالث مراجعة العناية الواجبة لـ', 'Trešo pušu risku pārvaldības komanda veica padziļināto izpēti par'],
-  ['The control environment was found to be:', 'تبين أن بيئة الرقابة هي:', 'Kontroles vide tika novērtēta kā:'],
   ['Gallery', 'المعرض', 'Galerija'],
 
   // ==========================================
@@ -5095,7 +5096,6 @@ const translations: [string, string, string][] = [
   // ==========================================
   ['VerifAI Prompt', 'أمر VerifAI', 'VerifAI uzvedne'],
   ['VerifAI Prompt Question', 'سؤال أمر VerifAI', 'VerifAI uzvednes jautājums'],
-  ['VerifAI Summary', 'ملخص VerifAI', 'VerifAI kopsavilkums'],
   ['VerifAI Results', 'نتائج VerifAI', 'VerifAI rezultāti'],
   ['Confidence Score', 'نقاط الثقة', 'Uzticamības rādītājs'],
   ['Suggested Questionnaire', 'الاستبيان المقترح', 'Ieteiktā anketa'],
@@ -5248,7 +5248,6 @@ const translations: [string, string, string][] = [
   ['Upload all the respective artifacts as valid file types i.e., word, image, pdf.', 'ارفع جميع المستندات المعنية كأنواع ملفات صالحة مثل Word والصور وPDF.', 'Augšupielādējiet visus attiecīgos artefaktus kā derīgus failu tipus, t.i., Word, attēlus, PDF.'],
   ['Sequence Number', 'الرقم التسلسلي', 'Secības numurs'],
   ['questions', 'الأسئلة', 'jautājumi'],
-  ['Number of Questions', 'عدد الأسئلة', 'Jautājumu skaits'],
   ['Clear Filter', 'مسح الفلتر', 'Notīrīt filtru'],
   ['Upload the Completed Template', 'رفع القالب المكتمل', 'Augšupielādēt aizpildīto veidni'],
   ['Once the template is populated, upload the spreadsheet by clicking here.', 'بمجرد ملء القالب، ارفع جدول البيانات بالنقر هنا.', 'Kad veidne ir aizpildīta, augšupielādējiet izklājlapu, noklikšķinot šeit.'],
@@ -5324,7 +5323,6 @@ const translations: [string, string, string][] = [
   ['Vendor Count', 'عدد الموردين', 'Piegādātāju skaits'],
   // REMOVED DUPLICATE: All Vendor Contracts
   ['EXPIRING ON', 'تاريخ الانتهاء', 'BEIGU DATUMS'],
-  ['Reassessments', 'إعادة التقييم', 'Atkārtoti novērtējumi'],
   ['Past', 'السابقة', 'Iepriekšējie'],
   ['New Vendor Scan', 'فحص مورد جديد', 'Jauna piegādātāja skenēšana'],
   ['Track and monitor vendor security posture in real-time', 'تتبع ومراقبة الوضع الأمني للمورد في الوقت الفعلي', 'Izsekojiet un uzraugiet piegādātāja drošības stāvokli reāllaikā'],
@@ -5391,7 +5389,6 @@ const translations: [string, string, string][] = [
   // ==========================================
   // TPRM — ASR FACTORY REPORTS, TEMPLATES & SUPPORT
   // ==========================================
-  ['Assessment Report', 'تقرير التقييم', 'Novērtējuma pārskats'],
   ['No assessments yet', 'لا توجد تقييمات حتى الآن', 'Pagaidām nav novērtējumu'],
   ['Run an assessment from the Assessment Factory to see results here', 'قم بإجراء تقييم من مصنع التقييم لعرض النتائج هنا', 'Veiciet novērtējumu no novērtējumu rūpnīcas, lai šeit redzētu rezultātus'],
   ['Assessment Templates', 'قوالب التقييم', 'Novērtējuma veidnes'],
@@ -5428,11 +5425,7 @@ const translations: [string, string, string][] = [
   // TPRM - Assessment Report (PDF/CSV)
   ['Sr', 'م', 'Nr.'],
   ['Due By', 'الاستحقاق بحلول', 'Termiņš līdz'],
-  ['Prepared By', 'أعدّه', 'Sagatavoja'],
-  ['Sincerely', 'مع خالص التقدير', 'Ar cieņu'],
-  ['Overall Cybersecurity Score', 'نقاط الأمن السيبراني الإجمالية', 'Kopējais kiberdrošības rādītājs'],
   ['till', 'حتى', 'līdz'],
-  ['The control environment was found to be', 'تبين أن بيئة الرقابة كانت', 'Kontroles vide tika novērtēta kā'],
   // REMOVED DUPLICATE: Third Party Risk Management Team conducted a due d
   // REMOVED DUPLICATE: For any further questions or follow-ups on this re
 
@@ -5442,7 +5435,6 @@ const translations: [string, string, string][] = [
   // REMOVED DUPLICATE: Help
 
   // TPRM - BO/RM ASSESSMENTS
-  ['Terminated Vendors', 'الموردون المنتهية عقودهم', 'Izbeigti piegādātāji'],
   ['Approval Date', 'تاريخ الموافقة', 'Apstiprināšanas datums'],
   ['Failed to load assessments', 'فشل في تحميل التقييمات', 'Neizdevās ielādēt novērtējumus'],
   ['Offboard In-Progress', 'إنهاء التعاقد قيد التنفيذ', 'Izbeigšana procesā'],
@@ -5946,8 +5938,6 @@ const translations: [string, string, string][] = [
   // (All entries already defined above in BO Support section)
 
   // ===== AM (Account Manager) Support Page =====
-  ['Click \'Start\' to open the Response Questionnaire.', 'انقر على "ابدأ" لفتح استبيان الاستجابة.', 'Noklikšķiniet uz "Sākt", lai atvērtu atbilžu anketu.'],
-  ['Click \'Submit Assessment\' when all mandatory questions are answered.', 'انقر على "تقديم التقييم" عند الإجابة على جميع الأسئلة الإلزامية.', 'Noklikšķiniet uz "Iesniegt novērtējumu", kad ir atbildēts uz visiem obligātajiem jautājumiem.'],
 
   // ===== Main Support Page (Admin) =====
   ['Configure vendor risk rating thresholds and due diligence requirements for different risk categories.', 'تكوين عتبات تصنيف مخاطر الموردين ومتطلبات العناية الواجبة لفئات المخاطر المختلفة.', 'Konfigurējiet piegādātāju riska novērtējuma sliekšņus un pienācīgas rūpības prasības.'],

@@ -265,7 +265,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
             <Calendar className="h-4 w-4 text-primary-500" />
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-500 font-medium">{t("Date")}</span>
-              <span className="text-sm text-slate-700 font-semibold">
+              <span className="text-xs text-slate-700 font-semibold whitespace-nowrap">
                 {currentTime ? format(currentTime, "dd MMM yyyy", { locale: dateFnsLocale }) : "--"}
               </span>
             </div>
@@ -274,7 +274,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
             <Clock className="h-4 w-4 text-primary-500" />
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-500 font-medium">{t("Time")}</span>
-              <span className="text-sm text-slate-700 font-semibold">
+              <span className="text-xs text-slate-700 font-semibold whitespace-nowrap">
                 {currentTime ? format(currentTime, "h:mm a", { locale: dateFnsLocale }) : "--"}
               </span>
             </div>
@@ -285,7 +285,9 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
       {/* Right side */}
       <div className="flex items-center gap-2">
         {/* Global Search */}
-        <GlobalSearch />
+        <div className="lg:ms-4">
+          <GlobalSearch />
+        </div>
 
         {/* Theme Picker — Customer Administrator only */}
         {isCustomerAdmin && (

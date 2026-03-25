@@ -1,0 +1,84 @@
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/api-auth";
+import { getQPostReportFetcher } from "@/lib/reports/qpost-data-fetchers";
+import { generateCSV } from "@/lib/reports/format-csv";
+import { generateExcel } from "@/lib/reports/format-excel";
+import { generatePDF } from "@/lib/reports/format-pdf";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export const POST = withAuth(
+  async (req: NextRequest, _context, session) => {
+    try {
+      const body = await req.json();
+      const { reportType, format } = body as {
+        reportType: string;
+        format: string;
+      };
+
+      if (!reportType || !format) {
+        return NextResponse.json(
+          { error: "reportType and format are required" },
+          { status: 400 }
+        );
+      }
+
+      const fetcher = getQPostReportFetcher(reportType);
+      if (!fetcher) {
+        return NextResponse.json(
+          { error: `Unknown report type: ${reportType}` },
+          { status: 400 }
+        );
+      }
+
+      // Fetch data (always English)
+      const data = await fetcher(session);
+
+      // Generate file
+      let fileBuffer: Buffer | Uint8Array;
+      let contentType: string;
+      let extension: string;
+
+      switch (format) {
+        case "csv":
+          fileBuffer = generateCSV(data);
+          contentType = "text/csv";
+          extension = "csv";
+          break;
+        case "excel":
+          fileBuffer = generateExcel(data);
+          contentType =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+          extension = "xlsx";
+          break;
+        case "pdf":
+          fileBuffer = await generatePDF(data);
+          contentType = "application/pdf";
+          extension = "pdf";
+          break;
+        default:
+          return NextResponse.json(
+            { error: `Unsupported format: ${format}` },
+            { status: 400 }
+          );
+      }
+
+      const filename = `${data.title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.${extension}`;
+
+      return new NextResponse(Buffer.from(fileBuffer), {
+        headers: {
+          "Content-Type": contentType,
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
+    } catch (error) {
+      console.error("Error generating QPost report:", error);
+      return NextResponse.json(
+        { error: "Unable to complete the request. Please try again." },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "qpost-compliance.dashboard", action: "view" }
+);
