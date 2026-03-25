@@ -469,7 +469,7 @@ export default function RMInventoryPage() {
     const errors: Record<string, string> = {};
     if (!vendorName.trim()) errors.vendorName = t("Vendor name is required");
     if (!vendorUrl.trim()) errors.vendorUrl = t("Vendor URL is required");
-    if (vendorUrl.trim() && !/^https?:\/\/.+\..+/.test(vendorUrl.trim())) errors.vendorUrl = t("Invalid URL format");
+    if (vendorUrl.trim() && !/\.[a-zA-Z]/.test(vendorUrl.trim())) errors.vendorUrl = t("Please enter a valid website (e.g. grc.com or https://grc.com)");
     if (!vendorPassword.trim()) errors.vendorPassword = t("Password is required");
     if (!vendorConfirmPassword.trim()) errors.vendorConfirmPassword = t("Confirm password is required");
     if (vendorPassword && vendorConfirmPassword && vendorPassword !== vendorConfirmPassword) errors.vendorConfirmPassword = t("Passwords do not match");

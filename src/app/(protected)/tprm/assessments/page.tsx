@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { DataGrid } from "@/components/shared/data-grid";
@@ -264,6 +265,8 @@ function LogDetailDialog({
 
 export default function AssessmentWorkspacePage() {
   const { t } = useLanguage();
+  const { data: session } = useSession();
+  const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
@@ -512,6 +515,14 @@ export default function AssessmentWorkspacePage() {
       </SelectContent>
     </Select>
   );
+
+  if (session && !isGRCAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px]">
+        <p className="text-sm text-slate-500">{t("You do not have permission to access this page.")}</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

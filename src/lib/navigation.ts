@@ -234,7 +234,7 @@ export const navigation: NavItem[] = [
       { name: "Monitoring", href: "/tprm/monitoring", icon: Radar, permission: "tprm.monitoring:view" },
       { name: "Configurations", href: "/tprm/configurations", icon: Settings, permission: "tprm.configurations:view" },
       { name: "Master Data", href: "/tprm/master-data", icon: Database, permission: "tprm.master-data:create" },
-      { name: "Assessment Workspace", href: "/tprm/assessments", icon: ListChecks, permission: "tprm.assessments:view" },
+      { name: "Assessment Workspace", href: "/tprm/assessments", icon: ListChecks, permission: "grc.customer-accounts:view" },
       { name: "Task Queue", href: "/tprm/task-queue", icon: Inbox, permission: "tprm.task-queue:view" },
       // ---- Business Owner menu items ----
       { name: "Dashboard", href: "/tprm/bo-dashboard", icon: LayoutDashboard, permission: "tprm.bo-dashboard:view" },
