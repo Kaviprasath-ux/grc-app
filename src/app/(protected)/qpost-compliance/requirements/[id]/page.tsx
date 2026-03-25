@@ -98,7 +98,10 @@ interface ExceptionItem {
   id: string;
   title?: string;
   name?: string;
+  exceptionCode?: string;
   status?: string;
+  category?: string;
+  department?: { id: string; name: string } | null;
   expiryDate?: string;
 }
 
@@ -220,6 +223,30 @@ export default function QPostRequirementDetailPage() {
     departmentId: "",
     assigneeId: "",
   });
+
+  // Import exceptions dialog
+  const [importExceptionOpen, setImportExceptionOpen] = useState(false);
+  const [importExceptionFile, setImportExceptionFile] = useState<File | null>(null);
+  const [importingException, setImportingException] = useState(false);
+  const [importExceptionErrors, setImportExceptionErrors] = useState<string[]>([]);
+  const [downloadingExceptionTemplate, setDownloadingExceptionTemplate] = useState(false);
+
+  // Create exception dialog
+  const [createExceptionOpen, setCreateExceptionOpen] = useState(false);
+  const [creatingException, setCreatingException] = useState(false);
+  const [createExceptionForm, setCreateExceptionForm] = useState({
+    name: "",
+    description: "",
+    category: "Compliance",
+    departmentId: "",
+    status: "Pending",
+  });
+
+  // Link exception dialog
+  const [linkExceptionOpen, setLinkExceptionOpen] = useState(false);
+  const [availableExceptions, setAvailableExceptions] = useState<ExceptionItem[]>([]);
+  const [selectedExceptionId, setSelectedExceptionId] = useState("");
+  const [linkingException, setLinkingException] = useState(false);
 
   // Reference data for create dialogs
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
@@ -634,6 +661,159 @@ export default function QPostRequirementDetailPage() {
   };
 
   // ---------------------------------------------------------------------------
+  // Import exceptions handler
+  // ---------------------------------------------------------------------------
+
+  const handleDownloadExceptionTemplate = async () => {
+    setDownloadingExceptionTemplate(true);
+    try {
+      const res = await fetch(`/api/qpost-compliance/requirements/${id}/import-exceptions?template=true`);
+      if (!res.ok) throw new Error("Failed to download template");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "exception-import-template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: t("Failed to download template"), variant: "destructive" });
+    } finally {
+      setDownloadingExceptionTemplate(false);
+    }
+  };
+
+  const handleImportExceptions = async () => {
+    if (!importExceptionFile) return;
+    setImportingException(true);
+    setImportExceptionErrors([]);
+    try {
+      const formData = new FormData();
+      formData.append("file", importExceptionFile);
+
+      const res = await fetch(`/api/qpost-compliance/requirements/${id}/import-exceptions`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({ title: t("Import Successful"), description: data.message });
+        setImportExceptionOpen(false);
+        setImportExceptionFile(null);
+        setImportExceptionErrors([]);
+        fetchRequirement();
+      } else {
+        const errs: string[] = [];
+        if (data.details) {
+          for (const d of data.details) {
+            errs.push(`Row ${d.row}: ${d.column ? `[${d.column}] ` : ""}${d.message}`);
+          }
+        }
+        if (data.errors) errs.push(...data.errors);
+        if (errs.length === 0) errs.push(data.error || "Import failed");
+        setImportExceptionErrors(errs);
+        toast({ title: t("Import Failed"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Failed to import exceptions"), variant: "destructive" });
+    } finally {
+      setImportingException(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Create exception handler
+  // ---------------------------------------------------------------------------
+
+  const handleCreateException = async () => {
+    if (!createExceptionForm.name.trim()) {
+      toast({ title: t("Name is required"), variant: "destructive" });
+      return;
+    }
+    setCreatingException(true);
+    try {
+      const res = await fetch("/api/qpost-compliance/exceptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createExceptionForm.name.trim(),
+          description: createExceptionForm.description.trim() || null,
+          category: createExceptionForm.category,
+          departmentId: createExceptionForm.departmentId || null,
+          status: createExceptionForm.status,
+          requirementId: id,
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        toast({ title: t("Success"), description: t("Exception created and linked successfully") });
+        triggerTranslation("QPostException", created.id, { name: created.name, description: created.description });
+        setCreateExceptionOpen(false);
+        setCreateExceptionForm({ name: "", description: "", category: "Compliance", departmentId: "", status: "Pending" });
+        fetchRequirement();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast({ title: t("Error"), description: err.error || t("Failed to create exception"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to create exception"), variant: "destructive" });
+    } finally {
+      setCreatingException(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Link exception handler
+  // ---------------------------------------------------------------------------
+
+  const openLinkException = async () => {
+    try {
+      const res = await fetch("/api/qpost-compliance/exceptions?limit=500");
+      if (res.ok) {
+        const data = await res.json();
+        const all = data.data || [];
+        // Filter out already linked exceptions
+        const linkedIds = new Set([
+          ...(requirement?.exceptions || []).map((e: ExceptionItem) => e.id),
+          ...(requirement?.complianceExceptions || []).map((e: ExceptionItem) => e.id),
+        ]);
+        setAvailableExceptions(all.filter((e: ExceptionItem) => !linkedIds.has(e.id)));
+      }
+    } catch {
+      // ignore
+    }
+    setSelectedExceptionId("");
+    setLinkExceptionOpen(true);
+  };
+
+  const handleLinkException = async () => {
+    if (!selectedExceptionId) return;
+    setLinkingException(true);
+    try {
+      // Update the exception to link it to this requirement
+      const res = await fetch(`/api/qpost-compliance/exceptions/${selectedExceptionId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requirementId: id }),
+      });
+      if (res.ok) {
+        toast({ title: t("Success"), description: t("Exception linked successfully") });
+        setLinkExceptionOpen(false);
+        fetchRequirement();
+      } else {
+        toast({ title: t("Error"), description: t("Failed to link exception"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to link exception"), variant: "destructive" });
+    } finally {
+      setLinkingException(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
   // Translation hooks (must be called before any early returns)
   // ---------------------------------------------------------------------------
 
@@ -947,8 +1127,24 @@ export default function QPostRequirementDetailPage() {
         {/* Exceptions Tab */}
         <TabsContent value="exceptions">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{t("Exceptions")}</CardTitle>
+              {canEdit && (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => { setImportExceptionFile(null); setImportExceptionErrors([]); setImportExceptionOpen(true); }}>
+                    <Upload className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Import")}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={openLinkException}>
+                    <Link2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Link Exception")}
+                  </Button>
+                  <Button size="sm" onClick={() => { fetchReferenceData(); setCreateExceptionForm({ name: "", description: "", category: "Compliance", departmentId: "", status: "Pending" }); setCreateExceptionOpen(true); }}>
+                    <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Create")}
+                  </Button>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {exceptions.length === 0 ? (
@@ -957,19 +1153,19 @@ export default function QPostRequirementDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t("Title")}</TableHead>
-                      <TableHead>{t("Status")}</TableHead>
-                      <TableHead>{t("Expiry Date")}</TableHead>
+                      <TableHead>{t("Code")}</TableHead>
+                      <TableHead>{t("Exception Name")}</TableHead>
+                      <TableHead>{t("Category")}</TableHead>
+                      <TableHead>{t("Department")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {exceptions.map((ex) => (
                       <TableRow key={ex.id}>
-                        <TableCell>{ex.title || ex.name || "-"}</TableCell>
-                        <TableCell>
-                          <Badge variant={statusVariant(ex.status)}>{ex.status || "-"}</Badge>
-                        </TableCell>
-                        <TableCell>{ex.expiryDate ? new Date(ex.expiryDate).toLocaleDateString() : "-"}</TableCell>
+                        <TableCell className="font-mono text-sm">{ex.exceptionCode || "-"}</TableCell>
+                        <TableCell>{ex.name || ex.title || "-"}</TableCell>
+                        <TableCell>{ex.category || "-"}</TableCell>
+                        <TableCell>{ex.department?.name || "-"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1454,6 +1650,183 @@ export default function QPostRequirementDetailPage() {
             <Button onClick={handleCreatePolicy} disabled={creatingPolicy}>
               {creatingPolicy && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
               {t("Create")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Import Exception Dialog                                              */}
+      {/* ------------------------------------------------------------------- */}
+      <Dialog open={importExceptionOpen} onOpenChange={setImportExceptionOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Import Exceptions")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              {t("Upload an Excel file (.xlsx) to import exceptions and automatically link them to this control.")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("Required column")}: <span className="font-medium">Exception Name</span>.{" "}
+              {t("Optional columns")}: <span className="font-medium">Description, Category, Department</span>.{" "}
+              {t("For Category, accepted values are")}: <span className="font-medium">Compliance, Risk, Policy</span>.{" "}
+              {t("Status will be set to Pending by default.")}
+            </p>
+
+            {/* File input */}
+            <div className="space-y-2">
+              <Label>{t("Excel File")}</Label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => {
+                  setImportExceptionFile(e.target.files?.[0] || null);
+                  setImportExceptionErrors([]);
+                }}
+              />
+              {importExceptionFile && (
+                <p className="text-xs text-muted-foreground">{importExceptionFile.name} ({(importExceptionFile.size / 1024).toFixed(1)} KB)</p>
+              )}
+            </div>
+
+            {/* Download template */}
+            <div className="border rounded-md p-3 bg-muted/30">
+              <p className="text-sm font-medium mb-1">{t("Need a template?")}</p>
+              <p className="text-xs text-muted-foreground mb-2">
+                {t("Download the sample template with all column headers for your reference.")}
+              </p>
+              <Button variant="outline" size="sm" onClick={handleDownloadExceptionTemplate} disabled={downloadingExceptionTemplate}>
+                {downloadingExceptionTemplate ? (
+                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />
+                ) : (
+                  <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                )}
+                {t("Download Template")}
+              </Button>
+            </div>
+
+            {/* Import errors */}
+            {importExceptionErrors.length > 0 && (
+              <div className="border border-destructive/50 rounded-md p-3 bg-destructive/5 max-h-40 overflow-y-auto">
+                <p className="text-sm font-medium text-destructive mb-1">{t("Import Errors")}</p>
+                <ul className="text-xs text-destructive space-y-1">
+                  {importExceptionErrors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setImportExceptionOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleImportExceptions} disabled={!importExceptionFile || importingException}>
+              {importingException && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Import")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Create Exception Dialog                                              */}
+      {/* ------------------------------------------------------------------- */}
+      <Dialog open={createExceptionOpen} onOpenChange={setCreateExceptionOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Create Exception")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("Name")} *</Label>
+              <Input
+                value={createExceptionForm.name}
+                onChange={(e) => setCreateExceptionForm({ ...createExceptionForm, name: e.target.value })}
+                placeholder={t("Exception name")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Description")}</Label>
+              <Textarea
+                value={createExceptionForm.description}
+                onChange={(e) => setCreateExceptionForm({ ...createExceptionForm, description: e.target.value })}
+                placeholder={t("Exception description")}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Category")}</Label>
+              <Select value={createExceptionForm.category} onValueChange={(v) => setCreateExceptionForm({ ...createExceptionForm, category: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Compliance">{t("Compliance")}</SelectItem>
+                  <SelectItem value="Risk">{t("Risk")}</SelectItem>
+                  <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Department")}</Label>
+              <Select value={createExceptionForm.departmentId} onValueChange={(v) => setCreateExceptionForm({ ...createExceptionForm, departmentId: v })}>
+                <SelectTrigger><SelectValue placeholder={t("Select department")} /></SelectTrigger>
+                <SelectContent>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("Status")}</Label>
+              <Select value={createExceptionForm.status} onValueChange={(v) => setCreateExceptionForm({ ...createExceptionForm, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">{t("Pending")}</SelectItem>
+                  <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                  <SelectItem value="Rejected">{t("Rejected")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setCreateExceptionOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleCreateException} disabled={creatingException}>
+              {creatingException && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Create")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* Link Exception Dialog                                                */}
+      {/* ------------------------------------------------------------------- */}
+      <Dialog open={linkExceptionOpen} onOpenChange={setLinkExceptionOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Link Exception")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("Select Exception")}</Label>
+              <Select value={selectedExceptionId} onValueChange={setSelectedExceptionId}>
+                <SelectTrigger><SelectValue placeholder={t("Select an exception")} /></SelectTrigger>
+                <SelectContent>
+                  {availableExceptions.map((ex) => (
+                    <SelectItem key={ex.id} value={ex.id}>{ex.name || ex.title || ex.id}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {availableExceptions.length === 0 && (
+                <p className="text-sm text-muted-foreground">{t("No available exceptions to link")}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setLinkExceptionOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleLinkException} disabled={!selectedExceptionId || linkingException}>
+              {linkingException && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+              {t("Link")}
             </Button>
           </div>
         </DialogContent>

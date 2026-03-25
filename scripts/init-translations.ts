@@ -3991,6 +3991,19 @@ const translations: [string, string, string][] = [
   ['With Treatment Plan', 'مع خطة المعالجة', 'Ar ārstēšanas plānu'],
   ['Treatment Completed', 'اكتملت المعالجة', 'Ārstēšana pabeigta'],
   ['Unique Cells', 'خلايا فريدة', 'Unikālas šūnas'],
+  ['Exception created and linked successfully', 'تم إنشاء الاستثناء وربطه بنجاح', 'Izņēmums veiksmīgi izveidots un saistīts'],
+  ['Exception linked successfully', 'تم ربط الاستثناء بنجاح', 'Izņēmums veiksmīgi saistīts'],
+  ['Failed to link exception', 'فشل في ربط الاستثناء', 'Neizdevās saistīt izņēmumu'],
+  ['Exception name', 'اسم الاستثناء', 'Izņēmuma nosaukums'],
+  ['Exception description', 'وصف الاستثناء', 'Izņēmuma apraksts'],
+  ['No available exceptions to link', 'لا توجد استثناءات متاحة للربط', 'Nav pieejamu izņēmumu saistīšanai'],
+  ['Select an exception', 'اختر استثناءً', 'Atlasīt izņēmumu'],
+  ['Import Exceptions', 'استيراد الاستثناءات', 'Importēt izņēmumus'],
+  ['Failed to import exceptions', 'فشل في استيراد الاستثناءات', 'Neizdevās importēt izņēmumus'],
+  ['Required column', 'العمود المطلوب', 'Obligātā kolonna'],
+  ['Optional columns', 'الأعمدة الاختيارية', 'Neobligātās kolonnas'],
+  ['For Category, accepted values are', 'القيم المقبولة للفئة هي', 'Kategorijai pieņemamās vērtības ir'],
+  ['Status will be set to Pending by default.', 'سيتم تعيين الحالة إلى "معلق" بشكل افتراضي.', 'Statuss pēc noklusējuma tiks iestatīts kā "Gaida".'],
 
   // ==========================================
   // QPOST: "Requirement" → "Control" label renaming
@@ -4285,7 +4298,6 @@ const translations: [string, string, string][] = [
   ['Select Nature', 'اختر الطبيعة', 'Atlasīt veidu'],
   ['Select Process Type', 'اختر نوع العملية', 'Atlasīt procesa tipu'],
   ['Select an asset', 'اختر أصلاً', 'Atlasīt aktīvu'],
-  ['Select an exception', 'اختر استثناءً', 'Atlasīt izņēmumu'],
   ['Select compliance', 'اختر الامتثال', 'Atlasīt atbilstību'],
   ['Select target audiences', 'اختر الجماهير المستهدفة', 'Atlasīt mērķa auditorijas'],
   ['Select user', 'اختر المستخدم', 'Atlasīt lietotāju'],
