@@ -46,19 +46,32 @@ function getOpenAI(): OpenAI {
 
 export interface UpdateSpec {
   model: string;
-  /** How to identify the record (e.g. { field: "riskId", value: "RSK-001" }) */
+  /** How to identify the record(s). Single or multiple identifiers. */
   recordIdentifier: { field: string; value: string };
+  /** Multiple record identifiers for batch updates */
+  recordIdentifiers?: { field: string; value: string }[];
   /** Fields to update */
   updates: { field: string; value: string | number | boolean }[];
+}
+
+export interface PendingRecordUpdate {
+  recordId: string;
+  currentValues: Record<string, unknown>;
+  recordName: string;
 }
 
 export interface PendingUpdate {
   id: string;
   spec: UpdateSpec;
   modelMeta: ModelMeta;
+  /** Single record (backward compat) */
   recordId: string;
   currentValues: Record<string, unknown>;
+  /** All records to update (for batch) */
+  records: PendingRecordUpdate[];
   resolvedUpdates: Record<string, unknown>;
+  /** Human-readable new values (e.g. "John Doe" instead of user ID) */
+  displayValues: Record<string, string>;
   customerAccountId: string;
   userId: string;
   createdAt: number;
@@ -120,6 +133,8 @@ RULES (NEVER VIOLATE):
 9. Conversation history may be included. Resolve references like "this", "it", "that risk" from context.
 
 OUTPUT FORMAT (JSON only):
+
+For SINGLE record update:
 {
   "model": "Risk",
   "recordIdentifier": { "field": "riskId", "value": "RSK-001" },
@@ -129,7 +144,20 @@ OUTPUT FORMAT (JSON only):
   ]
 }
 
-Only include fields being updated. The recordIdentifier should use the code field (e.g. riskId, controlCode, assetId) or the name field to identify the record.`;
+For MULTIPLE records with the SAME update (batch):
+{
+  "model": "Control",
+  "recordIdentifiers": [
+    { "field": "controlCode", "value": "CTRL-0022" },
+    { "field": "controlCode", "value": "CTRL-0044" },
+    { "field": "controlCode", "value": "CTRL-0033" }
+  ],
+  "updates": [
+    { "field": "departmentId", "value": "Compliance" }
+  ]
+}
+
+IMPORTANT: Use "recordIdentifier" (singular) for single record, "recordIdentifiers" (plural array) for multiple records. The recordIdentifier should use the code field (e.g. riskId, controlCode, assetId) or the name field.`;
 
 async function generateUpdateSpec(
   query: string,
@@ -399,7 +427,7 @@ async function resolveUpdateRelations(
 
 /**
  * Process an agent update request — generates a pending update for confirmation.
- * Returns a confirmation message with the proposed changes.
+ * Supports both single and batch (multiple record) updates.
  */
 export async function processAgentUpdate(
   query: string,
@@ -420,13 +448,48 @@ export async function processAgentUpdate(
     };
   }
 
-  // Step 3: Find the record
-  const recordResult = await findRecord(spec, validation.modelMeta, customerAccountId);
-  if ("error" in recordResult) {
-    return { content: recordResult.error, tokensUsed };
+  // Step 3: Build list of record identifiers (single or batch)
+  const identifiers: { field: string; value: string }[] = [];
+  if (spec.recordIdentifiers && spec.recordIdentifiers.length > 0) {
+    identifiers.push(...spec.recordIdentifiers);
+  } else if (spec.recordIdentifier && spec.recordIdentifier.field) {
+    identifiers.push(spec.recordIdentifier);
   }
 
-  // Step 4: Resolve relation values
+  if (identifiers.length === 0) {
+    return { content: "No record specified for update. Please mention which record(s) to update.", tokensUsed };
+  }
+
+  // Step 4: Find all records
+  const foundRecords: PendingRecordUpdate[] = [];
+  const notFound: string[] = [];
+
+  for (const identifier of identifiers) {
+    const singleSpec = { ...spec, recordIdentifier: identifier };
+    const recordResult = await findRecord(singleSpec, validation.modelMeta, customerAccountId);
+    if ("error" in recordResult) {
+      notFound.push(identifier.value);
+    } else {
+      const name = String(
+        recordResult.record[validation.modelMeta.nameField] ||
+        recordResult.record[validation.modelMeta.codeField || "id"] || identifier.value
+      );
+      foundRecords.push({
+        recordId: recordResult.id,
+        currentValues: recordResult.record,
+        recordName: name,
+      });
+    }
+  }
+
+  if (foundRecords.length === 0) {
+    return {
+      content: `No matching ${validation.modelMeta.displayName} records found for: ${notFound.join(", ")}. Please check the names or codes and try again.`,
+      tokensUsed,
+    };
+  }
+
+  // Step 5: Resolve relation values (same for all records)
   let resolvedUpdates: Record<string, unknown>;
   let displayValues: Record<string, string>;
   try {
@@ -437,15 +500,17 @@ export async function processAgentUpdate(
     return { content: (e as Error).message, tokensUsed };
   }
 
-  // Step 5: Build confirmation message
+  // Step 6: Build confirmation message
   const updateId = generateUpdateId();
   const pending: PendingUpdate = {
     id: updateId,
     spec,
     modelMeta: validation.modelMeta,
-    recordId: recordResult.id,
-    currentValues: recordResult.record,
+    recordId: foundRecords[0].recordId, // backward compat
+    currentValues: foundRecords[0].currentValues, // backward compat
+    records: foundRecords,
     resolvedUpdates,
+    displayValues,
     customerAccountId,
     userId,
     createdAt: Date.now(),
@@ -455,18 +520,37 @@ export async function processAgentUpdate(
   cleanExpiredUpdates();
 
   // Build human-readable confirmation
-  const recordName = recordResult.record[validation.modelMeta.nameField] ||
-    recordResult.record[validation.modelMeta.codeField || "id"] || "this record";
-
-  const changes = spec.updates.map((u) => {
+  const fieldChanges = spec.updates.map((u) => {
     const fieldMeta = validation.modelMeta!.fields.find((f) => f.name === u.field);
     const fieldLabel = fieldMeta?.description || u.field;
-    const currentVal = recordResult.record[u.field] || "(empty)";
     const newVal = displayValues[u.field] || u.value;
-    return `- **${fieldLabel}**: ${currentVal} → **${newVal}**`;
+    return `- **${fieldLabel}** → **${newVal}**`;
   }).join("\n");
 
-  const content = `I'm about to update **${validation.modelMeta.displayName}** "${recordName}":\n\n${changes}\n\nDo you want to proceed?`;
+  let content: string;
+  if (foundRecords.length === 1) {
+    // Single record — show old → new
+    const rec = foundRecords[0];
+    const changes = spec.updates.map((u) => {
+      const fieldMeta = validation.modelMeta!.fields.find((f) => f.name === u.field);
+      const fieldLabel = fieldMeta?.description || u.field;
+      const currentVal = rec.currentValues[u.field] ?? "(empty)";
+      const newVal = displayValues[u.field] || u.value;
+      return `- **${fieldLabel}**: ${currentVal} → **${newVal}**`;
+    }).join("\n");
+
+    content = `I'm about to update **${validation.modelMeta.displayName}** "${rec.recordName}":\n\n${changes}\n\nDo you want to proceed?`;
+  } else {
+    // Batch — list all records
+    const recordList = foundRecords.map((r) => `- ${r.recordName}`).join("\n");
+    content = `I'm about to update **${foundRecords.length} ${validation.modelMeta.displayName}** records:\n\n${recordList}\n\nChanges to apply:\n${fieldChanges}`;
+
+    if (notFound.length > 0) {
+      content += `\n\n**Not found** (will be skipped): ${notFound.join(", ")}`;
+    }
+
+    content += "\n\nDo you want to proceed?";
+  }
 
   return {
     content,
@@ -499,34 +583,81 @@ export async function executeConfirmedUpdate(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const prismaModel = (prisma as any)[lowerFirst(pending.spec.model)];
+  const records = pending.records || [{ recordId: pending.recordId, currentValues: pending.currentValues, recordName: "the record" }];
 
   try {
-    await prismaModel.update({
-      where: { id: pending.recordId },
-      data: pending.resolvedUpdates,
-    });
+    // Update all records (single or batch)
+    const successNames: string[] = [];
+    const failedNames: string[] = [];
+
+    for (const rec of records) {
+      try {
+        await prismaModel.update({
+          where: { id: rec.recordId },
+          data: pending.resolvedUpdates,
+        });
+        successNames.push(rec.recordName);
+      } catch (err) {
+        console.error(`[AgentUpdate] Failed to update ${rec.recordName}:`, err);
+        failedNames.push(rec.recordName);
+      }
+    }
 
     // Clean up
     removePendingUpdate(updateId);
 
-    const recordName = pending.currentValues[pending.modelMeta.nameField] ||
-      pending.currentValues[pending.modelMeta.codeField || "id"] || "the record";
+    if (successNames.length === 0) {
+      return {
+        content: "Failed to update any records. Please try again or update directly in the application.",
+        tokensUsed: 0,
+      };
+    }
 
-    const fieldNames = pending.spec.updates.map((u) => {
-      const fm = pending.modelMeta.fields.find((f) => f.name === u.field);
-      return fm?.description || u.field;
-    }).join(", ");
+    // Build detailed change summary
+    if (records.length === 1) {
+      // Single record — show old → new values
+      const rec = records[0];
+      const changes = pending.spec.updates.map((u) => {
+        const fm = pending.modelMeta.fields.find((f) => f.name === u.field);
+        const fieldLabel = fm?.description || u.field;
+        const oldVal = rec.currentValues[u.field] ?? "(empty)";
+        const newVal = pending.displayValues[u.field] || u.value;
+        return `- **${fieldLabel}**: ${oldVal} → **${newVal}**`;
+      }).join("\n");
 
-    return {
-      content: `Successfully updated **${pending.modelMeta.displayName}** "${recordName}". Changed: ${fieldNames}.`,
-      tokensUsed: 0,
-      executed: true,
-    };
+      return {
+        content: `Successfully updated **${pending.modelMeta.displayName}** "${rec.recordName}":\n\n${changes}`,
+        tokensUsed: 0,
+        executed: true,
+      };
+    } else {
+      // Batch — show summary
+      const fieldChanges = pending.spec.updates.map((u) => {
+        const fm = pending.modelMeta.fields.find((f) => f.name === u.field);
+        const fieldLabel = fm?.description || u.field;
+        const newVal = pending.displayValues[u.field] || u.value;
+        return `**${fieldLabel}** → **${newVal}**`;
+      }).join(", ");
+
+      let content = `Successfully updated **${successNames.length}** of **${records.length}** ${pending.modelMeta.displayName} records:\n\n`;
+      content += successNames.map((n) => `- ${n}`).join("\n");
+      content += `\n\nChanges applied: ${fieldChanges}`;
+
+      if (failedNames.length > 0) {
+        content += `\n\n**Failed to update:** ${failedNames.join(", ")}`;
+      }
+
+      return {
+        content,
+        tokensUsed: 0,
+        executed: true,
+      };
+    }
   } catch (error) {
     console.error("[AgentUpdate] Execution error:", error);
     removePendingUpdate(updateId);
     return {
-      content: "An error occurred while updating the record. Please try again or update it directly in the application.",
+      content: "An error occurred while updating the records. Please try again or update directly in the application.",
       tokensUsed: 0,
     };
   }
