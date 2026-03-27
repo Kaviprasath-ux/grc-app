@@ -1169,7 +1169,8 @@ export default function ASRAssessmentDetailPage() {
             </Select>
           </div>
 
-          {/* Pagination */}
+          {/* Pagination — only show when more than one page */}
+          {totalPages > 1 && (
           <div className="flex items-center justify-end gap-2">
             <Button variant="outline" size="icon" className="h-7 w-7" disabled={currentPage === 0} onClick={() => { setCurrentPage(p => p - 1); setSelectedQuestionId(null); }}>
               <ChevronLeft className="h-4 w-4" />
@@ -1181,6 +1182,7 @@ export default function ASRAssessmentDetailPage() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+          )}
 
           {/* Question navigator pills */}
           <div className="flex flex-wrap gap-1.5">
