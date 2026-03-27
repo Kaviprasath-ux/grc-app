@@ -153,6 +153,7 @@ export default function GovernancePage() {
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
+  const isReviewer = useHasRole("Reviewer");
   const { t, isRTL } = useLanguage();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
@@ -275,7 +276,7 @@ export default function GovernancePage() {
       setActiveTab("Policy");
       setActiveDocType("Policy");
     }
-  }, [permissionsLoading, isCustomerAdmin]);
+  }, [permissionsLoading, isCustomerAdmin, isReviewer]);
 
   useEffect(() => {
     if (activeTab === "Dashboard") {
@@ -839,7 +840,7 @@ export default function GovernancePage() {
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Governance")}</h1>
       </div>
 
-      {/* Tabs - Only show for Customer Administrator */}
+      {/* Tabs - Only show Dashboard + Vault for Customer Administrator */}
       {isCustomerAdmin ? (
         <Tabs value={activeTab} onValueChange={handleTabChange} dir={isRTL ? "rtl" : "ltr"}>
           <TabsList>
@@ -1202,6 +1203,17 @@ export default function GovernancePage() {
 
           {["Policy", "Standard", "Procedure"].map((docType) => (
             <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
+              {/* Status Cards - Reviewer only */}
+              {isReviewer && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+                  <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
+                  <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
+                  <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
+                  <StatusCard icon={ArrowUpFromLine} count={statusCounts.published} label={t("Published")} status="Published" onClick={() => handleStatusCardClick("Published")} isSelected={statusFilter === "Published"} />
+                  <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" onClick={() => handleStatusCardClick("Needs Review")} isSelected={statusFilter === "Needs Review"} />
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="grid grid-cols-2 sm:flex sm:items-center ltr:sm:justify-end rtl:sm:justify-start gap-2">
                 <PermissionGate resource="compliance.governance" action="create">
