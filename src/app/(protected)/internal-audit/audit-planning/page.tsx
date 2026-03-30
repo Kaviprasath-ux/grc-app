@@ -360,7 +360,7 @@ export default function AuditPlanningPage() {
         fetch("/api/internal-audit/users?role=auditors"),
         fetch("/api/internal-audit/audit-types"),
         fetch("/api/internal-audit/scoring-ranges"),
-        fetch("/api/internal-audit/processes"),
+        fetch("/api/processes"),
       ]);
 
       if (auditeesRes.ok) {
