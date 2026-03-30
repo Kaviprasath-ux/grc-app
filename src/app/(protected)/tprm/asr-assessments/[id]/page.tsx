@@ -887,7 +887,7 @@ export default function ASRAssessmentDetailPage() {
         <div className="bg-primary text-primary-foreground rounded-lg px-6 py-3 flex items-center justify-between">
           <span className="font-medium">{t("Vendor")}:<span className="ltr:ml-1 rtl:mr-1">{assessment.vendor.name}</span></span>
           <span className="font-medium">{t("VerifAI Summary")}</span>
-          <span className="text-sm">{t("Status")}: <span className="font-medium">{assessment.status}</span></span>
+          <span className="text-sm">{t("Status")}: <span className="font-medium">{t(assessment.status)}</span></span>
         </div>
 
         {/* Tab buttons — full width, two equal columns */}

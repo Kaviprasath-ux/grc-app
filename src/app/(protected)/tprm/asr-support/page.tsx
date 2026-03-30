@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Home,
   ChevronRight,
   ChevronDown,
-  ArrowLeft,
   FileText,
   Menu,
   Search,
@@ -108,11 +111,40 @@ const ASR_FAQS: FAQItem[] = [
 
 export default function AsrSupportPage() {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState("navigational-help");
+  const { toast } = useToast();
+  const { data: session } = useSession();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({ "process-flows": true });
   const [selectedId, setSelectedId] = useState<string | null>("process-flows");
   const [expandedFaqs, setExpandedFaqs] = useState<Set<number>>(new Set());
   const [faqSearch, setFaqSearch] = useState("");
+
+  const [contactName, setContactName] = useState(session?.user?.name || "");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactCompany, setContactCompany] = useState(session?.user?.customerAccountName || "");
+  const [contactMessage, setContactMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const handleSendRequest = async () => {
+    if (!contactMessage.trim()) { toast({ title: t("Please enter a message"), variant: "destructive" }); return; }
+    setSending(true);
+    try {
+      const res = await fetch("/api/tprm/support-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: contactName, phone: contactPhone, company: contactCompany, message: contactMessage }),
+      });
+      if (res.ok) {
+        toast({ title: t("Your request has been submitted successfully") });
+        setContactMessage("");
+      } else {
+        toast({ title: t("Failed to send request"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Failed to send request"), variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
 
   const toggleSection = (sectionId: string) => {
     const isOpening = !expandedSections[sectionId];
@@ -175,12 +207,7 @@ export default function AsrSupportPage() {
         <span className="text-primary-700 font-medium">{t("Support")}</span>
       </nav>
 
-      <Button variant="outline" size="sm" onClick={() => window.history.back()}>
-        <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-        {t("Back")}
-      </Button>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="navigational-help">
         <TabsList>
           <TabsTrigger value="navigational-help">{t("Navigational Help")}</TabsTrigger>
           <TabsTrigger value="faqs">{t("FAQs")}</TabsTrigger>
@@ -287,20 +314,21 @@ export default function AsrSupportPage() {
 
         {/* Contact Us */}
         <TabsContent value="contact" className="mt-4">
-          <div className="max-w-lg border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">{t("Contact Us")}</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t("For any questions or support requests, please reach out to the TPRM administration team.")}
-            </p>
-            <div className="space-y-2 text-sm">
-              <p>
-                <span className="font-medium">{t("Email")}:</span> support@verifai.com
-              </p>
-              <p>
-                <span className="font-medium">{t("Phone")}:</span> +1 (555) 123-4567
-              </p>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-10 items-start">
+                <div className="md:w-1/3"><h2 className="text-3xl font-bold leading-tight">{t("Get in touch with us.")}</h2></div>
+                <div className="md:w-2/3 space-y-4 bg-slate-50 rounded-lg p-6">
+                  <div className="space-y-1.5"><Label>{t("Your Name")}</Label><Input value={contactName} onChange={(e) => setContactName(e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>{t("Phone number")}</Label><Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>{t("Company Name")}</Label><Input value={contactCompany} onChange={(e) => setContactCompany(e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>{t("Your Message")}</Label><Textarea value={contactMessage} onChange={(e) => setContactMessage(e.target.value)} placeholder={t("Type Your Message...")} rows={4} /></div>
+                  <p className="text-xs text-muted-foreground">{t("By submitting this form you agree to our terms and conditions and our Privacy Policy which explains how we may collect, use and disclose your personal information including to third parties.")}</p>
+                  <Button className="w-full bg-amber-500 hover:bg-amber-600 text-white" onClick={handleSendRequest} disabled={sending}>{sending ? t("Sending...") : t("Send Request")}</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
