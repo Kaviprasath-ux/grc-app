@@ -748,6 +748,7 @@ CREATE TABLE "Evidence" (
     "aiReviewedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "technicalEvidenceCollectionId" TEXT,
 
     CONSTRAINT "Evidence_pkey" PRIMARY KEY ("id")
 );
@@ -3715,15 +3716,78 @@ CREATE TABLE "ScheduledTask" (
     "taskFunction" TEXT NOT NULL,
     "description" TEXT,
     "schedule" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'Idle',
-    "lastRunAt" TIMESTAMP(3),
-    "nextRunAt" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'Running',
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
     "contextData" TEXT,
+    "triggeredBy" TEXT NOT NULL DEFAULT 'schedule',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "ScheduledTask_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "IntegrationCredential" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "platform" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "authType" TEXT NOT NULL,
+    "credentialsEncrypted" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "lastTestedAt" TIMESTAMP(3),
+    "lastTestStatus" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "IntegrationCredential_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TechnicalEvidenceCollection" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "credentialId" TEXT NOT NULL,
+    "platform" TEXT NOT NULL,
+    "dataSource" TEXT NOT NULL,
+    "displayName" TEXT NOT NULL,
+    "description" TEXT,
+    "lastCollectedAt" TIMESTAMP(3),
+    "lastCollectionStatus" TEXT NOT NULL DEFAULT 'never',
+    "lastError" TEXT,
+    "recordCount" INTEGER NOT NULL DEFAULT 0,
+    "collectedById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TechnicalEvidenceCollection_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TechnicalEvidenceRecord" (
+    "id" TEXT NOT NULL,
+    "collectionId" TEXT NOT NULL,
+    "data" TEXT NOT NULL,
+    "recordHash" TEXT,
+    "collectedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TechnicalEvidenceRecord_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TechnicalEvidenceControlMapping" (
+    "id" TEXT NOT NULL,
+    "collectionId" TEXT NOT NULL,
+    "controlId" TEXT NOT NULL,
+    "frameworkId" TEXT,
+    "suggestedByAI" BOOLEAN NOT NULL DEFAULT false,
+    "confirmedByUser" BOOLEAN NOT NULL DEFAULT false,
+    "confidenceScore" DOUBLE PRECISION,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TechnicalEvidenceControlMapping_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -3887,6 +3951,9 @@ CREATE INDEX "Policy_customerAccountId_idx" ON "Policy"("customerAccountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Policy_customerAccountId_code_key" ON "Policy"("customerAccountId", "code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Evidence_technicalEvidenceCollectionId_key" ON "Evidence"("technicalEvidenceCollectionId");
 
 -- CreateIndex
 CREATE INDEX "Evidence_customerAccountId_idx" ON "Evidence"("customerAccountId");
@@ -4792,10 +4859,43 @@ CREATE INDEX "ChatbotAuditLog_createdAt_idx" ON "ChatbotAuditLog"("createdAt");
 CREATE UNIQUE INDEX "ScheduledTask_queueId_key" ON "ScheduledTask"("queueId");
 
 -- CreateIndex
+CREATE INDEX "ScheduledTask_taskFunction_idx" ON "ScheduledTask"("taskFunction");
+
+-- CreateIndex
 CREATE INDEX "ScheduledTask_status_idx" ON "ScheduledTask"("status");
 
 -- CreateIndex
-CREATE INDEX "ScheduledTask_isActive_idx" ON "ScheduledTask"("isActive");
+CREATE INDEX "ScheduledTask_createdAt_idx" ON "ScheduledTask"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "IntegrationCredential_customerAccountId_idx" ON "IntegrationCredential"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "IntegrationCredential_customerAccountId_platform_name_key" ON "IntegrationCredential"("customerAccountId", "platform", "name");
+
+-- CreateIndex
+CREATE INDEX "TechnicalEvidenceCollection_customerAccountId_idx" ON "TechnicalEvidenceCollection"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "TechnicalEvidenceCollection_platform_idx" ON "TechnicalEvidenceCollection"("platform");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TechnicalEvidenceCollection_customerAccountId_credentialId__key" ON "TechnicalEvidenceCollection"("customerAccountId", "credentialId", "dataSource");
+
+-- CreateIndex
+CREATE INDEX "TechnicalEvidenceRecord_collectionId_idx" ON "TechnicalEvidenceRecord"("collectionId");
+
+-- CreateIndex
+CREATE INDEX "TechnicalEvidenceRecord_collectedAt_idx" ON "TechnicalEvidenceRecord"("collectedAt");
+
+-- CreateIndex
+CREATE INDEX "TechnicalEvidenceControlMapping_collectionId_idx" ON "TechnicalEvidenceControlMapping"("collectionId");
+
+-- CreateIndex
+CREATE INDEX "TechnicalEvidenceControlMapping_controlId_idx" ON "TechnicalEvidenceControlMapping"("controlId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TechnicalEvidenceControlMapping_collectionId_controlId_key" ON "TechnicalEvidenceControlMapping"("collectionId", "controlId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
@@ -5045,6 +5145,9 @@ ALTER TABLE "Evidence" ADD CONSTRAINT "Evidence_departmentId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "Evidence" ADD CONSTRAINT "Evidence_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Evidence" ADD CONSTRAINT "Evidence_technicalEvidenceCollectionId_fkey" FOREIGN KEY ("technicalEvidenceCollectionId") REFERENCES "TechnicalEvidenceCollection"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EvidenceCycleComment" ADD CONSTRAINT "EvidenceCycleComment_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -6059,6 +6162,30 @@ ALTER TABLE "ChatbotAuditLog" ADD CONSTRAINT "ChatbotAuditLog_customerAccountId_
 
 -- AddForeignKey
 ALTER TABLE "ChatbotAuditLog" ADD CONSTRAINT "ChatbotAuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "IntegrationCredential" ADD CONSTRAINT "IntegrationCredential_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TechnicalEvidenceCollection" ADD CONSTRAINT "TechnicalEvidenceCollection_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TechnicalEvidenceCollection" ADD CONSTRAINT "TechnicalEvidenceCollection_credentialId_fkey" FOREIGN KEY ("credentialId") REFERENCES "IntegrationCredential"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TechnicalEvidenceCollection" ADD CONSTRAINT "TechnicalEvidenceCollection_collectedById_fkey" FOREIGN KEY ("collectedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TechnicalEvidenceRecord" ADD CONSTRAINT "TechnicalEvidenceRecord_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "TechnicalEvidenceCollection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TechnicalEvidenceControlMapping" ADD CONSTRAINT "TechnicalEvidenceControlMapping_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "TechnicalEvidenceCollection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TechnicalEvidenceControlMapping" ADD CONSTRAINT "TechnicalEvidenceControlMapping_controlId_fkey" FOREIGN KEY ("controlId") REFERENCES "Control"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TechnicalEvidenceControlMapping" ADD CONSTRAINT "TechnicalEvidenceControlMapping_frameworkId_fkey" FOREIGN KEY ("frameworkId") REFERENCES "Framework"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

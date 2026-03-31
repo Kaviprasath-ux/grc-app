@@ -42,6 +42,9 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'GovernanceTemplate', fields: [{ name: 'name' }], priority: 2 },
   { modelName: 'Regulation', fields: [{ name: 'name' }, { name: 'version' }], priority: 2 },
 
+  // Priority 3 — Technical Evidence Integrations
+  { modelName: 'TechnicalEvidenceCollection', fields: [{ name: 'displayName' }, { name: 'description' }], priority: 3 },
+
   // Priority 3 — Risk management details
   { modelName: 'RiskAssessment', fields: [{ name: 'notes' }], priority: 3 },
   { modelName: 'RiskResponse', fields: [{ name: 'description' }], priority: 3 },

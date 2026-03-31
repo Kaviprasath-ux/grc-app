@@ -162,6 +162,9 @@ model CustomerAccount {
   qpostGovernanceVaultDocuments QPostGovernanceVaultDocument[]
   // Chatbot relations
   chatbotAuditLogs               ChatbotAuditLog[]
+  // Technical Evidence Integration relations
+  integrationCredentials         IntegrationCredential[]
+  technicalEvidenceCollections   TechnicalEvidenceCollection[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -481,6 +484,8 @@ model User {
   deletedDocuments           TPRMVendorDocument[]   @relation("DocumentDeletedBy")
   contractDeletionRequests   TPRMContractDeletionRequest[] @relation("DeletionRequestedBy")
   contractDeletionReviews    TPRMContractDeletionRequest[] @relation("DeletionReviewedBy")
+  // Technical Evidence relations
+  technicalEvidenceCollections TechnicalEvidenceCollection[] @relation("TechEvidenceCollector")
 
   // Multi-tenant: userId, userName and email are unique per customer account, not globally
   @@unique([customerAccountId, userId])
@@ -670,6 +675,8 @@ model Framework {
   requirements          Requirement[]
   requirementCategories RequirementCategory[]
   exceptions            Exception[]
+  // Technical Evidence Integration relations
+  technicalEvidenceControlMappings TechnicalEvidenceControlMapping[] @relation("TechEvidenceFrameworks")
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
@@ -890,6 +897,8 @@ model Control {
   evidenceControls         EvidenceControl[]      @relation("EvidenceControls")
   // Risk Control Matrix control links
   riskControlMatrixControls RiskControlMatrixControl[]
+  // Technical Evidence Integration relations
+  technicalEvidenceControlMappings TechnicalEvidenceControlMapping[] @relation("TechEvidenceControls")
 
   @@unique([customerAccountId, controlCode])
   @@index([customerAccountId])
@@ -1214,6 +1223,9 @@ model Evidence {
   evidenceAIIngestJobs  EvidenceAIIngestJob[]
   evidenceAIIngestResults EvidenceAIIngestResult[]
   cycleComments          EvidenceCycleComment[]
+  // Auto-created from technical evidence collection (null for manual evidence)
+  technicalEvidenceCollectionId  String?                      @unique
+  technicalEvidenceCollection    TechnicalEvidenceCollection? @relation(fields: [technicalEvidenceCollectionId], references: [id])
 
   @@unique([customerAccountId, evidenceCode])
   @@index([customerAccountId])
@@ -5007,4 +5019,92 @@ model ScheduledTask {
 
 // ============================================================
 // SYSTEM SCHEDULED TASKS - END
+// ============================================================
+
+// ============================================================
+// TECHNICAL EVIDENCE INTEGRATIONS
+// ============================================================
+
+// Stores encrypted credentials per customer per platform
+model IntegrationCredential {
+  id                    String   @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  platform              String   // "azure_entra", "azure_security", "google_cloud", "network_cisco", "network_paloalto", "network_fortigate", "servicenow", "tenable", "acunetix"
+  name                  String   // Human-readable label, e.g. "Production Azure AD"
+  authType              String   // "oauth2", "api_key", "basic_auth", "service_account"
+  credentialsEncrypted  String   // AES-256-GCM encrypted JSON blob
+  isActive              Boolean  @default(true)
+  lastTestedAt          DateTime?
+  lastTestStatus        String?  // "success", "failed"
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  collections           TechnicalEvidenceCollection[]
+
+  @@unique([customerAccountId, platform, name])
+  @@index([customerAccountId])
+}
+
+// One row per data source (e.g., "Azure Entra: All User Accounts")
+model TechnicalEvidenceCollection {
+  id                    String   @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  credentialId          String
+  credential            IntegrationCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  platform              String   // Same as IntegrationCredential.platform
+  dataSource            String   // e.g., "azure_entra_all_users", "azure_entra_dormant_users"
+  displayName           String   // e.g., "Azure Entra: All User Accounts"
+  description           String?
+  lastCollectedAt       DateTime?
+  lastCollectionStatus  String   @default("never") // "never", "collecting", "success", "failed"
+  lastError             String?
+  recordCount           Int      @default(0)
+  collectedById         String?
+  collectedBy           User?    @relation("TechEvidenceCollector", fields: [collectedById], references: [id])
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  records               TechnicalEvidenceRecord[]
+  controlMappings       TechnicalEvidenceControlMapping[]
+  autoCreatedEvidence   Evidence?
+
+  @@unique([customerAccountId, credentialId, dataSource])
+  @@index([customerAccountId])
+  @@index([platform])
+}
+
+// Individual collected records (JSON blob)
+model TechnicalEvidenceRecord {
+  id           String   @id @default(cuid())
+  collectionId String
+  collection   TechnicalEvidenceCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  data         String   // JSON blob of the collected record
+  recordHash   String?  // SHA-256 for deduplication
+  collectedAt  DateTime @default(now())
+
+  @@index([collectionId])
+  @@index([collectedAt])
+}
+
+// Maps collections to controls/frameworks (AI-suggested or manual)
+model TechnicalEvidenceControlMapping {
+  id              String   @id @default(cuid())
+  collectionId    String
+  collection      TechnicalEvidenceCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  controlId       String
+  control         Control  @relation("TechEvidenceControls", fields: [controlId], references: [id], onDelete: Cascade)
+  frameworkId     String?
+  framework       Framework? @relation("TechEvidenceFrameworks", fields: [frameworkId], references: [id])
+  suggestedByAI   Boolean  @default(false)
+  confirmedByUser Boolean  @default(false)
+  confidenceScore Float?   // AI confidence 0-1
+  createdAt       DateTime @default(now())
+
+  @@unique([collectionId, controlId])
+  @@index([collectionId])
+  @@index([controlId])
+}
+
+// ============================================================
+// TECHNICAL EVIDENCE INTEGRATIONS - END
 // ============================================================

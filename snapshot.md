@@ -1,0 +1,2290 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - link "Platform TPRM Platform" [ref=e5] [cursor=pointer]:
+        - /url: /tprm/program-monitor
+        - img "Platform" [ref=e6]
+        - generic [ref=e7]: TPRM Platform
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e13] [cursor=pointer]:
+          - /url: /tprm/asr-dashboard
+          - img [ref=e15]
+          - generic [ref=e20]: Dashboard
+        - link "Assessments" [ref=e22] [cursor=pointer]:
+          - /url: /tprm/asr-assessments
+          - img [ref=e24]
+          - generic [ref=e28]: Assessments
+        - link "Inventory" [ref=e30] [cursor=pointer]:
+          - /url: /tprm/asr-inventory
+          - img [ref=e32]
+          - generic [ref=e36]: Inventory
+        - link "Monitoring" [ref=e38] [cursor=pointer]:
+          - /url: /tprm/asr-monitoring
+          - img [ref=e40]
+          - generic [ref=e47]: Monitoring
+        - link "Follow-ups" [ref=e49] [cursor=pointer]:
+          - /url: /tprm/asr-follow-ups
+          - img [ref=e51]
+          - generic [ref=e54]: Follow-ups
+        - link "Issue Register" [ref=e56] [cursor=pointer]:
+          - /url: /tprm/asr-issue-register
+          - img [ref=e58]
+          - generic [ref=e60]: Issue Register
+        - link "Assessment Factory" [ref=e62] [cursor=pointer]:
+          - /url: /tprm/asr-assessment-factory
+          - img [ref=e64]
+          - generic [ref=e66]: Assessment Factory
+        - link "Template" [ref=e68] [cursor=pointer]:
+          - /url: /tprm/asr-template
+          - img [ref=e70]
+          - generic [ref=e73]: Template
+        - link "Support" [ref=e75] [cursor=pointer]:
+          - /url: /tprm/asr-support
+          - img [ref=e77]
+          - generic [ref=e80]: Support
+        - button "Log Out" [ref=e82]:
+          - img [ref=e84]
+          - generic [ref=e87]: Log Out
+      - generic [ref=e89]:
+        - generic [ref=e90]: © 2025 tadm
+        - generic [ref=e91]: v2.0
+    - generic [ref=e92]:
+      - banner [ref=e93]:
+        - generic [ref=e94]:
+          - button [ref=e95]:
+            - img
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - img [ref=e98]
+              - generic [ref=e100]:
+                - generic [ref=e101]: Date
+                - generic [ref=e102]: 27 Mar 2026
+            - generic [ref=e103]:
+              - img [ref=e104]
+              - generic [ref=e107]:
+                - generic [ref=e108]: Time
+                - generic [ref=e109]: 5:37 PM
+        - generic [ref=e110]:
+          - button "Search... Ctrl K" [ref=e112]:
+            - img [ref=e113]
+            - generic [ref=e116]: Search...
+            - generic:
+              - generic: Ctrl
+              - text: K
+          - button "EN" [ref=e117]:
+            - img
+            - generic [ref=e118]: EN
+            - img
+          - button "Help" [ref=e119]:
+            - img
+            - generic [ref=e120]: Help
+          - button "14" [ref=e121]:
+            - img
+            - generic [ref=e122]: "14"
+          - button "AT Assessor tadm TPRM Assessor" [ref=e124]:
+            - generic [ref=e126]: AT
+            - generic [ref=e127]:
+              - generic [ref=e128]: Assessor tadm
+              - generic [ref=e129]: TPRM Assessor
+            - img
+      - main [ref=e130]:
+        - generic [ref=e131]:
+          - generic [ref=e135]:
+            - generic [ref=e136]:
+              - button "Back" [ref=e137]:
+                - img
+                - text: Back
+              - heading "Assessment Summary" [level=1] [ref=e138]
+            - generic [ref=e139]:
+              - button "Re-evaluate AI" [ref=e140]:
+                - img
+                - text: Re-evaluate AI
+              - button "Detailed Assessment" [ref=e141]
+          - generic [ref=e142]:
+            - generic [ref=e143]: Vendor:Cred
+            - generic [ref=e144]: VerifAI Summary
+            - generic [ref=e145]: "Status: Under Review"
+          - generic [ref=e146]:
+            - button "Assessment Summary" [ref=e147]
+            - button "Domain Summary" [ref=e148]
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - generic [ref=e153]: "Yes"
+              - generic [ref=e156]: "No"
+              - generic [ref=e159]: NA
+            - generic [ref=e160]:
+              - generic [ref=e163]: Satisfactory
+              - generic [ref=e166]: Unsatisfactory
+          - generic [ref=e167]:
+            - generic [ref=e168]:
+              - generic [ref=e172]: 100%
+              - paragraph [ref=e173]: RESPONSE
+            - generic [ref=e174]:
+              - generic [ref=e178]: 100%
+              - paragraph [ref=e179]: COMPLIANCE
+          - generic [ref=e181]:
+            - generic [ref=e182]:
+              - text: "95"
+              - paragraph [ref=e183]: High
+            - generic [ref=e184]:
+              - text: "129"
+              - paragraph [ref=e185]: Medium
+            - generic [ref=e186]:
+              - text: "37"
+              - paragraph [ref=e187]: Low
+          - generic [ref=e193]:
+            - generic [ref=e194] [cursor=pointer]:
+              - generic [ref=e195]: VerifAI Summary
+              - generic [ref=e196]: −
+            - generic [ref=e198]:
+              - generic [ref=e199]:
+                - generic [ref=e200]: Que.No
+                - generic [ref=e201]: Domain
+                - generic [ref=e202]: Issue
+                - generic [ref=e203]: Risk
+                - generic [ref=e204]: Recommendation
+                - generic [ref=e205]: Action
+              - generic [ref=e206]:
+                - generic [ref=e207]:
+                  - generic [ref=e208]: "1"
+                  - generic [ref=e209]: CAIQ.Audit & Assurance
+                  - generic [ref=e210]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e211]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e212]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e213]:
+                    - img
+                - generic [ref=e214]:
+                  - generic [ref=e215]: "2"
+                  - generic [ref=e216]: CAIQ.Audit & Assurance
+                  - generic [ref=e217]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e218]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e219]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e220]:
+                    - img
+                - generic [ref=e221]:
+                  - generic [ref=e222]: "3"
+                  - generic [ref=e223]: CAIQ.Audit & Assurance
+                  - generic [ref=e224]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e225]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e226]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e227]:
+                    - img
+                - generic [ref=e228]:
+                  - generic [ref=e229]: "4"
+                  - generic [ref=e230]: CAIQ.Audit & Assurance
+                  - generic [ref=e231]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e232]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e233]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e234]:
+                    - img
+                - generic [ref=e235]:
+                  - generic [ref=e236]: "5"
+                  - generic [ref=e237]: CAIQ.Audit & Assurance
+                  - generic [ref=e238]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e239]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e240]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e241]:
+                    - img
+                - generic [ref=e242]:
+                  - generic [ref=e243]: "6"
+                  - generic [ref=e244]: CAIQ.Audit & Assurance
+                  - generic [ref=e245]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e246]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e247]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e248]:
+                    - img
+                - generic [ref=e249]:
+                  - generic [ref=e250]: "7"
+                  - generic [ref=e251]: CAIQ.Audit & Assurance
+                  - generic [ref=e252]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e253]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e254]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e255]:
+                    - img
+                - generic [ref=e256]:
+                  - generic [ref=e257]: "8"
+                  - generic [ref=e258]: CAIQ.Audit & Assurance
+                  - generic [ref=e259]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e260]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e261]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e262]:
+                    - img
+                - generic [ref=e263]:
+                  - generic [ref=e264]: "9"
+                  - generic [ref=e265]: CAIQ.Application & Interface Security
+                  - generic [ref=e266]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e267]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e268]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e269]:
+                    - img
+                - generic [ref=e270]:
+                  - generic [ref=e271]: "10"
+                  - generic [ref=e272]: CAIQ.Application & Interface Security
+                  - generic [ref=e273]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e274]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e275]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e276]:
+                    - img
+                - generic [ref=e277]:
+                  - generic [ref=e278]: "11"
+                  - generic [ref=e279]: CAIQ.Application & Interface Security
+                  - generic [ref=e280]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e281]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e282]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e283]:
+                    - img
+                - generic [ref=e284]:
+                  - generic [ref=e285]: "12"
+                  - generic [ref=e286]: CAIQ.Application & Interface Security
+                  - generic [ref=e287]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e288]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e289]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e290]:
+                    - img
+                - generic [ref=e291]:
+                  - generic [ref=e292]: "13"
+                  - generic [ref=e293]: CAIQ.Application & Interface Security
+                  - generic [ref=e294]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e295]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e296]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e297]:
+                    - img
+                - generic [ref=e298]:
+                  - generic [ref=e299]: "14"
+                  - generic [ref=e300]: CAIQ.Application & Interface Security
+                  - generic [ref=e301]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e302]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e303]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e304]:
+                    - img
+                - generic [ref=e305]:
+                  - generic [ref=e306]: "15"
+                  - generic [ref=e307]: CAIQ.Application & Interface Security
+                  - generic [ref=e308]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e309]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e310]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e311]:
+                    - img
+                - generic [ref=e312]:
+                  - generic [ref=e313]: "16"
+                  - generic [ref=e314]: CAIQ.Application & Interface Security
+                  - generic [ref=e315]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e316]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e317]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e318]:
+                    - img
+                - generic [ref=e319]:
+                  - generic [ref=e320]: "17"
+                  - generic [ref=e321]: CAIQ.Application & Interface Security
+                  - generic [ref=e322]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e323]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e324]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e325]:
+                    - img
+                - generic [ref=e326]:
+                  - generic [ref=e327]: "18"
+                  - generic [ref=e328]: CAIQ.Application & Interface Security
+                  - generic [ref=e329]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e330]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e331]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e332]:
+                    - img
+                - generic [ref=e333]:
+                  - generic [ref=e334]: "19"
+                  - generic [ref=e335]: CAIQ.Application & Interface Security
+                  - generic [ref=e336]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e337]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e338]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e339]:
+                    - img
+                - generic [ref=e340]:
+                  - generic [ref=e341]: "20"
+                  - generic [ref=e342]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e343]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e344]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e345]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e346]:
+                    - img
+                - generic [ref=e347]:
+                  - generic [ref=e348]: "21"
+                  - generic [ref=e349]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e350]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e351]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e352]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e353]:
+                    - img
+                - generic [ref=e354]:
+                  - generic [ref=e355]: "22"
+                  - generic [ref=e356]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e357]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e358]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e359]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e360]:
+                    - img
+                - generic [ref=e361]:
+                  - generic [ref=e362]: "23"
+                  - generic [ref=e363]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e364]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e365]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e366]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e367]:
+                    - img
+                - generic [ref=e368]:
+                  - generic [ref=e369]: "24"
+                  - generic [ref=e370]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e371]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e372]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e373]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e374]:
+                    - img
+                - generic [ref=e375]:
+                  - generic [ref=e376]: "25"
+                  - generic [ref=e377]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e378]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e379]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e380]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e381]:
+                    - img
+                - generic [ref=e382]:
+                  - generic [ref=e383]: "26"
+                  - generic [ref=e384]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e385]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e386]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e387]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e388]:
+                    - img
+                - generic [ref=e389]:
+                  - generic [ref=e390]: "27"
+                  - generic [ref=e391]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e392]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e393]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e394]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e395]:
+                    - img
+                - generic [ref=e396]:
+                  - generic [ref=e397]: "28"
+                  - generic [ref=e398]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e399]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e400]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e401]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e402]:
+                    - img
+                - generic [ref=e403]:
+                  - generic [ref=e404]: "29"
+                  - generic [ref=e405]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e406]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e407]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e408]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e409]:
+                    - img
+                - generic [ref=e410]:
+                  - generic [ref=e411]: "30"
+                  - generic [ref=e412]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e413]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e414]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e415]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e416]:
+                    - img
+                - generic [ref=e417]:
+                  - generic [ref=e418]: "31"
+                  - generic [ref=e419]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e420]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e421]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e422]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e423]:
+                    - img
+                - generic [ref=e424]:
+                  - generic [ref=e425]: "32"
+                  - generic [ref=e426]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e427]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e428]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e429]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e430]:
+                    - img
+                - generic [ref=e431]:
+                  - generic [ref=e432]: "33"
+                  - generic [ref=e433]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e434]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e435]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e436]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e437]:
+                    - img
+                - generic [ref=e438]:
+                  - generic [ref=e439]: "34"
+                  - generic [ref=e440]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e441]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e442]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e443]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e444]:
+                    - img
+                - generic [ref=e445]:
+                  - generic [ref=e446]: "35"
+                  - generic [ref=e447]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e448]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e449]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e450]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e451]:
+                    - img
+                - generic [ref=e452]:
+                  - generic [ref=e453]: "36"
+                  - generic [ref=e454]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e455]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e456]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e457]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e458]:
+                    - img
+                - generic [ref=e459]:
+                  - generic [ref=e460]: "37"
+                  - generic [ref=e461]: CAIQ. Business Continuity Mgmt & Op. Resilience
+                  - generic [ref=e462]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e463]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e464]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e465]:
+                    - img
+                - generic [ref=e466]:
+                  - generic [ref=e467]: "38"
+                  - generic [ref=e468]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e469]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e470]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e471]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e472]:
+                    - img
+                - generic [ref=e473]:
+                  - generic [ref=e474]: "39"
+                  - generic [ref=e475]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e476]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e477]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e478]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e479]:
+                    - img
+                - generic [ref=e480]:
+                  - generic [ref=e481]: "40"
+                  - generic [ref=e482]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e483]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e484]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e485]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e486]:
+                    - img
+                - generic [ref=e487]:
+                  - generic [ref=e488]: "41"
+                  - generic [ref=e489]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e490]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e491]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e492]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e493]:
+                    - img
+                - generic [ref=e494]:
+                  - generic [ref=e495]: "42"
+                  - generic [ref=e496]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e497]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e498]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e499]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e500]:
+                    - img
+                - generic [ref=e501]:
+                  - generic [ref=e502]: "43"
+                  - generic [ref=e503]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e504]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e505]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e506]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e507]:
+                    - img
+                - generic [ref=e508]:
+                  - generic [ref=e509]: "44"
+                  - generic [ref=e510]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e511]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e512]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e513]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e514]:
+                    - img
+                - generic [ref=e515]:
+                  - generic [ref=e516]: "45"
+                  - generic [ref=e517]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e518]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e519]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e520]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e521]:
+                    - img
+                - generic [ref=e522]:
+                  - generic [ref=e523]: "46"
+                  - generic [ref=e524]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e525]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e526]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e527]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e528]:
+                    - img
+                - generic [ref=e529]:
+                  - generic [ref=e530]: "47"
+                  - generic [ref=e531]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e532]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e533]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e534]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e535]:
+                    - img
+                - generic [ref=e536]:
+                  - generic [ref=e537]: "48"
+                  - generic [ref=e538]: CAIQ.Change Control and Config. Mgmt
+                  - generic [ref=e539]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e540]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e541]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e542]:
+                    - img
+                - generic [ref=e543]:
+                  - generic [ref=e544]: "49"
+                  - generic [ref=e545]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e546]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e547]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e548]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e549]:
+                    - img
+                - generic [ref=e550]:
+                  - generic [ref=e551]: "50"
+                  - generic [ref=e552]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e553]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e554]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e555]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e556]:
+                    - img
+                - generic [ref=e557]:
+                  - generic [ref=e558]: "51"
+                  - generic [ref=e559]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e560]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e561]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e562]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e563]:
+                    - img
+                - generic [ref=e564]:
+                  - generic [ref=e565]: "52"
+                  - generic [ref=e566]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e567]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e568]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e569]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e570]:
+                    - img
+                - generic [ref=e571]:
+                  - generic [ref=e572]: "53"
+                  - generic [ref=e573]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e574]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e575]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e576]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e577]:
+                    - img
+                - generic [ref=e578]:
+                  - generic [ref=e579]: "54"
+                  - generic [ref=e580]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e581]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e582]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e583]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e584]:
+                    - img
+                - generic [ref=e585]:
+                  - generic [ref=e586]: "55"
+                  - generic [ref=e587]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e588]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e589]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e590]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e591]:
+                    - img
+                - generic [ref=e592]:
+                  - generic [ref=e593]: "56"
+                  - generic [ref=e594]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e595]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e596]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e597]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e598]:
+                    - img
+                - generic [ref=e599]:
+                  - generic [ref=e600]: "57"
+                  - generic [ref=e601]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e602]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e603]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e604]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e605]:
+                    - img
+                - generic [ref=e606]:
+                  - generic [ref=e607]: "58"
+                  - generic [ref=e608]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e609]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e610]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e611]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e612]:
+                    - img
+                - generic [ref=e613]:
+                  - generic [ref=e614]: "59"
+                  - generic [ref=e615]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e616]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e617]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e618]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e619]:
+                    - img
+                - generic [ref=e620]:
+                  - generic [ref=e621]: "60"
+                  - generic [ref=e622]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e623]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e624]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e625]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e626]:
+                    - img
+                - generic [ref=e627]:
+                  - generic [ref=e628]: "61"
+                  - generic [ref=e629]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e630]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e631]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e632]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e633]:
+                    - img
+                - generic [ref=e634]:
+                  - generic [ref=e635]: "62"
+                  - generic [ref=e636]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e637]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e638]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e639]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e640]:
+                    - img
+                - generic [ref=e641]:
+                  - generic [ref=e642]: "63"
+                  - generic [ref=e643]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e644]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e645]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e646]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e647]:
+                    - img
+                - generic [ref=e648]:
+                  - generic [ref=e649]: "64"
+                  - generic [ref=e650]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e651]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e652]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e653]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e654]:
+                    - img
+                - generic [ref=e655]:
+                  - generic [ref=e656]: "65"
+                  - generic [ref=e657]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e658]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e659]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e660]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e661]:
+                    - img
+                - generic [ref=e662]:
+                  - generic [ref=e663]: "66"
+                  - generic [ref=e664]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e665]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e666]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e667]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e668]:
+                    - img
+                - generic [ref=e669]:
+                  - generic [ref=e670]: "67"
+                  - generic [ref=e671]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e672]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e673]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e674]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e675]:
+                    - img
+                - generic [ref=e676]:
+                  - generic [ref=e677]: "68"
+                  - generic [ref=e678]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e679]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e680]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e681]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e682]:
+                    - img
+                - generic [ref=e683]:
+                  - generic [ref=e684]: "69"
+                  - generic [ref=e685]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e686]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e687]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e688]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e689]:
+                    - img
+                - generic [ref=e690]:
+                  - generic [ref=e691]: "70"
+                  - generic [ref=e692]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e693]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e694]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e695]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e696]:
+                    - img
+                - generic [ref=e697]:
+                  - generic [ref=e698]: "71"
+                  - generic [ref=e699]: CAIQ.Cryptography, Encryption & Key Mgmt
+                  - generic [ref=e700]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e701]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e702]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e703]:
+                    - img
+                - generic [ref=e704]:
+                  - generic [ref=e705]: "72"
+                  - generic [ref=e706]: CAIQ.Datacenter Security
+                  - generic [ref=e707]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e708]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e709]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e710]:
+                    - img
+                - generic [ref=e711]:
+                  - generic [ref=e712]: "73"
+                  - generic [ref=e713]: CAIQ.Datacenter Security
+                  - generic [ref=e714]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e715]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e716]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e717]:
+                    - img
+                - generic [ref=e718]:
+                  - generic [ref=e719]: "74"
+                  - generic [ref=e720]: CAIQ.Datacenter Security
+                  - generic [ref=e721]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e722]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e723]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e724]:
+                    - img
+                - generic [ref=e725]:
+                  - generic [ref=e726]: "75"
+                  - generic [ref=e727]: CAIQ.Datacenter Security
+                  - generic [ref=e728]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e729]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e730]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e731]:
+                    - img
+                - generic [ref=e732]:
+                  - generic [ref=e733]: "76"
+                  - generic [ref=e734]: CAIQ.Datacenter Security
+                  - generic [ref=e735]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e736]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e737]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e738]:
+                    - img
+                - generic [ref=e739]:
+                  - generic [ref=e740]: "77"
+                  - generic [ref=e741]: CAIQ.Datacenter Security
+                  - generic [ref=e742]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e743]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e744]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e745]:
+                    - img
+                - generic [ref=e746]:
+                  - generic [ref=e747]: "78"
+                  - generic [ref=e748]: CAIQ.Datacenter Security
+                  - generic [ref=e749]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e750]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e751]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e752]:
+                    - img
+                - generic [ref=e753]:
+                  - generic [ref=e754]: "79"
+                  - generic [ref=e755]: CAIQ.Datacenter Security
+                  - generic [ref=e756]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e757]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e758]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e759]:
+                    - img
+                - generic [ref=e760]:
+                  - generic [ref=e761]: "80"
+                  - generic [ref=e762]: CAIQ.Datacenter Security
+                  - generic [ref=e763]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e764]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e765]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e766]:
+                    - img
+                - generic [ref=e767]:
+                  - generic [ref=e768]: "81"
+                  - generic [ref=e769]: CAIQ.Datacenter Security
+                  - generic [ref=e770]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e771]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e772]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e773]:
+                    - img
+                - generic [ref=e774]:
+                  - generic [ref=e775]: "82"
+                  - generic [ref=e776]: CAIQ.Datacenter Security
+                  - generic [ref=e777]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e778]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e779]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e780]:
+                    - img
+                - generic [ref=e781]:
+                  - generic [ref=e782]: "83"
+                  - generic [ref=e783]: CAIQ.Datacenter Security
+                  - generic [ref=e784]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e785]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e786]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e787]:
+                    - img
+                - generic [ref=e788]:
+                  - generic [ref=e789]: "84"
+                  - generic [ref=e790]: CAIQ.Datacenter Security
+                  - generic [ref=e791]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e792]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e793]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e794]:
+                    - img
+                - generic [ref=e795]:
+                  - generic [ref=e796]: "85"
+                  - generic [ref=e797]: CAIQ.Datacenter Security
+                  - generic [ref=e798]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e799]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e800]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e801]:
+                    - img
+                - generic [ref=e802]:
+                  - generic [ref=e803]: "86"
+                  - generic [ref=e804]: CAIQ.Datacenter Security
+                  - generic [ref=e805]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e806]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e807]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e808]:
+                    - img
+                - generic [ref=e809]:
+                  - generic [ref=e810]: "87"
+                  - generic [ref=e811]: CAIQ.Datacenter Security
+                  - generic [ref=e812]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e813]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e814]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e815]:
+                    - img
+                - generic [ref=e816]:
+                  - generic [ref=e817]: "88"
+                  - generic [ref=e818]: CAIQ.Datacenter Security
+                  - generic [ref=e819]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e820]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e821]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e822]:
+                    - img
+                - generic [ref=e823]:
+                  - generic [ref=e824]: "89"
+                  - generic [ref=e825]: CAIQ.Datacenter Security
+                  - generic [ref=e826]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e827]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e828]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e829]:
+                    - img
+                - generic [ref=e830]:
+                  - generic [ref=e831]: "90"
+                  - generic [ref=e832]: CAIQ.Datacenter Security
+                  - generic [ref=e833]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e834]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e835]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e836]:
+                    - img
+                - generic [ref=e837]:
+                  - generic [ref=e838]: "91"
+                  - generic [ref=e839]: CAIQ.Datacenter Security
+                  - generic [ref=e840]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e841]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e842]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e843]:
+                    - img
+                - generic [ref=e844]:
+                  - generic [ref=e845]: "92"
+                  - generic [ref=e846]: CAIQ.Datacenter Security
+                  - generic [ref=e847]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e848]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e849]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e850]:
+                    - img
+                - generic [ref=e851]:
+                  - generic [ref=e852]: "93"
+                  - generic [ref=e853]: CAIQ.Datacenter Security
+                  - generic [ref=e854]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e855]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e856]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e857]:
+                    - img
+                - generic [ref=e858]:
+                  - generic [ref=e859]: "94"
+                  - generic [ref=e860]: CAIQ.Datacenter Security
+                  - generic [ref=e861]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e862]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e863]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e864]:
+                    - img
+                - generic [ref=e865]:
+                  - generic [ref=e866]: "95"
+                  - generic [ref=e867]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e868]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e869]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e870]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e871]:
+                    - img
+                - generic [ref=e872]:
+                  - generic [ref=e873]: "96"
+                  - generic [ref=e874]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e875]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e876]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e877]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e878]:
+                    - img
+                - generic [ref=e879]:
+                  - generic [ref=e880]: "97"
+                  - generic [ref=e881]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e882]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e883]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e884]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e885]:
+                    - img
+                - generic [ref=e886]:
+                  - generic [ref=e887]: "98"
+                  - generic [ref=e888]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e889]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e890]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e891]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e892]:
+                    - img
+                - generic [ref=e893]:
+                  - generic [ref=e894]: "99"
+                  - generic [ref=e895]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e896]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e897]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e898]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e899]:
+                    - img
+                - generic [ref=e900]:
+                  - generic [ref=e901]: "100"
+                  - generic [ref=e902]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e903]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e904]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e905]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e906]:
+                    - img
+                - generic [ref=e907]:
+                  - generic [ref=e908]: "101"
+                  - generic [ref=e909]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e910]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e911]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e912]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e913]:
+                    - img
+                - generic [ref=e914]:
+                  - generic [ref=e915]: "102"
+                  - generic [ref=e916]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e917]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e918]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e919]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e920]:
+                    - img
+                - generic [ref=e921]:
+                  - generic [ref=e922]: "103"
+                  - generic [ref=e923]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e924]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e925]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e926]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e927]:
+                    - img
+                - generic [ref=e928]:
+                  - generic [ref=e929]: "104"
+                  - generic [ref=e930]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e931]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e932]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e933]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e934]:
+                    - img
+                - generic [ref=e935]:
+                  - generic [ref=e936]: "105"
+                  - generic [ref=e937]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e938]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e939]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e940]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e941]:
+                    - img
+                - generic [ref=e942]:
+                  - generic [ref=e943]: "106"
+                  - generic [ref=e944]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e945]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e946]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e947]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e948]:
+                    - img
+                - generic [ref=e949]:
+                  - generic [ref=e950]: "107"
+                  - generic [ref=e951]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e952]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e953]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e954]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e955]:
+                    - img
+                - generic [ref=e956]:
+                  - generic [ref=e957]: "108"
+                  - generic [ref=e958]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e959]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e960]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e961]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e962]:
+                    - img
+                - generic [ref=e963]:
+                  - generic [ref=e964]: "109"
+                  - generic [ref=e965]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e966]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e967]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e968]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e969]:
+                    - img
+                - generic [ref=e970]:
+                  - generic [ref=e971]: "110"
+                  - generic [ref=e972]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e973]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e974]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e975]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e976]:
+                    - img
+                - generic [ref=e977]:
+                  - generic [ref=e978]: "111"
+                  - generic [ref=e979]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e980]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e981]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e982]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e983]:
+                    - img
+                - generic [ref=e984]:
+                  - generic [ref=e985]: "112"
+                  - generic [ref=e986]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e987]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e988]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e989]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e990]:
+                    - img
+                - generic [ref=e991]:
+                  - generic [ref=e992]: "113"
+                  - generic [ref=e993]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e994]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e995]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e996]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e997]:
+                    - img
+                - generic [ref=e998]:
+                  - generic [ref=e999]: "114"
+                  - generic [ref=e1000]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e1001]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1002]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1003]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1004]:
+                    - img
+                - generic [ref=e1005]:
+                  - generic [ref=e1006]: "115"
+                  - generic [ref=e1007]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e1008]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1009]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1010]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1011]:
+                    - img
+                - generic [ref=e1012]:
+                  - generic [ref=e1013]: "116"
+                  - generic [ref=e1014]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e1015]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1016]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1017]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1018]:
+                    - img
+                - generic [ref=e1019]:
+                  - generic [ref=e1020]: "117"
+                  - generic [ref=e1021]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e1022]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1023]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1024]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1025]:
+                    - img
+                - generic [ref=e1026]:
+                  - generic [ref=e1027]: "118"
+                  - generic [ref=e1028]: CAIQ.Data Security and Privacy Lifecycle Mgmt.
+                  - generic [ref=e1029]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1030]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1031]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1032]:
+                    - img
+                - generic [ref=e1033]:
+                  - generic [ref=e1034]: "119"
+                  - generic [ref=e1035]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1036]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1037]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1038]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1039]:
+                    - img
+                - generic [ref=e1040]:
+                  - generic [ref=e1041]: "120"
+                  - generic [ref=e1042]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1043]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1044]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1045]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1046]:
+                    - img
+                - generic [ref=e1047]:
+                  - generic [ref=e1048]: "121"
+                  - generic [ref=e1049]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1050]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1051]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1052]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1053]:
+                    - img
+                - generic [ref=e1054]:
+                  - generic [ref=e1055]: "122"
+                  - generic [ref=e1056]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1057]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1058]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1059]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1060]:
+                    - img
+                - generic [ref=e1061]:
+                  - generic [ref=e1062]: "123"
+                  - generic [ref=e1063]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1064]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1065]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1066]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1067]:
+                    - img
+                - generic [ref=e1068]:
+                  - generic [ref=e1069]: "124"
+                  - generic [ref=e1070]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1071]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1072]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1073]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1074]:
+                    - img
+                - generic [ref=e1075]:
+                  - generic [ref=e1076]: "125"
+                  - generic [ref=e1077]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1078]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1079]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1080]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1081]:
+                    - img
+                - generic [ref=e1082]:
+                  - generic [ref=e1083]: "126"
+                  - generic [ref=e1084]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1085]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1086]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1087]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1088]:
+                    - img
+                - generic [ref=e1089]:
+                  - generic [ref=e1090]: "127"
+                  - generic [ref=e1091]: CAIQ.Governance, Risk and Compliance
+                  - generic [ref=e1092]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1093]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1094]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1095]:
+                    - img
+                - generic [ref=e1096]:
+                  - generic [ref=e1097]: "128"
+                  - generic [ref=e1098]: CAIQ.Human Resources
+                  - generic [ref=e1099]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1100]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1101]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1102]:
+                    - img
+                - generic [ref=e1103]:
+                  - generic [ref=e1104]: "129"
+                  - generic [ref=e1105]: CAIQ.Human Resources
+                  - generic [ref=e1106]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1107]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1108]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1109]:
+                    - img
+                - generic [ref=e1110]:
+                  - generic [ref=e1111]: "130"
+                  - generic [ref=e1112]: CAIQ.Human Resources
+                  - generic [ref=e1113]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1114]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1115]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1116]:
+                    - img
+                - generic [ref=e1117]:
+                  - generic [ref=e1118]: "131"
+                  - generic [ref=e1119]: CAIQ.Human Resources
+                  - generic [ref=e1120]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1121]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1122]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1123]:
+                    - img
+                - generic [ref=e1124]:
+                  - generic [ref=e1125]: "132"
+                  - generic [ref=e1126]: CAIQ.Human Resources
+                  - generic [ref=e1127]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1128]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1129]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1130]:
+                    - img
+                - generic [ref=e1131]:
+                  - generic [ref=e1132]: "133"
+                  - generic [ref=e1133]: CAIQ.Human Resources
+                  - generic [ref=e1134]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1135]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1136]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1137]:
+                    - img
+                - generic [ref=e1138]:
+                  - generic [ref=e1139]: "134"
+                  - generic [ref=e1140]: CAIQ.Human Resources
+                  - generic [ref=e1141]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1142]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1143]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1144]:
+                    - img
+                - generic [ref=e1145]:
+                  - generic [ref=e1146]: "135"
+                  - generic [ref=e1147]: CAIQ.Human Resources
+                  - generic [ref=e1148]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1149]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1150]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1151]:
+                    - img
+                - generic [ref=e1152]:
+                  - generic [ref=e1153]: "136"
+                  - generic [ref=e1154]: CAIQ.Human Resources
+                  - generic [ref=e1155]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1156]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1157]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1158]:
+                    - img
+                - generic [ref=e1159]:
+                  - generic [ref=e1160]: "137"
+                  - generic [ref=e1161]: CAIQ.Human Resources
+                  - generic [ref=e1162]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1163]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1164]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1165]:
+                    - img
+                - generic [ref=e1166]:
+                  - generic [ref=e1167]: "138"
+                  - generic [ref=e1168]: CAIQ.Human Resources
+                  - generic [ref=e1169]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1170]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1171]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1172]:
+                    - img
+                - generic [ref=e1173]:
+                  - generic [ref=e1174]: "139"
+                  - generic [ref=e1175]: CAIQ.Human Resources
+                  - generic [ref=e1176]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1177]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1178]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1179]:
+                    - img
+                - generic [ref=e1180]:
+                  - generic [ref=e1181]: "140"
+                  - generic [ref=e1182]: CAIQ.Human Resources
+                  - generic [ref=e1183]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1184]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1185]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1186]:
+                    - img
+                - generic [ref=e1187]:
+                  - generic [ref=e1188]: "141"
+                  - generic [ref=e1189]: CAIQ.Human Resources
+                  - generic [ref=e1190]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1191]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1192]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1193]:
+                    - img
+                - generic [ref=e1194]:
+                  - generic [ref=e1195]: "142"
+                  - generic [ref=e1196]: CAIQ.Human Resources
+                  - generic [ref=e1197]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1198]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1199]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1200]:
+                    - img
+                - generic [ref=e1201]:
+                  - generic [ref=e1202]: "143"
+                  - generic [ref=e1203]: CAIQ.Human Resources
+                  - generic [ref=e1204]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1205]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1206]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1207]:
+                    - img
+                - generic [ref=e1208]:
+                  - generic [ref=e1209]: "144"
+                  - generic [ref=e1210]: CAIQ.Human Resources
+                  - generic [ref=e1211]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1212]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1213]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1214]:
+                    - img
+                - generic [ref=e1215]:
+                  - generic [ref=e1216]: "145"
+                  - generic [ref=e1217]: CAIQ.Human Resources
+                  - generic [ref=e1218]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1219]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1220]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1221]:
+                    - img
+                - generic [ref=e1222]:
+                  - generic [ref=e1223]: "146"
+                  - generic [ref=e1224]: CAIQ.Human Resources
+                  - generic [ref=e1225]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1226]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1227]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1228]:
+                    - img
+                - generic [ref=e1229]:
+                  - generic [ref=e1230]: "147"
+                  - generic [ref=e1231]: CAIQ.Human Resources
+                  - generic [ref=e1232]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1233]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1234]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1235]:
+                    - img
+                - generic [ref=e1236]:
+                  - generic [ref=e1237]: "148"
+                  - generic [ref=e1238]: CAIQ.Identity & Access Management
+                  - generic [ref=e1239]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1240]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1241]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1242]:
+                    - img
+                - generic [ref=e1243]:
+                  - generic [ref=e1244]: "149"
+                  - generic [ref=e1245]: CAIQ.Identity & Access Management
+                  - generic [ref=e1246]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1247]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1248]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1249]:
+                    - img
+                - generic [ref=e1250]:
+                  - generic [ref=e1251]: "150"
+                  - generic [ref=e1252]: CAIQ.Identity & Access Management
+                  - generic [ref=e1253]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1254]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1255]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1256]:
+                    - img
+                - generic [ref=e1257]:
+                  - generic [ref=e1258]: "151"
+                  - generic [ref=e1259]: CAIQ.Identity & Access Management
+                  - generic [ref=e1260]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1261]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1262]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1263]:
+                    - img
+                - generic [ref=e1264]:
+                  - generic [ref=e1265]: "152"
+                  - generic [ref=e1266]: CAIQ.Identity & Access Management
+                  - generic [ref=e1267]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1268]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1269]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1270]:
+                    - img
+                - generic [ref=e1271]:
+                  - generic [ref=e1272]: "153"
+                  - generic [ref=e1273]: CAIQ.Identity & Access Management
+                  - generic [ref=e1274]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1275]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1276]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1277]:
+                    - img
+                - generic [ref=e1278]:
+                  - generic [ref=e1279]: "154"
+                  - generic [ref=e1280]: CAIQ.Identity & Access Management
+                  - generic [ref=e1281]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1282]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1283]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1284]:
+                    - img
+                - generic [ref=e1285]:
+                  - generic [ref=e1286]: "155"
+                  - generic [ref=e1287]: CAIQ.Identity & Access Management
+                  - generic [ref=e1288]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1289]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1290]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1291]:
+                    - img
+                - generic [ref=e1292]:
+                  - generic [ref=e1293]: "156"
+                  - generic [ref=e1294]: CAIQ.Identity & Access Management
+                  - generic [ref=e1295]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1296]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1297]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1298]:
+                    - img
+                - generic [ref=e1299]:
+                  - generic [ref=e1300]: "157"
+                  - generic [ref=e1301]: CAIQ.Identity & Access Management
+                  - generic [ref=e1302]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1303]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1304]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1305]:
+                    - img
+                - generic [ref=e1306]:
+                  - generic [ref=e1307]: "158"
+                  - generic [ref=e1308]: CAIQ.Identity & Access Management
+                  - generic [ref=e1309]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1310]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1311]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1312]:
+                    - img
+                - generic [ref=e1313]:
+                  - generic [ref=e1314]: "159"
+                  - generic [ref=e1315]: CAIQ.Identity & Access Management
+                  - generic [ref=e1316]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1317]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1318]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1319]:
+                    - img
+                - generic [ref=e1320]:
+                  - generic [ref=e1321]: "160"
+                  - generic [ref=e1322]: CAIQ.Identity & Access Management
+                  - generic [ref=e1323]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1324]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1325]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1326]:
+                    - img
+                - generic [ref=e1327]:
+                  - generic [ref=e1328]: "161"
+                  - generic [ref=e1329]: CAIQ.Identity & Access Management
+                  - generic [ref=e1330]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1331]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1332]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1333]:
+                    - img
+                - generic [ref=e1334]:
+                  - generic [ref=e1335]: "162"
+                  - generic [ref=e1336]: CAIQ.Identity & Access Management
+                  - generic [ref=e1337]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1338]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1339]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1340]:
+                    - img
+                - generic [ref=e1341]:
+                  - generic [ref=e1342]: "163"
+                  - generic [ref=e1343]: CAIQ.Identity & Access Management
+                  - generic [ref=e1344]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1345]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1346]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1347]:
+                    - img
+                - generic [ref=e1348]:
+                  - generic [ref=e1349]: "164"
+                  - generic [ref=e1350]: CAIQ.Identity & Access Management
+                  - generic [ref=e1351]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1352]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1353]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1354]:
+                    - img
+                - generic [ref=e1355]:
+                  - generic [ref=e1356]: "165"
+                  - generic [ref=e1357]: CAIQ.Identity & Access Management
+                  - generic [ref=e1358]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1359]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1360]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1361]:
+                    - img
+                - generic [ref=e1362]:
+                  - generic [ref=e1363]: "166"
+                  - generic [ref=e1364]: CAIQ.Identity & Access Management
+                  - generic [ref=e1365]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1366]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1367]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1368]:
+                    - img
+                - generic [ref=e1369]:
+                  - generic [ref=e1370]: "167"
+                  - generic [ref=e1371]: CAIQ.Identity & Access Management
+                  - generic [ref=e1372]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1373]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1374]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1375]:
+                    - img
+                - generic [ref=e1376]:
+                  - generic [ref=e1377]: "168"
+                  - generic [ref=e1378]: CAIQ.Identity & Access Management
+                  - generic [ref=e1379]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1380]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1381]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1382]:
+                    - img
+                - generic [ref=e1383]:
+                  - generic [ref=e1384]: "169"
+                  - generic [ref=e1385]: CAIQ.Interoperability & Portability
+                  - generic [ref=e1386]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1387]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1388]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1389]:
+                    - img
+                - generic [ref=e1390]:
+                  - generic [ref=e1391]: "170"
+                  - generic [ref=e1392]: CAIQ.Interoperability & Portability
+                  - generic [ref=e1393]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1394]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1395]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1396]:
+                    - img
+                - generic [ref=e1397]:
+                  - generic [ref=e1398]: "171"
+                  - generic [ref=e1399]: CAIQ.Interoperability & Portability
+                  - generic [ref=e1400]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1401]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1402]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1403]:
+                    - img
+                - generic [ref=e1404]:
+                  - generic [ref=e1405]: "172"
+                  - generic [ref=e1406]: CAIQ.Interoperability & Portability
+                  - generic [ref=e1407]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1408]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1409]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1410]:
+                    - img
+                - generic [ref=e1411]:
+                  - generic [ref=e1412]: "173"
+                  - generic [ref=e1413]: CAIQ.Interoperability & Portability
+                  - generic [ref=e1414]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1415]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1416]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1417]:
+                    - img
+                - generic [ref=e1418]:
+                  - generic [ref=e1419]: "174"
+                  - generic [ref=e1420]: CAIQ.Interoperability & Portability
+                  - generic [ref=e1421]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1422]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1423]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1424]:
+                    - img
+                - generic [ref=e1425]:
+                  - generic [ref=e1426]: "175"
+                  - generic [ref=e1427]: CAIQ.Interoperability & Portability
+                  - generic [ref=e1428]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1429]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1430]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1431]:
+                    - img
+                - generic [ref=e1432]:
+                  - generic [ref=e1433]: "176"
+                  - generic [ref=e1434]: CAIQ.Interoperability & Portability
+                  - generic [ref=e1435]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1436]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1437]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1438]:
+                    - img
+                - generic [ref=e1439]:
+                  - generic [ref=e1440]: "177"
+                  - generic [ref=e1441]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1442]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1443]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1444]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1445]:
+                    - img
+                - generic [ref=e1446]:
+                  - generic [ref=e1447]: "178"
+                  - generic [ref=e1448]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1449]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1450]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1451]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1452]:
+                    - img
+                - generic [ref=e1453]:
+                  - generic [ref=e1454]: "179"
+                  - generic [ref=e1455]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1456]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1457]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1458]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1459]:
+                    - img
+                - generic [ref=e1460]:
+                  - generic [ref=e1461]: "180"
+                  - generic [ref=e1462]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1463]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1464]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1465]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1466]:
+                    - img
+                - generic [ref=e1467]:
+                  - generic [ref=e1468]: "181"
+                  - generic [ref=e1469]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1470]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1471]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1472]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1473]:
+                    - img
+                - generic [ref=e1474]:
+                  - generic [ref=e1475]: "182"
+                  - generic [ref=e1476]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1477]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1478]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1479]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1480]:
+                    - img
+                - generic [ref=e1481]:
+                  - generic [ref=e1482]: "183"
+                  - generic [ref=e1483]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1484]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1485]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1486]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1487]:
+                    - img
+                - generic [ref=e1488]:
+                  - generic [ref=e1489]: "184"
+                  - generic [ref=e1490]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1491]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1492]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1493]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1494]:
+                    - img
+                - generic [ref=e1495]:
+                  - generic [ref=e1496]: "185"
+                  - generic [ref=e1497]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1498]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1499]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1500]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1501]:
+                    - img
+                - generic [ref=e1502]:
+                  - generic [ref=e1503]: "186"
+                  - generic [ref=e1504]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1505]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1506]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1507]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1508]:
+                    - img
+                - generic [ref=e1509]:
+                  - generic [ref=e1510]: "187"
+                  - generic [ref=e1511]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1512]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1513]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1514]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1515]:
+                    - img
+                - generic [ref=e1516]:
+                  - generic [ref=e1517]: "188"
+                  - generic [ref=e1518]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1519]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1520]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1521]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1522]:
+                    - img
+                - generic [ref=e1523]:
+                  - generic [ref=e1524]: "189"
+                  - generic [ref=e1525]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1526]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1527]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1528]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1529]:
+                    - img
+                - generic [ref=e1530]:
+                  - generic [ref=e1531]: "190"
+                  - generic [ref=e1532]: CAIQ.Infrastructure & Virtualization Security
+                  - generic [ref=e1533]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1534]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1535]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1536]:
+                    - img
+                - generic [ref=e1537]:
+                  - generic [ref=e1538]: "191"
+                  - generic [ref=e1539]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1540]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1541]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1542]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1543]:
+                    - img
+                - generic [ref=e1544]:
+                  - generic [ref=e1545]: "192"
+                  - generic [ref=e1546]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1547]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1548]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1549]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1550]:
+                    - img
+                - generic [ref=e1551]:
+                  - generic [ref=e1552]: "193"
+                  - generic [ref=e1553]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1554]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1555]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1556]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1557]:
+                    - img
+                - generic [ref=e1558]:
+                  - generic [ref=e1559]: "194"
+                  - generic [ref=e1560]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1561]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1562]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1563]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1564]:
+                    - img
+                - generic [ref=e1565]:
+                  - generic [ref=e1566]: "195"
+                  - generic [ref=e1567]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1568]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1569]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1570]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1571]:
+                    - img
+                - generic [ref=e1572]:
+                  - generic [ref=e1573]: "196"
+                  - generic [ref=e1574]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1575]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1576]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1577]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1578]:
+                    - img
+                - generic [ref=e1579]:
+                  - generic [ref=e1580]: "197"
+                  - generic [ref=e1581]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1582]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1583]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1584]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1585]:
+                    - img
+                - generic [ref=e1586]:
+                  - generic [ref=e1587]: "198"
+                  - generic [ref=e1588]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1589]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1590]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1591]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1592]:
+                    - img
+                - generic [ref=e1593]:
+                  - generic [ref=e1594]: "199"
+                  - generic [ref=e1595]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1596]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1597]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1598]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1599]:
+                    - img
+                - generic [ref=e1600]:
+                  - generic [ref=e1601]: "200"
+                  - generic [ref=e1602]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1603]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1604]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1605]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1606]:
+                    - img
+                - generic [ref=e1607]:
+                  - generic [ref=e1608]: "201"
+                  - generic [ref=e1609]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1610]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1611]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1612]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1613]:
+                    - img
+                - generic [ref=e1614]:
+                  - generic [ref=e1615]: "202"
+                  - generic [ref=e1616]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1617]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1618]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1619]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1620]:
+                    - img
+                - generic [ref=e1621]:
+                  - generic [ref=e1622]: "203"
+                  - generic [ref=e1623]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1624]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1625]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1626]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1627]:
+                    - img
+                - generic [ref=e1628]:
+                  - generic [ref=e1629]: "204"
+                  - generic [ref=e1630]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1631]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1632]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1633]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1634]:
+                    - img
+                - generic [ref=e1635]:
+                  - generic [ref=e1636]: "205"
+                  - generic [ref=e1637]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1638]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1639]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1640]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1641]:
+                    - img
+                - generic [ref=e1642]:
+                  - generic [ref=e1643]: "206"
+                  - generic [ref=e1644]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1645]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1646]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1647]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1648]:
+                    - img
+                - generic [ref=e1649]:
+                  - generic [ref=e1650]: "207"
+                  - generic [ref=e1651]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1652]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1653]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1654]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1655]:
+                    - img
+                - generic [ref=e1656]:
+                  - generic [ref=e1657]: "208"
+                  - generic [ref=e1658]: CAIQ.Logging and Monitoring
+                  - generic [ref=e1659]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1660]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1661]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1662]:
+                    - img
+                - generic [ref=e1663]:
+                  - generic [ref=e1664]: "209"
+                  - generic [ref=e1665]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1666]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1667]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1668]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1669]:
+                    - img
+                - generic [ref=e1670]:
+                  - generic [ref=e1671]: "210"
+                  - generic [ref=e1672]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1673]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1674]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1675]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1676]:
+                    - img
+                - generic [ref=e1677]:
+                  - generic [ref=e1678]: "211"
+                  - generic [ref=e1679]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1680]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1681]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1682]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1683]:
+                    - img
+                - generic [ref=e1684]:
+                  - generic [ref=e1685]: "212"
+                  - generic [ref=e1686]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1687]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1688]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1689]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1690]:
+                    - img
+                - generic [ref=e1691]:
+                  - generic [ref=e1692]: "213"
+                  - generic [ref=e1693]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1694]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1695]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1696]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1697]:
+                    - img
+                - generic [ref=e1698]:
+                  - generic [ref=e1699]: "214"
+                  - generic [ref=e1700]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1701]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1702]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1703]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1704]:
+                    - img
+                - generic [ref=e1705]:
+                  - generic [ref=e1706]: "215"
+                  - generic [ref=e1707]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1708]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1709]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1710]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1711]:
+                    - img
+                - generic [ref=e1712]:
+                  - generic [ref=e1713]: "216"
+                  - generic [ref=e1714]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1715]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1716]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1717]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1718]:
+                    - img
+                - generic [ref=e1719]:
+                  - generic [ref=e1720]: "217"
+                  - generic [ref=e1721]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1722]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1723]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1724]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1725]:
+                    - img
+                - generic [ref=e1726]:
+                  - generic [ref=e1727]: "218"
+                  - generic [ref=e1728]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1729]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1730]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1731]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1732]:
+                    - img
+                - generic [ref=e1733]:
+                  - generic [ref=e1734]: "219"
+                  - generic [ref=e1735]: CAIQ.Security Incident Mgmt, E-Discovery, & Cloud Forensics
+                  - generic [ref=e1736]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1737]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1738]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1739]:
+                    - img
+                - generic [ref=e1740]:
+                  - generic [ref=e1741]: "220"
+                  - generic [ref=e1742]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1743]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1744]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1745]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1746]:
+                    - img
+                - generic [ref=e1747]:
+                  - generic [ref=e1748]: "221"
+                  - generic [ref=e1749]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1750]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1751]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1752]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1753]:
+                    - img
+                - generic [ref=e1754]:
+                  - generic [ref=e1755]: "222"
+                  - generic [ref=e1756]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1757]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1758]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1759]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1760]:
+                    - img
+                - generic [ref=e1761]:
+                  - generic [ref=e1762]: "223"
+                  - generic [ref=e1763]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1764]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1765]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1766]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1767]:
+                    - img
+                - generic [ref=e1768]:
+                  - generic [ref=e1769]: "224"
+                  - generic [ref=e1770]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1771]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1772]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1773]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1774]:
+                    - img
+                - generic [ref=e1775]:
+                  - generic [ref=e1776]: "225"
+                  - generic [ref=e1777]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1778]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1779]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1780]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1781]:
+                    - img
+                - generic [ref=e1782]:
+                  - generic [ref=e1783]: "226"
+                  - generic [ref=e1784]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1785]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1786]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1787]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1788]:
+                    - img
+                - generic [ref=e1789]:
+                  - generic [ref=e1790]: "227"
+                  - generic [ref=e1791]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1792]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1793]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1794]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1795]:
+                    - img
+                - generic [ref=e1796]:
+                  - generic [ref=e1797]: "228"
+                  - generic [ref=e1798]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1799]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1800]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1801]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1802]:
+                    - img
+                - generic [ref=e1803]:
+                  - generic [ref=e1804]: "229"
+                  - generic [ref=e1805]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1806]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1807]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1808]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1809]:
+                    - img
+                - generic [ref=e1810]:
+                  - generic [ref=e1811]: "230"
+                  - generic [ref=e1812]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1813]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1814]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1815]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1816]:
+                    - img
+                - generic [ref=e1817]:
+                  - generic [ref=e1818]: "231"
+                  - generic [ref=e1819]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1820]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1821]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1822]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1823]:
+                    - img
+                - generic [ref=e1824]:
+                  - generic [ref=e1825]: "232"
+                  - generic [ref=e1826]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1827]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1828]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1829]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1830]:
+                    - img
+                - generic [ref=e1831]:
+                  - generic [ref=e1832]: "233"
+                  - generic [ref=e1833]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1834]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1835]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1836]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1837]:
+                    - img
+                - generic [ref=e1838]:
+                  - generic [ref=e1839]: "234"
+                  - generic [ref=e1840]: CAIQ.Supply Chain Mgmt, Transparency, & Accountability
+                  - generic [ref=e1841]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1842]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1843]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1844]:
+                    - img
+                - generic [ref=e1845]:
+                  - generic [ref=e1846]: "235"
+                  - generic [ref=e1847]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1848]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1849]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1850]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1851]:
+                    - img
+                - generic [ref=e1852]:
+                  - generic [ref=e1853]: "236"
+                  - generic [ref=e1854]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1855]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1856]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1857]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1858]:
+                    - img
+                - generic [ref=e1859]:
+                  - generic [ref=e1860]: "237"
+                  - generic [ref=e1861]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1862]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1863]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1864]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1865]:
+                    - img
+                - generic [ref=e1866]:
+                  - generic [ref=e1867]: "238"
+                  - generic [ref=e1868]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1869]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1870]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1871]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1872]:
+                    - img
+                - generic [ref=e1873]:
+                  - generic [ref=e1874]: "239"
+                  - generic [ref=e1875]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1876]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1877]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1878]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1879]:
+                    - img
+                - generic [ref=e1880]:
+                  - generic [ref=e1881]: "240"
+                  - generic [ref=e1882]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1883]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1884]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1885]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1886]:
+                    - img
+                - generic [ref=e1887]:
+                  - generic [ref=e1888]: "241"
+                  - generic [ref=e1889]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1890]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1891]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1892]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1893]:
+                    - img
+                - generic [ref=e1894]:
+                  - generic [ref=e1895]: "242"
+                  - generic [ref=e1896]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1897]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1898]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1899]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1900]:
+                    - img
+                - generic [ref=e1901]:
+                  - generic [ref=e1902]: "243"
+                  - generic [ref=e1903]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1904]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1905]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1906]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1907]:
+                    - img
+                - generic [ref=e1908]:
+                  - generic [ref=e1909]: "244"
+                  - generic [ref=e1910]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1911]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1912]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1913]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1914]:
+                    - img
+                - generic [ref=e1915]:
+                  - generic [ref=e1916]: "245"
+                  - generic [ref=e1917]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1918]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1919]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1920]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1921]:
+                    - img
+                - generic [ref=e1922]:
+                  - generic [ref=e1923]: "246"
+                  - generic [ref=e1924]: CAIQ.Threat & Vulnerability Management
+                  - generic [ref=e1925]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1926]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1927]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1928]:
+                    - img
+                - generic [ref=e1929]:
+                  - generic [ref=e1930]: "247"
+                  - generic [ref=e1931]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1932]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1933]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1934]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1935]:
+                    - img
+                - generic [ref=e1936]:
+                  - generic [ref=e1937]: "248"
+                  - generic [ref=e1938]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1939]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1940]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1941]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1942]:
+                    - img
+                - generic [ref=e1943]:
+                  - generic [ref=e1944]: "249"
+                  - generic [ref=e1945]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1946]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1947]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1948]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1949]:
+                    - img
+                - generic [ref=e1950]:
+                  - generic [ref=e1951]: "250"
+                  - generic [ref=e1952]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1953]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1954]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1955]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1956]:
+                    - img
+                - generic [ref=e1957]:
+                  - generic [ref=e1958]: "251"
+                  - generic [ref=e1959]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1960]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1961]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1962]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1963]:
+                    - img
+                - generic [ref=e1964]:
+                  - generic [ref=e1965]: "252"
+                  - generic [ref=e1966]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1967]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1968]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1969]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1970]:
+                    - img
+                - generic [ref=e1971]:
+                  - generic [ref=e1972]: "253"
+                  - generic [ref=e1973]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1974]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1975]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1976]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1977]:
+                    - img
+                - generic [ref=e1978]:
+                  - generic [ref=e1979]: "254"
+                  - generic [ref=e1980]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1981]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1982]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1983]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1984]:
+                    - img
+                - generic [ref=e1985]:
+                  - generic [ref=e1986]: "255"
+                  - generic [ref=e1987]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1988]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1989]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1990]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1991]:
+                    - img
+                - generic [ref=e1992]:
+                  - generic [ref=e1993]: "256"
+                  - generic [ref=e1994]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e1995]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e1996]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e1997]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e1998]:
+                    - img
+                - generic [ref=e1999]:
+                  - generic [ref=e2000]: "257"
+                  - generic [ref=e2001]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e2002]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e2003]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e2004]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e2005]:
+                    - img
+                - generic [ref=e2006]:
+                  - generic [ref=e2007]: "258"
+                  - generic [ref=e2008]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e2009]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e2010]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e2011]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e2012]:
+                    - img
+                - generic [ref=e2013]:
+                  - generic [ref=e2014]: "259"
+                  - generic [ref=e2015]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e2016]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e2017]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e2018]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e2019]:
+                    - img
+                - generic [ref=e2020]:
+                  - generic [ref=e2021]: "260"
+                  - generic [ref=e2022]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e2023]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e2024]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e2025]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e2026]:
+                    - img
+                - generic [ref=e2027]:
+                  - generic [ref=e2028]: "261"
+                  - generic [ref=e2029]: CAIQ.Universal Endpoint Management
+                  - generic [ref=e2030]: The lack of or inadequate security practices in cloud services poses a significant threat to the overall stability and success of the organization.
+                  - generic [ref=e2031]: Unsecured cloud is vulnerable to breaches leading into financial losses, legal issues, or damage to the organization's reputation.
+                  - generic [ref=e2032]: Organization to prioritize the development and implementation of a comprehensive cloud security framework.
+                  - button [ref=e2033]:
+                    - img
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - img
+          - generic:
+            - heading "Help Assistant" [level=3]
+            - paragraph: Ask anything about the application
+        - generic:
+          - generic "Enable Agent Mode":
+            - generic: Agent
+            - switch
+          - button "Clear chat":
+            - img
+          - button "Close":
+            - img
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+            - generic:
+              - generic:
+                - generic:
+                  - paragraph: Hello! I'm the AI-powered GRC Help Assistant. Ask me anything about the application — I can provide detailed answers from the knowledge base.
+        - generic:
+          - generic:
+            - paragraph: Suggested for this page
+            - generic:
+              - button "How do I onboard a new vendor?"
+              - button "How do I use the Relationship Manager Dashboard?"
+              - button "How do I use the Business Owner Dashboard?"
+              - button "How do I use the Assessor Dashboard?"
+              - button "How do I use the Program Monitor?"
+          - generic:
+            - paragraph: Browse by Module
+            - generic:
+              - button "General 10 topics":
+                - img
+                - generic: General
+                - generic: 10 topics
+              - button "TPRM 57 topics":
+                - img
+                - generic: TPRM
+                - generic: 57 topics
+      - generic:
+        - generic:
+          - textbox "Type your question..."
+          - button [disabled]:
+            - img
+        - paragraph: F1 to toggle help
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - alert [ref=e134]

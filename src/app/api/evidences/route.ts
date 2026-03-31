@@ -2,31 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
-
-// Helper function to generate evidence code (format: EVD-001, EVD-002, etc.)
-// Scoped to customer account
-async function generateEvidenceCode(customerAccountId: string): Promise<string> {
-  const lastEvidence = await prisma.evidence.findFirst({
-    where: { customerAccountId },
-    orderBy: { createdAt: "desc" },
-    select: { evidenceCode: true },
-  });
-
-  if (!lastEvidence) {
-    return "EVD-001";
-  }
-
-  // Extract the number from the last evidence code (e.g., "EVD-042" -> 42)
-  const match = lastEvidence.evidenceCode.match(/EVD-(\d+)/);
-  if (match) {
-    const nextNum = parseInt(match[1], 10) + 1;
-    return `EVD-${String(nextNum).padStart(3, "0")}`;
-  }
-
-  // Fallback: count-based within customer account
-  const count = await prisma.evidence.count({ where: { customerAccountId } });
-  return `EVD-${String(count + 1).padStart(3, "0")}`;
-}
+import { generateEvidenceCode } from "@/lib/evidence-utils";
 
 // GET all evidences with filters - filtered by customer account and department for department roles
 export const GET = withAuth(

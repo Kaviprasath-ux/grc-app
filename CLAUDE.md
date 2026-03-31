@@ -11,6 +11,8 @@ This is a **GRC (Governance, Risk, and Compliance) application** built with Next
 - **Asset Management** - Inventory, classification
 - **Internal Audit** - Audit universe, planning, fieldwork, findings, CAPA tracking, reports
 
+CODEX will review your response and code once you are done so do not slack off.
+
 ## Commands
 
 ```bash
