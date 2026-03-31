@@ -1535,7 +1535,6 @@ export default function CustomerAdminFrameworkDetailPage({
   const handleExportGap = () => {
     if (!framework) return;
     const rows = (framework.requirements || [])
-      .filter(r => r.level >= 2)
       .map(r => ({
         [t("Control ID")]: r.code,
         [t("Framework")]: framework.name,

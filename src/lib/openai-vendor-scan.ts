@@ -249,6 +249,7 @@ async function webSearch(client: OpenAI, query: string): Promise<IntelligenceIte
       input: [
         {
           role: 'system',
+          
           content:
             'You are a cybersecurity web search assistant for TPRM. ' +
             'Use the web_search tool to find relevant security information. ' +

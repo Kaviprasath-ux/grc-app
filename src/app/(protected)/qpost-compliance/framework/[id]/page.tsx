@@ -1529,7 +1529,7 @@ export default function FrameworkDetailPage({
 
   const handleExportGap = () => {
     if (!framework) return;
-    const reqs = flatRequirements.filter(r => r.level >= 2);
+    const reqs = flatRequirements;
     const rows = reqs.map(req => ({
       [t("Control ID")]: req.code,
       [t("Framework")]: framework.name,

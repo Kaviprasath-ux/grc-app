@@ -75,7 +75,7 @@ This document provides a comprehensive overview of the AI Risk Evaluation integr
 
 ### 1. Risk Generation API
 
-**External Endpoint**: `POST https://a4t2jogsl4815o-8000.proxy.runpod.net/api/generate_process_asset_risk_v2`
+**External Endpoint**: `POST https://js94jpkkazgpo9-9000.proxy.runpod.net/api/generate_process_asset_risk_v2`
 
 **Internal Proxy**: `POST /api/ai/risk-evaluation`
 
@@ -122,7 +122,7 @@ This document provides a comprehensive overview of the AI Risk Evaluation integr
 
 ### 2. Semantic Matching - Job Submission
 
-**External Endpoint**: `POST https://a4t2jogsl4815o-8000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2`
+**External Endpoint**: `POST https://js94jpkkazgpo9-9000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2`
 
 **Internal Proxy**: `POST /api/ai/semantic-matching`
 
@@ -152,7 +152,7 @@ This document provides a comprehensive overview of the AI Risk Evaluation integr
 
 ### 3. Semantic Matching - Status Check
 
-**External Endpoint**: `GET https://a4t2jogsl4815o-8000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2_status/{job_id}`
+**External Endpoint**: `GET https://js94jpkkazgpo9-9000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2_status/{job_id}`
 
 **Internal Proxy**: `GET /api/ai/semantic-matching/status/[jobId]`
 
@@ -177,7 +177,7 @@ This document provides a comprehensive overview of the AI Risk Evaluation integr
 
 ### 4. Semantic Matching - Result Retrieval
 
-**External Endpoint**: `GET https://a4t2jogsl4815o-8000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2_result/{job_id}`
+**External Endpoint**: `GET https://js94jpkkazgpo9-9000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2_result/{job_id}`
 
 **Internal Proxy**: `GET /api/ai/semantic-matching/result/[jobId]`
 
@@ -343,7 +343,7 @@ src/app/(protected)/organization/
 Ensure these environment variables are set in `.env`:
 
 ```env
-PYTHON_BACKEND_URL=https://a4t2jogsl4815o-8000.proxy.runpod.net/
+PYTHON_BACKEND_URL=https://js94jpkkazgpo9-9000.proxy.runpod.net/
 PYTHON_API_SECRET=CD78AF69D4789425F9278144F1121
 ```
 
@@ -391,7 +391,7 @@ All endpoints were tested directly using curl commands:
 
 #### ✅ Risk Generation
 ```bash
-curl -X POST "https://a4t2jogsl4815o-8000.proxy.runpod.net/api/generate_process_asset_risk_v2" \
+curl -X POST "https://js94jpkkazgpo9-9000.proxy.runpod.net/api/generate_process_asset_risk_v2" \
   -H "auth: CD78AF69D4789425F9278144F1121" \
   -H "Content-Type: application/json" \
   -d '{"Process_Details": {...}}'
@@ -400,7 +400,7 @@ curl -X POST "https://a4t2jogsl4815o-8000.proxy.runpod.net/api/generate_process_
 
 #### ✅ Semantic Matching Submission
 ```bash
-curl -X POST "https://a4t2jogsl4815o-8000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2" \
+curl -X POST "https://js94jpkkazgpo9-9000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2" \
   -H "auth: CD78AF69D4789425F9278144F1121" \
   -F 'existing_library={...}' \
   -F 'generated_risk={...}'
@@ -409,14 +409,14 @@ curl -X POST "https://a4t2jogsl4815o-8000.proxy.runpod.net/api/semanticMatch_pro
 
 #### ✅ Status Check
 ```bash
-curl -X GET "https://a4t2jogsl4815o-8000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2_status/{job_id}" \
+curl -X GET "https://js94jpkkazgpo9-9000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2_status/{job_id}" \
   -H "auth: CD78AF69D4789425F9278144F1121"
 ```
 **Result**: ✅ Success - Status: completed
 
 #### ✅ Result Retrieval
 ```bash
-curl -X GET "https://a4t2jogsl4815o-8000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2_result/{job_id}" \
+curl -X GET "https://js94jpkkazgpo9-9000.proxy.runpod.net/api/semanticMatch_process_asset_riskV2_result/{job_id}" \
   -H "auth: CD78AF69D4789425F9278144F1121"
 ```
 **Result**: ✅ Success - Returned matched risks with similarity scores
@@ -468,7 +468,7 @@ curl -X GET "https://a4t2jogsl4815o-8000.proxy.runpod.net/api/semanticMatch_proc
 
 | Variable | Value | Purpose |
 |----------|-------|---------|
-| `PYTHON_BACKEND_URL` | `https://a4t2jogsl4815o-8000.proxy.runpod.net/` | Python AI backend base URL |
+| `PYTHON_BACKEND_URL` | `https://js94jpkkazgpo9-9000.proxy.runpod.net/` | Python AI backend base URL |
 | `PYTHON_API_SECRET` | `CD78AF69D4789425F9278144F1121` | Authentication secret for AI APIs |
 
 **Security Note**: These secrets are only accessible server-side and never exposed to the client.
