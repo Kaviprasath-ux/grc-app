@@ -27,7 +27,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
-import { Home, ChevronRight } from "lucide-react";
+import { Home, ChevronRight, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 // ==================== TYPES ====================
 
@@ -329,6 +330,9 @@ export default function VendorManagementPage() {
   const [rawServiceCategories, setRawServiceCategories] = useState<{ id: string; name: string }[]>([]);
   const { data: serviceCategories } = useTranslatedData(rawServiceCategories, { modelName: 'TPRMServiceCategory' });
 
+  // Configuration check state
+  const [configCheck, setConfigCheck] = useState<{ complete: boolean; missing: string[] } | null>(null);
+
   // Import dialog state
   const [importVendorOpen, setImportVendorOpen] = useState(false);
   const [importQuestionsOpen, setImportQuestionsOpen] = useState(false);
@@ -381,7 +385,15 @@ export default function VendorManagementPage() {
     } catch { /* silent */ }
   }, []);
 
-  useEffect(() => { loadVendors(); loadLookups(); }, [loadVendors, loadLookups]);
+  const checkConfig = useCallback(async () => {
+    if (isSuperAdmin) return; // admins don't onboard vendors, skip check
+    try {
+      const res = await fetch("/api/tprm/configuration-check");
+      if (res.ok) setConfigCheck(await res.json());
+    } catch { /* silent */ }
+  }, [isSuperAdmin]);
+
+  useEffect(() => { loadVendors(); loadLookups(); checkConfig(); }, [loadVendors, loadLookups, checkConfig]);
 
   const filteredVendors = translatedVendors.filter((v) =>
     search === "" ||
@@ -623,6 +635,38 @@ export default function VendorManagementPage() {
         <span className="text-primary-700 font-medium">{t("Vendor Inventory")}</span>
       </nav>
 
+      {/* Configuration Incomplete Banner */}
+      {configCheck && !configCheck.complete && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+          <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            {isCustomerAdmin ? (
+              <>
+                <p className="font-medium text-amber-800">
+                  {t("TPRM configuration is incomplete")}
+                </p>
+                <p className="text-amber-700 mt-0.5">
+                  {t("Please complete the following before onboarding vendors")}:{" "}
+                  <span className="font-medium">{configCheck.missing.join(", ")}</span>.{" "}
+                  <Link href="/tprm/master-data" className="underline font-medium hover:text-amber-900">
+                    {t("Go to Master Data")}
+                  </Link>
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium text-amber-800">
+                  {t("TPRM configuration is not complete")}
+                </p>
+                <p className="text-amber-700 mt-0.5">
+                  {t("Please contact your administrator to complete the TPRM setup before onboarding vendors")}.
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Vendor Inventory")}</h1>
@@ -657,7 +701,12 @@ export default function VendorManagementPage() {
             </DropdownMenu>
           )}
           {!isSuperAdmin && !isCustomerAdmin && (
-            <Button size="sm" onClick={openCreate}>
+            <Button
+              size="sm"
+              onClick={openCreate}
+              disabled={configCheck !== null && !configCheck.complete}
+              title={configCheck && !configCheck.complete ? t("Complete TPRM configuration before onboarding vendors") : undefined}
+            >
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Onboard New Vendor")}
             </Button>

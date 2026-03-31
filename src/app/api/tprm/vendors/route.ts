@@ -131,6 +131,22 @@ export const POST = withAuth(
         return NextResponse.json({ error: vendorCheck.message }, { status: 403 });
       }
 
+      // Check that required configuration has been completed before allowing vendor onboarding
+      const [templateCount, serviceCategoryCount] = await Promise.all([
+        prisma.tPRMQuestionnaireTemplate.count({ where: { customerAccountId } }),
+        prisma.tPRMServiceCategory.count({ where: { customerAccountId } }),
+      ]);
+      const missingConfig: string[] = [];
+      if (templateCount === 0) missingConfig.push('Questionnaire Template');
+      if (serviceCategoryCount === 0) missingConfig.push('Service Category');
+      if (missingConfig.length > 0) {
+        return NextResponse.json({
+          error: `Configuration incomplete. Please complete the TPRM setup before onboarding vendors. Missing: ${missingConfig.join(', ')}.`,
+          configIncomplete: true,
+          missing: missingConfig,
+        }, { status: 422 });
+      }
+
       // Generate vendor code - reuse existing code for same vendor name, or create new
       let vendorCode: string;
       const existingWithSameName = await prisma.tPRMVendor.findFirst({
