@@ -688,7 +688,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.assessments', actions: ['view', 'edit', 'approve'], scope: 'all' },
   ],
 
-  // TPRM Auditor - Read-only access to all assessor pages except Assessment Factory
+  // TPRM Auditor - Read-only access to all assessor workspace pages
   TPRMAuditor: [
     { resource: 'tprm.asr-dashboard', actions: ['view'], scope: 'all' },
     { resource: 'tprm.asr-assessments', actions: ['view'], scope: 'all' },

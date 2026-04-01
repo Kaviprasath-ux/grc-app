@@ -1514,18 +1514,20 @@ export default function ASRAssessmentDetailPage() {
               </div>
             ))}
           </div>
-          <div className="flex gap-2">
-            <Textarea
-              value={commentText}
-              onChange={e => setCommentText(e.target.value)}
-              placeholder={t("Type a comment...")}
-              rows={2}
-              className="flex-1"
-            />
-            <Button onClick={submitComment} disabled={commentSaving || !commentText.trim()} className="self-end">
-              {commentSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </div>
+          {!isAuditor && (
+            <div className="flex gap-2">
+              <Textarea
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                placeholder={t("Type a comment...")}
+                rows={2}
+                className="flex-1"
+              />
+              <Button onClick={submitComment} disabled={commentSaving || !commentText.trim()} className="self-end">
+                {commentSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

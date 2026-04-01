@@ -27,6 +27,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
@@ -184,6 +185,7 @@ export default function MasterDataManagementPage() {
 function DomainsSection({ title }: { title: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -286,16 +288,19 @@ function DomainsSection({ title }: { title: string }) {
     {
       id: "actions",
       header: t("Actions"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEdit(row.original)}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(row.original.id)}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        if (isAuditor) return null;
+        return (
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEdit(row.original)}>
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(row.original.id)}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -303,9 +308,11 @@ function DomainsSection({ title }: { title: string }) {
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add Domain")}
-        </Button>
+        {!isAuditor && (
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add Domain")}
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -366,6 +373,7 @@ function DomainsSection({ title }: { title: string }) {
 function QuestionsSection({ title }: { title: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [questions, setQuestions] = useState<MasterQuestion[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
@@ -548,16 +556,19 @@ function QuestionsSection({ title }: { title: string }) {
     {
       id: "actions",
       header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEdit(row.original)}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(row.original.id)}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        if (isAuditor) return null;
+        return (
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEdit(row.original)}>
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(row.original.id)}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -565,9 +576,11 @@ function QuestionsSection({ title }: { title: string }) {
     <>
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{title}</h1>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add Question")}
-        </Button>
+        {!isAuditor && (
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add Question")}
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -752,6 +765,7 @@ function QuestionsSection({ title }: { title: string }) {
 function QuestionnairesSection({ title }: { title: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [templates, setTemplates] = useState<QuestionnaireWithLinks[]>([]);
   const [allQuestions, setAllQuestions] = useState<MasterQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -960,9 +974,11 @@ function QuestionnairesSection({ title }: { title: string }) {
                       <p className="text-sm font-medium text-muted-foreground">
                         {t("Linked Questions")} ({tmpl.masterQuestionLinks.length})
                       </p>
-                      <Button size="sm" variant="outline" onClick={() => openLinkDialog(tmpl.id)}>
-                        <Link2 className="h-3.5 w-3.5 ltr:mr-2 rtl:ml-2" /> {t("Add Questions")}
-                      </Button>
+                      {!isAuditor && (
+                        <Button size="sm" variant="outline" onClick={() => openLinkDialog(tmpl.id)}>
+                          <Link2 className="h-3.5 w-3.5 ltr:mr-2 rtl:ml-2" /> {t("Add Questions")}
+                        </Button>
+                      )}
                     </div>
 
                     {tmpl.masterQuestionLinks.length === 0 ? (
@@ -984,15 +1000,17 @@ function QuestionnairesSection({ title }: { title: string }) {
                                 </Badge>
                               )}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-red-600 flex-shrink-0"
-                              onClick={() => handleUnlink(link.id)}
-                              title={t("Remove")}
-                            >
-                              <Unlink className="h-3.5 w-3.5" />
-                            </Button>
+                            {!isAuditor && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-red-600 flex-shrink-0"
+                                onClick={() => handleUnlink(link.id)}
+                                title={t("Remove")}
+                              >
+                                <Unlink className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                           </div>
                         ))}
                       </div>

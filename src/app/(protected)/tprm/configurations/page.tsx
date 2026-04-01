@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
@@ -280,6 +281,7 @@ export default function ConfigurationsPage() {
 function VendorOnboardingSection() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [activeTab, setActiveTab] = useState("profile-fields");
 
   // Profile fields state
@@ -509,6 +511,7 @@ function VendorOnboardingSection() {
       cell: ({ row }) => {
         const field = row.original;
         if (field.isSystem) return <span className="text-xs text-muted-foreground">{t("System")}</span>;
+        if (isAuditor) return null;
         return (
           <div className="flex items-center gap-1">
             <Button
@@ -573,37 +576,40 @@ function VendorOnboardingSection() {
     {
       id: "actions",
       header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => {
-              setObEditItem(row.original);
-              setObForm({
-                title: row.original.title,
-                question: row.original.question || "",
-                score: row.original.score,
-                questionType: row.original.questionType,
-                responseType: row.original.responseType,
-                parentId: row.original.parentId || "",
-              });
-              setObDialogOpen(true);
-            }}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-red-600"
-            onClick={() => handleDeleteObQuestion(row.original.id)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        if (isAuditor) return null;
+        return (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+              onClick={() => {
+                setObEditItem(row.original);
+                setObForm({
+                  title: row.original.title,
+                  question: row.original.question || "",
+                  score: row.original.score,
+                  questionType: row.original.questionType,
+                  responseType: row.original.responseType,
+                  parentId: row.original.parentId || "",
+                });
+                setObDialogOpen(true);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-red-600"
+              onClick={() => handleDeleteObQuestion(row.original.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -620,11 +626,13 @@ function VendorOnboardingSection() {
 
         {/* Tab 1: Profile Fields */}
         <TabsContent value="profile-fields" className="mt-4">
-          <div className="flex items-center ltr:justify-end rtl:justify-start mb-4">
-            <Button size="sm" onClick={() => { setPfEditItem(null); setPfFieldName(""); setPfDialogOpen(true); }}>
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
-            </Button>
-          </div>
+          {!isAuditor && (
+            <div className="flex items-center ltr:justify-end rtl:justify-start mb-4">
+              <Button size="sm" onClick={() => { setPfEditItem(null); setPfFieldName(""); setPfDialogOpen(true); }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
+              </Button>
+            </div>
+          )}
           {pfLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -640,13 +648,15 @@ function VendorOnboardingSection() {
             <div className="text-sm text-muted-foreground">
               {t("Total Score")}: <span className={`font-bold ${totalScore > maxVrrScore ? "text-destructive" : "text-foreground"}`}>{totalScore}</span> / {maxVrrScore}
             </div>
-            <Button size="sm" onClick={() => {
-              setObEditItem(null);
-              setObForm({ title: "", question: "", score: 0, questionType: "Parent", responseType: "Yes/No", parentId: "" });
-              setObDialogOpen(true);
-            }}>
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
-            </Button>
+            {!isAuditor && (
+              <Button size="sm" onClick={() => {
+                setObEditItem(null);
+                setObForm({ title: "", question: "", score: 0, questionType: "Parent", responseType: "Yes/No", parentId: "" });
+                setObDialogOpen(true);
+              }}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
+              </Button>
+            )}
           </div>
           {obLoading ? (
             <div className="flex items-center justify-center py-16">
@@ -818,6 +828,7 @@ const SIMPLE_CRUD_MODEL_MAP: Record<string, string> = {
 function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: string }) {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [items, setItems] = useState<SimpleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -908,45 +919,50 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
     {
       id: "actions",
       header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => {
-              setEditItem(row.original);
-              setName(row.original.name);
-              setDialogOpen(true);
-            }}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-red-600"
-            onClick={() => handleDelete(row.original.id)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        if (isAuditor) return null;
+        return (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+              onClick={() => {
+                setEditItem(row.original);
+                setName(row.original.name);
+                setDialogOpen(true);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-red-600"
+              onClick={() => handleDelete(row.original.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <>
-      <div className="flex ltr:justify-end rtl:justify-start gap-2 mb-4">
-        {type === "service-categories" && (
-          <Button size="sm" variant="outline" onClick={handleDeleteAll}>
-            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete All")}
+      {!isAuditor && (
+        <div className="flex ltr:justify-end rtl:justify-start gap-2 mb-4">
+          {type === "service-categories" && (
+            <Button size="sm" variant="outline" onClick={handleDeleteAll}>
+              <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete All")}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => { setEditItem(null); setName(""); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
           </Button>
-        )}
-        <Button size="sm" onClick={() => { setEditItem(null); setName(""); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
-        </Button>
-      </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-16 bg-white rounded-xl border border-slate-200">
@@ -990,6 +1006,7 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
 function QuestionnaireManagementSection() {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
+  const isAuditor = useHasRole("TPRMAuditor");
 
   // ---- Navigation ----
   const [subView, setSubView] = useState<"list" | "questions">("list");
@@ -1745,16 +1762,19 @@ function QuestionnaireManagementSection() {
       {
         id: "actions",
         header: t("Action"),
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditQuestion(row.original)}>
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleUnlinkQuestion(row.original.id)}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        ),
+        cell: ({ row }) => {
+          if (isAuditor) return null;
+          return (
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEditQuestion(row.original)}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleUnlinkQuestion(row.original.id)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          );
+        },
       },
     ];
 
@@ -1774,23 +1794,29 @@ function QuestionnaireManagementSection() {
             <ArrowLeft className={`h-4 w-4 ltr:mr-1 rtl:ml-1 ${isRTL ? "rotate-180" : ""}`} /> {t("Back")}
           </Button>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline"
-              disabled={!selectedTemplateId || enablingAI === selectedTemplateId}
-              onClick={() => selectedTemplateId && handleEnableAI(selectedTemplateId)}>
-              {enablingAI === selectedTemplateId ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : <Bot className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
-              {enablingAI === selectedTemplateId ? t("Enabling...") : t("Enable AI Validation")}
-            </Button>
+            {!isAuditor && (
+              <Button size="sm" variant="outline"
+                disabled={!selectedTemplateId || enablingAI === selectedTemplateId}
+                onClick={() => selectedTemplateId && handleEnableAI(selectedTemplateId)}>
+                {enablingAI === selectedTemplateId ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : <Bot className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
+                {enablingAI === selectedTemplateId ? t("Enabling...") : t("Enable AI Validation")}
+              </Button>
+            )}
             <Button size="sm" variant="outline">
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Export")}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => {
-              setSelectedLinkIds(new Set()); setLinkSearch(""); setLinkDialogOpen(true);
-            }}>
-              <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Link Existing")}
-            </Button>
-            <Button size="sm" onClick={openAddQuestion}>
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
-            </Button>
+            {!isAuditor && (
+              <Button size="sm" variant="outline" onClick={() => {
+                setSelectedLinkIds(new Set()); setLinkSearch(""); setLinkDialogOpen(true);
+              }}>
+                <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Link Existing")}
+              </Button>
+            )}
+            {!isAuditor && (
+              <Button size="sm" onClick={openAddQuestion}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -1853,22 +1879,26 @@ function QuestionnaireManagementSection() {
             onClick={() => setCoverImageTemplate(row.original)}>
             <ImageIcon className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => {
-              setEditItem(row.original);
-              setEditForm({
-                templateName: row.original.templateName,
-                frameworkName: row.original.frameworkName || "",
-                templateCategory: row.original.templateCategory,
-              });
-              setEditDialogOpen(true);
-            }}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600"
-            onClick={() => handleDeleteTemplate(row.original.id)}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          {!isAuditor && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600"
+              onClick={() => {
+                setEditItem(row.original);
+                setEditForm({
+                  templateName: row.original.templateName,
+                  frameworkName: row.original.frameworkName || "",
+                  templateCategory: row.original.templateCategory,
+                });
+                setEditDialogOpen(true);
+              }}>
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {!isAuditor && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600"
+              onClick={() => handleDeleteTemplate(row.original.id)}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -1879,14 +1909,16 @@ function QuestionnaireManagementSection() {
 
   return (
     <>
-      <div className="flex ltr:justify-end rtl:justify-start mb-4">
-        <Button size="sm" onClick={() => {
-          resetWizard();
-          setWizardOpen(true);
-        }}>
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
-        </Button>
-      </div>
+      {!isAuditor && (
+        <div className="flex ltr:justify-end rtl:justify-start mb-4">
+          <Button size="sm" onClick={() => {
+            resetWizard();
+            setWizardOpen(true);
+          }}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
+          </Button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -2258,6 +2290,7 @@ function QuestionnaireManagementSection() {
 function OffboardingSection() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [questions, setQuestions] = useState<OffboardingQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -2349,47 +2382,52 @@ function OffboardingSection() {
     {
       id: "actions",
       header: t("Action"),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => {
-              setEditItem(row.original);
-              setForm({
-                title: row.original.title,
-                question: row.original.question || "",
-              });
-              setDialogOpen(true);
-            }}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-red-600"
-            onClick={() => handleDelete(row.original.id)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        if (isAuditor) return null;
+        return (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+              onClick={() => {
+                setEditItem(row.original);
+                setForm({
+                  title: row.original.title,
+                  question: row.original.question || "",
+                });
+                setDialogOpen(true);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-red-600"
+              onClick={() => handleDelete(row.original.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <>
-      <div className="flex ltr:justify-end rtl:justify-start mb-4">
-        <Button size="sm" onClick={() => {
-          setEditItem(null);
-          setForm({ title: "", question: "" });
-          setDialogOpen(true);
-        }}>
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
-        </Button>
-      </div>
+      {!isAuditor && (
+        <div className="flex ltr:justify-end rtl:justify-start mb-4">
+          <Button size="sm" onClick={() => {
+            setEditItem(null);
+            setForm({ title: "", question: "" });
+            setDialogOpen(true);
+          }}>
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
+          </Button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -2443,6 +2481,7 @@ function OffboardingSection() {
 function ScorecardSection() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isAuditor = useHasRole("TPRMAuditor");
   const [config, setConfig] = useState<ScorecardConfig>({
     scoringFormula: "AVG",
     securityPostureWeight: 50,
@@ -2620,24 +2659,27 @@ function ScorecardSection() {
     {
       id: "actions",
       header: t("Edit"),
-      cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-          onClick={() => {
-            setEditFactor(row.original);
-            setEditForm({
-              name: row.original.name,
-              weightage: row.original.weightage,
-              isMandatory: row.original.isMandatory,
-            });
-            setEditDialogOpen(true);
-          }}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-      ),
+      cell: ({ row }) => {
+        if (isAuditor) return null;
+        return (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            onClick={() => {
+              setEditFactor(row.original);
+              setEditForm({
+                name: row.original.name,
+                weightage: row.original.weightage,
+                isMandatory: row.original.isMandatory,
+              });
+              setEditDialogOpen(true);
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        );
+      },
       size: 60,
     },
   ];
@@ -2669,11 +2711,13 @@ function ScorecardSection() {
   return (
     <div className="space-y-6">
       {/* Header with Validate button */}
-      <div className="flex items-center ltr:justify-end rtl:justify-start">
-        <Button onClick={handleValidate} variant="outline">
-          <CheckSquare className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Validate Configuration")}
-        </Button>
-      </div>
+      {!isAuditor && (
+        <div className="flex items-center ltr:justify-end rtl:justify-start">
+          <Button onClick={handleValidate} variant="outline">
+            <CheckSquare className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Validate Configuration")}
+          </Button>
+        </div>
+      )}
 
       {/* Scoring Formula Section */}
       <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
@@ -2775,11 +2819,13 @@ function ScorecardSection() {
                 {t("Next scan")}: {new Date(scheduleNextRun).toLocaleDateString()}
               </div>
             )}
-            <div className="ltr:ml-auto rtl:mr-auto">
-              <Button onClick={saveSchedule} disabled={scheduleSaving} size="sm">
-                {scheduleSaving ? <><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</> : t("Save Schedule")}
-              </Button>
-            </div>
+            {!isAuditor && (
+              <div className="ltr:ml-auto rtl:mr-auto">
+                <Button onClick={saveSchedule} disabled={scheduleSaving} size="sm">
+                  {scheduleSaving ? <><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</> : t("Save Schedule")}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
         </div>
