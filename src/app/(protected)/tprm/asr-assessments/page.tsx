@@ -277,8 +277,8 @@ export default function AsrAssessmentsPage() {
     // My Queue: assessments assigned to the current user with active statuses
     if (activeTab === "my-queue") {
       if (isApprover) {
-        // Approver's queue: assessments sent to me for approval
-        data = data.filter((i) => i.approver?.id === currentUserId && i.status === "In-Progress(approver)");
+        // Approver's queue: all active assessments where I am the assigned approver
+        data = data.filter((i) => i.approver?.id === currentUserId && !["Completed", "Approved", "Rejected"].includes(i.status));
       } else if (subTab === "reassessment") {
         data = data.filter((i) => i.assessor?.id === currentUserId && i.assessmentType === "Reassessment");
       } else if (subTab === "returned") {
