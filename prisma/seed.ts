@@ -4690,16 +4690,16 @@ async function main() {
 
   // Create TPRM Vendors
   const tprmVendors = [
-    { vendorCode: "VEN001", name: "IBM Corporation", contactEmail: "vendor@ibm.com", contactPhone: "+1-800-IBM-7378", accountManagerName: "James Watson", serviceCategory: "IT Services", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-01-15") },
-    { vendorCode: "VEN002", name: "Microsoft Azure", contactEmail: "azure@microsoft.com", contactPhone: "+1-800-642-7676", accountManagerName: "Sarah Chen", serviceCategory: "Cloud Infrastructure", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-02-01") },
-    { vendorCode: "VEN003", name: "Deloitte Consulting", contactEmail: "info@deloitte.com", contactPhone: "+1-212-489-1600", accountManagerName: "Robert Miller", serviceCategory: "Consulting", department: "Compliance", status: "Onboarding" },
-    { vendorCode: "VEN004", name: "Palo Alto Networks", contactEmail: "sales@paloaltonetworks.com", contactPhone: "+1-408-753-4000", accountManagerName: "Emily Davis", serviceCategory: "Cybersecurity", department: "IT Support", status: "Onboarding" },
-    { vendorCode: "VEN005", name: "SAP SE", contactEmail: "info@sap.com", contactPhone: "+49-6227-7-47474", accountManagerName: "Hans Mueller", serviceCategory: "ERP Systems", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2024-11-20") },
-    { vendorCode: "VEN006", name: "Accenture", contactEmail: "contact@accenture.com", contactPhone: "+1-312-842-5012", accountManagerName: "Lisa Park", serviceCategory: "Digital Transformation", department: "Product Development", status: "Onboarding" },
-    { vendorCode: "VEN007", name: "AWS (Amazon)", contactEmail: "aws-sales@amazon.com", contactPhone: "+1-206-266-1000", accountManagerName: "David Kim", serviceCategory: "Cloud Infrastructure", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-03-10") },
-    { vendorCode: "VEN008", name: "Oracle", contactEmail: "info@oracle.com", contactPhone: "+1-650-506-7000", accountManagerName: "Maria Garcia", serviceCategory: "Database Services", department: "IT Operations", status: "Offboarding", onboardedDate: new Date("2023-06-15") },
-    { vendorCode: "VEN009", name: "Wipro Technologies", contactEmail: "info@wipro.com", contactPhone: "+91-80-2844-0011", accountManagerName: "Ravi Sharma", serviceCategory: "IT Outsourcing", department: "IT Support", status: "Onboarding" },
-    { vendorCode: "VEN010", name: "CrowdStrike", contactEmail: "sales@crowdstrike.com", contactPhone: "+1-888-512-8906", accountManagerName: "Alex Johnson", serviceCategory: "Endpoint Security", department: "IT Support", status: "Onboarded", onboardedDate: new Date("2025-04-01") },
+    { vendorCode: "VEN001", name: "IBM Corporation", contactEmail: "vendor@ibm.com", contactPhone: "+1-800-IBM-7378", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "IT Services", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-01-15") },
+    { vendorCode: "VEN002", name: "Microsoft Azure", contactEmail: "azure@microsoft.com", contactPhone: "+1-800-642-7676", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "Cloud Infrastructure", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-02-01") },
+    { vendorCode: "VEN003", name: "Deloitte Consulting", contactEmail: "info@deloitte.com", contactPhone: "+1-212-489-1600", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "Consulting", department: "Compliance", status: "Onboarding" },
+    { vendorCode: "VEN004", name: "Palo Alto Networks", contactEmail: "sales@paloaltonetworks.com", contactPhone: "+1-408-753-4000", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "Cybersecurity", department: "IT Support", status: "Onboarding" },
+    { vendorCode: "VEN005", name: "SAP SE", contactEmail: "info@sap.com", contactPhone: "+49-6227-7-47474", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "ERP Systems", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2024-11-20") },
+    { vendorCode: "VEN006", name: "Accenture", contactEmail: "contact@accenture.com", contactPhone: "+1-312-842-5012", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "Digital Transformation", department: "Product Development", status: "Onboarding" },
+    { vendorCode: "VEN007", name: "AWS (Amazon)", contactEmail: "aws-sales@amazon.com", contactPhone: "+1-206-266-1000", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "Cloud Infrastructure", department: "IT Operations", status: "Onboarded", onboardedDate: new Date("2025-03-10") },
+    { vendorCode: "VEN008", name: "Oracle", contactEmail: "info@oracle.com", contactPhone: "+1-650-506-7000", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "Database Services", department: "IT Operations", status: "Offboarding", onboardedDate: new Date("2023-06-15") },
+    { vendorCode: "VEN009", name: "Wipro Technologies", contactEmail: "info@wipro.com", contactPhone: "+91-80-2844-0011", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "IT Outsourcing", department: "IT Support", status: "Onboarding" },
+    { vendorCode: "VEN010", name: "CrowdStrike", contactEmail: "sales@crowdstrike.com", contactPhone: "+1-888-512-8906", accountManagerName: "James Watson", accountManagerEmail: "am@baarez.com", serviceCategory: "Endpoint Security", department: "IT Support", status: "Onboarded", onboardedDate: new Date("2025-04-01") },
   ];
 
   const createdVendors: { [key: string]: string } = {};
@@ -4716,6 +4716,7 @@ async function main() {
           contactEmail: vendor.contactEmail,
           contactPhone: vendor.contactPhone,
           accountManagerName: vendor.accountManagerName,
+          accountManagerEmail: vendor.accountManagerEmail,
           serviceCategory: vendor.serviceCategory,
           status: vendor.status,
           onboardedDate: vendor.onboardedDate || null,
@@ -4840,6 +4841,7 @@ async function main() {
     { userId: "TPRM-APR-001", userName: "ap", email: "ap@baarez.com", firstName: "Anita", lastName: "Pillai", fullName: "Anita Pillai", designation: "TPRM Approver", tprmRole: "Approver", roleName: "TPRMApprover" },
     { userId: "TPRM-IT-002", userName: "it", email: "it@baarez.com", firstName: "Imran", lastName: "Tariq", fullName: "Imran Tariq", designation: "IT Security Analyst", tprmRole: "Internal IT Team", roleName: "InternalITTeam" },
     { userId: "TPRM-AUD-001", userName: "auditor", email: "auditor@baarez.com", firstName: "Aditya", lastName: "Deshmukh", fullName: "Aditya Deshmukh", designation: "TPRM Auditor", tprmRole: "Auditor", roleName: "TPRMAuditor" },
+    { userId: "TPRM-AM-001", userName: "am", email: "am@baarez.com", firstName: "James", lastName: "Watson", fullName: "James Watson", designation: "Account Manager", tprmRole: "Account Manager", roleName: "AccountManager" },
   ];
 
   const tprmUserIds: Record<string, string> = {};

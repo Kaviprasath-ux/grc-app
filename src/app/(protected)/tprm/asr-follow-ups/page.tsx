@@ -32,9 +32,12 @@ interface ClarificationItem {
   department: string | null;
   vendorId: string | null;
   vendorName: string | null;
+  assessmentCode: string | null;
   questionNo: string | null;
   date: string | null;
   domain: string | null;
+  rejectComment: string | null;
+  amResponse: string | null;
   status: string;
 }
 
@@ -102,6 +105,7 @@ export default function AsrFollowUpsPage() {
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [viewClarification, setViewClarification] = useState<ClarificationItem | null>(null);
   const [viewRemediation, setViewRemediation] = useState<RemediationItem | null>(null);
   const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -334,8 +338,8 @@ export default function AsrFollowUpsPage() {
     {
       id: "actions",
       header: t("Action"),
-      cell: () => (
-        <Button variant="ghost" size="sm">
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" onClick={() => setViewClarification(row.original)}>
           <Eye className="h-4 w-4 text-primary" />
         </Button>
       ),
@@ -751,6 +755,66 @@ export default function AsrFollowUpsPage() {
               </>
             )}
             <Button variant="outline" onClick={() => { setViewRemediation(null); setShowUnsatisfiedComment(false); setUnsatisfiedComment(""); setShowReturnToITComment(false); setReturnToITComment(""); }}>{isAuditor ? t("Close") : t("Cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== VIEW CLARIFICATION DIALOG ==================== */}
+      <Dialog open={!!viewClarification} onOpenChange={(open) => { if (!open) setViewClarification(null); }}>
+        <DialogContent className="max-w-lg w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>{t("Clarification Details")}</DialogTitle>
+          </DialogHeader>
+          {viewClarification && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{t("Vendor")}</p>
+                  <p className="font-medium">{viewClarification.vendorName || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{t("Vendor ID")}</p>
+                  <p className="font-mono">{viewClarification.vendorId || "-"}</p>
+                </div>
+                {viewClarification.assessmentCode && (
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{t("Engagement ID")}</p>
+                    <p className="font-mono">{viewClarification.assessmentCode}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{t("Question No")}</p>
+                  <p>{viewClarification.questionNo || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{t("Domain")}</p>
+                  <p>{viewClarification.domain || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{t("Date")}</p>
+                  <p>{formatDate(viewClarification.date)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{t("Status")}</p>
+                  <Badge variant="outline">{t(viewClarification.status)}</Badge>
+                </div>
+              </div>
+              {viewClarification.rejectComment && (
+                <div className="border-t pt-3">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{t("Clarification Request")}</p>
+                  <p className="text-slate-700 whitespace-pre-wrap">{viewClarification.rejectComment}</p>
+                </div>
+              )}
+              {viewClarification.amResponse && (
+                <div className="border-t pt-3">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{t("Vendor Response")}</p>
+                  <p className="text-slate-700 whitespace-pre-wrap">{viewClarification.amResponse}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewClarification(null)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -35,9 +35,12 @@ export const GET = withAuth(
           department: null,
           vendorId: c.assessment?.vendor?.vendorCode || null,
           vendorName: c.assessment?.vendor?.name || null,
+          assessmentCode: c.assessment?.assessmentCode || null,
           questionNo: c.questionNo || null,
           date: c.createdAt?.toISOString() || null,
           domain: c.domainName || null,
+          rejectComment: c.rejectComment || null,
+          amResponse: c.amResponse || null,
           status: c.status || "Open",
         }));
 
