@@ -48,10 +48,9 @@ function buildProductFlags(session: AuthenticatedRequest["user"]): ProductFlags 
   const isAuditUser = roles.some((r) => AUDIT_ROLES.has(r));
   const isAuditOnly = isAuditUser && roles.length > 0 && roles.every((r) => AUDIT_ROLES.has(r));
 
-  // isGrcAdded/isTprmAdded are not on AuthenticatedRequest, default to true/false
   return {
-    isGrcAdded: true,
-    isTprmAdded: false,
+    isGrcAdded: (session as Record<string, unknown>).isGrcAdded as boolean ?? true,
+    isTprmAdded: (session as Record<string, unknown>).isTprmAdded as boolean ?? false,
     isAuditUser,
     isAuditOnly,
   };

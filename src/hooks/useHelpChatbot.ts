@@ -41,6 +41,8 @@ export interface ChatMessage {
   pendingUpdateId?: string;
   /** Whether the update was executed */
   executed?: boolean;
+  /** Result of the confirmation action */
+  confirmationResult?: "confirmed" | "cancelled";
   /** Timestamp */
   timestamp: number;
 }
@@ -302,6 +304,15 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
 
   /** Confirm or cancel a pending agent update */
   const confirmUpdate = useCallback(async (updateId: string, confirm: boolean) => {
+    // Mark the confirmation message with the user's choice (replaces buttons with text)
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.pendingUpdateId === updateId
+          ? { ...msg, confirmationResult: confirm ? "confirmed" : "cancelled" }
+          : msg
+      )
+    );
+
     if (!confirm) {
       // User cancelled
       const cancelMsg: ChatMessage = {

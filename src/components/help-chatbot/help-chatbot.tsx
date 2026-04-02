@@ -159,6 +159,7 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
               isAgentUpdate={msg.isAgentUpdate}
               pendingUpdateId={msg.pendingUpdateId}
               executed={msg.executed}
+              confirmationResult={msg.confirmationResult}
               onSelectArticle={selectArticle}
               onConfirmUpdate={confirmUpdate}
             />

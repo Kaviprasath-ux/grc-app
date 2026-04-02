@@ -20,6 +20,7 @@ interface ChatMessageProps {
   isAgentUpdate?: boolean;
   pendingUpdateId?: string;
   executed?: boolean;
+  confirmationResult?: "confirmed" | "cancelled";
   onSelectArticle?: (article: HelpArticle) => void;
   onConfirmUpdate?: (updateId: string, confirm: boolean) => void;
 }
@@ -37,6 +38,7 @@ export function ChatMessage({
   isAgentUpdate,
   pendingUpdateId,
   executed,
+  confirmationResult,
   onSelectArticle,
   onConfirmUpdate,
 }: ChatMessageProps) {
@@ -203,8 +205,8 @@ export function ChatMessage({
             </div>
           )}
 
-          {/* Agent update confirmation buttons */}
-          {isAgentUpdate && pendingUpdateId && !executed && onConfirmUpdate && (
+          {/* Agent update confirmation buttons — show only when no result yet */}
+          {isAgentUpdate && pendingUpdateId && !executed && !confirmationResult && onConfirmUpdate && (
             <div className="flex items-center gap-2 mt-2">
               <button
                 onClick={() => onConfirmUpdate(pendingUpdateId, true)}
@@ -220,6 +222,21 @@ export function ChatMessage({
                 <X className="w-3.5 h-3.5" />
                 {t("Cancel")}
               </button>
+            </div>
+          )}
+          {/* Show confirmation result text after user clicks */}
+          {isAgentUpdate && confirmationResult && (
+            <div className={cn(
+              "flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-medium w-fit",
+              confirmationResult === "confirmed"
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                : "bg-red-50 text-red-700 border border-red-200"
+            )}>
+              {confirmationResult === "confirmed" ? (
+                <><Check className="w-3.5 h-3.5" /> {t("Confirmed")}</>
+              ) : (
+                <><X className="w-3.5 h-3.5" /> {t("Cancelled")}</>
+              )}
             </div>
           )}
 
