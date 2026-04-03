@@ -73,16 +73,16 @@ export async function GET(req: NextRequest) {
       .map((u) => u.customerAccountId)
       .filter((id): id is string => !!id);
 
-    let accountFlagsMap = new Map<string, { isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>();
+    let accountFlagsMap = new Map<string, { code: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>();
     if (accountIds.length > 0) {
       try {
         const flags = await prisma.$queryRawUnsafe<
-          Array<{ id: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>
+          Array<{ id: string; code: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>
         >(
-          `SELECT id, "isGrcAdded", "isTprmAdded", "isQpostComplianceEnabled", "logoUrl" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
+          `SELECT id, code, "isGrcAdded", "isTprmAdded", "isQpostComplianceEnabled", "logoUrl" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
           ...accountIds
         );
-        accountFlagsMap = new Map(flags.map((f) => [f.id, { isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded, isQpostComplianceEnabled: f.isQpostComplianceEnabled, logoUrl: f.logoUrl }]));
+        accountFlagsMap = new Map(flags.map((f) => [f.id, { code: f.code, isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded, isQpostComplianceEnabled: f.isQpostComplianceEnabled, logoUrl: f.logoUrl }]));
       } catch {
         // If raw query fails (e.g., columns don't exist yet), default to false
       }
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
       return {
         id: user.id,
         customerAccountId: user.customerAccountId || null,
-        customerCode: user.customerCode || `GRC_${String(index + 1).padStart(3, "0")}`,
+        customerCode: flags?.code || user.customerCode || `GRC_${String(index + 1).padStart(3, "0")}`,
         customerName: user.fullName || `${user.firstName} ${user.lastName}`,
         email: user.email,
         userName: user.userName,
