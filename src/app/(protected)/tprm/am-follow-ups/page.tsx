@@ -142,14 +142,10 @@ export default function AMFollowUpsPage() {
         const res = await fetch(`/api/tprm/am-follow-ups/vendor-issues?status=${statusMap[subTab] || "Open"}`);
         const json = await res.json();
         setVendorIssues(json.data || []);
-        // Extract unique vendors for issue creation
-        const vendorMap = new Map<string, { id: string; name: string }>();
-        for (const i of (json.data || []) as VendorIssue[]) {
-          if (!vendorMap.has(i.vendor.vendorCode)) {
-            vendorMap.set(i.vendor.vendorCode, { id: "", name: i.vendor.name });
-          }
+        // Use vendor list from API for issue creation
+        if (json.vendors) {
+          setVendors(json.vendors.map((v: { id: string; name: string }) => ({ id: v.id, name: v.name })));
         }
-        setVendors(Array.from(vendorMap.values()));
       }
     } catch {
       toast({ title: t("Error"), description: t("Failed to load data"), variant: "destructive" });
@@ -538,6 +534,19 @@ export default function AMFollowUpsPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
+              <Label>{t("Vendor")} *</Label>
+              <Select value={newIssue.vendorId} onValueChange={v => setNewIssue(p => ({ ...p, vendorId: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("Select vendor")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {vendors.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label>{t("Title")} *</Label>
               <Input
                 value={newIssue.title}
@@ -579,7 +588,7 @@ export default function AMFollowUpsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>{t("Cancel")}</Button>
-            <Button onClick={handleCreateIssue} disabled={!newIssue.title.trim()}>
+            <Button onClick={handleCreateIssue} disabled={!newIssue.vendorId || !newIssue.title.trim()}>
               {t("Create Issue")}
             </Button>
           </DialogFooter>

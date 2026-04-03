@@ -65,6 +65,7 @@ export const GET = withAuth(
       const vendorBreakdown = {
         Onboarding: 0,
         Onboarded: 0,
+        Active: 0,
         Offboarding: 0,
         Offboarded: 0,
         Inactive: 0,

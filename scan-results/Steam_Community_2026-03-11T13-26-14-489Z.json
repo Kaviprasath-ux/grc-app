@@ -1,0 +1,349 @@
+{
+  "vendor_name": "Steam Community",
+  "vendor_domain": "steamcommunity.com",
+  "overall_summary": "Steam Community exhibits a mixed security posture with several areas in need of improvement, particularly in application security and network security. The domain has experienced incidents involving malware through games and legacy CVEs, highlighting a risk from third-party integrations. Despite this, their email security practices and overall DNS health are reasonably robust. Additionally, no direct breaches of Steam systems have been confirmed, though third-party vulnerabilities have affected their ecosystem.",
+  "overall_score": 66,
+  "securityPostureScore": 62,
+  "threatExposureScore": 72,
+  "security_posture_summary": "Steam Community demonstrates solid email security and DNS configuration, but lacks comprehensive HTTP security headers and has unresolved CVEs. Application security is particularly impacted by recent vulnerabilities exploited through malicious games.",
+  "threat_exposure_summary": "Despite high-profile breach claims, no direct intrusions have been identified. However, social engineering risks persist, and previous malware incidents highlight ongoing threats. Vigilance in third-party interactions is crucial.",
+  "compliance_and_legal": {
+    "privacy_policy_url": null,
+    "dpa_url": null,
+    "laws": [],
+    "certifications": []
+  },
+  "recommendations": [
+    "Enable DNSSEC to protect against DNS spoofing.",
+    "Regularly update and patch all components, especially those with known CVEs.",
+    "Enhance HTTP security headers, including Strict-Transport-Security, X-Content-Type-Options, and others.",
+    "Increase scrutiny and monitoring of third-party content uploaded to the platform.",
+    "Implement regular security training for staff to counter social engineering attempts.",
+    "Address and resolve outdated CVEs related to Steam components to minimize exploitation risks.",
+    "Engage in more transparent communication with users regarding security issues and resolutions.",
+    "Conduct in-depth network security audits to reveal and close any open ports or vulnerabilities.",
+    "Strengthen application security by continuously scanning uploaded game content for malware.",
+    "Establish robust incident response plans tailored to address potential third-party service breaches."
+  ],
+  "kpi_details": [
+    {
+      "kpi_name": "Network Security",
+      "kpi_type": "security_posture",
+      "summary": "Steam Community has been flagged by Avast for open ports, which can pose risks if not managed properly. While these alerts can be due to normal service activities, the unmonitored open ports could potentially be exploited by attackers if not secured.",
+      "key_findings": [
+        "Avast reported open forwarded ports related to Steam Community.",
+        "Port knocking and similar issues may affect user connections."
+      ],
+      "sources": [
+        "https://support.avast.com/en-us/article/forwarded-ports-found",
+        "https://support-counterstrike.nexon.com/hc/en-us/articles/214939163-Experiencing-connection-issues-Your-firewall-may-be-blocking-required-ports"
+      ],
+      "security_score": 50,
+      "risk_score": 50,
+      "vulnerabilities": [],
+      "recommendation": "Conduct regular network security audits to identify and close potential vulnerabilities associated with open ports."
+    },
+    {
+      "kpi_name": "DNS Health",
+      "kpi_type": "security_posture",
+      "summary": "Steamcommunity.com leverages Akamai for DNS services, indicating a strong foundation. However, the absence of DNSSEC suggests potential vulnerability to DNS hijacking.",
+      "key_findings": [
+        "Domain uses Akamai Technologies for DNS services.",
+        "No DNSSEC records present, increasing DNS spoofing risk."
+      ],
+      "sources": [
+        "https://www.ip-lookup.org/dns-lookup/steamcommunity.com",
+        "https://www.ip-tracker.org/lookup.php?ip=Steamcommunity.com"
+      ],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Implement DNSSEC to enhance protection against DNS spoofing and man-in-the-middle attacks."
+    },
+    {
+      "kpi_name": "Patching Cadence",
+      "kpi_type": "security_posture",
+      "summary": "There are several unresolved CVEs affecting Valve components since 2015, indicating a backlog in system patching and updating efforts.",
+      "key_findings": [
+        "Several unresolved CVEs, such as CVE-2015-7985 and CVE-2020-15530, remain open.",
+        "Historical vulnerabilities indicate a need for better patch management."
+      ],
+      "sources": [
+        "https://steamcommunity.com/discussions/forum/7/628941617404933673/",
+        "https://cvefeed.io/vuln/detail/CVE-2015-7985",
+        "https://www.sentinelone.com/vulnerability-database/cve-2020-15530/"
+      ],
+      "security_score": 40,
+      "risk_score": 60,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2015-7985",
+          "severity": "high",
+          "affected_component": "Valve Steam 2.10.91.91",
+          "description": "Privilege Escalation through weak folder permissions.",
+          "source": "https://cvefeed.io/vuln/detail/CVE-2015-7985"
+        },
+        {
+          "cve_id": "CVE-2020-15530",
+          "severity": "high",
+          "affected_component": "Valve Steam Client 2.10.91.91",
+          "description": "Privilege Escalation due to improper file permissions during installation.",
+          "source": "https://www.sentinelone.com/vulnerability-database/cve-2020-15530/"
+        }
+      ],
+      "recommendation": "Ensure timely resolution and patching of known vulnerabilities to minimize risk exposure."
+    },
+    {
+      "kpi_name": "Endpoint Security",
+      "kpi_type": "security_posture",
+      "summary": "Endpoint security is challenged by incidents of malware in published games, underscoring the importance of scanning and validation processes before making content available to users.",
+      "key_findings": [
+        "Malware was discovered in the game 'PirateFi,' impacting users.",
+        "Games with embedded malware indicate surface-level security check failures."
+      ],
+      "sources": [
+        "https://techcrunch.com/2025/02/18/hackers-planted-a-steam-game-with-malware-to-steal-gamers-passwords/",
+        "https://www.cyberkendra.com/2025/02/steam-removes-malware-infected-game.html"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Strengthen the verification and testing processes of third-party applications or content before deployment on the platform."
+    },
+    {
+      "kpi_name": "IP Reputation",
+      "kpi_type": "security_posture",
+      "summary": "The IP reputation for Steam Community has not been explicitly mentioned in the gathered intelligence, lacking clear indicators of blacklisting or malicious activity impacting users.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Regularly monitor IP reputation across blacklists to promptly address potential misuse."
+    },
+    {
+      "kpi_name": "Application Security",
+      "kpi_type": "security_posture",
+      "summary": "Steam's application security framework has shown weaknesses with incidents involving malware in games and historic calls for better bug bounty program management.",
+      "key_findings": [
+        "Malicious games have led to user data theft incidents.",
+        "Past engagement issues with HackerOne suggest areas for improvement."
+      ],
+      "sources": [
+        "https://www.pcgamer.com/valve-admits-it-mistakenly-dismissed-steam-security-flaw/",
+        "https://techcrunch.com/2025/02/18/hackers-planted-a-steam-game-with-malware-to-steal-gamers-passwords/"
+      ],
+      "security_score": 45,
+      "risk_score": 55,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2021-24476",
+          "severity": "medium",
+          "affected_component": "Steam Group Viewer WordPress plugin",
+          "description": "Authenticated stored XSS due to improper input sanitization.",
+          "source": "https://cvefeed.io/vuln/detail/CVE-2021-24476"
+        }
+      ],
+      "recommendation": "Enhance application security by employing static and dynamic analysis tools, regularly updating the bug bounty program, and actively responding to identified vulnerabilities."
+    },
+    {
+      "kpi_name": "Cubit Score",
+      "kpi_type": "security_posture",
+      "summary": "A direct Cubit Score for Steam Community is not available from the provided data, and hence an assessment based on current cybersecurity practices and configurations is used.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Consider obtaining a Cubit Score from reputable cybersecurity vendors to provide a comprehensive external assessment of your security posture."
+    },
+    {
+      "kpi_name": "Email Security",
+      "kpi_type": "security_posture",
+      "summary": "Steam Community's email security is strong, with aligned SPF and DMARC records helping to mitigate phishing risks and improving email authentication.",
+      "key_findings": [
+        "SPF record set up to authorize mailservers.",
+        "DMARC policy is configured to reject non-compliant emails."
+      ],
+      "sources": [
+        "https://www.ip-lookup.org/dns-lookup/steamcommunity.com",
+        "https://www.ip-tracker.org/lookup.php?ip=Steamcommunity.com"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Maintain robust email security practices by continuously monitoring SPF, DKIM, and DMARC efficacy and ensuring configurations align with evolving threats."
+    },
+    {
+      "kpi_name": "SSL/TLS Configuration",
+      "kpi_type": "security_posture",
+      "summary": "The SSL/TLS configuration details were not specifically documented in this intelligence. Generally, SSL/TLS ensures data exchanged with the site is encrypted, providing a secure browsing environment.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Perform regular SSL/TLS audits to ensure optimal cipher suites and certificate validity, preventing potential vulnerabilities."
+    },
+    {
+      "kpi_name": "Privacy",
+      "kpi_type": "security_posture",
+      "summary": "The available data lacks insights into specific privacy policies or practices adhered to by Steam Community. This absence may indicate a need for publicly available documents to foster transparency.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Prioritize the publication and accessibility of privacy policies and data protection standards on the vendor's primary web presence to enhance trust."
+    },
+    {
+      "kpi_name": "Known Breach",
+      "kpi_type": "threat_exposure",
+      "summary": "No confirmed breaches of Steam Community have occurred, though they have experienced secondary impacts from third-party vulnerabilities. Valve has actively communicated with users to mitigate misinformation.",
+      "key_findings": [
+        "Valve confirmed no breaches but acknowledged leaks from a third-party SMS service.",
+        "User vigilance is advised regarding anomalous messages."
+      ],
+      "sources": [
+        "https://www.gamespot.com/articles/no-your-steam-data-was-not-leaked-valve-confirms/1100-6531581/",
+        "https://www.kitguru.net/gaming/matthew-wilson/valve-confirms-steam-has-not-suffered-a-data-breach/"
+      ],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Continue ensuring transparency post-incident and strengthen relations with third-party vendors to prevent collateral impacts."
+    },
+    {
+      "kpi_name": "Hacker Chatter",
+      "kpi_type": "threat_exposure",
+      "summary": "No detailed mentions of ongoing hacker chatter targeting Steam Community were discovered in this intelligence. This suggests there might not be active campaigns against the vendor.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Engage in threat intelligence monitoring to preempt any uptick in malicious activity by tracking hacker forums and underground networks."
+    },
+    {
+      "kpi_name": "Information Leak",
+      "kpi_type": "threat_exposure",
+      "summary": "Information related to Steam was indirectly leaked due to a third-party data breach. These incidents emphasize the need for close monitoring of partner security practices and possible data exposures.",
+      "key_findings": [
+        "Leaks involved third-party SMS messages, not direct Steam data.",
+        "Users were protected from immediate threats but advised on cautious practices."
+      ],
+      "sources": [
+        "https://www.shacknews.com/article/144285/valve-issues-statement-refutes-steam-data-breach",
+        "https://cloudstoragesec.com/steam-hacker-angrydocs"
+      ],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Audit all third-party agreements to ensure alignment with Steam's security policies, and establish clear incident protocols for third-party breaches."
+    },
+    {
+      "kpi_name": "Social Engineering",
+      "kpi_type": "threat_exposure",
+      "summary": "There is limited direct evidence of widespread social engineering attacks targeting Steam users in this dataset. However, past advisories encourage user education to remain vigilant against such exploits.",
+      "key_findings": [
+        "Users were advised to remain vigilant for unsolicited messages.",
+        "Encouragement of the use of the Steam Mobile Authenticator for security."
+      ],
+      "sources": [
+        "https://overclock3d.net/news/misc/steam-has-not-been-breached-valve-confirms/",
+        "https://steamcommunity.com/discussions/forum/1/"
+      ],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Launch continuous user education campaigns focusing on the detection and reporting of social engineering attempts across multiple platforms."
+    }
+  ],
+  "http_security_headers": {
+    "http_security_headers": [
+      {
+        "name": "Content-Security-Policy",
+        "present": true,
+        "value": "default-src blob: data: https: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://community.fastly.steamstatic.com/ https://cdn.fastly.steamstatic.com/steamcommunity/public/assets/ https://api.steampowered.com/ https://recaptcha.net https://www.google.com/recaptcha/ https://www.gstatic.cn/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.youtube.com/ https://s.ytimg.com; object-src 'none'; connect-src 'self' https://community.fastly.steamstatic.com/ https://store.steampowered.com/ https://checkout.steampowered.com/ wss://community.steam-api.com/websocket/ https://api.steampowered.com/ https://login.steampowered.com/ https://help.steampowered.com/ https://steam.tv/ https://steamcommunity.com/ https://*.valvesoftware.com https://*.steambeta.net https://*.discovery.beta.steamserver.net https://*.steamcontent.com https://steambroadcast.akamaized.net https://steambroadcast-test.akamaized.net https://broadcast.st.dl.eccdnx.com https://lv.queniujq.cn https://steambroadcastchat.akamaized.net http://127.0.0.1:27060 ws://127.0.0.1:27060 https://steamvideo-a.akamaihd.net/; frame-src 'self' steam: https://store.steampowered.com/ https://help.steampowered.com/ https://login.steampowered.com/ https://checkout.steampowered.com/ https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://sketchfab.com https://player.vimeo.com https://medal.tv https://www.google.com/recaptcha/ https://recaptcha.net/recaptcha/; frame-ancestors 'self' https://steamloopback.host ;",
+        "description": "Restricts what content the browser can load to prevent XSS.",
+        "recommendation": "Use a strict CSP such as default-src 'self'; object-src 'none'."
+      },
+      {
+        "name": "Strict-Transport-Security",
+        "present": false,
+        "value": "Not Present",
+        "description": "Forces HTTPS to protect against protocol downgrade attacks.",
+        "recommendation": "Set HSTS max-age >= 31536000 with includeSubDomains and preload."
+      },
+      {
+        "name": "X-Content-Type-Options",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents MIME type sniffing.",
+        "recommendation": "Always set to 'nosniff' to avoid content-type attacks."
+      },
+      {
+        "name": "X-Frame-Options",
+        "present": true,
+        "value": "SAMEORIGIN",
+        "description": "Prevents clickjacking attacks.",
+        "recommendation": "Use SAMEORIGIN or DENY unless framing is required."
+      },
+      {
+        "name": "Referrer-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls how much referrer information is leaked.",
+        "recommendation": "Use strict-origin-when-cross-origin or stricter."
+      },
+      {
+        "name": "Permissions-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls access to browser features (camera, mic, geolocation).",
+        "recommendation": "Add a restrictive Permissions-Policy to disable unused features."
+      },
+      {
+        "name": "X-XSS-Protection",
+        "present": false,
+        "value": "Not Present",
+        "description": "Legacy XSS filter hint for older browsers.",
+        "recommendation": "Set to \"1; mode=block\" or rely on CSP instead."
+      },
+      {
+        "name": "Cross-Origin-Opener-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Isolates browsing context to prevent cross-origin attacks.",
+        "recommendation": "Set to same-origin for sensitive pages."
+      },
+      {
+        "name": "Cross-Origin-Resource-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls which origins can load the resource.",
+        "recommendation": "Set to same-origin or cross-origin as needed."
+      },
+      {
+        "name": "Cross-Origin-Embedder-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents loading cross-origin resources without explicit permission.",
+        "recommendation": "Set to require-corp for full cross-origin isolation."
+      },
+      {
+        "platform": {
+          "server": "nginx",
+          "x_powered_by": null,
+          "guessed_stack": "nginx"
+        }
+      }
+    ],
+    "platform": {
+      "server": "nginx",
+      "x_powered_by": null,
+      "guessed_stack": "nginx"
+    },
+    "error": null
+  }
+}

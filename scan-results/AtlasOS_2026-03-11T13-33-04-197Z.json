@@ -1,0 +1,343 @@
+{
+  "vendor_name": "AtlasOS",
+  "vendor_domain": "atlasos.net",
+  "overall_summary": "AtlasOS is an open-source operating system focused on enhancing Windows performance and security. Recent intelligence suggests issues with DNS and email security configurations, as well as vulnerabilities linked to the Apache Atlas framework. While some breaches have been associated with different 'Atlas' entities, AtlasOS continues to demonstrate moderate security maturity in certain areas but should address several gaps, particularly in web application and endpoint security.",
+  "overall_score": 61,
+  "securityPostureScore": 63,
+  "threatExposureScore": 57,
+  "security_posture_summary": "AtlasOS displays a mixed security posture with notable deficiencies in HTTPS configurations and some gaps in email and DNS security practices. While there are efforts towards security inclusions in its operating system, improvements in patching cadence and SSL/TLS configurations are needed.",
+  "threat_exposure_summary": "AtlasOS faces significant threat exposure due to historical breaches involving similarly named entities. This highlights potential vulnerabilities and the need for robust protective measures against social engineering and information leakage threats.",
+  "compliance_and_legal": {
+    "privacy_policy_url": "https://atlasos.net/",
+    "dpa_url": null,
+    "laws": [
+      "GDPR",
+      "CCPA",
+      "Data Protection Act 2018"
+    ],
+    "certifications": []
+  },
+  "recommendations": [
+    "Implement and configure Content-Security-Policy and Strict-Transport-Security headers to improve HTTP security.",
+    "Regularly update Apache Atlas to mitigate vulnerabilities like CVE-2024-46910 and CVE-2022-34271.",
+    "Enhance email security by implementing SPF, DKIM, and DMARC properly to prevent spoofing.",
+    "Perform regular external attack surface management checks to identify and close open ports.",
+    "Foster a culture of phishing awareness among employees to reduce the risk of social engineering attacks.",
+    "Engage in regular penetration testing and code review for the AtlasOS platform.",
+    "Consider implementing security operations center (SOC) monitoring for real-time threat intelligence.",
+    "Review and enhance DNS configurations to ensure robust security and reduce exposure to DNS-based attacks.",
+    "Utilize threat intelligence sharing platforms to better anticipate and mitigate potential threats.",
+    "Engage third-party security audits to provide an unbiased assessment of the current security posture."
+  ],
+  "kpi_details": [
+    {
+      "kpi_name": "Network Security",
+      "kpi_type": "security_posture",
+      "summary": "There is insufficient information on the vendor's specific network security measures, but general concerns about open ports were highlighted.",
+      "key_findings": [
+        "Open ports can expose networks to risks.",
+        "Port scanning tools aid in identifying security gaps."
+      ],
+      "sources": [
+        "https://www.techtarget.com/searchsecurity/answer/Port-scan-attack-prevention-best-practices",
+        "https://asm.netspi.com/guide/exposures/ports/"
+      ],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Perform routine port scanning and apply strict firewall rules to reduce attack surface."
+    },
+    {
+      "kpi_name": "DNS Health",
+      "kpi_type": "security_posture",
+      "summary": "AtlasOS's DNS configurations were noted for potential vulnerabilities that could affect email security and domain reliability.",
+      "key_findings": [
+        "Insufficient SPF, DKIM, and DMARC configurations.",
+        "Critical role of DNS in email routing and security."
+      ],
+      "sources": [
+        "https://www.atlascarolina.com/blog/uupe0wkjeogz12xg5muvsvidora59m",
+        "https://dn.org/securing-your-domains-dns-infrastructure/"
+      ],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Enhance DNS configurations with secure protocols and monitor for potential breaches."
+    },
+    {
+      "kpi_name": "Patching Cadence",
+      "kpi_type": "security_posture",
+      "summary": "Regular updates to Apache Atlas and other critical systems are needed to mitigate vulnerabilities impacted by delayed patching practices.",
+      "key_findings": [
+        "Apache Atlas has several high-severity vulnerabilities.",
+        "CVE-2022-34271 and CVE-2024-46910 require urgent updates."
+      ],
+      "sources": [
+        "https://www.wiz.io/vulnerability-database/cve/cve-2024-46910",
+        "https://stack.watch/product/apache/atlas/"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2024-46910",
+          "severity": "high",
+          "affected_component": "Apache Atlas",
+          "description": "Authenticated XSS vulnerability allowing potential user impersonation.",
+          "source": "https://www.wiz.io/vulnerability-database/cve/cve-2024-46910"
+        },
+        {
+          "cve_id": "CVE-2022-34271",
+          "severity": "high",
+          "affected_component": "Apache Atlas",
+          "description": "Write-to-FS vulnerability in import module.",
+          "source": "https://www.wiz.io/vulnerability-database/cve/cve-2022-34271"
+        }
+      ],
+      "recommendation": "Implement continuous vulnerability management and patch deployment process."
+    },
+    {
+      "kpi_name": "Endpoint Security",
+      "kpi_type": "security_posture",
+      "summary": "Endpoint security features in AtlasOS show basic security capabilities with room for improvement in protection mechanisms.",
+      "key_findings": [
+        "Windows Defender support in latest AtlasOS versions.",
+        "Emphasis on user customization of security features."
+      ],
+      "sources": [
+        "https://docs.atlasos.net/faq/general-faq/atlas-and-security/"
+      ],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Enhance native endpoint protections and integrate advanced threat detection technologies."
+    },
+    {
+      "kpi_name": "IP Reputation",
+      "kpi_type": "security_posture",
+      "summary": "There is no specific data on AtlasOS's IP reputation, suggesting no known malicious activities directly linked to its domain.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Monitor IP activities and employ reputation services to preemptively mitigate risks."
+    },
+    {
+      "kpi_name": "Application Security",
+      "kpi_type": "security_posture",
+      "summary": "AtlasOS application security efforts include providing users with security customization options but lack comprehensive implementation of certain key security headers.",
+      "key_findings": [
+        "Missing essential security headers in HTTP responses.",
+        "Inclusion of features like Windows Defender toggles."
+      ],
+      "sources": [
+        "https://docs.atlasos.net/faq/general-faq/atlas-and-security/"
+      ],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Adopt best practices for securing web applications, ensure all security headers are properly configured."
+    },
+    {
+      "kpi_name": "Cubit Score",
+      "kpi_type": "security_posture",
+      "summary": "No specific data available on the Cubit Score for AtlasOS, indicating moderate visibility in cybersecurity incidents.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Engage with threat intelligence platforms to improve overall situational awareness."
+    },
+    {
+      "kpi_name": "Email Security",
+      "kpi_type": "security_posture",
+      "summary": "Email security protocols like SPF, DKIM, and DMARC appear underutilized, leading to risks of spoofing and phishing.",
+      "key_findings": [
+        "SPF, DKIM, DMARC configurations need optimization.",
+        "Email security tied closely to DNS health."
+      ],
+      "sources": [
+        "https://www.ddmarc.com/features/",
+        "https://www.atlascarolina.com/blog/uupe0wkjeogz12xg5muvsvidora59m"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Fully implement and monitor SPF, DKIM, and DMARC to enhance email legitimacy."
+    },
+    {
+      "kpi_name": "SSL/TLS Configuration",
+      "kpi_type": "security_posture",
+      "summary": "AtlasOS's SSL/TLS configurations are inadequate due to missing critical headers necessary for securely serving web content.",
+      "key_findings": [
+        "Missing Content-Security-Policy and Strict-Transport-Security headers.",
+        "X-Content-Type-Options present."
+      ],
+      "sources": [],
+      "security_score": 50,
+      "risk_score": 50,
+      "vulnerabilities": [],
+      "recommendation": "Revise SSL/TLS settings to include missing security headers and support secure HTTPS connections."
+    },
+    {
+      "kpi_name": "Privacy",
+      "kpi_type": "security_posture",
+      "summary": "AtlasOS provides a privacy-focused environment although no specific privacy certifications or data protection officer details were found.",
+      "key_findings": [
+        "Environmental customization for privacy.",
+        "Focus on performance and user experience improvement."
+      ],
+      "sources": [
+        "https://atlasos.net/"
+      ],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Include comprehensive privacy policies and practices, and ensure compliance with data protection laws."
+    },
+    {
+      "kpi_name": "Known Breach",
+      "kpi_type": "threat_exposure",
+      "summary": "No direct data breaches linked to AtlasOS, but intelligence reports breaches involving similarly named entities.",
+      "key_findings": [
+        "Breach incidents at Atlas Oil and Atlas Quantum.",
+        "No direct breach reported for AtlasOS."
+      ],
+      "sources": [
+        "https://www.jdsupra.com/legalnews/several-atlas-healthcare-group-1525720/",
+        "https://www.securityweek.com/hackers-breach-cryptocurrency-platform-atlas-quantum/"
+      ],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Maintain vigilance and implement breach detection technologies."
+    },
+    {
+      "kpi_name": "Hacker Chatter",
+      "kpi_type": "threat_exposure",
+      "summary": "There is no significant or specific hacker chatter identified for the AtlasOS domain.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Monitor dark web and hacker forums to detect potential threat mentions."
+    },
+    {
+      "kpi_name": "Information Leak",
+      "kpi_type": "threat_exposure",
+      "summary": "No specific information leaks identified for AtlasOS, although breaches of 'Atlas' entities suggest potential for information leakage.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Implement DLP solutions and regular data privacy audits."
+    },
+    {
+      "kpi_name": "Social Engineering",
+      "kpi_type": "threat_exposure",
+      "summary": "Historical breaches like phishing attacks on related entities highlight the potential vulnerability to social engineering tactics targeting similar organizations.",
+      "key_findings": [
+        "Phishing led to breaches at Atlas Oil.",
+        "General lack of targeted social engineering attacks on AtlasOS itself."
+      ],
+      "sources": [
+        "https://www.atlasoil.com/2024-atlas-data-breach/"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Strengthen user awareness and conduct regular phishing simulation exercises."
+    }
+  ],
+  "http_security_headers": {
+    "http_security_headers": [
+      {
+        "name": "Content-Security-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Restricts what content the browser can load to prevent XSS.",
+        "recommendation": "Use a strict CSP such as default-src 'self'; object-src 'none'."
+      },
+      {
+        "name": "Strict-Transport-Security",
+        "present": false,
+        "value": "Not Present",
+        "description": "Forces HTTPS to protect against protocol downgrade attacks.",
+        "recommendation": "Set HSTS max-age >= 31536000 with includeSubDomains and preload."
+      },
+      {
+        "name": "X-Content-Type-Options",
+        "present": true,
+        "value": "nosniff",
+        "description": "Prevents MIME type sniffing.",
+        "recommendation": "Always set to 'nosniff' to avoid content-type attacks."
+      },
+      {
+        "name": "X-Frame-Options",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents clickjacking attacks.",
+        "recommendation": "Use SAMEORIGIN or DENY unless framing is required."
+      },
+      {
+        "name": "Referrer-Policy",
+        "present": true,
+        "value": "strict-origin-when-cross-origin",
+        "description": "Controls how much referrer information is leaked.",
+        "recommendation": "Use strict-origin-when-cross-origin or stricter."
+      },
+      {
+        "name": "Permissions-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls access to browser features (camera, mic, geolocation).",
+        "recommendation": "Add a restrictive Permissions-Policy to disable unused features."
+      },
+      {
+        "name": "X-XSS-Protection",
+        "present": false,
+        "value": "Not Present",
+        "description": "Legacy XSS filter hint for older browsers.",
+        "recommendation": "Set to \"1; mode=block\" or rely on CSP instead."
+      },
+      {
+        "name": "Cross-Origin-Opener-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Isolates browsing context to prevent cross-origin attacks.",
+        "recommendation": "Set to same-origin for sensitive pages."
+      },
+      {
+        "name": "Cross-Origin-Resource-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls which origins can load the resource.",
+        "recommendation": "Set to same-origin or cross-origin as needed."
+      },
+      {
+        "name": "Cross-Origin-Embedder-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents loading cross-origin resources without explicit permission.",
+        "recommendation": "Set to require-corp for full cross-origin isolation."
+      },
+      {
+        "platform": {
+          "server": "cloudflare",
+          "x_powered_by": null,
+          "guessed_stack": null
+        }
+      }
+    ],
+    "platform": {
+      "server": "cloudflare",
+      "x_powered_by": null,
+      "guessed_stack": null
+    },
+    "error": null
+  }
+}

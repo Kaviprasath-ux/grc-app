@@ -45,7 +45,14 @@ export const GET = withAuth(
         orderBy: { createdAt: 'desc' },
       });
 
-      return NextResponse.json({ data: issues });
+      // Also return vendor list so the frontend can populate the "Add Issue" vendor selector
+      const vendorList = await prisma.tPRMVendor.findMany({
+        where: { customerAccountId, id: { in: vendorIds } },
+        select: { id: true, name: true, vendorCode: true },
+        orderBy: { name: 'asc' },
+      });
+
+      return NextResponse.json({ data: issues, vendors: vendorList });
     } catch (error) {
       console.error('AM Vendor Issues GET error:', error);
       return NextResponse.json({ error: 'Failed to fetch vendor issues' }, { status: 500 });

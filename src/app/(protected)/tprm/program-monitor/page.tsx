@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home, ChevronRight, ClipboardList, Building2, Loader2, Factory, UserCheck, Clock, Zap, LogIn, CheckCircle2, LogOut, Archive, Ban } from "lucide-react";
+import { Home, ChevronRight, ClipboardList, Building2, Loader2, Factory, UserCheck, Clock, Zap, LogIn, CheckCircle2, LogOut, Archive, Ban, Activity } from "lucide-react";
 
 interface ProgramData {
   assessments: {
@@ -22,6 +22,7 @@ interface ProgramData {
     breakdown: {
       Onboarding: number;
       Onboarded: number;
+      Active: number;
       Offboarding: number;
       Offboarded: number;
       Inactive: number;
@@ -112,6 +113,7 @@ export default function ProgramMonitorPage() {
   const vendorItems = data ? [
     { label: "Onboarding", count: data.vendors.breakdown.Onboarding, dot: "border-blue-400", bg: "bg-blue-50", iconColor: "text-blue-600", icon: LogIn },
     { label: "Onboarded", count: data.vendors.breakdown.Onboarded, dot: "border-green-400", bg: "bg-green-50", iconColor: "text-green-600", icon: CheckCircle2 },
+    { label: "Active", count: data.vendors.breakdown.Active, dot: "border-emerald-400", bg: "bg-emerald-50", iconColor: "text-emerald-600", icon: Activity },
     { label: "Offboarding", count: data.vendors.breakdown.Offboarding, dot: "border-amber-400", bg: "bg-amber-50", iconColor: "text-amber-600", icon: LogOut },
     { label: "Offboarded", count: data.vendors.breakdown.Offboarded, dot: "border-slate-400", bg: "bg-slate-50", iconColor: "text-slate-600", icon: Archive },
     { label: "Inactive", count: data.vendors.breakdown.Inactive, dot: "border-red-400", bg: "bg-red-50", iconColor: "text-red-600", icon: Ban },

@@ -1,0 +1,285 @@
+{
+  "vendor_name": "Netflix",
+  "vendor_domain": "www.netflix.com",
+  "overall_summary": "Netflix, a leading streaming service provider, has been assessed for its cybersecurity posture focusing on security measures applicable to its web operations. Due to the lack of specific intelligence on current threats and breaches, the assessment relies on best practices and available HTTP security header information.",
+  "overall_score": 67,
+  "securityPostureScore": 72,
+  "threatExposureScore": 57,
+  "security_posture_summary": "Netflix demonstrates a moderate security posture based on available HTTP header configurations, indicating some protection against potential web-based attacks. However, missing certain security headers could expose vulnerabilities.",
+  "threat_exposure_summary": "There is no direct intelligence indicating a high level of threat exposure for Netflix. Nonetheless, the industry status and user base of Netflix make it a potential target for social engineering and data breaches.",
+  "compliance_and_legal": {
+    "privacy_policy_url": "https://help.netflix.com/legal/privacy",
+    "dpa_url": null,
+    "laws": [
+      "GDPR",
+      "CCPA"
+    ],
+    "certifications": [
+      "ISO/IEC 27001"
+    ]
+  },
+  "recommendations": [
+    "Implement a Content Security Policy to help prevent cross-site scripting (XSS).",
+    "Establish a Referrer Policy to control the amount of referrer information passed.",
+    "Adopt a Permissions Policy to manage which web features can be used in the context.",
+    "Enable Cross-Origin Resource Policy to control the resources that can be accessed by cross-origin requests.",
+    "Regularly conduct security audits to identify and address potential vulnerabilities in real-time.",
+    "Implement multi-factor authentication for internal systems to bolster security.",
+    "Conduct regular employee training on cybersecurity best practices to prevent social engineering attacks.",
+    "Enhance monitoring and logging to detect suspicious activities proactively.",
+    "Strengthen endpoint security through updates and patches.",
+    "Maintain up-to-date SSL/TLS configurations and certificates."
+  ],
+  "kpi_details": [
+    {
+      "kpi_name": "Network Security",
+      "kpi_type": "security_posture",
+      "summary": "Network security metrics are not explicitly available from the current intelligence, but the strict transport security header indicates some level of HTTPS enforcement.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Conduct a comprehensive network security assessment to identify potential weaknesses."
+    },
+    {
+      "kpi_name": "DNS Health",
+      "kpi_type": "security_posture",
+      "summary": "No specific DNS health issues were identified due to the lack of intelligence data. Domain security measures were not evaluated.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Implement DNS security extensions (DNSSEC) to protect against DNS spoofing."
+    },
+    {
+      "kpi_name": "Patching Cadence",
+      "kpi_type": "security_posture",
+      "summary": "No data regarding the patching cadence of Netflix was gathered.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Establish a timely patch management process to address software vulnerabilities."
+    },
+    {
+      "kpi_name": "Endpoint Security",
+      "kpi_type": "security_posture",
+      "summary": "Specific endpoint security measures are not known. General practices likely adhere to industry standards.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Ensure all endpoints are secured and regularly updated with the latest security patches."
+    },
+    {
+      "kpi_name": "IP Reputation",
+      "kpi_type": "security_posture",
+      "summary": "No issues with IP reputation have been identified from current intelligence.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Regularly monitor the IP addresses associated with Netflix for any malicious activity."
+    },
+    {
+      "kpi_name": "Application Security",
+      "kpi_type": "security_posture",
+      "summary": "Application Security features, such as XSS protection, are partially implemented but can be improved by adding a Content Security Policy.",
+      "key_findings": [
+        "X-XSS-Protection is enabled.",
+        "Content-Security-Policy is missing."
+      ],
+      "sources": [],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Implement a Content Security Policy to enhance application security."
+    },
+    {
+      "kpi_name": "Cubit Score",
+      "kpi_type": "security_posture",
+      "summary": "No specific Cubit Score data is available for Netflix.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Perform a detailed review of security scores and ratings to identify and mitigate potential risks."
+    },
+    {
+      "kpi_name": "Email Security",
+      "kpi_type": "security_posture",
+      "summary": "No data on email security measures was gathered in the current assessment.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Implement SPF, DKIM, and DMARC to protect against phishing and spoofing attacks."
+    },
+    {
+      "kpi_name": "SSL/TLS Configuration",
+      "kpi_type": "security_posture",
+      "summary": "SSL/TLS configuration appears robust with strict transport security enabled.",
+      "key_findings": [
+        "Strict-Transport-Security header is present."
+      ],
+      "sources": [],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Ensure continued adherence to the latest SSL/TLS standards and update configurations when necessary."
+    },
+    {
+      "kpi_name": "Privacy",
+      "kpi_type": "security_posture",
+      "summary": "Privacy policies are publicly available and indicate compliance with international data privacy laws.",
+      "key_findings": [
+        "Privacy Policy is available."
+      ],
+      "sources": [
+        "https://help.netflix.com/legal/privacy"
+      ],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Review and update the privacy policy regularly to ensure compliance with evolving regulations."
+    },
+    {
+      "kpi_name": "Known Breach",
+      "kpi_type": "threat_exposure",
+      "summary": "No known data breaches were identified from available sources.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Maintain vigilance and conduct frequent audits to ensure no data breaches occur."
+    },
+    {
+      "kpi_name": "Hacker Chatter",
+      "kpi_type": "threat_exposure",
+      "summary": "No significant hacker chatter related to Netflix was found in the intelligence sources.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Monitor dark web and online forums for any potential threats discussed."
+    },
+    {
+      "kpi_name": "Information Leak",
+      "kpi_type": "threat_exposure",
+      "summary": "There is no indication of any recent information leaks from Netflix.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Implement a data leak prevention solution to safeguard sensitive information."
+    },
+    {
+      "kpi_name": "Social Engineering",
+      "kpi_type": "threat_exposure",
+      "summary": "The threat of social engineering remains an ongoing concern, although no specific incidents were noted.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 40,
+      "risk_score": 60,
+      "vulnerabilities": [],
+      "recommendation": "Increase employee awareness through regular training to prevent social engineering attacks."
+    }
+  ],
+  "http_security_headers": {
+    "http_security_headers": [
+      {
+        "name": "Content-Security-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Restricts what content the browser can load to prevent XSS.",
+        "recommendation": "Use a strict CSP such as default-src 'self'; object-src 'none'."
+      },
+      {
+        "name": "Strict-Transport-Security",
+        "present": true,
+        "value": "max-age=31536000; includeSubDomains",
+        "description": "Forces HTTPS to protect against protocol downgrade attacks.",
+        "recommendation": "Set HSTS max-age >= 31536000 with includeSubDomains and preload."
+      },
+      {
+        "name": "X-Content-Type-Options",
+        "present": true,
+        "value": "nosniff",
+        "description": "Prevents MIME type sniffing.",
+        "recommendation": "Always set to 'nosniff' to avoid content-type attacks."
+      },
+      {
+        "name": "X-Frame-Options",
+        "present": true,
+        "value": "DENY",
+        "description": "Prevents clickjacking attacks.",
+        "recommendation": "Use SAMEORIGIN or DENY unless framing is required."
+      },
+      {
+        "name": "Referrer-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls how much referrer information is leaked.",
+        "recommendation": "Use strict-origin-when-cross-origin or stricter."
+      },
+      {
+        "name": "Permissions-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls access to browser features (camera, mic, geolocation).",
+        "recommendation": "Add a restrictive Permissions-Policy to disable unused features."
+      },
+      {
+        "name": "X-XSS-Protection",
+        "present": true,
+        "value": "1; mode=block; report=https://www.netflix.com/ichnaea/log/freeform/xssreport",
+        "description": "Legacy XSS filter hint for older browsers.",
+        "recommendation": "Set to \"1; mode=block\" or rely on CSP instead."
+      },
+      {
+        "name": "Cross-Origin-Opener-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Isolates browsing context to prevent cross-origin attacks.",
+        "recommendation": "Set to same-origin for sensitive pages."
+      },
+      {
+        "name": "Cross-Origin-Resource-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls which origins can load the resource.",
+        "recommendation": "Set to same-origin or cross-origin as needed."
+      },
+      {
+        "name": "Cross-Origin-Embedder-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents loading cross-origin resources without explicit permission.",
+        "recommendation": "Set to require-corp for full cross-origin isolation."
+      },
+      {
+        "platform": {
+          "server": "envoy",
+          "x_powered_by": null,
+          "guessed_stack": null
+        }
+      }
+    ],
+    "platform": {
+      "server": "envoy",
+      "x_powered_by": null,
+      "guessed_stack": null
+    },
+    "error": null
+  }
+}

@@ -1,0 +1,335 @@
+{
+  "vendor_name": "TCS",
+  "vendor_url": "https://www.tcs.com/",
+  "vendor_domain": "www.tcs.com",
+  "overall_summary": "Tata Consultancy Services (TCS) has demonstrated a robust approach to cybersecurity through its tools and frameworks. However, the recent involvement in a sophisticated third-party phishing attack leading to a breach at Marks & Spencer highlights areas for improvement. TCS has independent platforms for vulnerability remediation and application security, illustrating their commitment to cybersecurity. Nevertheless, vulnerabilities in their software products signify a potential risk. Overall, TCS maintains a strong security posture but should enhance certain areas to mitigate further risks effectively.",
+  "overall_score": 74,
+  "securityPostureScore": 76,
+  "threatExposureScore": 70,
+  "security_posture_summary": "TCS maintains a strong security posture with various security policies and practices. The company offers comprehensive security testing services and automated vulnerability remediation platforms, underpinning their proactive security approach. Nevertheless, some vulnerabilities have been identified in their applications, which need to be addressed.",
+  "threat_exposure_summary": "The involvement of TCS in the breach at Marks & Spencer underscores their exposure to threat vectors, particularly through third-party channels. While no direct breaches impacted TCS's systems, the incident highlights the importance of securing external interactions and monitoring for social engineering attacks.",
+  "compliance_and_legal": {
+    "privacy_policy_url": "https://www.tcs.com/privacy-policy",
+    "dpa_url": null,
+    "laws": [
+      "General Data Protection Regulation (GDPR)",
+      "California Consumer Privacy Act (CCPA)"
+    ],
+    "certifications": [
+      "CREST"
+    ]
+  },
+  "recommendations": [
+    "Conduct a comprehensive review and update of third-party risk management processes to prevent incidents like the M&S breach.",
+    "Implement advanced social engineering and phishing simulation exercises to enhance staff awareness and readiness.",
+    "Address vulnerabilities identified in the TCS Cognix Recon and TCS BaNCS systems swiftly to mitigate potential security risks.",
+    "Strengthen internal email security protocols and implement stricter access control using multi-factor authentication.",
+    "Monitor and audit the implementation of security headers frequently and ensure missing policies such as Referrer-Policy are added.",
+    "Enhance external network monitoring to mitigate exposure from open ports and unauthorized access attempts.",
+    "Increase the frequency of security patch updates to minimize exposure to current vulnerabilities.",
+    "Strengthen cross-origin resource sharing policies to ensure robust security against web-based attacks.",
+    "Promote continuous security training and education for all employees to prevent errors leading to data breaches.",
+    "Develop a more transparent incident response and public communication plan to manage potential future breaches efficiently."
+  ],
+  "kpi_details": [
+    {
+      "kpi_name": "Network Security",
+      "kpi_type": "security_posture",
+      "summary": "TCS offers advanced network security solutions, including penetration testing and vulnerability assessments, to ensure robust protection against network-based threats.",
+      "key_findings": [
+        "TCS offers a Penetration Testing as a Service platform.",
+        "The organization provides automated vulnerability remediation services."
+      ],
+      "sources": [
+        "https://www.crest-approved.org/member_companies/tata-consultancy-services-ltd/",
+        "https://www.tcs.com/who-we-are/newsroom/press-release/automated-vulnerability-remediation-platform"
+      ],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Regularly scan for new vulnerabilities and integrate automated patch management."
+    },
+    {
+      "kpi_name": "DNS Health",
+      "kpi_type": "security_posture",
+      "summary": "TCS provides DNS management services, including DNSSEC implementation, ensuring strong protection against DNS spoofing and cache poisoning attacks.",
+      "key_findings": [
+        "TCS implements DNSSEC for enhanced security."
+      ],
+      "sources": [
+        "https://www.tcs.com/"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Ensure regular updates and monitoring of DNS configurations to block unauthorized access."
+    },
+    {
+      "kpi_name": "Patching Cadence",
+      "kpi_type": "security_posture",
+      "summary": "The information provided did not specify TCS's patching cadence. However, the identified vulnerabilities and the presence of an automated remediation platform suggest active measures in place.",
+      "key_findings": [
+        "TCS offers an Automated Vulnerability Remediation platform."
+      ],
+      "sources": [
+        "https://www.tcs.com/who-we-are/newsroom/press-release/automated-vulnerability-remediation-platform"
+      ],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2026-26418",
+          "severity": "high",
+          "affected_component": "TCS Cognix Recon Client v3.0",
+          "description": "Authentication bypass flaw allowing unauthorized access.",
+          "source": "https://www.sentinelone.com/vulnerability-database/cve-2026-26418/"
+        },
+        {
+          "cve_id": "CVE-2026-26416",
+          "severity": "high",
+          "affected_component": "TCS Cognix Recon Client v3.0",
+          "description": "Privilege escalation flaw via crafted requests.",
+          "source": "https://www.sentinelone.com/vulnerability-database/cve-2026-26416/"
+        }
+      ],
+      "recommendation": "Enhance patch management by increasing the frequency of updates and assessments."
+    },
+    {
+      "kpi_name": "Endpoint Security",
+      "kpi_type": "security_posture",
+      "summary": "There is no specific endpoint security information available from the gathered intelligence. However, TCS's holistic cybersecurity services likely encompass endpoint security solutions.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Implement regular endpoint monitoring and deploy endpoint detection and response solutions."
+    },
+    {
+      "kpi_name": "IP Reputation",
+      "kpi_type": "security_posture",
+      "summary": "No specific IP reputation issues were identified for TCS, suggesting a moderate stance in terms of IP reputation with no major incidents reported.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Continue to monitor IP addresses for reputation and remove blacklisted IPs promptly if detected."
+    },
+    {
+      "kpi_name": "Application Security",
+      "kpi_type": "security_posture",
+      "summary": "TCS demonstrates a strong commitment to application security through VAPT services and implemented safety measures across various business applications.",
+      "key_findings": [
+        "Professional services firm strengthened application security with TCS.",
+        "TCS employs manual testing and AI-driven insights."
+      ],
+      "sources": [
+        "https://www.tcs.com/content/tcs/global/en/what-we-do/services/cybersecurity/case-study/professional-services-major-strengthens-application-security-across-business",
+        "https://cybersechire.com/job-detail/vaptpen-testing-tata-consultancy-services-bengaluru-3121108"
+      ],
+      "security_score": 78,
+      "risk_score": 22,
+      "vulnerabilities": [],
+      "recommendation": "Ensure all application security practices align with the latest standards and frameworks."
+    },
+    {
+      "kpi_name": "Cubit Score",
+      "kpi_type": "security_posture",
+      "summary": "No specific data about the Cubit Score is available in the intelligence report. TCS's overall cybersecurity measures contribute positively, albeit indirectly, to such a rating.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Adopt industry-standard methodologies for security benchmarking to improve overall security posture."
+    },
+    {
+      "kpi_name": "Email Security",
+      "kpi_type": "security_posture",
+      "summary": "TCS provides solutions that incorporate SPF, DKIM, and DMARC protocols for securing email communications, demonstrating a proactive approach to email security.",
+      "key_findings": [
+        "Implementation of SPF, DKIM, and DMARC protocols."
+      ],
+      "sources": [
+        "https://www.tcs.com/"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Regular audits of email security settings will ensure effectiveness against emerging threats."
+    },
+    {
+      "kpi_name": "SSL/TLS Configuration",
+      "kpi_type": "security_posture",
+      "summary": "The HTTP security header scan indicates the presence of strict transport security, but some refinements are needed, as a few security headers are missing.",
+      "key_findings": [
+        "Strict-Transport-Security header is present.",
+        "Missing Referrer-Policy, Permissions-Policy."
+      ],
+      "sources": [
+        "Live HTTP Security Header Scan"
+      ],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Implement missing security headers and ensure consistent SSL/TLS configuration across all services."
+    },
+    {
+      "kpi_name": "Privacy",
+      "kpi_type": "security_posture",
+      "summary": "TCS maintains a comprehensive privacy policy that aligns with international privacy regulations, although the specifics of their data processing agreements are less visible.",
+      "key_findings": [
+        "Observes GDPR and CCPA regulations."
+      ],
+      "sources": [
+        "https://www.tcs.com/privacy-policy"
+      ],
+      "security_score": 90,
+      "risk_score": 10,
+      "vulnerabilities": [],
+      "recommendation": "Ensure transparency in detailing data processing activities and establish easily accessible data protection agreements."
+    },
+    {
+      "kpi_name": "Known Breach",
+      "kpi_type": "threat_exposure",
+      "summary": "TCS was involved indirectly in a high-profile breach that affected Marks & Spencer. Despite no direct compromise of TCS systems, the breach indicates a threat exposure through third-party relationships.",
+      "key_findings": [
+        "Phishing attack led to M&S breach through TCS relationship.",
+        "No direct impact on TCS systems."
+      ],
+      "sources": [
+        "https://cybernews.com/news/marks-spencer-breach-tcs-third-party-vendor-social-engineering-attack/"
+      ],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Enhance processes for managing third-party risks and conduct regular audits to prevent similar future incidents."
+    },
+    {
+      "kpi_name": "Hacker Chatter",
+      "kpi_type": "threat_exposure",
+      "summary": "No significant mention of hacker chatter targeting TCS was found in the available intelligence, suggesting low current exposure in this regard.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Continue monitoring dark web activities to identify and mitigate potential threats proactively."
+    },
+    {
+      "kpi_name": "Information Leak",
+      "kpi_type": "threat_exposure",
+      "summary": "No incidents of information leaks related to TCS were cited in the current intelligence, showing reasonable control over this threat vector.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Implement regular data audits and ensure information is encrypted and access-controlled."
+    },
+    {
+      "kpi_name": "Social Engineering",
+      "kpi_type": "threat_exposure",
+      "summary": "The phishing attack targeting M&S via TCS employees highlights significant social engineering exposure requiring attention.",
+      "key_findings": [
+        "Phishing attack compromised M&S through TCS employee credentials.",
+        "Resulted in a high-profile breach, impacting operations."
+      ],
+      "sources": [
+        "https://cybernews.com/news/marks-spencer-breach-tcs-third-party-vendor-social-engineering-attack/"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Deploy regular security awareness training and phishing simulations to educate and prepare employees."
+    }
+  ],
+  "http_security_headers": {
+    "http_security_headers": [
+      {
+        "name": "Content-Security-Policy",
+        "present": true,
+        "value": "default-src 'self'; style-src 'self' 'unsafe-inline' https://s7ap1.scene7.com/ https://authapp.ultimatix.net/ https://auth.ultimatix.net/ https://fonts.googleapis.com/ https://content.dionglobal.in/ https://gateway.zscalerthree.net/; frame-src 'self' https://content.dionglobal.in/ https://12548017.fls.doubleclick.net/ https://insight.adsrvr.org/ https://td.doubleclick.net/ https://www.youtube.com/ https://www.welcometothejungle.com/ https://platform.twitter.com/ https://www.youtube-nocookie.com/ https://11821448.fls.doubleclick.net/ https://www.mynewsdesk.com/ https://gateway.on24.com/ https://s.company-target.com/ https://stories.storifyme.com/ https://www.google.com/ https://www.yputube.com/ https://gateway.zscalerthree.net/ https://www.recaptcha.net recaptcha.google.com tcs.demdex.net https://www.linkedin.com https://px.ads.linkedin.com/ https://storifyme.com/; script-src 'self' 'unsafe-inline' 'unsafe-eval' consent.trustarc.com gateway.zscalerthree.net https://s7ap1.scene7.com https://acdn.adnxs.com https://scripts.clarity.ms/ https://www.clarity.ms/ https://unpkg.com/  https://www.recaptcha.net https://s.yimg.jp/ https://www.google-analytics.com https://snap.licdn.com/ https://gateway.on24.com/ https://am.yahoo.co.jp/ https://www.googleadservices.com/ https://cdn.storifyme.com/ https://storifyme.xyz/ https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://cdn.jsdelivr.net/ https://auth.ultimatix.net/ https://authapp.ultimatix.net/ https://www.gstatic.com/ https://assets.adobedtm.com assets.adobedtm.com/launch-ENf1df16a3f7b54565aae5a7b51c3e89ed-staging.min.js https://js.adsrvr.org/ https://ds-aksb-a.akamaihd.net https://www.youtube.com https://play.google.com/ https://youtube.com https://www.google.com onetrust.com ajax.googleapis.com https://fonts.googleapis.com/ https://maps.googleapis.com/ platform.twitter.com https://d36cz9buwru1tt.cloudfront.net cdn.ampproject.org maxcdn.bootstrapcdn.com https://code.jquery.com/ cdn.datatables.net https://cdnjs.cloudflare.com/ https://content.dionglobal.in/ https://maxcdn.bootstrapcdn.com https://twitter.com/ https://www.linkedin.com https://px.ads.linkedin.com https://www.facebook.com/ https://connect.facebook.net/ https://www.facebook.net https://www.instagram.com/ https://www.w3.org/ sites.tcs.com https://www.googletagmanager.com tata.com tcs.com business4.tcs.com slideshare.net https://api.company-target.com/ https://tcs.tt.omtrdc.net/ tcscom.sc.omtrdc.net https://www.google.co.in googleads.g.doubleclick.net https://ogp.me/ https://sling.apache.org/ https://jcp.org/ https://www.tcs.com/partners itunes.apple.com mboxedge31.tt.omtrdc.net dpm.demdex.net cm.everesttech.net adsymptotic.com https://p.adsymptotic.com/ bid.g.doubleclick.net nasscom.in in.explara.com store.mortgagebankers.org netdna.bootstrapcdn.com static.doubleclick.net i.ytimg.com https://www.businessofapps.com/ https://www.nytimes.com/ ibegin.tcs.com icandidateuat.ultimatix.net https://ims-na1.adobelogin.com/ https://www.demandbase.com/ https://704-zbe-801.mktoresp.com/ https://744-fui-742.mktoresp.com/ smetrics.tcs.com https://cdn.cookielaw.org/ https://munchkin.marketo.net/ tag.demandbase.com apache.org schema.org code.eligrey.com github.com developer.mozilla.org scottjehl.github.io https://github.com/ https://pages.github.com/ w3c.github.io modernjavascript.blogspot.com tc39.github.io modernizr.com vimeo.com blob:; media-src 'self' https://s7ap1.scene7.com/ https://s7mbrstream-ap1.scene7.com/ data: blob:; img-src 'self' https://cm.everesttech.net/ https://authapp.ultimatix.net/ https://www.google.co.in/ https://facebook.com https://ad.doubleclick.net/ https://ds-aksb-a.akamaihd.net https://ib.adnxs.com https://www.facebook.com https://www.google.com/ https://googleads.g.doubleclick.net/ https://am.yahoo.co.jp/ https://auth.ultimatix.net/ https://segments.company-target.com/ https://match.prod.bidr.io/ https://pbs.twimg.com/ https://match.prod.bidr.io/ https://id.rlcdn.com/ https://maps.googleapis.com https://maps.gstatic.com https://i.ytimg.com/ https://gateway.zscalerthree.net/ https://cdn.storifyme.com/ https://www.tcs.com/ https://www.google-analytics.com https://www.linkedin.com https://px.ads.linkedin.com https://p.adsymptotic.com https://dpm.demdex.net/ https://tcs.demdex.net/ smetrics.tcs.com s7ap1.scene7.com https://cdn.cookielaw.org/ data:; connect-src 'self' https://content.dionglobal.in https://insight.adsrvr.org/ https://ib.adnxs.com/ https://tag-logger.demandbase.com/ https://l.clarity.ms https://facebook.com https://www.facebook.com https://pagead2.googlesyndication.com/ https://privacyportal.onetrust.com/ https://apm.yahoo.co.jp/ https://am.yahoo.co.jp/ https://cdn.linkedin.oribi.io/ https://www.linkedin.com https://geoip-js.com/ https://704-zbe-801.mktoutil.com/ https://ad.doubleclick.net https://www.google.com/ https://geolocation.onetrust.com/ https://maps.googleapis.com https://privacyportaluat.onetrust.com/ https://s7mbrstream-ap1.scene7.com/ https://px.ads.linkedin.com https://www.google-analytics.com https://704-zbe-801.mktoresp.com/ https://744-fui-742.mktoresp.com/ https://assets.adobedtm.com https://api.company-target.com/ cdn.cookielaw.org tcs.tt.omtrdc.net https://dpm.demdex.net/ https://tcs.demdex.net/ onetrust.com smetrics.tcs.com storifyme.com https://cdn.storifyme.com/ https://s7ap1.scene7.com; base-uri 'none' ; object-src https://authapp.ultimatix.net https://auth.ultimatix.net; frame-ancestors 'self' ; font-src 'self' https://fonts.gstatic.com/ data:",
+        "description": "Restricts what content the browser can load to prevent XSS.",
+        "recommendation": "Use a strict CSP such as default-src 'self'; object-src 'none'."
+      },
+      {
+        "name": "Strict-Transport-Security",
+        "present": true,
+        "value": "max-age=31536000 ; includeSubDomains",
+        "description": "Forces HTTPS to protect against protocol downgrade attacks.",
+        "recommendation": "Set HSTS max-age >= 31536000 with includeSubDomains and preload."
+      },
+      {
+        "name": "X-Content-Type-Options",
+        "present": true,
+        "value": "nosniff",
+        "description": "Prevents MIME type sniffing.",
+        "recommendation": "Always set to 'nosniff' to avoid content-type attacks."
+      },
+      {
+        "name": "X-Frame-Options",
+        "present": true,
+        "value": "SAMEORIGIN",
+        "description": "Prevents clickjacking attacks.",
+        "recommendation": "Use SAMEORIGIN or DENY unless framing is required."
+      },
+      {
+        "name": "Referrer-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls how much referrer information is leaked.",
+        "recommendation": "Use strict-origin-when-cross-origin or stricter."
+      },
+      {
+        "name": "Permissions-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls access to browser features (camera, mic, geolocation).",
+        "recommendation": "Add a restrictive Permissions-Policy to disable unused features."
+      },
+      {
+        "name": "X-XSS-Protection",
+        "present": true,
+        "value": "1; mode=block",
+        "description": "Legacy XSS filter hint for older browsers.",
+        "recommendation": "Set to \"1; mode=block\" or rely on CSP instead."
+      },
+      {
+        "name": "Cross-Origin-Opener-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Isolates browsing context to prevent cross-origin attacks.",
+        "recommendation": "Set to same-origin for sensitive pages."
+      },
+      {
+        "name": "Cross-Origin-Resource-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls which origins can load the resource.",
+        "recommendation": "Set to same-origin or cross-origin as needed."
+      },
+      {
+        "name": "Cross-Origin-Embedder-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents loading cross-origin resources without explicit permission.",
+        "recommendation": "Set to require-corp for full cross-origin isolation."
+      },
+      {
+        "platform": {
+          "server": "Apache",
+          "x_powered_by": null,
+          "guessed_stack": "Apache HTTPD"
+        }
+      }
+    ],
+    "platform": {
+      "server": "Apache",
+      "x_powered_by": null,
+      "guessed_stack": "Apache HTTPD"
+    },
+    "error": null
+  }
+}
