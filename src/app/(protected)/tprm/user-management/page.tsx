@@ -589,11 +589,13 @@ export default function UserManagementPage() {
                         />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                        {availableRoles.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {t(role)}
-                          </SelectItem>
-                        ))}
+                        {availableRoles
+                          .filter((role) => isEdit || role !== "Account Manager")
+                          .map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {t(role)}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

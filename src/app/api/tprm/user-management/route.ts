@@ -109,6 +109,14 @@ export const POST = withAuth(
         );
       }
 
+      // Account Manager users cannot be created from User Management
+      if (tprmRole === 'Account Manager') {
+        return NextResponse.json(
+          { error: 'Account Manager users cannot be created from User Management' },
+          { status: 403 }
+        );
+      }
+
       // Check subscription plan user limit
       const userCheck = tprmRole === 'Factory Assessor'
         ? await checkFactoryUserLimit(customerAccountId)
