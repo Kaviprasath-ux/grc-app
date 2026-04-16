@@ -53,13 +53,16 @@ import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
 import { validateEmail } from "@/lib/validations/email";
 
 // ==================== ROLE CONFIGURATION ====================
-// Roles are conditional on Function selection (matches VerifAI reference)
+// Roles are conditional on Function selection (matches VerifAI reference).
+// "Account Manager" is intentionally excluded — AM users are provisioned
+// elsewhere and cannot be created from User Management.
 const ROLES_BY_FUNCTION: Record<string, string[]> = {
-  "TPRM Team": ["Account Manager", "Approver", "Assessor", "Auditor"],
+  "TPRM Team": ["Approver", "Assessor", "Auditor"],
   "Business": ["Business Owner", "Internal IT Team", "Relationship Manager"],
 };
 
 const ALL_ROLES = [
+  "Account Manager",
   ...ROLES_BY_FUNCTION["TPRM Team"],
   ...ROLES_BY_FUNCTION["Business"],
 ];
@@ -589,13 +592,14 @@ export default function UserManagementPage() {
                         />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                        {availableRoles
-                          .filter((role) => isEdit || role !== "Account Manager")
-                          .map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {t(role)}
-                            </SelectItem>
-                          ))}
+                        {(isEdit && formData.tprmRole === "Account Manager" && !availableRoles.includes("Account Manager")
+                          ? ["Account Manager", ...availableRoles]
+                          : availableRoles
+                        ).map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {t(role)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

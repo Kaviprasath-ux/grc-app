@@ -92,64 +92,71 @@ export const POST = withAuth(
       });
       const assessmentCode = `ASM${String(count + 1).padStart(3, "0")}`;
 
-      // Auto-create or find Account Manager user from vendor's account manager details
+      // Auto-create or find Account Manager user from vendor's account manager details.
+      // This is best-effort: a failure here must NOT block assessment creation.
       let accountManagerUserId: string | null = null;
       if (body.vendorId) {
-        const vendor = await prisma.tPRMVendor.findUnique({
-          where: { id: body.vendorId },
-          select: { accountManagerName: true, accountManagerEmail: true },
-        });
+        try {
+          const vendor = await prisma.tPRMVendor.findUnique({
+            where: { id: body.vendorId },
+            select: { accountManagerName: true, accountManagerEmail: true },
+          });
 
-        if (vendor?.accountManagerName && vendor?.accountManagerEmail) {
-          const amName = vendor.accountManagerName.split("; ")[0];
-          const amEmail = vendor.accountManagerEmail.split("; ")[0];
+          if (vendor?.accountManagerName && vendor?.accountManagerEmail) {
+            const amName = vendor.accountManagerName.split("; ")[0];
+            const amEmail = vendor.accountManagerEmail.split("; ")[0];
 
-          if (amName && amEmail) {
-            // Check if Account Manager user already exists with this email
-            let accountManager = await prisma.user.findFirst({
-              where: {
-                customerAccountId,
-                email: { equals: amEmail, mode: "insensitive" },
-                tprmRole: "Account Manager",
-              },
-            });
-
-            if (!accountManager) {
-              // Create Account Manager user
-              const userCount = await prisma.user.count({ where: { customerAccountId } });
-              const userId = `TPRM_${customerAccountId.substring(0, 6)}_${String(userCount + 1).padStart(3, "0")}`;
-              let userName = amEmail.split("@")[0];
-
-              // Ensure unique userName within tenant
-              const existingWithUserName = await prisma.user.findFirst({
-                where: { customerAccountId, userName },
-              });
-              if (existingWithUserName) {
-                userName = `${userName}_am_${Date.now()}`;
-              }
-
-              const hashedPassword = await bcrypt.hash("1", 10);
-              const nameParts = amName.trim().split(/\s+/);
-
-              accountManager = await prisma.user.create({
-                data: {
-                  userId,
+            if (amName && amEmail) {
+              // Look up by email alone so we reuse any existing user in this tenant,
+              // not just ones already tagged as Account Manager. This avoids a unique
+              // constraint violation on (customerAccountId, email) during create.
+              let accountManager = await prisma.user.findFirst({
+                where: {
                   customerAccountId,
-                  fullName: amName,
-                  firstName: nameParts[0] || amName,
-                  lastName: nameParts.slice(1).join(" ") || "-",
-                  email: amEmail,
-                  userName,
-                  password: hashedPassword,
-                  tprmRole: "Account Manager",
-                  tprmFunctionCategory: "TPRM Team",
-                  isActive: true,
+                  email: { equals: amEmail, mode: "insensitive" },
                 },
               });
-            }
 
-            accountManagerUserId = accountManager.id;
+              if (!accountManager) {
+                // Create Account Manager user
+                const userCount = await prisma.user.count({ where: { customerAccountId } });
+                const userId = `TPRM_${customerAccountId.substring(0, 6)}_${String(userCount + 1).padStart(3, "0")}`;
+                let userName = amEmail.split("@")[0];
+
+                // Ensure unique userName within tenant
+                const existingWithUserName = await prisma.user.findFirst({
+                  where: { customerAccountId, userName },
+                });
+                if (existingWithUserName) {
+                  userName = `${userName}_am_${Date.now()}`;
+                }
+
+                const hashedPassword = await bcrypt.hash("1", 10);
+                const nameParts = amName.trim().split(/\s+/);
+
+                accountManager = await prisma.user.create({
+                  data: {
+                    userId,
+                    customerAccountId,
+                    fullName: amName,
+                    firstName: nameParts[0] || amName,
+                    lastName: nameParts.slice(1).join(" ") || "-",
+                    email: amEmail,
+                    userName,
+                    password: hashedPassword,
+                    tprmRole: "Account Manager",
+                    tprmFunctionCategory: "TPRM Team",
+                    isActive: true,
+                  },
+                });
+              }
+
+              accountManagerUserId = accountManager.id;
+            }
           }
+        } catch (amError) {
+          // Log but do not fail the assessment creation on AM auto-provisioning errors.
+          console.error("TPRM assessment: Account Manager auto-provision failed", amError);
         }
       }
 
@@ -212,8 +219,9 @@ export const POST = withAuth(
       return NextResponse.json(assessment, { status: 201 });
     } catch (error) {
       console.error("Error creating TPRM assessment:", error);
+      const message = error instanceof Error ? error.message : "Failed to create assessment";
       return NextResponse.json(
-        { error: "Failed to create assessment" },
+        { error: `Failed to create assessment: ${message}` },
         { status: 500 }
       );
     }
