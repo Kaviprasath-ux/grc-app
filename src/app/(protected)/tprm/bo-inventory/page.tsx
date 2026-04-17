@@ -879,7 +879,11 @@ export default function BOInventoryPage() {
 
   // ── Form fields (shared between Create & Edit dialogs) ──
   const formFields = (
-    <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 max-h-[72vh]">
+
+      {/* ══ LEFT COLUMN — Vendor Demographics ══ */}
+      <div className="space-y-4 overflow-y-auto lg:border-r lg:ltr:pr-6 lg:rtl:pl-6 border-slate-100 pb-2">
+        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t("Vendor Demographics")}</div>
 
       {/* ══ Section 1: Vendor Profile Fields (System Generated) ══ */}
       <div className="space-y-4">
@@ -1032,13 +1036,27 @@ export default function BOInventoryPage() {
         </div>
       )}
 
-      {/* ══ Section 3: Onboarding Questions ══ */}
-      {translatedOnboardingQuestions.length > 0 && (
+      </div>
+
+      {/* ══ RIGHT COLUMN — Risk Scoring Questionnaire ══ */}
+      <div className="space-y-3 overflow-y-auto pb-2">
+        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t("Risk Scoring Questionnaire")}</div>
+
+      {translatedOnboardingQuestions.length === 0 ? (
+        <div className="text-sm text-slate-500 italic py-6">
+          {t("No onboarding questions configured.")}
+        </div>
+      ) : (
         <div className="space-y-3">
-          {translatedOnboardingQuestions.map((q) => (
-            <div key={q.id} className="space-y-2">
+          {translatedOnboardingQuestions.map((q, idx) => (
+            <div key={q.id} className="space-y-2 rounded-md border border-slate-200 bg-white p-3">
               <div className="space-y-1.5">
-                <Label>{q.title}</Label>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  {t("Q")}{idx + 1}. {q.title}
+                </div>
+                {q.question && (
+                  <div className="text-sm text-slate-800">{q.question}</div>
+                )}
                 {q.responseType === "Yes/No" ? (
                   <div className="flex items-center gap-3">
                     <Button type="button" size="sm" variant={questionAnswers[q.id] === "Yes" ? "default" : "outline"}
@@ -1053,10 +1071,13 @@ export default function BOInventoryPage() {
                 )}
               </div>
               {q.children && q.children.length > 0 && questionAnswers[q.id] === "Yes" && (
-                <div className="ltr:ml-6 rtl:mr-6 space-y-2 border-l-2 ltr:pl-4 rtl:border-l-0 rtl:border-r-2 rtl:pr-4">
+                <div className="ltr:ml-4 rtl:mr-4 space-y-2 border-l-2 ltr:pl-4 rtl:border-l-0 rtl:border-r-2 rtl:pr-4">
                   {q.children.filter((c) => c.isActive).map((child) => (
                     <div key={child.id} className="space-y-1.5">
-                      <Label className="text-sm">{child.title}</Label>
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{child.title}</div>
+                      {child.question && (
+                        <div className="text-sm text-slate-700">{child.question}</div>
+                      )}
                       {child.responseType === "Yes/No" ? (
                         <div className="flex items-center gap-3">
                           <Button type="button" size="sm" variant={questionAnswers[child.id] === "Yes" ? "default" : "outline"}
@@ -1077,6 +1098,7 @@ export default function BOInventoryPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 
@@ -1182,7 +1204,7 @@ export default function BOInventoryPage() {
       </div>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-[1180px]">
           <DialogHeader><DialogTitle>{t("Onboard New Vendor")}</DialogTitle></DialogHeader>
           {formFields}
           <DialogFooter>
@@ -1193,7 +1215,7 @@ export default function BOInventoryPage() {
       </Dialog>
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-[1180px]">
           <DialogHeader><DialogTitle>{t("Edit Vendor")}</DialogTitle></DialogHeader>
           {formFields}
           <DialogFooter>

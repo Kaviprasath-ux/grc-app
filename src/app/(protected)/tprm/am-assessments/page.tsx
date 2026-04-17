@@ -25,6 +25,7 @@ interface Assessment {
   createdAt: string;
   updatedAt: string;
   vendorSubmissionDate: string | null;
+  dueDate: string | null;
   vendor: { id: string; name: string; vendorCode: string };
   customerAccount?: { id: string; name: string };
   initiatedBy: { id: string; fullName: string } | null;
@@ -151,12 +152,10 @@ export default function AMAssessmentsPage() {
                       <TableRow>
                         <TableHead>{t("Assessment Code")}</TableHead>
                         <TableHead>{t("Customer")}</TableHead>
-                        <TableHead>{t("Vendor")}</TableHead>
                         <TableHead>{t("Type")}</TableHead>
-                        <TableHead>{t("Template")}</TableHead>
                         <TableHead>{t("Initiated By")}</TableHead>
                         <TableHead>{t("Status")}</TableHead>
-                        <TableHead>{t("Date")}</TableHead>
+                        <TableHead>{t("Due Date")}</TableHead>
                         <TableHead>{t("Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -165,16 +164,14 @@ export default function AMAssessmentsPage() {
                         <TableRow key={a.id}>
                           <TableCell className="font-medium">{a.assessmentCode}</TableCell>
                           <TableCell>{a.customerAccount?.name || "-"}</TableCell>
-                          <TableCell>{a.vendor?.name || "-"}</TableCell>
                           <TableCell>{t(a.assessmentType)}</TableCell>
-                          <TableCell>{a.questionnaireTemplate || "-"}</TableCell>
                           <TableCell>{a.initiatedBy?.fullName || "-"}</TableCell>
                           <TableCell>
                             <Badge className={STATUS_VARIANTS[a.status] || "bg-gray-100 text-gray-700"}>
                               {t(a.status.replace(/_/g, " "))}
                             </Badge>
                           </TableCell>
-                          <TableCell>{formatDate(a.createdAt)}</TableCell>
+                          <TableCell>{formatDate(a.dueDate)}</TableCell>
                           <TableCell>
                             {tab === "active" || (tab === "offboard" && ["Offboard_In_Progress", "Offboard_Awaiting_Response"].includes(a.status)) ? (
                               <Button

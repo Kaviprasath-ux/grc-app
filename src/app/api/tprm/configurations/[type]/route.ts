@@ -21,6 +21,7 @@ type ConfigType = typeof VALID_TYPES[number];
 // Default system vendor profile fields (cannot be edited or deleted)
 const SYSTEM_PROFILE_FIELDS = [
   'Vendor Name',
+  'Vendor URL',
   'Account Manager Name',
   'Account Manager Email',
   'Contact Number',
