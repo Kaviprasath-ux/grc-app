@@ -178,12 +178,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         try {
-        // Find user in database
+        // Find user in database — username/email match is case-insensitive
+        // so users aren't forced to reproduce the exact case they registered with.
+        const identifier = credentials.username as string;
         const user = await prisma.user.findFirst({
           where: {
             OR: [
-              { userName: credentials.username as string },
-              { email: credentials.username as string },
+              { userName: { equals: identifier, mode: "insensitive" } },
+              { email: { equals: identifier, mode: "insensitive" } },
             ],
             isActive: true,
             isBlocked: false,
