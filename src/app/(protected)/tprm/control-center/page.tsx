@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Home, ChevronRight, Shield, BarChart3, Loader2, Check } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Home, ChevronRight, Shield, BarChart3, Loader2, Check, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DueDiligenceConfig {
@@ -25,12 +26,35 @@ const DD_CATEGORIES = ["Critical", "High", "Moderate", "Low", "Nominal"];
 const SC_CATEGORIES = ["Excellent", "Good", "Moderate", "Low", "Nominal"];
 
 const DD_FIELDS = [
-  { key: "vrr" as const, label: "VRR" },
-  { key: "cadenceMonths" as const, label: "Cadence (months)" },
-  { key: "remediationDays" as const, label: "Remediation (days)" },
-  { key: "reminderDays" as const, label: "Reminder (days)" },
-  { key: "dueDateDays" as const, label: "Due Date (days)" },
+  {
+    key: "vrr" as const,
+    label: "VRR",
+    help: "Vendor Risk Rating threshold (DDQ score) that classifies a vendor into this tier. Enter values in descending order across tiers — Critical must be the highest and Nominal the lowest.",
+  },
+  {
+    key: "cadenceMonths" as const,
+    label: "Cadence (months)",
+    help: "How often a vendor in this tier is automatically reassessed. After an assessment is completed, the next reassessment is auto-created this many months later. Set 0 to disable recurring reassessment.",
+  },
+  {
+    key: "remediationDays" as const,
+    label: "Remediation (days)",
+    help: "Days allowed for the vendor to close findings raised in the assessment. Higher-risk tiers should use shorter remediation windows so issues are fixed faster.",
+  },
+  {
+    key: "reminderDays" as const,
+    label: "Reminder (days)",
+    help: "Days before the due date to send a reminder to the vendor, Account Manager, Assessor, and Approver. Example: 5 sends a reminder 5 days before the deadline.",
+  },
+  {
+    key: "dueDateDays" as const,
+    label: "Due Date (days)",
+    help: "Days from assessment initiation within which the vendor must complete the Due Diligence Questionnaire. Critical/High tiers typically get tighter deadlines than Low/Nominal.",
+  },
 ];
+
+const SCORECARD_HELP =
+  "Minimum security score (0–10) a vendor must achieve to qualify for this scorecard band. Enter values in descending order across bands — Excellent must be the highest and Nominal the lowest.";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   Critical:  { bg: "bg-red-50",    text: "text-red-700",    dot: "bg-red-500" },
@@ -250,7 +274,17 @@ export default function ControlCenterPage() {
           </TabsList>
 
           {/* Due Diligence Tab */}
-          <TabsContent value="due-diligence" className="mt-6">
+          <TabsContent value="due-diligence" className="mt-6 space-y-4">
+            <div className="rounded-lg border border-primary-100 bg-primary-50/50 px-4 py-3 text-xs text-slate-600 leading-relaxed">
+              <p>
+                <span className="font-semibold text-slate-700">{t("About this tab")}:</span>{" "}
+                {t("Define the due-diligence policy per vendor risk tier. Each row is a parameter; each column is a tier. These values drive automated assessment scheduling, questionnaire deadlines, remediation SLAs, and reminder notifications across the TPRM module.")}
+              </p>
+              <p className="mt-1.5">
+                <span className="font-semibold text-slate-700">{t("Guidance")}:</span>{" "}
+                {t("Hover the help icon next to each parameter for details. VRR values must decrease from Critical to Nominal. Changes are saved automatically.")}
+              </p>
+            </div>
             <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
@@ -275,7 +309,25 @@ export default function ControlCenterPage() {
                   <tbody>
                     {DD_FIELDS.map((field, fi) => (
                       <tr key={field.key} className={`border-b border-slate-100 last:border-0 ${fi % 2 === 1 ? "bg-slate-50/40" : ""}`}>
-                        <td className="px-5 py-4 text-sm font-medium text-slate-700">{t(field.label)}</td>
+                        <td className="px-5 py-4 text-sm font-medium text-slate-700">
+                          <div className="flex items-center gap-1.5">
+                            <span>{t(field.label)}</span>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label={t("Help")}
+                                  className="text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-500 rounded-full"
+                                >
+                                  <HelpCircle className="h-3.5 w-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="max-w-xs text-left leading-relaxed">
+                                {t(field.help)}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </td>
                         {DD_CATEGORIES.map((cat, catIndex) => (
                           <td key={cat} className="px-3 py-3 text-center">
                             <Input
@@ -300,7 +352,17 @@ export default function ControlCenterPage() {
           </TabsContent>
 
           {/* Scorecard Tab */}
-          <TabsContent value="scorecard" className="mt-6">
+          <TabsContent value="scorecard" className="mt-6 space-y-4">
+            <div className="rounded-lg border border-primary-100 bg-primary-50/50 px-4 py-3 text-xs text-slate-600 leading-relaxed">
+              <p>
+                <span className="font-semibold text-slate-700">{t("About this tab")}:</span>{" "}
+                {t("Define the security scorecard bands used to grade a vendor based on their overall security score (0–10). The band a vendor lands in is shown on the vendor profile and drives scorecard-based filtering across reports.")}
+              </p>
+              <p className="mt-1.5">
+                <span className="font-semibold text-slate-700">{t("Guidance")}:</span>{" "}
+                {t("Scores must decrease from Excellent to Nominal. Example: Excellent 9, Good 7, Moderate 5, Low 3, Nominal 0. Changes are saved automatically.")}
+              </p>
+            </div>
             <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
@@ -324,7 +386,25 @@ export default function ControlCenterPage() {
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="px-5 py-4 text-sm font-medium text-slate-700">{t("Security Score")}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-700">
+                        <div className="flex items-center gap-1.5">
+                          <span>{t("Security Score")}</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label={t("Help")}
+                                className="text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-500 rounded-full"
+                              >
+                                <HelpCircle className="h-3.5 w-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs text-left leading-relaxed">
+                              {t(SCORECARD_HELP)}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </td>
                       {SC_CATEGORIES.map((cat, catIndex) => (
                         <td key={cat} className="px-3 py-3 text-center">
                           <Input

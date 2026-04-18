@@ -35,10 +35,12 @@ import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/
 import { Textarea } from "@/components/ui/textarea";
 
 // ── Field Validation ──────────────────────────────────
-// General fields: alphabets, numbers, spaces, hyphens, dots, colons, parentheses, slashes
-const GENERAL_FIELD_REGEX = /^[a-zA-Z0-9\s\-.:()\/]*$/;
+// Blocklist approach: allow all normal text (letters, numbers, punctuation like ? , . - & ' " etc.)
+// and strip only characters that open HTML/script injection vectors ( < and > ).
+// React already escapes output so stored text is safe to render; this is defense-in-depth.
+const DISALLOWED_CHARS_REGEX = /[<>]/g;
 const sanitizeGeneral = (value: string): string =>
-  value.split("").filter((ch) => GENERAL_FIELD_REGEX.test(ch)).join("");
+  value.replace(DISALLOWED_CHARS_REGEX, "");
 
 // ==================== TYPES ====================
 
@@ -384,7 +386,10 @@ function VendorOnboardingSection() {
 
   // Profile field CRUD
   const handleSaveProfileField = async () => {
-    if (!pfFieldName.trim()) return;
+    if (!pfFieldName.trim()) {
+      toast({ title: t("Required field missing"), description: t("Field Name is required"), variant: "destructive" });
+      return;
+    }
     try {
       const method = pfEditItem ? "PATCH" : "POST";
       const body = pfEditItem
@@ -430,7 +435,18 @@ function VendorOnboardingSection() {
 
   // Onboarding question CRUD
   const handleSaveObQuestion = async () => {
-    if (!obForm.title.trim()) return;
+    const missing: string[] = [];
+    if (!obForm.title.trim()) missing.push(t("Title"));
+    if (!obForm.question.trim()) missing.push(t("Question"));
+    if (obForm.questionType === "Child" && !obForm.parentId) missing.push(t("Parent Question"));
+    if (missing.length > 0) {
+      toast({
+        title: t("Required fields missing"),
+        description: `${t("Please fill in")}: ${missing.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Validate total score does not exceed max VRR (Critical)
     const existingTotal = getTotalScore(obEditItem?.id);
@@ -855,7 +871,10 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
   }, [loadItems]);
 
   const handleSave = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      toast({ title: t("Required field missing"), description: `${nameLabel} ${t("is required")}`, variant: "destructive" });
+      return;
+    }
     try {
       const method = editItem ? "PATCH" : "POST";
       const body = editItem ? { id: editItem.id, name: name.trim() } : { name: name.trim() };
@@ -1357,7 +1376,11 @@ function QuestionnaireManagementSection() {
   };
 
   const handleEditSave = async () => {
-    if (!editItem || !editForm.templateName.trim()) return;
+    if (!editItem) return;
+    if (!editForm.templateName.trim()) {
+      toast({ title: t("Required field missing"), description: t("Template Name is required"), variant: "destructive" });
+      return;
+    }
     try {
       const res = await fetch("/api/tprm/configurations/questionnaire-templates", {
         method: "PATCH",
@@ -2316,7 +2339,17 @@ function OffboardingSection() {
   }, [loadQuestions]);
 
   const handleSave = async () => {
-    if (!form.title.trim()) return;
+    const missing: string[] = [];
+    if (!form.title.trim()) missing.push(t("Title"));
+    if (!form.question.trim()) missing.push(t("Question"));
+    if (missing.length > 0) {
+      toast({
+        title: t("Required fields missing"),
+        description: `${t("Please fill in")}: ${missing.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const method = editItem ? "PATCH" : "POST";
       const body = editItem ? { id: editItem.id, ...form } : form;
