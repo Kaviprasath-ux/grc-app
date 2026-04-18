@@ -710,7 +710,7 @@ function VendorOnboardingSection() {
           </div>
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Field Title")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Field Title")} <span className="text-red-500">*</span></Label>
               <Input
                 className="mt-1.5 w-full"
                 value={pfFieldName}
@@ -736,7 +736,7 @@ function VendorOnboardingSection() {
           </div>
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Title")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
               <Input
                 className="mt-1.5"
                 value={obForm.title}
@@ -745,7 +745,7 @@ function VendorOnboardingSection() {
               />
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Question")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Question")} <span className="text-red-500">*</span></Label>
               <Textarea
                 className="mt-1.5"
                 value={obForm.question}
@@ -770,7 +770,7 @@ function VendorOnboardingSection() {
                 </p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Question Type")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Question Type")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={obForm.questionType}
                   onValueChange={(v) => setObForm({ ...obForm, questionType: v, parentId: v === "Parent" ? "" : obForm.parentId })}
@@ -788,7 +788,7 @@ function VendorOnboardingSection() {
             {/* Parent question dropdown - only visible when Child is selected */}
             {obForm.questionType === "Child" && (
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Parent Question")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Parent Question")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={obForm.parentId}
                   onValueChange={(v) => setObForm({ ...obForm, parentId: v })}
@@ -807,7 +807,7 @@ function VendorOnboardingSection() {
               </div>
             )}
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Response Type")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Response Type")} <span className="text-red-500">*</span></Label>
               <Select
                 value={obForm.responseType}
                 onValueChange={(v) => setObForm({ ...obForm, responseType: v })}
@@ -1001,7 +1001,7 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
           </div>
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t(nameLabel)}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t(nameLabel)} <span className="text-red-500">*</span></Label>
               <Input
                 className="mt-1.5 w-full"
                 value={name}
@@ -1618,7 +1618,7 @@ function QuestionnaireManagementSection() {
           )}
           {/* Question Title */}
           <div>
-            <Label className="text-sm font-medium text-slate-700">{t("Question Title")} *</Label>
+            <Label className="text-sm font-medium text-slate-700">{t("Question Title")} <span className="text-red-500">*</span></Label>
             <Textarea className="mt-1.5 w-full" value={qForm.questionText} onChange={(e) => setQForm({ ...qForm, questionText: sanitizeGeneral(e.target.value) })}
               placeholder={t("Enter question text")} rows={3} />
           </div>
@@ -1996,7 +1996,7 @@ function QuestionnaireManagementSection() {
             <div className="space-y-5">
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Template Name")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Template Name")} <span className="text-red-500">*</span></Label>
                   <Input className="mt-1.5 w-full" value={wizardForm.templateName}
                     onChange={(e) => setWizardForm({ ...wizardForm, templateName: sanitizeGeneral(e.target.value) })}
                     placeholder={t("Enter template name")} />
@@ -2226,7 +2226,7 @@ function QuestionnaireManagementSection() {
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Template Name")}</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Template Name")} <span className="text-red-500">*</span></Label>
                 <Input className="mt-1.5 w-full" value={editForm.templateName}
                   onChange={(e) => setEditForm({ ...editForm, templateName: sanitizeGeneral(e.target.value) })} />
               </div>
@@ -2480,7 +2480,7 @@ function OffboardingSection() {
           </div>
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Title")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
               <Input
                 className="mt-1.5 w-full"
                 value={form.title}
@@ -2489,7 +2489,7 @@ function OffboardingSection() {
               />
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">{t("Question")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Question")} <span className="text-red-500">*</span></Label>
               <Textarea
                 className="mt-1.5 w-full"
                 value={form.question}
