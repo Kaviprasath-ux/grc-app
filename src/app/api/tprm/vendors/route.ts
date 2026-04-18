@@ -194,6 +194,17 @@ export const POST = withAuth(
       const fullVendorCode = `${vendorCode}.${engagementNumber}`;
       const engagementId = body.engagementId || fullVendorCode;
 
+      // When a Business Owner or Relationship Manager onboards a vendor, the
+      // vendor inherits the onboarder's department — the vendor belongs to
+      // the same line of business that the BO/RM represents. For other roles
+      // (e.g. CustomerAdmin onboarding on behalf of someone) we honour
+      // whatever the form supplied.
+      const onboarderRoles: string[] = Array.isArray(session?.roles) ? (session.roles as string[]) : [];
+      const onboarderIsBoOrRm = onboarderRoles.some((r) => r === 'BusinessOwner' || r === 'RelationshipManager');
+      const effectiveDepartmentId = onboarderIsBoOrRm && session.departmentId
+        ? session.departmentId
+        : (body.departmentId ?? null);
+
       const vendor = await prisma.tPRMVendor.create({
         data: {
           customerAccountId,
@@ -205,7 +216,7 @@ export const POST = withAuth(
           accountManagerEmail: body.accountManagerEmail,
           serviceCategory: body.serviceCategory,
           serviceDescription: body.serviceDescription,
-          departmentId: body.departmentId,
+          departmentId: effectiveDepartmentId,
           status: body.status || "Onboarding",
           vrr: body.vrr,
           engagementId,

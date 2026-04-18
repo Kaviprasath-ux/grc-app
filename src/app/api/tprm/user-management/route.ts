@@ -64,6 +64,8 @@ export const GET = withAuth(
             isActive: true,
             tprmRole: true,
             tprmFunctionCategory: true,
+            departmentId: true,
+            department: { select: { id: true, name: true } },
             customerAccount: {
               select: { name: true },
             },
@@ -100,7 +102,7 @@ export const POST = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { firstName: bodyFirstName, lastName: bodyLastName, fullName, email, userName, password, tprmRole, tprmFunctionCategory, isActive } = body;
+      const { firstName: bodyFirstName, lastName: bodyLastName, fullName, email, userName, password, tprmRole, tprmFunctionCategory, departmentName, isActive } = body;
 
       if (!fullName || !email || !userName || !password || !tprmRole) {
         return NextResponse.json(
@@ -114,6 +116,25 @@ export const POST = withAuth(
         return NextResponse.json(
           { error: 'Account Manager users cannot be created from User Management' },
           { status: 403 }
+        );
+      }
+
+      // Business Owner and Relationship Manager must be tagged to a Department
+      // so vendor inventory can show the correct owning department.
+      // The UI picks from the TPRM Configurations department list and sends
+      // the name; we resolve (or create) a matching Department row so the
+      // User.departmentId FK stays valid without duplicating entity state.
+      const DEPT_REQUIRED = new Set(['Business Owner', 'Relationship Manager']);
+      const resolvedDepartmentId = await resolveDepartmentId(
+        customerAccountId,
+        tprmRole,
+        departmentName,
+        DEPT_REQUIRED
+      );
+      if (DEPT_REQUIRED.has(tprmRole) && !resolvedDepartmentId) {
+        return NextResponse.json(
+          { error: 'Department is required for Business Owner and Relationship Manager' },
+          { status: 400 }
         );
       }
 
@@ -166,6 +187,7 @@ export const POST = withAuth(
           password: hashedPassword,
           tprmRole: tprmRole,
           tprmFunctionCategory: tprmFunctionCategory || 'TPRM Team',
+          departmentId: resolvedDepartmentId,
           isActive: isActive !== false,
         },
         select: {
@@ -176,6 +198,8 @@ export const POST = withAuth(
           isActive: true,
           tprmRole: true,
           tprmFunctionCategory: true,
+          departmentId: true,
+          department: { select: { id: true, name: true } },
           createdAt: true,
         },
       });
@@ -264,7 +288,7 @@ export const PATCH = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { id, firstName, lastName, fullName, email, password, tprmRole, tprmFunctionCategory, isActive } = body;
+      const { id, firstName, lastName, fullName, email, password, tprmRole, tprmFunctionCategory, departmentName, isActive } = body;
 
       if (!id) {
         return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -308,6 +332,30 @@ export const PATCH = withAuth(
         updateData.password = await bcrypt.hash(password, 10);
       }
 
+      // Department handling for Business Owner / Relationship Manager.
+      // Same name-based resolution used on POST: find-or-create a Department
+      // row matching the picked name, then store its id on User.departmentId.
+      const DEPT_REQUIRED_EDIT = new Set(['Business Owner', 'Relationship Manager']);
+      const effectiveRole = (tprmRole !== undefined ? tprmRole : existingUser.tprmRole) as string | null;
+      if (effectiveRole && DEPT_REQUIRED_EDIT.has(effectiveRole)) {
+        const resolvedId = await resolveDepartmentId(
+          customerAccountId,
+          effectiveRole,
+          departmentName,
+          DEPT_REQUIRED_EDIT
+        );
+        if (!resolvedId) {
+          return NextResponse.json(
+            { error: 'Department is required for Business Owner and Relationship Manager' },
+            { status: 400 }
+          );
+        }
+        updateData.departmentId = resolvedId;
+      } else if (departmentName !== undefined) {
+        // Role not BO/RM: clear any stale department reference
+        updateData.departmentId = null;
+      }
+
       const updatedUser = await prisma.user.update({
         where: { id },
         data: updateData,
@@ -319,6 +367,8 @@ export const PATCH = withAuth(
           isActive: true,
           tprmRole: true,
           tprmFunctionCategory: true,
+          departmentId: true,
+          department: { select: { id: true, name: true } },
           createdAt: true,
         },
       });
@@ -425,3 +475,38 @@ export const DELETE = withAuth(
   },
   { resource: ['tprm.user-management', 'tprm.bo-user-management', 'tprm.factory-user-management'], action: 'delete' }
 );
+
+/**
+ * Resolve a department NAME (as picked in the UI) to the id of a row in the
+ * Department table. Find-or-create so that the User.departmentId FK is always
+ * valid — even when the list the UI shows comes from TPRMDepartment.
+ *
+ * Returns null when the role doesn't require a department or when no name
+ * was provided.
+ */
+async function resolveDepartmentId(
+  customerAccountId: string,
+  role: string | null | undefined,
+  name: unknown,
+  deptRequired: Set<string>
+): Promise<string | null> {
+  if (!role || !deptRequired.has(role)) return null;
+  if (typeof name !== 'string') return null;
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+
+  const existing = await prisma.department.findFirst({
+    where: {
+      customerAccountId,
+      name: { equals: trimmed, mode: 'insensitive' },
+    },
+    select: { id: true },
+  });
+  if (existing) return existing.id;
+
+  const created = await prisma.department.create({
+    data: { customerAccountId, name: trimmed },
+    select: { id: true },
+  });
+  return created.id;
+}

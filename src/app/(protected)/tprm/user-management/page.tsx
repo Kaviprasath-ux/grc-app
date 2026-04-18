@@ -69,6 +69,11 @@ const ALL_ROLES = [
 
 const FUNCTION_OPTIONS = ["TPRM Team", "Business"];
 
+// Roles that must be tagged with a Department. Vendor inventory shows each
+// vendor's department, sourced from the BO/RM who owns the relationship, so
+// these users need a department assigned.
+const DEPARTMENT_REQUIRED_ROLES = new Set(["Business Owner", "Relationship Manager"]);
+
 // ==================== TYPES ====================
 interface TPRMUser {
   id: string;
@@ -80,8 +85,15 @@ interface TPRMUser {
   isActive: boolean;
   tprmRole: string | null;
   tprmFunctionCategory: string | null;
+  departmentId: string | null;
+  department?: { id: string; name: string } | null;
   customerAccount?: { name: string };
   createdAt: string;
+}
+
+interface DepartmentOption {
+  id: string;
+  name: string;
 }
 
 interface UserFormData {
@@ -92,6 +104,7 @@ interface UserFormData {
   email: string;
   tprmFunctionCategory: string;
   tprmRole: string;
+  departmentName: string;
   isActive: boolean;
   password: string;
   confirmPassword: string;
@@ -105,6 +118,7 @@ const emptyForm: UserFormData = {
   email: "",
   tprmFunctionCategory: "",
   tprmRole: "",
+  departmentName: "",
   isActive: true,
   password: "",
   confirmPassword: "",
@@ -121,6 +135,7 @@ export default function UserManagementPage() {
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState("all");
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -144,6 +159,9 @@ export default function UserManagementPage() {
     return ROLES_BY_FUNCTION[formData.tprmFunctionCategory] || [];
   }, [formData.tprmFunctionCategory]);
 
+  // Whether the Department selector should appear — BO/RM only
+  const departmentRequired = DEPARTMENT_REQUIRED_ROLES.has(formData.tprmRole);
+
   // ==================== DATA FETCHING ====================
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -163,6 +181,22 @@ export default function UserManagementPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Load departments for the BO/RM Department selector. Fetched from the
+  // TPRM Configurations endpoint so this dropdown always matches the list a
+  // CustomerAdmin maintains in TPRM → Configurations → Department.
+  useEffect(() => {
+    fetch("/api/tprm/configurations/departments")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Array<{ id: string; name: string }>) => {
+        setDepartments(
+          Array.isArray(data)
+            ? data.map((d) => ({ id: d.id, name: d.name }))
+            : []
+        );
+      })
+      .catch(() => setDepartments([]));
+  }, []);
 
   // ==================== FORM VALIDATION ====================
   const validateForm = (isEdit: boolean): Record<string, string> => {
@@ -191,6 +225,9 @@ export default function UserManagementPage() {
     if (emailError) errors.email = t(emailError);
     if (!formData.tprmFunctionCategory) errors.tprmFunctionCategory = t("Please Select the Function");
     if (!formData.tprmRole) errors.tprmRole = t("Please Select the Role");
+    if (DEPARTMENT_REQUIRED_ROLES.has(formData.tprmRole) && !formData.departmentName) {
+      errors.departmentName = t("Please Select the Department");
+    }
     if (!isEdit) {
       if (!formData.password) errors.password = t("Password can not be empty");
       if (!formData.confirmPassword) errors.confirmPassword = t("Password can not be empty");
@@ -235,6 +272,9 @@ export default function UserManagementPage() {
           password: formData.password,
           tprmFunctionCategory: formData.tprmFunctionCategory,
           tprmRole: formData.tprmRole,
+          departmentName: DEPARTMENT_REQUIRED_ROLES.has(formData.tprmRole)
+            ? formData.departmentName || null
+            : null,
           isActive: formData.isActive,
         }),
       });
@@ -285,6 +325,9 @@ export default function UserManagementPage() {
         email: formData.email,
         tprmRole: formData.tprmRole,
         tprmFunctionCategory: formData.tprmFunctionCategory,
+        departmentName: DEPARTMENT_REQUIRED_ROLES.has(formData.tprmRole)
+          ? formData.departmentName || null
+          : null,
         isActive: formData.isActive,
       };
       if (formData.password) {
@@ -366,6 +409,7 @@ export default function UserManagementPage() {
       email: user.email,
       tprmFunctionCategory: user.tprmFunctionCategory || "",
       tprmRole: user.tprmRole || "",
+      departmentName: user.department?.name || "",
       isActive: user.isActive,
       password: "",
       confirmPassword: "",
@@ -383,12 +427,25 @@ export default function UserManagementPage() {
   const handleFunctionChange = (fn: string) => {
     const newRoles = ROLES_BY_FUNCTION[fn] || [];
     const roleStillValid = newRoles.includes(formData.tprmRole);
+    const nextRole = roleStillValid ? formData.tprmRole : "";
     setFormData({
       ...formData,
       tprmFunctionCategory: fn,
-      tprmRole: roleStillValid ? formData.tprmRole : "",
+      tprmRole: nextRole,
+      departmentName: DEPARTMENT_REQUIRED_ROLES.has(nextRole) ? formData.departmentName : "",
     });
     clearError("tprmFunctionCategory");
+  };
+
+  // Clear department when role no longer requires one
+  const handleRoleChange = (role: string) => {
+    setFormData({
+      ...formData,
+      tprmRole: role,
+      departmentName: DEPARTMENT_REQUIRED_ROLES.has(role) ? formData.departmentName : "",
+    });
+    clearError("tprmRole");
+    if (!DEPARTMENT_REQUIRED_ROLES.has(role)) clearError("departmentName");
   };
 
   // Account Manager users cannot be deleted (matches reference app behavior)
@@ -579,7 +636,7 @@ export default function UserManagementPage() {
                   <div>
                     <Select
                       value={formData.tprmRole}
-                      onValueChange={(v) => { setFormData({ ...formData, tprmRole: v }); clearError("tprmRole"); }}
+                      onValueChange={handleRoleChange}
                       disabled={!formData.tprmFunctionCategory}
                     >
                       <SelectTrigger className={`mt-1.5 w-full bg-white ${!formData.tprmFunctionCategory ? "cursor-not-allowed opacity-50" : ""} ${formErrors.tprmRole ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
@@ -613,6 +670,28 @@ export default function UserManagementPage() {
             </TooltipProvider>
             {formErrors.tprmRole && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.tprmRole}</p></div>)}
           </div>
+          {/* Department (Line of Business) — only for Business Owner / Relationship Manager */}
+          {departmentRequired && (
+            <div className="sm:col-span-2">
+              <Label htmlFor="department" className="text-sm font-medium text-slate-700">
+                {t("Department")} <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.departmentName}
+                onValueChange={(v) => { setFormData({ ...formData, departmentName: v }); clearError("departmentName"); }}
+              >
+                <SelectTrigger className={`mt-1.5 w-full bg-white ${formErrors.departmentName ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
+                  <SelectValue placeholder={departments.length === 0 ? t("No departments configured") : t("Select Department")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="max-h-[240px]">
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formErrors.departmentName && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{formErrors.departmentName}</p></div>)}
+            </div>
+          )}
           {/* Company Name - read-only */}
           <div className="sm:col-span-2">
             <Label className="text-sm font-medium text-slate-700">{t("Company Name")}</Label>
