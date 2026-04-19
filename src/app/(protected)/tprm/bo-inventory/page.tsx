@@ -255,7 +255,7 @@ export default function BOInventoryPage() {
   const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
   const { data: translatedProfileFields } = useTranslatedData(customProfileFields, { modelName: 'TPRMVendorProfileField' });
   const { data: translatedOnboardingQuestions } = useTranslatedData(onboardingQuestions, { modelName: 'TPRMOnboardingQuestion' });
-  const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number }[]>([]);
+  const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number; cadenceMonths?: number }[]>([]);
 
   // ── Form state ─────────────────────────────────────
   const [vendorName, setVendorName] = useState("");
@@ -752,15 +752,28 @@ export default function BOInventoryPage() {
     return total;
   };
 
+  // Convert a cadence (in months) to a human phrase. Returns "" when no
+  // periodic reassessment is configured so the caller can omit that sentence.
+  const formatCadence = (months: number | undefined): string => {
+    if (!months || months <= 0) return "";
+    if (months % 12 === 0) {
+      const years = months / 12;
+      return years === 1 ? t("1 year") : `${years} ${t("years")}`;
+    }
+    return `${months} ${months === 1 ? t("month") : t("months")}`;
+  };
+
   const getVrrDescription = (levelName: string) => {
-    const descriptions: Record<string, string> = {
-      Nominal: t("This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting."),
-      Low: t("This vendor is low risk. Basic due-diligence review is recommended."),
-      Moderate: t("This vendor is medium risk. Standard due-diligence assessment is required."),
-      High: t("This vendor is high risk. Enhanced due-diligence assessment is required."),
-      Critical: t("This vendor is critical risk. Comprehensive due-diligence and executive approval is required."),
-    };
-    return descriptions[levelName] || "";
+    if (levelName === "Nominal") {
+      return t("This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting.");
+    }
+    const cadenceMonths = ddConfig.find((d) => d.category === levelName)?.cadenceMonths;
+    const cadenceText = formatCadence(cadenceMonths);
+    const levelWord = t(levelName).toLowerCase();
+    if (cadenceText) {
+      return `${t("The inherent risk of this service is")} ${levelWord}. ${t("A due-diligence assessment is required before onboarding this vendor and a periodic assessment after every")} ${cadenceText}.`;
+    }
+    return `${t("The inherent risk of this service is")} ${levelWord}. ${t("A due-diligence assessment is required before onboarding this vendor.")}`;
   };
 
   const handleCheckRiskRating = async () => {

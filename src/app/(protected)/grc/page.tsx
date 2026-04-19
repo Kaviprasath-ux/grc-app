@@ -13,7 +13,6 @@ import {
   Layers,
   Settings,
   ArrowRight,
-  Eye,
 } from "lucide-react";
 import {
   Table,
@@ -150,13 +149,12 @@ export default function GRCAdminLandingPage() {
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase">{t("Customer Name")}</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase">{t("Email")}</TableHead>
                   <TableHead className="text-xs font-semibold text-slate-500 uppercase">{t("Compliance")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-500 uppercase text-right">{t("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recentCustomers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-0">
+                    <TableCell colSpan={4} className="py-0">
                       <div className="py-16 text-center">
                         <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-3">
                           <Users className="h-6 w-6 text-primary-400" />
@@ -185,17 +183,6 @@ export default function GRCAdminLandingPage() {
                           </div>
                           <span className="text-xs font-medium text-slate-600">{customer.compliancePercentage}%</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-primary-600"
-                          onClick={() => router.push(`/grc/customers/${customer.customerAccountId}`)}
-                          title={t("View")}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))

@@ -620,18 +620,7 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
-                    <div className="flex gap-4 h-9 items-center">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserCustomer" value="yes" defaultChecked className="accent-primary" /> {t("Yes")}
-                      </label>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserCustomer" value="no" className="accent-primary" /> {t("No")}
-                      </label>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Blocked")}</Label>
                     <div className="flex gap-4 h-9 items-center">

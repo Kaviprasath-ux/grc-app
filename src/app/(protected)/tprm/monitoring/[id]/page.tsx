@@ -409,7 +409,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
   }, [translatedServiceCategories, rawServiceCategories]);
   const [customProfileFields, setCustomProfileFields] = useState<ProfileField[]>([]);
   const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
-  const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number }[]>([]);
+  const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number; cadenceMonths?: number }[]>([]);
 
   // Post-create popup state
   const [createdVendorId, setCreatedVendorId] = useState<string | null>(null);
@@ -471,15 +471,28 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
     return total;
   };
 
+  // Convert a cadence (in months) to a human phrase. Returns "" when no
+  // periodic reassessment is configured so the caller can omit that sentence.
+  const formatCadence = (months: number | undefined): string => {
+    if (!months || months <= 0) return "";
+    if (months % 12 === 0) {
+      const years = months / 12;
+      return years === 1 ? t("1 year") : `${years} ${t("years")}`;
+    }
+    return `${months} ${months === 1 ? t("month") : t("months")}`;
+  };
+
   const getVrrDescription = (levelName: string) => {
-    const descriptions: Record<string, string> = {
-      Nominal: "This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting.",
-      Low: "This vendor is low risk. Basic due-diligence review is recommended.",
-      Moderate: "This vendor is medium risk. Standard due-diligence assessment is required.",
-      High: "This vendor is high risk. Enhanced due-diligence assessment is required.",
-      Critical: "This vendor is critical risk. Comprehensive due-diligence and executive approval is required.",
-    };
-    return descriptions[levelName] || "";
+    if (levelName === "Nominal") {
+      return t("This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting.");
+    }
+    const cadenceMonths = ddConfig.find((d) => d.category === levelName)?.cadenceMonths;
+    const cadenceText = formatCadence(cadenceMonths);
+    const levelWord = t(levelName).toLowerCase();
+    if (cadenceText) {
+      return `${t("The inherent risk of this service is")} ${levelWord}. ${t("A due-diligence assessment is required before onboarding this vendor and a periodic assessment after every")} ${cadenceText}.`;
+    }
+    return `${t("The inherent risk of this service is")} ${levelWord}. ${t("A due-diligence assessment is required before onboarding this vendor.")}`;
   };
 
   // Load config on open
@@ -865,7 +878,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
 
       {/* Risk Rating Dialog */}
       <Dialog open={showRiskRatingDialog} onOpenChange={setShowRiskRatingDialog}>
-        <DialogContent className="max-w-5xl p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[90vw] lg:max-w-6xl p-0 gap-0 overflow-hidden">
           <div className="border-b border-slate-100 px-6 py-5">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">{riskRatingVendor?.name || vendorName} - {t("Risk Rating")}</DialogTitle>
@@ -920,7 +933,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
                   </div>
                   <div className="bg-slate-50 rounded-lg p-4 space-y-2">
                     <h4 className="text-sm font-semibold text-slate-800">{t("Vendor Risk Rating")}</h4>
-                    <p className="text-sm text-slate-600 leading-relaxed">{t(getVrrDescription(level.name))}</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{getVrrDescription(level.name)}</p>
                   </div>
                 </div>
 

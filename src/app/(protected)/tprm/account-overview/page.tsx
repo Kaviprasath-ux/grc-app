@@ -495,17 +495,6 @@ function CreateAccountDialog({ open, onOpenChange, tab, title, showIsGrcAdded, o
                       </label>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
-                    <div className="flex gap-4 h-9 items-center">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name={`localUser-${tab}`} defaultChecked className="accent-primary" /> {t("Yes")}
-                      </label>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name={`localUser-${tab}`} className="accent-primary" /> {t("No")}
-                      </label>
-                    </div>
-                  </div>
                   {showIsGrcAdded && (
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium text-slate-700">{t("Is GRC Added")}</Label>
@@ -1049,17 +1038,6 @@ function EditAccountDialog({ open, onOpenChange, userId, tab, showIsGrcAdded, on
                         </label>
                         <label className="flex items-center gap-2 text-sm">
                           <input type="radio" name={`edit-active-${tab}`} checked={!formData.active} onChange={() => setFormData({ ...formData, active: false })} className="accent-primary" /> {t("No")}
-                        </label>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
-                      <div className="flex gap-4 h-9 items-center">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="radio" name={`edit-localUser-${tab}`} defaultChecked className="accent-primary" /> {t("Yes")}
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="radio" name={`edit-localUser-${tab}`} className="accent-primary" /> {t("No")}
                         </label>
                       </div>
                     </div>

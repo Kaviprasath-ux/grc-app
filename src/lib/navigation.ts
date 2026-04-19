@@ -246,7 +246,7 @@ export const navigation: NavItem[] = [
       { name: "Reports", href: "/tprm/bo-reports", icon: FileBarChart, permission: "tprm.bo-reports:view" },
       { name: "Issue Management", href: "/tprm/bo-issues", icon: AlertTriangle, permission: "tprm.bo-issues:view" },
       { name: "Contracts", href: "/tprm/bo-contracts", icon: FileText, permission: "tprm.bo-contracts:view" },
-      { name: "Monitoring", href: "/tprm/monitoring", icon: Radar, permission: "tprm.bo-monitoring:view" },
+      { name: "Monitoring", href: "/tprm/bo-monitoring", icon: Radar, permission: "tprm.bo-monitoring:view" },
       { name: "Support", href: "/tprm/bo-support", icon: HelpCircle, permission: "tprm.bo-support:view" },
       // ---- Relationship Manager menu items (same as BO except User Management) ----
       { name: "Dashboard", href: "/tprm/rm-dashboard", icon: LayoutDashboard, permission: "tprm.rm-dashboard:view" },
@@ -255,7 +255,7 @@ export const navigation: NavItem[] = [
       { name: "Reports", href: "/tprm/rm-reports", icon: FileBarChart, permission: "tprm.rm-reports:view" },
       { name: "Issue Management", href: "/tprm/rm-issues", icon: AlertTriangle, permission: "tprm.rm-issues:view" },
       { name: "Contracts", href: "/tprm/rm-contracts", icon: FileText, permission: "tprm.rm-contracts:view" },
-      { name: "Monitoring", href: "/tprm/monitoring", icon: Radar, permission: "tprm.rm-monitoring:view" },
+      { name: "Monitoring", href: "/tprm/rm-monitoring", icon: Radar, permission: "tprm.rm-monitoring:view" },
       { name: "Support", href: "/tprm/rm-support", icon: HelpCircle, permission: "tprm.rm-support:view" },
       // ---- Account Manager menu items ----
       { name: "Assessments", href: "/tprm/am-assessments", icon: ClipboardCheck, permission: "tprm.am-assessments:view" },
@@ -271,7 +271,7 @@ export const navigation: NavItem[] = [
       { name: "Issue Register", href: "/tprm/asr-issue-register", icon: AlertTriangle, permission: "tprm.asr-issue-register:view" },
       { name: "Assessment Factory", href: "/tprm/asr-assessment-factory", icon: Factory, permission: "tprm.asr-assessment-factory:view" },
       { name: "Assessment History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
-      { name: "Reports", href: "/tprm/reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
+      { name: "Reports", href: "/tprm/reports", icon: FileBarChart, permission: "tprm.reports:view" },
       { name: "Template", href: "/tprm/asr-template", icon: FileText, permission: "tprm.asr-template:view" },
       { name: "Support", href: "/tprm/asr-support", icon: HelpCircle, permission: "tprm.asr-support:view" },
       // ---- Internal IT Team menu items ----

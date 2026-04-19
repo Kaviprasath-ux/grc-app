@@ -107,7 +107,6 @@ export async function GET(req: NextRequest) {
         customerName: user.fullName || `${user.firstName} ${user.lastName}`,
         email: user.email,
         userName: user.userName,
-        isLocalUser: true,
         name: user.userName,
         lastLogin: user.lastLogin?.toLocaleString() || user.updatedAt?.toLocaleDateString() || null,
         blocked: user.isBlocked || false,

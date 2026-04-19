@@ -264,7 +264,7 @@ export default function RMInventoryPage() {
   const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
   const { data: translatedProfileFields } = useTranslatedData(customProfileFields, { modelName: 'TPRMVendorProfileField' });
   const { data: translatedOnboardingQuestions } = useTranslatedData(onboardingQuestions, { modelName: 'TPRMOnboardingQuestion' });
-  const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number }[]>([]);
+  const [ddConfig, setDdConfig] = useState<{ category: string; vrr: number; cadenceMonths?: number }[]>([]);
 
   // ── Form state ─────────────────────────────────────
   const [vendorName, setVendorName] = useState("");
@@ -760,15 +760,29 @@ export default function RMInventoryPage() {
     return total;
   };
 
+  // Convert a cadence expressed in months to a human phrase. Returns "" when
+  // no periodic reassessment is configured (0 / missing), so the caller can
+  // omit the "periodic assessment" sentence entirely.
+  const formatCadence = (months: number | undefined): string => {
+    if (!months || months <= 0) return "";
+    if (months % 12 === 0) {
+      const years = months / 12;
+      return years === 1 ? t("1 year") : `${years} ${t("years")}`;
+    }
+    return `${months} ${months === 1 ? t("month") : t("months")}`;
+  };
+
   const getVrrDescription = (levelName: string) => {
-    const descriptions: Record<string, string> = {
-      Nominal: "This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting.",
-      Low: "This vendor is low risk. Basic due-diligence review is recommended.",
-      Moderate: "This vendor is medium risk. Standard due-diligence assessment is required.",
-      High: "This vendor is high risk. Enhanced due-diligence assessment is required.",
-      Critical: "This vendor is critical risk. Comprehensive due-diligence and executive approval is required.",
-    };
-    return descriptions[levelName] || "";
+    if (levelName === "Nominal") {
+      return t("This vendor is nominal risk and hence there is no further due-diligence required. Please proceed with contracting.");
+    }
+    const cadenceMonths = ddConfig.find((d) => d.category === levelName)?.cadenceMonths;
+    const cadenceText = formatCadence(cadenceMonths);
+    const levelWord = t(levelName).toLowerCase();
+    if (cadenceText) {
+      return `${t("The inherent risk of this service is")} ${levelWord}. ${t("A due-diligence assessment is required before onboarding this vendor and a periodic assessment after every")} ${cadenceText}.`;
+    }
+    return `${t("The inherent risk of this service is")} ${levelWord}. ${t("A due-diligence assessment is required before onboarding this vendor.")}`;
   };
 
   const handleCheckRiskRating = async () => {
@@ -1483,7 +1497,7 @@ export default function RMInventoryPage() {
                   {/* Description */}
                   <div className="bg-slate-50 rounded-lg p-4 space-y-2">
                     <h4 className="text-sm font-semibold text-slate-800">{t("Vendor Risk Rating")}</h4>
-                    <p className="text-sm text-slate-600 leading-relaxed">{t(getVrrDescription(level.name))}</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{getVrrDescription(level.name)}</p>
                   </div>
                 </div>
 

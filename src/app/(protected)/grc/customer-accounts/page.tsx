@@ -46,7 +46,6 @@ interface CustomerAccount {
   customerName: string;
   email: string;
   userName: string;
-  isLocalUser: boolean;
   name: string;
   lastLogin: string | null;
   blocked: boolean;
@@ -1145,7 +1144,6 @@ export default function CustomerAccountsPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Customer Code")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Customer Name")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Is Local User")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Last Login")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Blocked")}</TableHead>
@@ -1176,7 +1174,6 @@ export default function CustomerAccountsPage() {
                   <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{tCustomerName(customer)}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{customer.email}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{customer.isLocalUser ? t("Yes") : t("No")}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{customer.name}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{customer.lastLogin || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{customer.blocked ? t("Yes") : t("No")}</TableCell>
@@ -1393,18 +1390,7 @@ export default function CustomerAccountsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
-                    <div className="flex gap-4 h-9 items-center">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserNew" value="yes" defaultChecked className="accent-primary" /> {t("Yes")}
-                      </label>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserNew" value="no" className="accent-primary" /> {t("No")}
-                      </label>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Blocked")}</Label>
                     <div className="flex gap-4 h-9 items-center">
@@ -1750,18 +1736,7 @@ export default function CustomerAccountsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
-                    <div className="flex gap-4 h-9 items-center">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserEdit" value="yes" defaultChecked className="accent-primary" /> {t("Yes")}
-                      </label>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserEdit" value="no" className="accent-primary" /> {t("No")}
-                      </label>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t("Blocked")}</Label>
                     <div className="flex gap-4 h-9 items-center">

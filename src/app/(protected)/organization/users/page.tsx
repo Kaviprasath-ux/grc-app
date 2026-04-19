@@ -1693,35 +1693,6 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              {/* Is Local User */}
-              <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
-                <Label className="sm:text-end">{t("Is local user")}</Label>
-                <div className="flex gap-4">
-                  <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
-                    <input
-                      type="radio"
-                      id="localUserYes"
-                      name="isLocalUser"
-                      checked={true}
-                      className="h-4 w-4"
-                      readOnly
-                    />
-                    <Label htmlFor="localUserYes" className="font-normal">{t("Yes")}</Label>
-                  </div>
-                  <div className={`flex items-center ${isRTL ? "space-x-reverse space-x-2" : "space-x-2"}`}>
-                    <input
-                      type="radio"
-                      id="localUserNo"
-                      name="isLocalUser"
-                      checked={false}
-                      className="h-4 w-4"
-                      readOnly
-                    />
-                    <Label htmlFor="localUserNo" className="font-normal">{t("No")}</Label>
-                  </div>
-                </div>
-              </div>
-
               {/* Name (Username) */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-start gap-1 sm:gap-4">
                 <Label htmlFor="editUserName" className="sm:text-end mt-2">{t("Name")}</Label>
