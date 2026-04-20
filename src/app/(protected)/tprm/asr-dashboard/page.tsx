@@ -25,6 +25,7 @@ interface Assessment {
   vendorRiskRating?: string;
   inherentRisk?: string;
   assessmentResult?: string;
+  vendorSubmissionDate?: string | null;
   vendor?: { name: string; vrr?: string; vendorRiskRating?: string };
 }
 
@@ -33,6 +34,14 @@ interface IssueEntry {
   status: string;
   severity?: string;
   domainName?: string;
+}
+
+interface VendorFinding {
+  vendor: string;
+  vendorId: string;
+  high: number;
+  medium: number;
+  low: number;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -65,18 +74,21 @@ export default function AsrDashboardPage() {
   const { t } = useLanguage();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [issues, setIssues] = useState<IssueEntry[]>([]);
+  const [vendorFindings, setVendorFindings] = useState<VendorFinding[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Dynamic data translation
   const { data: translatedAssessments } = useTranslatedData(assessments, { modelName: 'TPRMAssessment' });
   const { data: translatedIssues } = useTranslatedData(issues, { modelName: 'TPRMIssueRemediation' });
+  const { data: translatedVendorFindings } = useTranslatedData(vendorFindings, { modelName: 'TPRMVendor' });
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [aRes, iRes] = await Promise.all([
+      const [aRes, iRes, vRes] = await Promise.all([
         fetch("/api/tprm/assessments?limit=500"),
         fetch("/api/tprm/asr-issues?tab=flat&limit=500"),
+        fetch("/api/tprm/asr-dashboard"),
       ]);
       if (aRes.ok) {
         const aJson = await aRes.json();
@@ -85,6 +97,10 @@ export default function AsrDashboardPage() {
       if (iRes.ok) {
         const iJson = await iRes.json();
         setIssues(iJson.data || []);
+      }
+      if (vRes.ok) {
+        const vJson = await vRes.json();
+        setVendorFindings(vJson.vendorFindings || []);
       }
     } catch {
       // silently handle
@@ -124,6 +140,9 @@ export default function AsrDashboardPage() {
 
   // Inherent Risk pie chart
   // VRR values: Nominal, Low, Moderate, High, Critical → map to High/Medium/Low
+  // Scope: only assessments the vendor has submitted — a Draft record means
+  // the vendor hasn't engaged yet, and showing its risk tier pollutes the
+  // dashboard (e.g. an unsubmitted "India" assessment appearing as "1 High").
   const riskData = useMemo(() => {
     const VRR_TO_RISK: Record<string, string> = {
       Critical: "High", High: "High",
@@ -131,11 +150,13 @@ export default function AsrDashboardPage() {
       Low: "Low", Nominal: "Low",
     };
     const counts: Record<string, number> = { High: 0, Medium: 0, Low: 0 };
-    translatedAssessments.forEach((a) => {
-      const raw = a.inherentRisk || a.vendor?.vrr || a.vendor?.vendorRiskRating || "Medium";
-      const risk = VRR_TO_RISK[raw] || "Medium";
-      counts[risk]++;
-    });
+    translatedAssessments
+      .filter((a) => a.vendorSubmissionDate)
+      .forEach((a) => {
+        const raw = a.inherentRisk || a.vendor?.vrr || a.vendor?.vendorRiskRating || "Medium";
+        const risk = VRR_TO_RISK[raw] || "Medium";
+        counts[risk]++;
+      });
     return Object.entries(counts)
       .filter(([, v]) => v > 0)
       .map(([name, value]) => ({ name, value }));
@@ -153,26 +174,19 @@ export default function AsrDashboardPage() {
       .map(([name, value]) => ({ name, value }));
   }, [translatedAssessments]);
 
-  // Top 5 Vendors by severity
+  // Top 5 Vendors by finding severity — sourced from the dedicated
+  // /api/tprm/asr-dashboard aggregation so the counts reflect real
+  // Unsatisfactory responses (AI or assessor-overridden), scoped to
+  // submitted assessments only. The previous implementation plotted each
+  // assessment's VRR as the severity, which meant unsubmitted vendors
+  // appeared and real finding counts were hidden.
   const vendorData = useMemo(() => {
-    const VRR_TO_SEV: Record<string, "High" | "Medium" | "Low"> = {
-      Critical: "High", High: "High",
-      Moderate: "Medium", Medium: "Medium",
-      Low: "Low", Nominal: "Low",
-    };
-    const vendorMap: Record<string, { High: number; Medium: number; Low: number }> = {};
-    translatedAssessments.forEach((a) => {
-      const vName = a.vendor?.name || t("Unknown");
-      if (!vendorMap[vName]) vendorMap[vName] = { High: 0, Medium: 0, Low: 0 };
-      const raw = a.inherentRisk || a.vendor?.vrr || a.vendor?.vendorRiskRating || "Medium";
-      const sev = VRR_TO_SEV[raw] || "Medium";
-      vendorMap[vName][sev]++;
-    });
-    return Object.entries(vendorMap)
-      .map(([name, counts]) => ({ name, ...counts }))
+    return translatedVendorFindings
+      .map((v) => ({ name: v.vendor, High: v.high, Medium: v.medium, Low: v.low }))
+      .filter((v) => v.High + v.Medium + v.Low > 0)
       .sort((a, b) => (b.High + b.Medium + b.Low) - (a.High + a.Medium + a.Low))
       .slice(0, 5);
-  }, [translatedAssessments]);
+  }, [translatedVendorFindings]);
 
   // Domain distribution from issues — strip "CUST." prefix for cleaner labels
   const domainData = useMemo(() => {

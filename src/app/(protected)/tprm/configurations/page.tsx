@@ -306,6 +306,9 @@ function VendorOnboardingSection() {
     responseType: "Yes/No",
     parentId: "" as string,
   });
+  // Inline per-field validation errors. Shown under the relevant input (and
+  // painted around it) on save so users don't have to hunt for the toast.
+  const [obFormErrors, setObFormErrors] = useState<Record<string, string>>({});
 
   const { data: translatedProfileFields } = useTranslatedData(profileFields.filter(f => !f.isSystem), { modelName: 'TPRMVendorProfileField' });
   const { data: translatedObQuestions } = useTranslatedData(obQuestions, { modelName: 'TPRMOnboardingQuestion' });
@@ -435,14 +438,18 @@ function VendorOnboardingSection() {
 
   // Onboarding question CRUD
   const handleSaveObQuestion = async () => {
-    const missing: string[] = [];
-    if (!obForm.title.trim()) missing.push(t("Title"));
-    if (!obForm.question.trim()) missing.push(t("Question"));
-    if (obForm.questionType === "Child" && !obForm.parentId) missing.push(t("Parent Question"));
-    if (missing.length > 0) {
+    // Populate inline field errors AND a summary toast — the toast alone was
+    // easy to miss, especially when the form scrolled. Each missing field
+    // now also lights up in red with a helper message.
+    const errors: Record<string, string> = {};
+    if (!obForm.title.trim()) errors.title = t("Title is required");
+    if (!obForm.question.trim()) errors.question = t("Question is required");
+    if (obForm.questionType === "Child" && !obForm.parentId) errors.parentId = t("Parent question is required");
+    setObFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
       toast({
         title: t("Required fields missing"),
-        description: `${t("Please fill in")}: ${missing.join(", ")}`,
+        description: `${t("Please fill in")}: ${Object.values(errors).join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -487,6 +494,7 @@ function VendorOnboardingSection() {
       setObDialogOpen(false);
       setObEditItem(null);
       setObForm({ title: "", question: "", score: 0, questionType: "Parent", responseType: "Yes/No", parentId: "" });
+      setObFormErrors({});
       loadObQuestions();
       setTimeout(() => { clearTranslationCache(); loadObQuestions(); }, 4000);
     } catch {
@@ -610,6 +618,7 @@ function VendorOnboardingSection() {
                   responseType: row.original.responseType,
                   parentId: row.original.parentId || "",
                 });
+                setObFormErrors({});
                 setObDialogOpen(true);
               }}
             >
@@ -668,6 +677,7 @@ function VendorOnboardingSection() {
               <Button size="sm" onClick={() => {
                 setObEditItem(null);
                 setObForm({ title: "", question: "", score: 0, questionType: "Parent", responseType: "Yes/No", parentId: "" });
+                setObFormErrors({});
                 setObDialogOpen(true);
               }}>
                 <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
@@ -738,21 +748,29 @@ function VendorOnboardingSection() {
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
               <Input
-                className="mt-1.5"
+                className={`mt-1.5 ${obFormErrors.title ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 value={obForm.title}
-                onChange={(e) => setObForm({ ...obForm, title: sanitizeGeneral(e.target.value) })}
+                onChange={(e) => {
+                  setObForm({ ...obForm, title: sanitizeGeneral(e.target.value) });
+                  if (obFormErrors.title) setObFormErrors((p) => { const n = { ...p }; delete n.title; return n; });
+                }}
                 placeholder={t("Enter question title")}
               />
+              {obFormErrors.title && <p className="text-xs text-red-500 mt-1">{obFormErrors.title}</p>}
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Question")} <span className="text-red-500">*</span></Label>
               <Textarea
-                className="mt-1.5"
+                className={`mt-1.5 ${obFormErrors.question ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 value={obForm.question}
-                onChange={(e) => setObForm({ ...obForm, question: sanitizeGeneral(e.target.value) })}
+                onChange={(e) => {
+                  setObForm({ ...obForm, question: sanitizeGeneral(e.target.value) });
+                  if (obFormErrors.question) setObFormErrors((p) => { const n = { ...p }; delete n.question; return n; });
+                }}
                 placeholder={t("Enter question text")}
                 rows={3}
               />
+              {obFormErrors.question && <p className="text-xs text-red-500 mt-1">{obFormErrors.question}</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -791,9 +809,12 @@ function VendorOnboardingSection() {
                 <Label className="text-sm font-medium text-slate-700">{t("Parent Question")} <span className="text-red-500">*</span></Label>
                 <Select
                   value={obForm.parentId}
-                  onValueChange={(v) => setObForm({ ...obForm, parentId: v })}
+                  onValueChange={(v) => {
+                    setObForm({ ...obForm, parentId: v });
+                    if (obFormErrors.parentId) setObFormErrors((p) => { const n = { ...p }; delete n.parentId; return n; });
+                  }}
                 >
-                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                  <SelectTrigger className={`mt-1.5 w-full bg-white ${obFormErrors.parentId ? "border-red-500 focus:ring-red-500" : ""}`}>
                     <SelectValue placeholder={t("Select parent question")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -804,6 +825,7 @@ function VendorOnboardingSection() {
                     ))}
                   </SelectContent>
                 </Select>
+                {obFormErrors.parentId && <p className="text-xs text-red-500 mt-1">{obFormErrors.parentId}</p>}
               </div>
             )}
             <div>
