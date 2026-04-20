@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import { normalizeVrrLabel } from "@/lib/tprm-vrr";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -133,24 +134,39 @@ function VendorAccordionItem({
   const effOverall = a?.calculatedOverallScore ?? a?.overallScore ?? null;
   const effSP = a?.calculatedSecurityPosture ?? a?.securityPostureScore ?? null;
   const effTE = a?.calculatedThreatExposure ?? a?.threatExposureScore ?? null;
+  const vrrLabel = normalizeVrrLabel(vendor.vrr);
+  const scoreBand = effOverall === null
+    ? null
+    : effOverall >= 80
+      ? { label: "Good", className: "text-green-600" }
+      : effOverall >= 50
+        ? { label: "Moderate", className: "text-yellow-600" }
+        : { label: "Poor", className: "text-red-600" };
 
   return (
     <div className="border border-slate-200 rounded-md bg-white overflow-hidden">
       {/* ── Accordion Header ── */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 ltr:text-left rtl:text-right"
+        className="w-full flex items-center justify-between px-4 py-3 ltr:text-left rtl:text-right gap-4"
       >
         <span className="font-medium text-sm text-slate-800">
-          {vendor.name}{vendor.vrr ? ` - ${vendor.vrr}` : ""}
+          {vendor.name}{vrrLabel ? ` - ${t(vrrLabel)}` : ""}
           {isAdmin && vendor.customerAccount && (
             <span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({vendor.customerAccount.name})</span>
           )}
         </span>
-        <span className="text-slate-500 flex-shrink-0">
-          {isExpanded
-            ? <Minus className="h-4 w-4" />
-            : <Plus className="h-4 w-4" />}
+        <span className="flex items-center gap-3 flex-shrink-0">
+          {scoreBand && (
+            <span className={`text-xs font-semibold ${scoreBand.className}`}>
+              {t("Security Score")} - {t(scoreBand.label)}
+            </span>
+          )}
+          <span className="text-slate-500">
+            {isExpanded
+              ? <Minus className="h-4 w-4" />
+              : <Plus className="h-4 w-4" />}
+          </span>
         </span>
       </button>
 
@@ -210,8 +226,8 @@ function VendorAccordionItem({
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {vendor.vrr
-                      ? <Badge variant="outline" className={VRR_COLORS[vendor.vrr] || ""}>{t(vendor.vrr)}</Badge>
+                    {vrrLabel
+                      ? <Badge variant="outline" className={VRR_COLORS[vrrLabel] || ""}>{t(vrrLabel)}</Badge>
                       : <span className="text-slate-400">—</span>}
                   </td>
                   <td className="px-4 py-3">

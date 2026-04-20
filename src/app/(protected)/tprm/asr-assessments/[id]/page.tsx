@@ -449,6 +449,22 @@ export default function ASRAssessmentDetailPage() {
           assessorOverriddenAt: new Date().toISOString(),
         },
       }));
+      // Server writes a `TPRMAssessmentLog` row on override. Mirror it into
+      // the in-memory `assessment.logs` so the Activity Logs dialog surfaces
+      // the new entry immediately (otherwise users only see it after a full
+      // page reload — the behaviour reported as a "delay").
+      setAssessment(prev => prev ? {
+        ...prev,
+        logs: [
+          ...prev.logs,
+          {
+            id: `local-${Date.now()}`,
+            logDate: new Date().toISOString(),
+            logMessage: `Assessor overrode AI evaluation: ${overrideStatus}`,
+            questionNo: selectedFlat?.questionNo,
+          },
+        ],
+      } : prev);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save override"), variant: "destructive" });
     } finally {
@@ -486,6 +502,20 @@ export default function ASRAssessmentDetailPage() {
       setClarificationText("");
       triggerTranslation('TPRMClarification', newClr.id, { rejectComment: newClr.rejectComment });
       toast({ title: t("Success"), description: t("Clarification requested") });
+      // Mirror the server-side log entry into local state — see submitOverride.
+      const preview = clarificationText.trim().substring(0, 100);
+      setAssessment(prev => prev ? {
+        ...prev,
+        logs: [
+          ...prev.logs,
+          {
+            id: `local-${Date.now()}`,
+            logDate: new Date().toISOString(),
+            logMessage: `Clarification requested: ${preview}`,
+            questionNo: selectedFlat?.questionNo,
+          },
+        ],
+      } : prev);
     } catch {
       toast({ title: t("Error"), description: t("Failed to request clarification"), variant: "destructive" });
     } finally {

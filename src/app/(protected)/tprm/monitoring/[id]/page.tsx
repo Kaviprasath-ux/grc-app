@@ -584,12 +584,15 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
       const created = await createRes.json();
       const newVendorId = created.data?.id || created.id;
 
-      // Calculate and save VRR
+      // Calculate and save VRR as its categorical label (High/Moderate/Low/…)
+      // so the Vendor Inventory renders the badge consistently across entry
+      // points. Saving the raw numeric score leaked "40"-style badges.
       const vrrScore = calculateVrrScore();
+      const vrrLabel = getVrrLevel(vrrScore).name;
       await fetch(`/api/tprm/vendors/${newVendorId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vrr: vrrScore.toString() }),
+        body: JSON.stringify({ vrr: vrrLabel }),
       });
 
       // Link monitoring vendor to TPRM vendor

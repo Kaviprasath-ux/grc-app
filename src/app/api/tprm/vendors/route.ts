@@ -238,6 +238,42 @@ export const POST = withAuth(
         },
       });
 
+      // Auto-register the vendor in the Continuous Monitoring module so it
+      // shows up there the moment onboarding completes (and inherits a link
+      // back to this TPRMVendor via `tprmVendorId`). Skipped when no URL was
+      // captured — the monitoring pipeline needs a domain to scan. Idempotent
+      // against the same URL under this customer.
+      try {
+        if (vendor.vendorUrl) {
+          const normalizedURL = vendor.vendorUrl.startsWith("http")
+            ? vendor.vendorUrl
+            : `https://${vendor.vendorUrl}`;
+          const existingMon = await prisma.tPRMMonitoringVendor.findFirst({
+            where: { customerAccountId, vendorURL: normalizedURL },
+          });
+          if (existingMon) {
+            if (!existingMon.tprmVendorId) {
+              await prisma.tPRMMonitoringVendor.update({
+                where: { id: existingMon.id },
+                data: { tprmVendorId: vendor.id, vendorOnboarded: true, vendorName: vendor.name },
+              });
+            }
+          } else {
+            await prisma.tPRMMonitoringVendor.create({
+              data: {
+                customerAccountId,
+                vendorName: vendor.name,
+                vendorURL: normalizedURL,
+                vendorOnboarded: true,
+                tprmVendorId: vendor.id,
+              },
+            });
+          }
+        }
+      } catch (monErr) {
+        console.error("[TPRM Vendor POST] Failed to auto-create monitoring record:", monErr);
+      }
+
       // Notify the account manager (if exists) about vendor onboarding
       if (body.accountManagerEmail) {
         const am = await prisma.user.findFirst({

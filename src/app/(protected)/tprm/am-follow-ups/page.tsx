@@ -333,7 +333,7 @@ export default function AMFollowUpsPage() {
                       <TableHead>{t("Vendor")}</TableHead>
                       <TableHead>{t("Question No")}</TableHead>
                       <TableHead>{t("Domain")}</TableHead>
-                      <TableHead>{t("Reject Comment")}</TableHead>
+                      <TableHead>{t("Comment")}</TableHead>
                       <TableHead>{t("Date")}</TableHead>
                       <TableHead>{t("Actions")}</TableHead>
                     </TableRow>

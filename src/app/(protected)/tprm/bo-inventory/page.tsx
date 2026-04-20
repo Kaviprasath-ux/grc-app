@@ -31,8 +31,17 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import { normalizeVrrLabel } from "@/lib/tprm-vrr";
 
 // ── Types ──────────────────────────────────────────────
+interface MonitoringAssessmentSummary {
+  overallScore: number | null;
+  calculatedOverallScore: number | null;
+}
+interface MonitoringVendorSummary {
+  id: string;
+  assessments: MonitoringAssessmentSummary[];
+}
 interface Vendor {
   id: string;
   vendorCode: string;
@@ -51,12 +60,22 @@ interface Vendor {
   department: { id: string; name: string } | null;
   onboardingAnswers: string | null;
   _count?: { assessments: number };
+  monitoringVendor?: MonitoringVendorSummary | null;
 }
 
 interface VendorGroup {
   name: string;
   vrr: string | null;
+  securityScore: number | null;
   vendors: Vendor[];
+}
+
+// Mendix parity — security score maps to a qualitative band shown next to VRR.
+function securityScoreBand(score: number | null): { label: string; className: string } | null {
+  if (score === null) return null;
+  if (score >= 80) return { label: "Good", className: "text-green-600" };
+  if (score >= 50) return { label: "Moderate", className: "text-yellow-600" };
+  return { label: "Poor", className: "text-red-600" };
 }
 
 interface AccountManager {
@@ -136,12 +155,22 @@ function VendorAccordionItem({
 }) {
   // Use the highest VRR across all engagements for the group header
   const headerVrr = group.vrr;
+  const scoreBand = securityScoreBand(group.securityScore);
   return (
     <div className="border border-slate-200 rounded-md bg-white overflow-hidden">
       {/* Accordion Header */}
-      <button onClick={onToggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left">
-        <span className="font-medium text-sm text-slate-800">{group.name}{headerVrr ? ` - ${headerVrr}` : ""}</span>
-        <span className="text-slate-500 flex-shrink-0">{isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span>
+      <button onClick={onToggle} className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left gap-4">
+        <span className="font-medium text-sm text-slate-800">
+          {group.name}{headerVrr ? ` - ${t(headerVrr)}` : ""}
+        </span>
+        <span className="flex items-center gap-3 flex-shrink-0">
+          {scoreBand && (
+            <span className={`text-xs font-semibold ${scoreBand.className}`}>
+              {t("Security Score")} - {t(scoreBand.label)}
+            </span>
+          )}
+          <span className="text-slate-500">{isExpanded ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span>
+        </span>
       </button>
 
       {/* Expanded Body */}
@@ -184,12 +213,15 @@ function VendorAccordionItem({
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {vendor.vrr
-                        ? <span className="text-xs px-2 py-0.5 rounded font-medium text-white" style={{ backgroundColor: VRR_COLORS[vendor.vrr] || "#94a3b8" }}>{t(vendor.vrr)}</span>
-                        : <span className="text-slate-400">—</span>}
+                      {(() => {
+                        const label = normalizeVrrLabel(vendor.vrr);
+                        return label
+                          ? <span className="text-xs px-2 py-0.5 rounded font-medium text-white" style={{ backgroundColor: VRR_COLORS[label] || "#94a3b8" }}>{t(label)}</span>
+                          : <span className="text-slate-400">—</span>;
+                      })()}
                     </td>
                     <td className="px-4 py-3">
-                      {vendor.vrr && vendor.vrr !== "Nominal" && (
+                      {normalizeVrrLabel(vendor.vrr) && normalizeVrrLabel(vendor.vrr) !== "Nominal" && (
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); onInitiateAssessment(vendor); }}>
                           <Play className="h-4 w-4 text-primary" />
                         </Button>
@@ -425,13 +457,24 @@ export default function BOInventoryPage() {
     }
     const VRR_PRIORITY: Record<string, number> = { Critical: 5, High: 4, Moderate: 3, Low: 2, Nominal: 1 };
     return Array.from(groupMap.entries()).map(([, vendorList]) => {
-      // Pick the highest VRR among all engagements
+      // Pick the highest VRR among all engagements (normalised to label first
+      // so legacy numeric values still participate in the comparison).
       const highestVrr = vendorList.reduce<string | null>((best, v) => {
-        if (!v.vrr) return best;
-        if (!best) return v.vrr;
-        return (VRR_PRIORITY[v.vrr] || 0) > (VRR_PRIORITY[best] || 0) ? v.vrr : best;
+        const label = normalizeVrrLabel(v.vrr);
+        if (!label) return best;
+        if (!best) return label;
+        return (VRR_PRIORITY[label] || 0) > (VRR_PRIORITY[best] || 0) ? label : best;
       }, null);
-      return { name: vendorList[0].name, vrr: highestVrr, vendors: vendorList };
+      // Surface the latest monitoring score (highest across engagements) in
+      // the accordion header so users see their security posture at a glance
+      // without expanding the row.
+      const highestScore = vendorList.reduce<number | null>((best, v) => {
+        const a = v.monitoringVendor?.assessments?.[0];
+        const score = a?.calculatedOverallScore ?? a?.overallScore ?? null;
+        if (score === null) return best;
+        return best === null || score > best ? score : best;
+      }, null);
+      return { name: vendorList[0].name, vrr: highestVrr, securityScore: highestScore, vendors: vendorList };
     });
   }, [translatedVendors]);
 
