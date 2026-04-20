@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
@@ -143,6 +144,20 @@ function remediationDaysForSeverity(severity: string | null | undefined): number
     case "Low": return 60;
     default: return 0;
   }
+}
+
+// Sort weight — drives the "High → Medium → Low" ordering in the report table
+// and the corresponding CSV/PDF exports. Unknown/empty severities sink to the
+// bottom so rows with real findings always appear first.
+const SEVERITY_RANK: Record<string, number> = {
+  Critical: 0,
+  High: 1,
+  Medium: 2,
+  Moderate: 2,
+  Low: 3,
+};
+function severityRank(sev: string | null | undefined): number {
+  return sev && SEVERITY_RANK[sev] != null ? SEVERITY_RANK[sev] : 99;
 }
 
 function SeverityBadge({ severity }: { severity: string | null | undefined }) {
@@ -306,6 +321,12 @@ export default function ASRAssessmentDetailPage() {
   const isApprover = useHasRole("TPRMApprover");
   const isAuditor = useHasRole("TPRMAuditor");
 
+  // Customer name for the "Sincerely" signature on the report. The report is
+  // authored by the customer's TPRM team (e.g. "One World") for their vendor —
+  // previously we accidentally signed it as the vendor (e.g. "ICICI Bank").
+  const { data: session } = useSession();
+  const customerName = session?.user?.customerAccountName || t("Third Party Risk Management Team");
+
   // ── Load Data ──────────────────────────────────────────────────────────
 
   const loadAssessment = useCallback(async () => {
@@ -445,6 +466,22 @@ export default function ASRAssessmentDetailPage() {
         severity: resp.assessorSeverity || resp.poSeverity || "—",
         questionId: fq.question.id,
       };
+    });
+
+  // Rows that are actual findings (for the VerifAI summary, in-app Assessment
+  // Report dialog, CSV export and PDF export). Two things the old code got
+  // wrong: (1) it kept "Satisfactory" rows whose AI text happened to be
+  // non-empty, inflating the issue count; (2) it preserved question order,
+  // so a Low finding could appear above High ones. Filter on the effective
+  // status instead, and sort highest severity first.
+  const reportIssueRows = verifaiRows
+    .filter(row => row.status === "Unsatisfactory")
+    .slice()
+    .sort((a, b) => {
+      const r = severityRank(a.severity) - severityRank(b.severity);
+      if (r !== 0) return r;
+      // Stable tiebreak by question number so the ordering is deterministic.
+      return a.questionNo.localeCompare(b.questionNo, undefined, { numeric: true });
     });
 
   // ── Override AI ────────────────────────────────────────────────────────
@@ -720,7 +757,7 @@ export default function ASRAssessmentDetailPage() {
   const handleDownloadExcel = () => {
     if (!assessment) return;
 
-    const issueRows = verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—");
+    const issueRows = reportIssueRows;
 
     const getDueBy = (severity: string) => {
       const days = remediationDaysForSeverity(severity);
@@ -810,7 +847,7 @@ export default function ASRAssessmentDetailPage() {
   const handleDownloadReport = () => {
     if (!assessment) return;
 
-    const issueRows = verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—");
+    const issueRows = reportIssueRows;
 
     const getDueBy = (severity: string) => {
       const days = remediationDaysForSeverity(severity);
@@ -837,6 +874,24 @@ export default function ASRAssessmentDetailPage() {
       </tr>
     `).join("");
 
+    // Severity-count strip that mirrors the in-app report dialog. Widths are
+    // proportional; if there are no findings the bar renders muted.
+    const highCount = summary?.highCount || 0;
+    const mediumCount = summary?.mediumCount || 0;
+    const lowCount = summary?.lowCount || 0;
+    const totalSev = highCount + mediumCount + lowCount;
+    const barSegments = totalSev > 0
+      ? `<span style="display:inline-block;height:100%;background:#ef4444;width:${(highCount / totalSev) * 100}%"></span>`
+        + `<span style="display:inline-block;height:100%;background:#f59e0b;width:${(mediumCount / totalSev) * 100}%"></span>`
+        + `<span style="display:inline-block;height:100%;background:#22c55e;width:${(lowCount / totalSev) * 100}%"></span>`
+      : `<span style="display:inline-block;height:100%;background:#e5e7eb;width:100%"></span>`;
+
+    const resultBadgeColor = reportResult === "Satisfactory"
+      ? "#15803d"
+      : reportResult === "Unsatisfactory"
+        ? "#b91c1c"
+        : "#c2410c";
+
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -853,8 +908,18 @@ export default function ASRAssessmentDetailPage() {
     .meta { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 11px; }
     .summary { font-size: 11px; margin-bottom: 5px; }
     .summary strong { font-weight: bold; }
-    .scores { font-size: 11px; margin-bottom: 15px; padding-left: 10px; }
+    .result-badge { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 12px; font-weight: bold; color: white; font-size: 11px; }
+    .scores { font-size: 11px; margin: 12px 0; padding-left: 10px; }
     .scores div { margin-bottom: 2px; }
+    .sev-box { border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px 14px; margin: 12px 0 16px; }
+    .sev-grid { display: table; width: 100%; margin-bottom: 10px; text-align: center; table-layout: fixed; }
+    .sev-cell { display: table-cell; vertical-align: top; }
+    .sev-cell .num { font-size: 20px; font-weight: bold; }
+    .sev-cell .lbl { font-size: 10px; font-weight: 600; margin-top: 2px; }
+    .sev-cell.high .num, .sev-cell.high .lbl { color: #dc2626; }
+    .sev-cell.med .num, .sev-cell.med .lbl { color: #d97706; }
+    .sev-cell.low .num, .sev-cell.low .lbl { color: #16a34a; }
+    .sev-bar { height: 10px; border-radius: 999px; overflow: hidden; background: #f3f4f6; font-size: 0; line-height: 0; }
     .issue-table th { background-color: #f3f3f3; padding: 10px 8px; border: 1px solid #e0e0e0; text-align: left; font-size: 11px; font-weight: bold; }
     .footer { margin-top: 30px; font-size: 11px; }
     .footer-sign { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc; }
@@ -873,13 +938,23 @@ export default function ASRAssessmentDetailPage() {
   </div>
 
   <p class="summary">
-    <strong>${t("Third Party Risk Management Team conducted a due diligence review of")} ${assessment.vendor.name} ${t("from")} ${submissionDate} ${t("till")} ${todayFmt}. ${t("The control environment was found to be")}:- &nbsp;${reportResult}</strong>
+    <strong>${t("Third Party Risk Management Team conducted a due diligence review of")} ${assessment.vendor.name} ${t("from")} ${submissionDate} ${t("till")} ${todayFmt}. ${t("The control environment was found to be")}:</strong>
+    <span class="result-badge" style="background:${resultBadgeColor}">${t(reportResult)}</span>
   </p>
   ${monitoringScores ? `<div class="scores">
     <div>${t("Overall Cybersecurity Score")} : ${monitoringScores.overallScore != null ? Math.round(monitoringScores.overallScore) : ""}</div>
     <div>${t("Security Posture Score")} : ${monitoringScores.securityPostureScore != null ? Math.round(monitoringScores.securityPostureScore) : ""}</div>
     <div>${t("Threat Exposure Score")} : ${monitoringScores.threatExposureScore != null ? Math.round(monitoringScores.threatExposureScore) : ""}</div>
   </div>` : ""}
+
+  <div class="sev-box">
+    <div class="sev-grid">
+      <div class="sev-cell high"><div class="num">${highCount}</div><div class="lbl">${t("High")}</div></div>
+      <div class="sev-cell med"><div class="num">${mediumCount}</div><div class="lbl">${t("Medium")}</div></div>
+      <div class="sev-cell low"><div class="num">${lowCount}</div><div class="lbl">${t("Low")}</div></div>
+    </div>
+    <div class="sev-bar">${barSegments}</div>
+  </div>
 
   <table class="issue-table">
     <thead>
@@ -899,7 +974,7 @@ export default function ASRAssessmentDetailPage() {
 
   <div class="footer">
     <p>${t("For any further questions or follow-ups on this report, please reach out to us.")}</p>
-    <p style="text-align:right;">${t("Sincerely")},<br/><strong>${assessment.vendor.name}</strong></p>
+    <p style="text-align:right;">${t("Sincerely")},<br/><strong>${customerName}</strong></p>
   </div>
 
   <div class="footer-sign">
@@ -1122,12 +1197,12 @@ export default function ASRAssessmentDetailPage() {
                   <span>{t("Recommendation")}</span>
                   <span>{t("Action")}</span>
                 </div>
-                {/* Table rows */}
-                {verifaiRows.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">{t("No answered questions found")}</p>
+                {/* Table rows — only Unsatisfactory findings, sorted High→Low */}
+                {reportIssueRows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">{t("No issues found")}</p>
                 ) : (
                   <div className="divide-y">
-                    {verifaiRows.map(row => (
+                    {reportIssueRows.map(row => (
                       <div key={row.questionNo} className="grid grid-cols-[50px_1fr_1fr_1fr_1fr_40px] gap-0 px-4 py-3 text-sm hover:bg-muted/20 items-start">
                         <span className="font-medium text-muted-foreground">{row.questionNo}</span>
                         <span className="font-medium pr-3">{row.domainName}</span>
@@ -1799,8 +1874,7 @@ export default function ASRAssessmentDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {verifaiRows
-                      .filter(row => row.issue !== "—" || row.risk !== "—")
+                    {reportIssueRows
                       .map((row, idx) => {
                         const dueDays = remediationDaysForSeverity(row.severity);
                         const dueDate = new Date(); if (dueDays) dueDate.setDate(dueDate.getDate() + dueDays);
@@ -1816,7 +1890,7 @@ export default function ASRAssessmentDetailPage() {
                           </tr>
                         );
                       })}
-                    {verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—").length === 0 && (
+                    {reportIssueRows.length === 0 && (
                       <tr>
                         <td colSpan={6} className="border border-border/60 px-3 py-8 text-center text-muted-foreground">{t("No issues found")}</td>
                       </tr>
@@ -1825,12 +1899,13 @@ export default function ASRAssessmentDetailPage() {
                 </table>
               </div>
 
-              {/* Footer text */}
+              {/* Footer text — signed by the customer (report author), not
+                  the vendor being assessed. */}
               <div className="pt-4 space-y-4 text-sm">
                 <p>{t("For any further questions or follow-ups on this report, please reach out to us.")}</p>
                 <div className="text-right">
                   <p>{t("Sincerely,")}</p>
-                  <p className="font-bold">{assessment.vendor.name}</p>
+                  <p className="font-bold">{customerName}</p>
                 </div>
               </div>
 
