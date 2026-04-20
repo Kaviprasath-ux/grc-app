@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
@@ -129,6 +129,22 @@ function StatusBadge({ status }: { status: string | null | undefined }) {
   }
 }
 
+// Report-only remediation SLA (days from report generation).
+// Keep in sync with /api/tprm/asr-assessments/[id]/complete which reads the
+// authoritative Control Center config at approval time. Higher severity →
+// shorter window. The previous mapping here was inverted (High=60, Low=40),
+// producing nonsensical "High severity, longest deadline" report rows.
+function remediationDaysForSeverity(severity: string | null | undefined): number {
+  switch (severity) {
+    case "Critical": return 7;
+    case "High": return 14;
+    case "Medium":
+    case "Moderate": return 30;
+    case "Low": return 60;
+    default: return 0;
+  }
+}
+
 function SeverityBadge({ severity }: { severity: string | null | undefined }) {
   const { t } = useLanguage();
   if (!severity) return null;
@@ -220,6 +236,7 @@ export default function ASRAssessmentDetailPage() {
   const searchParams = useSearchParams();
   const assessmentId = params.id as string;
   const fromPage = searchParams.get("from");
+  const deepLinkQuestionNo = searchParams.get("questionNo");
   const backUrl = fromPage === "task-queue" ? "/tprm/task-queue" : "/tprm/asr-assessments";
 
   // Data
@@ -321,6 +338,43 @@ export default function ASRAssessmentDetailPage() {
   }, [assessmentId, toast, t]);
 
   useEffect(() => { loadAssessment(); }, [loadAssessment]);
+
+  // Honour ?questionNo=… deep-links (used by notification click-throughs,
+  // e.g. "Clarification response received"). Once data is loaded, jump to the
+  // detail view, scroll the right row into the current page, and select it.
+  // Guarded by a ref so the user can navigate away from that question freely.
+  const deepLinkAppliedRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkAppliedRef.current) return;
+    if (!deepLinkQuestionNo || questions.length === 0) return;
+    // Rebuild the parent-index numbering used in `flatQuestions` so the URL
+    // value "3" or "3.1" resolves to a stable question id.
+    let parentIdx = 0;
+    let targetId: string | null = null;
+    let targetIndex = -1;
+    const list: string[] = [];
+    for (const q of questions) {
+      parentIdx++;
+      const qNo = String(parentIdx);
+      list.push(qNo);
+      if (qNo === deepLinkQuestionNo) targetId = q.id;
+      if (q.children?.length) {
+        for (let ci = 0; ci < q.children.length; ci++) {
+          const childNo: string = `${qNo}.${ci + 1}`;
+          list.push(childNo);
+          if (childNo === deepLinkQuestionNo) targetId = q.children[ci].id;
+        }
+      }
+    }
+    if (!targetId) return;
+    targetIndex = list.indexOf(deepLinkQuestionNo);
+    deepLinkAppliedRef.current = true;
+    setView("detail");
+    setSelectedDomain("all");
+    setFilterMode("all");
+    setSelectedQuestionId(targetId);
+    if (targetIndex >= 0) setCurrentPage(Math.floor(targetIndex / 10));
+  }, [deepLinkQuestionNo, questions]);
 
   // ── Build flat question list ───────────────────────────────────────────
 
@@ -669,7 +723,7 @@ export default function ASRAssessmentDetailPage() {
     const issueRows = verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—");
 
     const getDueBy = (severity: string) => {
-      const days = severity === "High" ? 60 : severity === "Medium" ? 50 : severity === "Low" ? 40 : 0;
+      const days = remediationDaysForSeverity(severity);
       if (!days) return "—";
       const d = new Date();
       d.setDate(d.getDate() + days);
@@ -759,7 +813,7 @@ export default function ASRAssessmentDetailPage() {
     const issueRows = verifaiRows.filter(row => row.issue !== "—" || row.risk !== "—");
 
     const getDueBy = (severity: string) => {
-      const days = severity === "High" ? 60 : severity === "Medium" ? 50 : severity === "Low" ? 40 : 0;
+      const days = remediationDaysForSeverity(severity);
       if (!days) return "—";
       const d = new Date();
       d.setDate(d.getDate() + days);
@@ -1748,7 +1802,7 @@ export default function ASRAssessmentDetailPage() {
                     {verifaiRows
                       .filter(row => row.issue !== "—" || row.risk !== "—")
                       .map((row, idx) => {
-                        const dueDays = row.severity === "High" ? 60 : row.severity === "Medium" ? 50 : row.severity === "Low" ? 40 : 0;
+                        const dueDays = remediationDaysForSeverity(row.severity);
                         const dueDate = new Date(); if (dueDays) dueDate.setDate(dueDate.getDate() + dueDays);
                         const dueBy = dueDays ? dueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-") : "—";
                         return (

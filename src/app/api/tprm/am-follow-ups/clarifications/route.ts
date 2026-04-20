@@ -110,6 +110,7 @@ export const PATCH = withAuth(
           assessmentId: clarification.assessmentId,
           assessmentCode: assessment?.assessmentCode || '',
           vendorName: vendor?.name || '',
+          questionNo: clarification.questionNo,
         });
       }
 

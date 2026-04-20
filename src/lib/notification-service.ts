@@ -1934,8 +1934,14 @@ class NotificationService {
     assessmentId: string;
     assessmentCode: string;
     vendorName: string;
+    questionNo?: string | null;
     channels?: NotificationChannel[];
   }) {
+    // Deep-link to the specific question when known, so the assessor lands
+    // directly on the row the AM just responded to instead of the summary.
+    const link = params.questionNo
+      ? `/tprm/asr-assessments/${params.assessmentId}?questionNo=${encodeURIComponent(params.questionNo)}`
+      : `/tprm/asr-assessments/${params.assessmentId}`;
     return this.send({
       customerAccountId: params.customerAccountId,
       actorId: params.actorId,
@@ -1945,7 +1951,7 @@ class NotificationService {
       message: `Account Manager has responded to your clarification on assessment ${params.assessmentCode} for vendor ${params.vendorName}.`,
       relatedEntityType: 'assessment',
       relatedEntityId: params.assessmentId,
-      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      link,
       channels: params.channels,
       metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
     });

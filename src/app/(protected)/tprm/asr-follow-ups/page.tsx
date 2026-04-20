@@ -282,8 +282,11 @@ export default function AsrFollowUpsPage() {
   // Clarification sub-tab filtering
   const filteredClarifications = useMemo(() => {
     let data = translatedClarifications;
-    if (clarSubTab === "open") data = data.filter((c) => c.status === "Open");
-    else if (clarSubTab === "vendor-response") data = data.filter((c) => c.status === "Responded");
+    // DB stores status as Pending/Submitted/Closed (see TPRMClarification schema).
+    // The assessor-facing tab names are kinder ("Open Queries" / "Vendor
+    // Response") but the filter must match the persisted values.
+    if (clarSubTab === "open") data = data.filter((c) => c.status === "Pending" || c.status === "Open");
+    else if (clarSubTab === "vendor-response") data = data.filter((c) => c.status === "Submitted" || c.status === "Responded");
     else if (clarSubTab === "closed") data = data.filter((c) => c.status === "Closed");
 
     if (search) {
