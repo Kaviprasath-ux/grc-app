@@ -112,6 +112,18 @@ const TPRM_ROLES = [
   "TPRMAdmin", "FactoryAdmin", "FactoryAssessor",
 ];
 
+/**
+ * Roles that can query TPRM Assessment data.
+ * CustomerAdministrator is intentionally excluded — they lack `tprm.assessments`
+ * permission in the UI and must not gain access via the chatbot.
+ */
+const TPRM_ASSESSMENT_ROLES = [
+  "GRCAdministrator",
+  "BusinessOwner", "RelationshipManager", "AccountManager", "TPRMSME",
+  "TPRMAssessor", "TPRMApprover", "TPRMAuditor",
+  "TPRMAdmin", "FactoryAdmin", "FactoryAssessor",
+];
+
 /** Roles that can view Controls (includes Auditor who has compliance.controls:view) */
 const CONTROL_ROLES = [...GRC_COMPLIANCE_ROLES, "Auditor"];
 
@@ -541,6 +553,104 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
       { name: "contractEndDate", type: "date", description: "Contract end date", editable: true },
       { name: "businessJustification", type: "string", description: "Business justification for engaging the vendor", editable: true },
       { name: "createdAt", type: "date", description: "Date created" },
+    ],
+  },
+  {
+    prismaModel: "TPRMAssessment",
+    displayName: "Assessment",
+    aliases: [
+      "assessments", "vendor assessments", "tprm assessments",
+      "due diligence", "due diligence assessments",
+      "onboarding assessment", "periodic assessment", "reassessment",
+      "on-demand assessment", "offboard assessment", "offboarding assessment",
+      "factory assessment", "assessment factory",
+    ],
+    description:
+      "Third-party vendor risk assessments with workflow state, assessor/approver assignments, results, and due dates. " +
+      "The 'assessorId', 'approverId', 'initiatedById', and 'rejectedById' filters accept the literal value 'me' to match the current user. " +
+      "For phrases like 'my queue', 'my assessments', 'assessments I need to review' — use assessorId='me' for an Assessor, approverId='me' for an Approver.",
+    nameField: "assessmentCode",
+    codeField: "assessmentCode",
+    allowedRoles: TPRM_ASSESSMENT_ROLES,
+    // No allowedEditRoles — assessments are read-only via the chatbot.
+    fields: [
+      { name: "assessmentCode", type: "string", description: "Assessment code (e.g. ASM001)" },
+      {
+        name: "assessmentType",
+        type: "string",
+        description: "Assessment type",
+        values: [
+          "Onboarding Assessment",
+          "Periodic Assessment",
+          "Reassessment",
+          "On-Demand Assessment",
+          "Offboard Assessment",
+          "Assessment Factory",
+        ],
+      },
+      {
+        name: "status",
+        type: "string",
+        description: "Assessment workflow status (includes offboard statuses)",
+        values: [
+          "Draft", "Initiated", "In Progress", "In_Progress", "Awaiting_Response",
+          "Submitted", "Under Review", "In-Progress(approver)", "In_Progress_approver_",
+          "Returned", "Rejected", "Completed", "Approved", "Reviewed",
+          "Offboard_In_Progress", "Offboard_Awaiting_Response",
+          "Offboard_Approve_Assessor", "Offboard_Approve_RM", "Offboard_Approve_BO",
+          "Offboard_Completed",
+        ],
+      },
+      {
+        name: "assessmentResult",
+        type: "string",
+        description: "Overall assessment outcome",
+        values: ["Satisfactory", "Unsatisfactory", "Deficient"],
+      },
+      {
+        name: "vendorId",
+        type: "string",
+        description: "Vendor being assessed",
+        relation: { model: "TPRMVendor", displayField: "name", relationField: "vendor" },
+      },
+      {
+        name: "assessorId",
+        type: "string",
+        description: "Assigned assessor. Use value 'me' to match the current user.",
+        relation: { model: "User", displayField: "fullName", relationField: "assessor" },
+      },
+      {
+        name: "approverId",
+        type: "string",
+        description: "Assigned approver. Use value 'me' to match the current user.",
+        relation: { model: "User", displayField: "fullName", relationField: "approver" },
+      },
+      {
+        name: "initiatedById",
+        type: "string",
+        description: "Relationship Manager / user who initiated the assessment. Use value 'me' to match the current user.",
+        relation: { model: "User", displayField: "fullName", relationField: "initiatedBy" },
+      },
+      {
+        name: "rejectedById",
+        type: "string",
+        description: "User who rejected the assessment",
+        relation: { model: "User", displayField: "fullName", relationField: "rejectedBy" },
+      },
+      { name: "questionnaireTemplate", type: "string", description: "Template used for this assessment" },
+      { name: "dueDate", type: "date", description: "Assessment due date" },
+      { name: "vendorSubmissionDate", type: "date", description: "Date vendor submitted responses" },
+      { name: "assessorCompletionDate", type: "date", description: "Date assessor completed review" },
+      { name: "approvalDate", type: "date", description: "Date assessment was approved" },
+      { name: "completionDate", type: "date", description: "Date assessment was completed" },
+      {
+        name: "aiEvaluationStatus",
+        type: "string",
+        description: "AI evaluation pipeline status",
+        values: ["Pending", "Ingesting", "Evaluating", "Completed", "Failed"],
+      },
+      { name: "approverComment", type: "string", description: "Approver's comment on the assessment" },
+      { name: "createdAt", type: "date", description: "Date assessment was created" },
     ],
   },
 ];

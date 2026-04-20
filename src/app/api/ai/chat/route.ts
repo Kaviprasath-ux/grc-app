@@ -250,7 +250,7 @@ export const POST = withAuthOnly(
 
       // --- Data Query (NLP-to-SQL) ---
       if (intent === "data_query") {
-        const dataResult = await processDataQuery(processedQuery, customerAccountId, userRoles, conversationHistory);
+        const dataResult = await processDataQuery(processedQuery, customerAccountId, userRoles, conversationHistory, session);
         responseContent = dataResult.content;
         tokensUsed = dataResult.tokensUsed;
 

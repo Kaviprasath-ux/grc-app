@@ -680,6 +680,28 @@ The chatbot enforces the same access rules as the UI sidebar. Each queryable mod
 | FactoryAssessor | Yes |
 | All other roles | **No access** |
 
+#### TPRM (TPRMAssessment)
+
+Read-only via the chatbot (no agent-mode edits). Scoping is enforced in `applyRoleScope()` (see `data-query-engine.ts`) on top of the tenant `customerAccountId` filter.
+
+| Role | Access | Scope applied |
+|------|--------|---------------|
+| GRCAdministrator | Yes | Global (no tenant filter) |
+| TPRMAdmin | Yes | Full tenant |
+| TPRMAuditor | Yes | Full tenant (read-only) |
+| RelationshipManager | Yes | All regular + offboard status ∈ {`Offboard_Approve_RM`, `Offboard_Completed`} |
+| BusinessOwner | Yes | All regular + offboard status ∈ {`Offboard_Approve_BO`, `Offboard_Completed`} |
+| TPRMAssessor | Yes | All regular + offboard status ∈ {`Offboard_Approve_Assessor`, `Offboard_Completed`} |
+| TPRMApprover | Yes | All regular + offboard status ∈ {`Offboard_Approve_Assessor`, `Offboard_Completed`} |
+| AccountManager | Yes | Only vendors matched by `accountManagerEmail` (via `getAMVendorIds`) + offboard status ∈ {`Offboard_In_Progress`, `Offboard_Awaiting_Response`} |
+| TPRMSME | Yes | Same as AM, using parent AM's email |
+| FactoryAdmin | Yes | Only `assessmentType = "Assessment Factory"` (no broad tenant access) |
+| FactoryAssessor | Yes | Same as FactoryAdmin |
+| **CustomerAdministrator** | **No** | Not in `TPRM_ASSESSMENT_ROLES` — lacks `tprm.assessments` in the UI permission matrix |
+| All other roles | **No** | — |
+
+**"Me" keyword resolution.** The filter values `me` / `myself` / `i` on any user-relation field (`assessorId`, `approverId`, `initiatedById`, `rejectedById`) are rewritten to the current `session.id` *before* relation-name resolution runs, so `"assessmentsi need to review"` → `approverId = <currentUserId>` for an approver.
+
 ### Important Design Decision: Schema Prompt vs Validation
 
 The LLM data query engine uses `buildSchemaPrompt()` to tell the LLM what models exist. This prompt shows **ALL 10 models** regardless of the user's role. Access control is enforced at the **validation layer** (`validateQuerySpec()`), not the prompt layer.

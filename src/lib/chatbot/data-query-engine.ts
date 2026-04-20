@@ -20,6 +20,9 @@ import {
   getAccessibleModelNames,
   type ModelMeta,
 } from "./schema-metadata";
+import { getAMVendorIds, type AuthenticatedRequest } from "@/lib/api-auth";
+
+type ChatSession = AuthenticatedRequest["user"];
 
 // ==================== CONFIGURATION ====================
 
@@ -469,26 +472,185 @@ function buildWhereClause(
   return where;
 }
 
+// ==================== ROLE-BASED SCOPE (per model) ====================
+
+/**
+ * Offboard assessment statuses each role is allowed to see.
+ * Mirrors `/api/tprm/offboard-assessments` role-based status filtering.
+ */
+const OFFBOARD_STATUS_BY_ROLE: Record<string, string[]> = {
+  RelationshipManager: ["Offboard_Approve_RM", "Offboard_Completed"],
+  BusinessOwner: ["Offboard_Approve_BO", "Offboard_Completed"],
+  TPRMAssessor: ["Offboard_Approve_Assessor", "Offboard_Completed"],
+  TPRMApprover: ["Offboard_Approve_Assessor", "Offboard_Completed"],
+  AccountManager: ["Offboard_In_Progress", "Offboard_Awaiting_Response"],
+  TPRMSME: ["Offboard_In_Progress", "Offboard_Awaiting_Response"],
+};
+
+/** Roles that see every assessment in the tenant without extra filters. */
+const ASSESSMENT_FULL_TENANT_ROLES = new Set([
+  "GRCAdministrator",
+  "TPRMAdmin",
+  "TPRMAuditor",
+]);
+
+/** Roles that see all regular assessments in the tenant + their offboard queue. */
+const ASSESSMENT_BROAD_ROLES = new Set([
+  "RelationshipManager",
+  "BusinessOwner",
+  "TPRMAssessor",
+  "TPRMApprover",
+]);
+
+/** Roles whose assessment access is limited to the vendors assigned to them. */
+const ASSESSMENT_AM_ROLES = new Set(["AccountManager", "TPRMSME"]);
+
+/** Roles that only see Assessment Factory-type assessments. */
+const ASSESSMENT_FACTORY_ONLY_ROLES = new Set(["FactoryAdmin", "FactoryAssessor"]);
+
+/**
+ * Pure role-scope computer for TPRMAssessment — no DB access.
+ * Returns the WHERE fragment to AND with the tenant filter, or a sentinel
+ * { __deny: true } to force an impossible match (access denied).
+ * Exposed for unit testing.
+ */
+export function buildAssessmentRoleScope(
+  roles: string[],
+  amVendorIds: string[]
+): Record<string, unknown> | { __deny: true } | null {
+  // Tier 1: full-tenant read — no extra scoping
+  if (roles.some((r) => ASSESSMENT_FULL_TENANT_ROLES.has(r))) return null;
+
+  const scopeClauses: Record<string, unknown>[] = [];
+
+  // Tier 2: broad role (RM/BO/Assessor/Approver) — regular + role's offboard statuses
+  if (roles.some((r) => ASSESSMENT_BROAD_ROLES.has(r))) {
+    const offboardStatuses = Array.from(
+      new Set(roles.flatMap((r) => OFFBOARD_STATUS_BY_ROLE[r] || []))
+    );
+    scopeClauses.push({
+      OR: [
+        { assessmentType: { not: "Offboard Assessment" } },
+        offboardStatuses.length > 0
+          ? {
+              AND: [
+                { assessmentType: "Offboard Assessment" },
+                { status: { in: offboardStatuses } },
+              ],
+            }
+          : { id: "__never__" },
+      ],
+    });
+  }
+
+  // Tier 3: AM/SME — vendor-scoped
+  if (roles.some((r) => ASSESSMENT_AM_ROLES.has(r))) {
+    const amOffboardStatuses = OFFBOARD_STATUS_BY_ROLE.AccountManager;
+    scopeClauses.push({
+      AND: [
+        { vendorId: { in: amVendorIds.length > 0 ? amVendorIds : ["__none__"] } },
+        {
+          OR: [
+            { assessmentType: { not: "Offboard Assessment" } },
+            {
+              AND: [
+                { assessmentType: "Offboard Assessment" },
+                { status: { in: amOffboardStatuses } },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  // Tier 4: Factory-only — restrict to Assessment Factory type (only if no broader tier applied)
+  if (
+    scopeClauses.length === 0 &&
+    roles.some((r) => ASSESSMENT_FACTORY_ONLY_ROLES.has(r))
+  ) {
+    scopeClauses.push({ assessmentType: "Assessment Factory" });
+  }
+
+  if (scopeClauses.length === 0) return { __deny: true };
+  return scopeClauses.length === 1 ? scopeClauses[0] : { OR: scopeClauses };
+}
+
+/**
+ * Augment the WHERE clause with model-specific role scoping.
+ * Currently only TPRMAssessment requires scoping beyond customerAccountId.
+ */
+async function applyRoleScope(
+  where: Record<string, unknown>,
+  modelMeta: ModelMeta,
+  session: ChatSession | undefined,
+  customerAccountId: string
+): Promise<void> {
+  if (modelMeta.prismaModel !== "TPRMAssessment") return;
+  if (!session) return;
+
+  const roles = session.roles || [];
+  const needsAmLookup = roles.some((r) => ASSESSMENT_AM_ROLES.has(r));
+  const amVendorIds = needsAmLookup
+    ? await getAMVendorIds(session, customerAccountId)
+    : [];
+
+  const scope = buildAssessmentRoleScope(roles, amVendorIds);
+  if (scope === null) return;
+
+  if ("__deny" in scope) {
+    where.id = "__denied__";
+    return;
+  }
+
+  const existingAnd = Array.isArray(where.AND) ? (where.AND as unknown[]) : [];
+  where.AND = [...existingAnd, scope];
+}
+
 /**
  * Execute the validated query spec via Prisma.
  */
 async function executeQuery(
   spec: QuerySpec,
   modelMeta: ModelMeta,
-  customerAccountId: string
+  customerAccountId: string,
+  session?: ChatSession
 ): Promise<unknown> {
   const prismaModel = (prisma as any)[lowerFirst(spec.model)];
   if (!prismaModel) throw new Error(`Model ${spec.model} not available`);
 
+  // Split "me"/"myself"/"i" on user-relation fields from the rest, so they
+  // aren't mis-looked-up against User.fullName during relation resolution.
+  const rawFilters: Record<string, unknown> = { ...(spec.filters || {}) };
+  const meOverrides: Record<string, string> = {};
+  if (session?.id) {
+    for (const [k, v] of Object.entries(rawFilters)) {
+      if (typeof v !== "string") continue;
+      const normalized = v.trim().toLowerCase();
+      if (normalized !== "me" && normalized !== "myself" && normalized !== "i") continue;
+      const fieldMeta = modelMeta.fields.find((f) => f.name === k);
+      if (fieldMeta?.relation?.model === "User") {
+        meOverrides[k] = session.id;
+        delete rawFilters[k];
+      }
+    }
+  }
+
   // Resolve relation filters first
   const resolvedFilters = await resolveRelationFilters(
-    spec.filters || {},
+    rawFilters,
     modelMeta,
     customerAccountId
   );
 
+  // Re-apply the "me" resolutions using the current user id
+  Object.assign(resolvedFilters, meOverrides);
+
   // Build where clause, then enhance with translation-aware search
   const where = buildWhereClause(resolvedFilters, modelMeta, customerAccountId);
+
+  // Apply model-specific role-based scoping (e.g. TPRM assessment role scopes)
+  await applyRoleScope(where, modelMeta, session, customerAccountId);
 
   // Translation-aware: for text filters on name/description fields, also search
   // DynamicTranslation table in case the data is stored in a different language
@@ -693,7 +855,8 @@ export async function processDataQuery(
   query: string,
   customerAccountId: string,
   userRoles: string[],
-  conversationHistory: ConversationMessage[] = []
+  conversationHistory: ConversationMessage[] = [],
+  session?: ChatSession
 ): Promise<DataQueryResult> {
   // Step 1: Generate query spec from natural language (with conversation context)
   const { spec, tokensUsed: specTokens } = await generateQuerySpec(query, userRoles, conversationHistory);
@@ -711,7 +874,7 @@ export async function processDataQuery(
   // Step 3: Execute the query
   let data: unknown;
   try {
-    data = await executeQuery(spec, validation.modelMeta, customerAccountId);
+    data = await executeQuery(spec, validation.modelMeta, customerAccountId, session);
   } catch (error) {
     console.error("[DataQuery] Execution error:", error);
     console.error("[DataQuery] Failed spec:", JSON.stringify(spec, null, 2));
