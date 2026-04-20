@@ -846,7 +846,21 @@ function VendorOnboardingSection() {
           </div>
           <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setObDialogOpen(false)}>{t("Cancel")}</Button>
-            <Button size="sm" onClick={handleSaveObQuestion}>{t("Save")}</Button>
+            {/* Disable Save when required fields (Title/Question, plus Parent
+                for Child questions) are missing — prevents the silent "nothing
+                happened" experience when the click was just swallowed by the
+                handler's early return. */}
+            <Button
+              size="sm"
+              onClick={handleSaveObQuestion}
+              disabled={
+                !obForm.title.trim() ||
+                !obForm.question.trim() ||
+                (obForm.questionType === "Child" && !obForm.parentId)
+              }
+            >
+              {t("Save")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -2341,6 +2355,7 @@ function OffboardingSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<OffboardingQuestion | null>(null);
   const [form, setForm] = useState({ title: "", question: "" });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMOffboardingQuestion' });
 
@@ -2361,13 +2376,17 @@ function OffboardingSection() {
   }, [loadQuestions]);
 
   const handleSave = async () => {
-    const missing: string[] = [];
-    if (!form.title.trim()) missing.push(t("Title"));
-    if (!form.question.trim()) missing.push(t("Question"));
-    if (missing.length > 0) {
+    // Inline field errors + toast, so missing-field feedback is visible at
+    // the input AND as a summary banner. The Save button is also disabled
+    // when required fields are empty — belt-and-suspenders.
+    const errors: Record<string, string> = {};
+    if (!form.title.trim()) errors.title = t("Title is required");
+    if (!form.question.trim()) errors.question = t("Question is required");
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
       toast({
         title: t("Required fields missing"),
-        description: `${t("Please fill in")}: ${missing.join(", ")}`,
+        description: `${t("Please fill in")}: ${Object.values(errors).join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -2391,6 +2410,7 @@ function OffboardingSection() {
       setDialogOpen(false);
       setEditItem(null);
       setForm({ title: "", question: "" });
+      setFormErrors({});
       loadQuestions();
       setTimeout(() => { clearTranslationCache(); loadQuestions(); }, 4000);
     } catch {
@@ -2451,6 +2471,7 @@ function OffboardingSection() {
                   title: row.original.title,
                   question: row.original.question || "",
                 });
+                setFormErrors({});
                 setDialogOpen(true);
               }}
             >
@@ -2477,6 +2498,7 @@ function OffboardingSection() {
           <Button size="sm" onClick={() => {
             setEditItem(null);
             setForm({ title: "", question: "" });
+            setFormErrors({});
             setDialogOpen(true);
           }}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Add")}
@@ -2504,26 +2526,34 @@ function OffboardingSection() {
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Title")} <span className="text-red-500">*</span></Label>
               <Input
-                className="mt-1.5 w-full"
+                className={`mt-1.5 w-full ${formErrors.title ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: sanitizeGeneral(e.target.value) })}
+                onChange={(e) => {
+                  setForm({ ...form, title: sanitizeGeneral(e.target.value) });
+                  if (formErrors.title) setFormErrors((p) => { const n = { ...p }; delete n.title; return n; });
+                }}
                 placeholder={t("Enter title")}
               />
+              {formErrors.title && <p className="text-xs text-red-500 mt-1">{formErrors.title}</p>}
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("Question")} <span className="text-red-500">*</span></Label>
               <Textarea
-                className="mt-1.5 w-full"
+                className={`mt-1.5 w-full ${formErrors.question ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 value={form.question}
-                onChange={(e) => setForm({ ...form, question: sanitizeGeneral(e.target.value) })}
+                onChange={(e) => {
+                  setForm({ ...form, question: sanitizeGeneral(e.target.value) });
+                  if (formErrors.question) setFormErrors((p) => { const n = { ...p }; delete n.question; return n; });
+                }}
                 placeholder={t("Enter question")}
                 rows={4}
               />
+              {formErrors.question && <p className="text-xs text-red-500 mt-1">{formErrors.question}</p>}
             </div>
           </div>
           <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
-            <Button size="sm" onClick={handleSave}>{t("Save")}</Button>
+            <Button size="sm" onClick={handleSave} disabled={!form.title.trim() || !form.question.trim()}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
