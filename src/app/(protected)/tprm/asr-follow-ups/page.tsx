@@ -38,6 +38,8 @@ interface ClarificationItem {
   domain: string | null;
   rejectComment: string | null;
   amResponse: string | null;
+  artifactUrl: string | null;
+  artifactName: string | null;
   status: string;
 }
 
@@ -812,6 +814,46 @@ export default function AsrFollowUpsPage() {
                 <div className="border-t pt-3">
                   <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{t("Vendor Response")}</p>
                   <p className="text-slate-700 whitespace-pre-wrap">{viewClarification.amResponse}</p>
+                </div>
+              )}
+              {viewClarification.artifactUrl && viewClarification.artifactName && (
+                <div className="border-t pt-3">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-2">{t("Attachments")}</p>
+                  <ul className="space-y-1 text-sm">
+                    {viewClarification.artifactName.split(", ").map((name, idx) => {
+                      const url = viewClarification.artifactUrl?.split(", ")[idx];
+                      return (
+                        <li
+                          key={`${name}-${idx}`}
+                          className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5"
+                        >
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                          <span className="truncate flex-1">{name}</span>
+                          {url && (
+                            <>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-slate-600 hover:text-slate-900"
+                                title={t("View")}
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                              <a
+                                href={url}
+                                download={name}
+                                className="text-slate-600 hover:text-slate-900"
+                                title={t("Download")}
+                              >
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               )}
             </div>

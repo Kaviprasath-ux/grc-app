@@ -4135,6 +4135,8 @@ model TPRMClarification {
   domainName        String?
   rejectComment     String?         @db.Text
   amResponse        String?         @db.Text
+  artifactUrl       String?         // Comma-separated URLs of files uploaded with the vendor response
+  artifactName      String?         // Comma-separated filenames matching artifactUrl
   status            String          @default("Pending") // Pending, Submitted, Closed
   requestedById     String?
   requestedBy       User?           @relation("TPRMClarificationRequestedBy", fields: [requestedById], references: [id])

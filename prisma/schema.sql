@@ -3005,6 +3005,8 @@ CREATE TABLE "TPRMClarification" (
     "domainName" TEXT,
     "rejectComment" TEXT,
     "amResponse" TEXT,
+    "artifactUrl" TEXT,
+    "artifactName" TEXT,
     "status" TEXT NOT NULL DEFAULT 'Pending',
     "requestedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

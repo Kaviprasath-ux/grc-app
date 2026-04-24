@@ -41,6 +41,8 @@ export const GET = withAuth(
           domain: c.domainName || null,
           rejectComment: c.rejectComment || null,
           amResponse: c.amResponse || null,
+          artifactUrl: c.artifactUrl || null,
+          artifactName: c.artifactName || null,
           status: c.status || "Open",
         }));
 

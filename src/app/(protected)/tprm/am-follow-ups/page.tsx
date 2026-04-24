@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,8 @@ interface Clarification {
   domainName: string | null;
   rejectComment: string | null;
   amResponse: string | null;
+  artifactUrl: string | null;
+  artifactName: string | null;
   status: string;
   createdAt: string;
   assessment: { assessmentCode: string; vendor: { name: string } };
@@ -112,7 +114,17 @@ export default function AMFollowUpsPage() {
   const [respondType, setRespondType] = useState<"clarification" | "remediation">("clarification");
   const [respondId, setRespondId] = useState("");
   const [respondText, setRespondText] = useState("");
+  const [respondFiles, setRespondFiles] = useState<File[]>([]);
+  const [respondDragOver, setRespondDragOver] = useState(false);
+  const respondFileInputRef = useRef<HTMLInputElement>(null);
+  // Artifacts already persisted on the clarification (prior rounds, or files the
+  // vendor attached and saved in this dialog via Submit). Loaded fresh from the
+  // row when the Respond dialog opens.
+  const [respondExistingArtifacts, setRespondExistingArtifacts] = useState<Array<{ name: string; url: string }>>([]);
   const [respondLoading, setRespondLoading] = useState(false);
+  // Read-only dialog for inspecting a Submitted/Closed clarification (vendor
+  // needs to download their own attachments back; cannot edit/delete anymore).
+  const [viewClar, setViewClar] = useState<Clarification | null>(null);
 
   // Remediation detail dialog
   const [remediationDialogOpen, setRemediationDialogOpen] = useState(false);
@@ -170,11 +182,15 @@ export default function AMFollowUpsPage() {
       const endpoint = respondType === "clarification"
         ? "/api/tprm/am-follow-ups/clarifications"
         : "/api/tprm/am-follow-ups/issue-remediations";
-      const res = await fetch(endpoint, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: respondId, amResponse: respondText }),
-      });
+
+      // Use FormData so we can attach files alongside the response text.
+      const formData = new FormData();
+      formData.append("id", respondId);
+      formData.append("amResponse", respondText);
+      for (const file of respondFiles) {
+        formData.append("files", file);
+      }
+      const res = await fetch(endpoint, { method: "PATCH", body: formData });
       if (!res.ok) throw new Error("Failed");
       const result = await res.json();
       if (respondType === "clarification") {
@@ -185,6 +201,7 @@ export default function AMFollowUpsPage() {
       toast({ title: t("Success"), description: t("Response submitted") });
       setRespondDialogOpen(false);
       setRespondText("");
+      setRespondFiles([]);
       fetchData();
     } catch {
       toast({ title: t("Error"), description: t("Failed to submit response"), variant: "destructive" });
@@ -228,6 +245,31 @@ export default function AMFollowUpsPage() {
     setUploadArtifacts(!!r.artifactName);
     setArtifactFiles([]);
     setRemediationDialogOpen(true);
+  };
+
+  // Delete a single artifact from a still-open clarification. Server enforces
+  // that status === "Pending" — surface any rejection back to the user so they
+  // know why the delete failed.
+  const handleDeleteClarificationArtifact = async (idx: number) => {
+    try {
+      const res = await fetch(
+        `/api/tprm/am-follow-ups/clarifications?id=${respondId}&artifactIndex=${idx}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed" }));
+        throw new Error(err.error || "Failed");
+      }
+      setRespondExistingArtifacts(prev => prev.filter((_, i) => i !== idx));
+      toast({ title: t("Success"), description: t("Artifact deleted") });
+      fetchData();
+    } catch (err) {
+      toast({
+        title: t("Error"),
+        description: err instanceof Error ? err.message : t("Failed to delete artifact"),
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteArtifact = async (remediationId: string, artifactIndex: number) => {
@@ -353,13 +395,23 @@ export default function AMFollowUpsPage() {
                             <Button size="sm" variant="outline" onClick={() => {
                               setRespondType("clarification");
                               setRespondId(c.id);
-                              setRespondText("");
+                              setRespondText(c.amResponse || "");
+                              setRespondFiles([]);
+                              // Hydrate prior attachments so the vendor can
+                              // see/download/delete them before re-submitting.
+                              const names = c.artifactName?.split(", ").filter(Boolean) || [];
+                              const urls = c.artifactUrl?.split(", ").filter(Boolean) || [];
+                              setRespondExistingArtifacts(
+                                names.map((name, idx) => ({ name, url: urls[idx] || "" })),
+                              );
                               setRespondDialogOpen(true);
                             }}>
                               {t("Respond")}
                             </Button>
                           ) : (
-                            <span className="text-sm text-muted-foreground">{c.amResponse?.substring(0, 50) || "-"}</span>
+                            <Button size="sm" variant="outline" onClick={() => setViewClar(c)}>
+                              {t("View")}
+                            </Button>
                           )}
                         </TableCell>
                       </TableRow>
@@ -510,18 +562,176 @@ export default function AMFollowUpsPage() {
           <DialogHeader>
             <DialogTitle>{t("Submit Response")}</DialogTitle>
           </DialogHeader>
-          <Textarea
-            value={respondText}
-            onChange={e => setRespondText(e.target.value)}
-            placeholder={t("Enter your response...")}
-            rows={5}
-          />
+          <div className="space-y-4">
+            <Textarea
+              value={respondText}
+              onChange={e => setRespondText(e.target.value)}
+              placeholder={t("Enter your response...")}
+              rows={5}
+            />
+
+            {respondExistingArtifacts.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t("Previously Uploaded")}</Label>
+                <ul className="space-y-1 text-sm">
+                  {respondExistingArtifacts.map((a, idx) => (
+                    <li
+                      key={`${a.name}-${idx}`}
+                      className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5"
+                    >
+                      <FileText className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                      <span className="truncate flex-1">{a.name}</span>
+                      {a.url && (
+                        <a
+                          href={a.url}
+                          download={a.name}
+                          className="text-slate-600 hover:text-slate-900"
+                          title={t("Download")}
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteClarificationArtifact(idx)}
+                        className="text-red-600 hover:text-red-800"
+                        title={t("Delete")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t("Attachments (optional)")}</Label>
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                  respondDragOver
+                    ? "border-primary bg-primary/5"
+                    : "border-slate-300 hover:border-slate-400"
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setRespondDragOver(true); }}
+                onDragLeave={() => setRespondDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setRespondDragOver(false);
+                  const dropped = Array.from(e.dataTransfer.files);
+                  if (dropped.length) setRespondFiles(prev => [...prev, ...dropped]);
+                }}
+                onClick={() => respondFileInputRef.current?.click()}
+              >
+                <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {t("Drop files here or click to browse")}
+                </p>
+              </div>
+              <input
+                ref={respondFileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files || []);
+                  if (picked.length) setRespondFiles(prev => [...prev, ...picked]);
+                  e.target.value = "";
+                }}
+              />
+              {respondFiles.length > 0 && (
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  {respondFiles.map((f, idx) => (
+                    <li key={`${f.name}-${idx}`} className="flex items-center gap-2">
+                      <FileText className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate flex-1">{f.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setRespondFiles(prev => prev.filter((_, i) => i !== idx))}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        {t("Remove")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRespondDialogOpen(false)}>{t("Cancel")}</Button>
             <Button onClick={handleRespond} disabled={respondLoading || !respondText.trim()}>
               {respondLoading && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
               {t("Submit")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Read-only View Dialog (Submitted / Closed clarifications) */}
+      <Dialog open={!!viewClar} onOpenChange={(open) => { if (!open) setViewClar(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("Clarification Response")}</DialogTitle>
+          </DialogHeader>
+          {viewClar && (
+            <div className="space-y-4 text-sm">
+              {viewClar.rejectComment && (
+                <div>
+                  <Label className="text-xs uppercase tracking-wide text-slate-500">{t("Clarification Request")}</Label>
+                  <p className="mt-1 whitespace-pre-wrap">{viewClar.rejectComment}</p>
+                </div>
+              )}
+              {viewClar.amResponse && (
+                <div>
+                  <Label className="text-xs uppercase tracking-wide text-slate-500">{t("Your Response")}</Label>
+                  <p className="mt-1 whitespace-pre-wrap">{viewClar.amResponse}</p>
+                </div>
+              )}
+              {viewClar.artifactName && viewClar.artifactUrl && (
+                <div>
+                  <Label className="text-xs uppercase tracking-wide text-slate-500">{t("Attachments")}</Label>
+                  <ul className="mt-2 space-y-1">
+                    {viewClar.artifactName.split(", ").map((name, idx) => {
+                      const url = viewClar.artifactUrl?.split(", ")[idx];
+                      return (
+                        <li
+                          key={`${name}-${idx}`}
+                          className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5"
+                        >
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                          <span className="truncate flex-1">{name}</span>
+                          {url && (
+                            <>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-slate-600 hover:text-slate-900"
+                                title={t("View")}
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                              <a
+                                href={url}
+                                download={name}
+                                className="text-slate-600 hover:text-slate-900"
+                                title={t("Download")}
+                              >
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewClar(null)}>{t("Close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
