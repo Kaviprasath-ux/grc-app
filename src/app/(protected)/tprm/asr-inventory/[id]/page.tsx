@@ -9,10 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Home, ChevronRight, ArrowLeft, Download, Loader2, FileText, Upload, Trash2, ShieldCheck,
+  Home, ChevronRight, ArrowLeft, Download, Loader2, FileText,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
@@ -96,11 +93,6 @@ export default function AsrVendorDetailPage() {
   const [documents, setDocuments] = useState<DocFile[]>([]);
   const [onboardingQuestions, setOnboardingQuestions] = useState<OnboardingQuestion[]>([]);
   const [artifactDocs, setArtifactDocs] = useState<DocFile[]>([]);
-  const [contractDropFile, setContractDropFile] = useState<File | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const [obligations, setObligations] = useState<{ id: string; section: string }[]>([]);
-  const [showObligations, setShowObligations] = useState(false);
-  const [extracting, setExtracting] = useState(false);
 
   const fetchArtifacts = useCallback(async () => {
     try {
@@ -305,45 +297,11 @@ export default function AsrVendorDetailPage() {
             {/* Right: Vendor Risk Profile */}
             <div>
               <h3 className="text-base font-semibold text-slate-800 mb-4">{t("Vendor Risk Profile")}</h3>
-              <div className="space-y-4">
-                <ProfileRow label={t("Access to Network")} value={vendor.accessToNetwork} />
-                <ProfileRow label={t("Cloud")} value={vendor.cloud} />
-                <ProfileRow label={t("Access to Data")} value={vendor.accessToData} />
-                <ProfileRow label={t("PII")} value={vendor.pii} />
-              </div>
+              <VendorRiskProfile vendor={vendor} questions={onboardingQuestions} t={t} />
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Onboarding Answers */}
-      {vendor.onboardingAnswers && onboardingQuestions.length > 0 && (() => {
-        let answers: Record<string, string> = {};
-        try { answers = JSON.parse(vendor.onboardingAnswers!); } catch { /* ignore */ }
-        if (Object.keys(answers).length === 0) return null;
-        const renderQuestion = (q: OnboardingQuestion, indent = false) => {
-          const answer = answers[q.id];
-          if (!answer) return null;
-          return (
-            <InfoRow key={q.id} label={indent ? `└ ${q.title}` : q.title} value={answer} />
-          );
-        };
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("Onboarding Questions")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              {onboardingQuestions.map((pq) => (
-                <div key={pq.id}>
-                  {renderQuestion(pq)}
-                  {pq.children?.filter((c) => c.isActive).map((child) => renderQuestion(child, true))}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        );
-      })()}
 
       {/* Legal Contract (read-only: download only) */}
       <DocumentSection
@@ -365,162 +323,7 @@ export default function AsrVendorDetailPage() {
         hideDelete
         hideUpload
         t={t}
-      >
-        <div className="space-y-4 mt-4">
-          {!contractDropFile ? (
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                dragging ? "border-primary bg-primary/5" : "border-slate-300 hover:border-slate-400"
-              }`}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragging(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file) setContractDropFile(file);
-              }}
-            >
-              <Upload className="h-8 w-8 text-slate-400 mx-auto mb-3" />
-              <p className="text-sm text-slate-600 mb-1">{t("Drag and drop your contract file here")}</p>
-              <p className="text-xs text-slate-400 mb-3">{t("or")}</p>
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setContractDropFile(file);
-                    e.target.value = "";
-                  }}
-                />
-                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-                  <Upload className="h-4 w-4" />
-                  {t("Browse Files")}
-                </span>
-              </label>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between p-3 border rounded-md bg-slate-50">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText className="h-4 w-4 text-slate-500 flex-shrink-0" />
-                <span className="text-sm truncate">{contractDropFile.name}</span>
-                <span className="text-xs text-slate-400 flex-shrink-0">
-                  ({(contractDropFile.size / 1024).toFixed(1)} KB)
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-red-500 hover:text-red-700"
-                onClick={() => setContractDropFile(null)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              disabled={extracting}
-              onClick={async () => {
-                setExtracting(true);
-                try {
-                  // Step 1: Retrieve all ContractDocuments for this vendor
-                  // Include dropped file + existing legal docs + legacy contract
-                  const contractDocs: { id: string; name: string; file?: File }[] = [];
-
-                  // Add dropped file if present
-                  if (contractDropFile) {
-                    contractDocs.push({ id: "dropped", name: contractDropFile.name, file: contractDropFile });
-                  }
-
-                  // Add existing legal/contract documents
-                  for (const doc of legalDocs) {
-                    contractDocs.push({ id: doc.id, name: doc.name });
-                  }
-
-                  // Fallback to legacy contract on vendor record
-                  if (contractDocs.length === 0 && vendor.contractDocumentName) {
-                    contractDocs.push({ id: "legacy-contract", name: vendor.contractDocumentName });
-                  }
-
-                  if (contractDocs.length === 0) {
-                    toast({ title: t("Error"), description: t("No contract documents found for this vendor"), variant: "destructive" });
-                    setExtracting(false);
-                    return;
-                  }
-
-                  // Step 2: Create empty list, loop over each ContractDocument
-                  const extractedObligations: { id: string; section: string }[] = [];
-
-                  for (const doc of contractDocs) {
-                    // Fetch the file if not already a File object
-                    let file = doc.file;
-                    if (!file) {
-                      const url = doc.id === "legacy-contract"
-                        ? `/api/tprm/vendors/${vendorId}/contract`
-                        : `/api/tprm/vendors/${vendorId}/documents/${doc.id}/download`;
-                      const res = await fetch(url);
-                      if (res.ok) {
-                        const blob = await res.blob();
-                        file = new File([blob], doc.name || "contract", { type: blob.type });
-                      }
-                    }
-                    if (!file) continue;
-
-                    // Step 3: CWS_contractQuery — call extraction API for each document
-                    // TODO: Replace with actual extraction API endpoint
-                    // const formData = new FormData();
-                    // formData.append("file", file);
-                    // formData.append("vendorId", vendorId);
-                    // const extractRes = await fetch("/api/tprm/extract-security-obligations", { method: "POST", body: formData });
-                    // const result = await extractRes.json();
-                    // for (const section of result.sections) {
-                    //   extractedObligations.push({ id: crypto.randomUUID(), section });
-                    // }
-                  }
-
-                  // Step 4: Commit — set obligations and show popup
-                  setObligations(extractedObligations);
-                  setShowObligations(true);
-                } catch {
-                  toast({ title: t("Error"), description: t("Failed to extract security obligations"), variant: "destructive" });
-                } finally {
-                  setExtracting(false);
-                }
-              }}
-            >
-              {extracting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1.5 rtl:ml-1.5" /> : <ShieldCheck className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />}
-              {t("Extract Security Obligation")}
-            </Button>
-          </div>
-        </div>
-
-      </DocumentSection>
-
-      {/* Security Clauses Popup */}
-      <Dialog open={showObligations} onOpenChange={setShowObligations}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("Security Clauses")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 mt-2">
-            {obligations.length > 0 ? (
-              obligations.map((ob) => (
-                <div key={ob.id} className="p-3 border rounded-md bg-slate-50">
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{ob.section}</p>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-6 text-sm text-slate-400">
-                {t("No security obligations found")}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      />
 
       {/* Report Library (read-only: download only) */}
       <DocumentSection
@@ -556,13 +359,61 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   );
 }
 
-function ProfileRow({ label, value }: { label: string; value: boolean }) {
+function ProfileRow({ label, value }: { label: string; value: string | null | undefined }) {
+  const v = (value ?? "").trim();
+  const isYes = v.toLowerCase() === "yes";
+  const isNo = v.toLowerCase() === "no";
+  const tone = isYes ? "text-green-600" : isNo ? "text-slate-500" : "text-slate-800";
   return (
     <div className="flex items-baseline gap-2">
       <span className="text-sm text-slate-400 min-w-[180px] flex-shrink-0">{label} :</span>
-      <span className={`text-sm font-medium ${value ? "text-green-600" : "text-slate-500"}`}>
-        {value ? "Yes" : "No"}
-      </span>
+      <span className={`text-sm font-medium ${tone}`}>{v || "—"}</span>
+    </div>
+  );
+}
+
+function VendorRiskProfile({
+  vendor,
+  questions,
+  t,
+}: {
+  vendor: VendorDetail;
+  questions: OnboardingQuestion[];
+  t: (s: string) => string;
+}) {
+  let answers: Record<string, string> = {};
+  try {
+    if (vendor.onboardingAnswers) answers = JSON.parse(vendor.onboardingAnswers);
+  } catch { /* ignore */ }
+
+  const rows: { id: string; label: string; value: string; indent: boolean }[] = [];
+  for (const pq of questions) {
+    const pAns = answers[pq.id];
+    if (pAns) rows.push({ id: pq.id, label: pq.title, value: pAns, indent: false });
+    for (const child of pq.children?.filter((c) => c.isActive) || []) {
+      const cAns = answers[child.id];
+      if (cAns) rows.push({ id: child.id, label: child.title, value: cAns, indent: true });
+    }
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div className="space-y-4">
+        <ProfileRow label={t("Access to Network")} value={vendor.accessToNetwork ? "Yes" : "No"} />
+        <ProfileRow label={t("Cloud")} value={vendor.cloud ? "Yes" : "No"} />
+        <ProfileRow label={t("Access to Data")} value={vendor.accessToData ? "Yes" : "No"} />
+        <ProfileRow label={t("PII")} value={vendor.pii ? "Yes" : "No"} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {rows.map((r) => (
+        <div key={r.id} className={r.indent ? "ltr:pl-4 rtl:pr-4 ltr:border-l-2 rtl:border-r-2 border-slate-100" : ""}>
+          <ProfileRow label={r.label} value={r.value} />
+        </div>
+      ))}
     </div>
   );
 }

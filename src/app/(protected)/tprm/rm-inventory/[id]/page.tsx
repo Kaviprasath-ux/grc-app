@@ -493,45 +493,11 @@ export default function VendorDetailPage() {
             {/* Right: Vendor Risk Profile */}
             <div>
               <h3 className="text-base font-semibold text-slate-800 mb-4">{t("Vendor Risk Profile")}</h3>
-              <div className="space-y-4">
-                <ProfileRow label={t("Access to Network")} value={vendor.accessToNetwork} />
-                <ProfileRow label={t("Cloud")} value={vendor.cloud} />
-                <ProfileRow label={t("Access to Data")} value={vendor.accessToData} />
-                <ProfileRow label={t("PII")} value={vendor.pii} />
-              </div>
+              <VendorRiskProfile vendor={vendor} questions={onboardingQuestions} t={t} />
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Onboarding Answers */}
-      {vendor.onboardingAnswers && onboardingQuestions.length > 0 && (() => {
-        let answers: Record<string, string> = {};
-        try { answers = JSON.parse(vendor.onboardingAnswers!); } catch { /* ignore */ }
-        if (Object.keys(answers).length === 0) return null;
-        const renderQuestion = (q: OnboardingQuestion, indent = false) => {
-          const answer = answers[q.id];
-          if (!answer) return null;
-          return (
-            <InfoRow key={q.id} label={indent ? `└ ${q.title}` : q.title} value={answer} />
-          );
-        };
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("Onboarding Questions")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              {onboardingQuestions.map((pq) => (
-                <div key={pq.id}>
-                  {renderQuestion(pq)}
-                  {pq.children?.filter((c) => c.isActive).map((child) => renderQuestion(child, true))}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        );
-      })()}
 
       {/* Legal Contract */}
       <DocumentSection
@@ -747,13 +713,61 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   );
 }
 
-function ProfileRow({ label, value }: { label: string; value: boolean }) {
+function ProfileRow({ label, value }: { label: string; value: string | null | undefined }) {
+  const v = (value ?? "").trim();
+  const isYes = v.toLowerCase() === "yes";
+  const isNo = v.toLowerCase() === "no";
+  const tone = isYes ? "text-green-600" : isNo ? "text-slate-500" : "text-slate-800";
   return (
     <div className="flex items-baseline gap-2">
       <span className="text-sm text-slate-400 min-w-[180px] flex-shrink-0">{label} :</span>
-      <span className={`text-sm font-medium ${value ? "text-green-600" : "text-slate-500"}`}>
-        {value ? "Yes" : "No"}
-      </span>
+      <span className={`text-sm font-medium ${tone}`}>{v || "—"}</span>
+    </div>
+  );
+}
+
+function VendorRiskProfile({
+  vendor,
+  questions,
+  t,
+}: {
+  vendor: VendorDetail;
+  questions: OnboardingQuestion[];
+  t: (s: string) => string;
+}) {
+  let answers: Record<string, string> = {};
+  try {
+    if (vendor.onboardingAnswers) answers = JSON.parse(vendor.onboardingAnswers);
+  } catch { /* ignore */ }
+
+  const rows: { id: string; label: string; value: string; indent: boolean }[] = [];
+  for (const pq of questions) {
+    const pAns = answers[pq.id];
+    if (pAns) rows.push({ id: pq.id, label: pq.title, value: pAns, indent: false });
+    for (const child of pq.children?.filter((c) => c.isActive) || []) {
+      const cAns = answers[child.id];
+      if (cAns) rows.push({ id: child.id, label: child.title, value: cAns, indent: true });
+    }
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div className="space-y-4">
+        <ProfileRow label={t("Access to Network")} value={vendor.accessToNetwork ? "Yes" : "No"} />
+        <ProfileRow label={t("Cloud")} value={vendor.cloud ? "Yes" : "No"} />
+        <ProfileRow label={t("Access to Data")} value={vendor.accessToData ? "Yes" : "No"} />
+        <ProfileRow label={t("PII")} value={vendor.pii ? "Yes" : "No"} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {rows.map((r) => (
+        <div key={r.id} className={r.indent ? "ltr:pl-4 rtl:pr-4 ltr:border-l-2 rtl:border-r-2 border-slate-100" : ""}>
+          <ProfileRow label={r.label} value={r.value} />
+        </div>
+      ))}
     </div>
   );
 }
