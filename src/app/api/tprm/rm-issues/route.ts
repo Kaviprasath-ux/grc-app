@@ -334,10 +334,25 @@ export const PATCH = withAuth(
     try {
       const customerAccountId = getCustomerAccountId(session);
       const body = await req.json();
-      const { id, status, addComment } = body;
+      const { id, status, addComment, kind } = body;
 
       if (!id) {
         return NextResponse.json({ error: "ID is required" }, { status: 400 });
+      }
+
+      // ── Vendor Issue close (RM closes a TPRMVendorIssue from the Vendor Issues tab) ──
+      if (kind === "vendor-issue") {
+        const issue = await prisma.tPRMVendorIssue.findFirst({
+          where: { id, customerAccountId },
+        });
+        if (!issue) {
+          return NextResponse.json({ error: "Vendor issue not found" }, { status: 404 });
+        }
+        const updated = await prisma.tPRMVendorIssue.update({
+          where: { id },
+          data: { status: status || "Closed" },
+        });
+        return NextResponse.json(updated);
       }
 
       const remediation = await prisma.tPRMIssueRemediation.findFirst({

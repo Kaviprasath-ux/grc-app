@@ -886,6 +886,9 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<SimpleItem | null>(null);
   const [name, setName] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const modelName = SIMPLE_CRUD_MODEL_MAP[type] || type;
   const { data: translatedItems } = useTranslatedData(items, { modelName });
@@ -907,10 +910,12 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
   }, [loadItems]);
 
   const handleSave = async () => {
+    if (saving) return;
     if (!name.trim()) {
       toast({ title: t("Required field missing"), description: `${nameLabel} ${t("is required")}`, variant: "destructive" });
       return;
     }
+    setSaving(true);
     try {
       const method = editItem ? "PATCH" : "POST";
       const body = editItem ? { id: editItem.id, name: name.trim() } : { name: name.trim() };
@@ -934,6 +939,8 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
       setTimeout(() => { clearTranslationCache(); loadItems(); }, 4000);
     } catch {
       toast({ title: t("Error"), description: t("Failed to save"), variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -949,6 +956,83 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
       loadItems();
     } catch {
       toast({ title: t("Error"), description: t("Failed to delete"), variant: "destructive" });
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    const { generateExcelTemplate } = await import("@/lib/excel-import");
+    const buffer = generateExcelTemplate([nameLabel], `${nameLabel} Template`);
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${type}-template.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleBulkImport = async (file: File) => {
+    setImporting(true);
+    try {
+      const { parseExcelFile } = await import("@/lib/excel-import");
+      const buffer = await file.arrayBuffer();
+      const result = parseExcelFile<{ [key: string]: string }>(buffer, [
+        { name: nameLabel, required: true, type: "string" },
+      ]);
+      if (!result.success) {
+        const firstErr = result.errors[0]?.message || t("Invalid file");
+        toast({ title: t("Error"), description: firstErr, variant: "destructive" });
+        return;
+      }
+      // Dedupe within the sheet (case-insensitive); skip names already in the list
+      const existingLower = new Set(items.map((i) => i.name.trim().toLowerCase()));
+      const seen = new Set<string>();
+      const toCreate: string[] = [];
+      for (const row of result.data) {
+        const value = String(row[nameLabel] || "").trim();
+        if (!value) continue;
+        const key = value.toLowerCase();
+        if (seen.has(key) || existingLower.has(key)) continue;
+        seen.add(key);
+        toCreate.push(value);
+      }
+      if (toCreate.length === 0) {
+        toast({ title: t("Nothing to import"), description: t("All rows were empty or already exist") });
+        return;
+      }
+      let created = 0;
+      let failed = 0;
+      for (const value of toCreate) {
+        try {
+          const res = await fetch(`/api/tprm/configurations/${type}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: value }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            triggerTranslation(modelName, data.id, { name: data.name });
+            created++;
+          } else {
+            failed++;
+          }
+        } catch {
+          failed++;
+        }
+      }
+      toast({
+        title: t("Import complete"),
+        description: `${created} ${t("created")}${failed ? `, ${failed} ${t("failed")}` : ""}`,
+      });
+      loadItems();
+      setTimeout(() => { clearTranslationCache(); loadItems(); }, 4000);
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to import file"), variant: "destructive" });
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = "";
     }
   };
 
@@ -1008,6 +1092,32 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
     <>
       {!isAuditor && (
         <div className="flex ltr:justify-end rtl:justify-start gap-2 mb-4">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleBulkImport(file);
+            }}
+          />
+          <Button size="sm" variant="outline" onClick={handleDownloadTemplate}>
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Download Template")}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={importing}
+            onClick={() => importInputRef.current?.click()}
+          >
+            {importing ? (
+              <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            )}
+            {t("Bulk Upload")}
+          </Button>
           {type === "service-categories" && (
             <Button size="sm" variant="outline" onClick={handleDeleteAll}>
               <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Delete All")}
@@ -1047,8 +1157,11 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
             </div>
           </div>
           <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
-            <Button size="sm" onClick={handleSave}>{t("Save")}</Button>
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)} disabled={saving}>{t("Cancel")}</Button>
+            <Button size="sm" onClick={handleSave} disabled={saving || !name.trim()}>
+              {saving && <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />}
+              {t("Save")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Send, Loader2,
-  Eye, FileText, ExternalLink, ArrowLeft, ShieldCheck, Ban, MessageSquare,
+  Eye, FileText, ExternalLink, ArrowLeft, ShieldCheck, Ban, MessageSquare, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -205,6 +205,8 @@ export default function RMIssuesPage() {
   // Vendor Issues filters
   const [viSeverityFilter, setViSeverityFilter] = useState("all");
   const [viSubTab, setViSubTab] = useState(initialViSubTab);
+  const [closingVendorIssueId, setClosingVendorIssueId] = useState<string | null>(null);
+  const [viewVendorIssue, setViewVendorIssue] = useState<VendorIssueEntry | null>(null);
 
   // Dynamic data translation
   const { data: translatedVendorRiskIssues } = useTranslatedData(vendorRiskIssues, { modelName: 'TPRMIssueRemediation' });
@@ -240,6 +242,26 @@ export default function RMIssuesPage() {
   }, [toast, t]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Close a vendor issue (RM action on Vendor Issues tab)
+  const handleCloseVendorIssue = useCallback(async (issueId: string) => {
+    setClosingVendorIssueId(issueId);
+    try {
+      const res = await fetch("/api/tprm/rm-issues", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: issueId, kind: "vendor-issue", status: "Closed" }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast({ title: t("Success"), description: t("Vendor issue closed") });
+      setViewVendorIssue(null);
+      loadData();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to close vendor issue"), variant: "destructive" });
+    } finally {
+      setClosingVendorIssueId(null);
+    }
+  }, [toast, t, loadData]);
 
   const loadVendorRiskIssues = useCallback(async (vendorId: string, vendorName: string) => {
     setSelectedVendor({ id: vendorId, name: vendorName });
@@ -560,9 +582,13 @@ export default function RMIssuesPage() {
       cell: ({ row }) => <span className="text-sm">{formatDate(row.original.dueDate)}</span>,
     },
     {
-      accessorKey: "reportedBy",
+      id: "actions",
       header: t("Action"),
-      cell: ({ row }) => <span className="text-sm">{row.original.reportedBy || "-"}</span>,
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" onClick={() => setViewVendorIssue(row.original)} title={t("View")}>
+          <Eye className="h-4 w-4 text-primary" />
+        </Button>
+      ),
     },
   ];
 
@@ -845,6 +871,81 @@ export default function RMIssuesPage() {
         </TabsContent>
 
       </Tabs>
+
+      {/* ==================== VENDOR ISSUE DETAIL DIALOG ==================== */}
+      <Dialog open={!!viewVendorIssue} onOpenChange={(open) => { if (!open) setViewVendorIssue(null); }}>
+        <DialogContent className="!max-w-2xl w-[90vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Vendor Issue Details")}</DialogTitle>
+          </DialogHeader>
+          {viewVendorIssue && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{t("Title")}</Label>
+                  <p className="text-sm mt-1">{viewVendorIssue.title}</p>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Vendor")}</Label>
+                  <p className="text-sm mt-1">{viewVendorIssue.vendorName}</p>
+                </div>
+              </div>
+              {viewVendorIssue.description && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("Description")}</Label>
+                  <p className="text-sm mt-1 text-muted-foreground whitespace-pre-wrap">{viewVendorIssue.description}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">{t("Severity")}</Label>
+                  <div className="mt-1">
+                    <Badge variant="outline" className={`${SEVERITY_COLORS[viewVendorIssue.severity] || ""} text-xs font-medium`}>{t(viewVendorIssue.severity)}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Status")}</Label>
+                  <div className="mt-1">
+                    <Badge variant="outline" className={`${STATUS_COLORS[viewVendorIssue.status] || ""} text-xs font-medium`}>{t(viewVendorIssue.status)}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">{t("Due Date")}</Label>
+                  <p className="text-sm mt-1">{formatDate(viewVendorIssue.dueDate)}</p>
+                </div>
+              </div>
+              {viewVendorIssue.resolution && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("Response")}</Label>
+                  <p className="text-sm mt-1 text-muted-foreground whitespace-pre-wrap">{viewVendorIssue.resolution}</p>
+                </div>
+              )}
+              {viewVendorIssue.reportedBy && (
+                <div>
+                  <Label className="text-xs font-semibold">{t("Reported By")}</Label>
+                  <p className="text-sm mt-1">{viewVendorIssue.reportedBy}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="!flex-col !items-stretch sm:!flex-col gap-2">
+            <Button variant="outline" onClick={() => setViewVendorIssue(null)}>{t("Close")}</Button>
+            {viewVendorIssue && !["Closed", "Resolved"].includes(viewVendorIssue.status) && (
+              <Button
+                onClick={() => handleCloseVendorIssue(viewVendorIssue.id)}
+                disabled={closingVendorIssueId === viewVendorIssue.id}
+              >
+                {closingVendorIssueId === viewVendorIssue.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                )}
+                {t("Close Issue")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ==================== REMEDIATION DETAIL DIALOG (assessor style) ==================== */}
       <Dialog open={!!viewRemediation} onOpenChange={(open) => { if (!open) setViewRemediation(null); }}>

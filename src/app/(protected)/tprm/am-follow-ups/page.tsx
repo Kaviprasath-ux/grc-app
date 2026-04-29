@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Home, Loader2, MessageSquare, AlertTriangle, Plus, Upload, X, FileText, Download, ExternalLink, Trash2,
+  Home, Loader2, MessageSquare, AlertTriangle, Upload, X, FileText, Download, ExternalLink, Trash2, Eye,
 } from "lucide-react";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 
@@ -133,10 +133,10 @@ export default function AMFollowUpsPage() {
   const [uploadArtifacts, setUploadArtifacts] = useState(false);
   const [artifactFiles, setArtifactFiles] = useState<File[]>([]);
 
-  // Vendor Issue dialog
-  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
-  const [newIssue, setNewIssue] = useState({ vendorId: "", title: "", description: "", severity: "Medium", dueDate: "" });
-  const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
+  // Vendor Issue view/respond dialog
+  const [viewIssue, setViewIssue] = useState<VendorIssue | null>(null);
+  const [issueResponse, setIssueResponse] = useState("");
+  const [issueResponding, setIssueResponding] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -154,10 +154,6 @@ export default function AMFollowUpsPage() {
         const res = await fetch(`/api/tprm/am-follow-ups/vendor-issues?status=${statusMap[subTab] || "Open"}`);
         const json = await res.json();
         setVendorIssues(json.data || []);
-        // Use vendor list from API for issue creation
-        if (json.vendors) {
-          setVendors(json.vendors.map((v: { id: string; name: string }) => ({ id: v.id, name: v.name })));
-        }
       }
     } catch {
       toast({ title: t("Error"), description: t("Failed to load data"), variant: "destructive" });
@@ -288,25 +284,34 @@ export default function AMFollowUpsPage() {
     }
   };
 
-  const handleCreateIssue = async () => {
-    if (!newIssue.title.trim()) return;
+  const openViewIssue = (i: VendorIssue) => {
+    setViewIssue(i);
+    setIssueResponse(i.resolution || "");
+  };
+
+  const closeViewIssue = () => {
+    setViewIssue(null);
+    setIssueResponse("");
+  };
+
+  const handleSubmitIssueResponse = async () => {
+    if (!viewIssue || !issueResponse.trim()) return;
+    setIssueResponding(true);
     try {
       const res = await fetch("/api/tprm/am-follow-ups/vendor-issues", {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newIssue),
+        body: JSON.stringify({ id: viewIssue.id, resolution: issueResponse.trim() }),
       });
       if (!res.ok) throw new Error("Failed");
-      const result = await res.json();
-      if (result.id) {
-        triggerTranslation('TPRMVendorIssue', result.id, { title: newIssue.title, description: newIssue.description });
-      }
-      toast({ title: t("Success"), description: t("Issue created") });
-      setIssueDialogOpen(false);
-      setNewIssue({ vendorId: "", title: "", description: "", severity: "Medium", dueDate: "" });
+      triggerTranslation('TPRMVendorIssue', viewIssue.id, { resolution: issueResponse.trim() });
+      toast({ title: t("Success"), description: t("Response submitted") });
+      closeViewIssue();
       fetchData();
     } catch {
-      toast({ title: t("Error"), description: t("Failed to create issue"), variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to submit response"), variant: "destructive" });
+    } finally {
+      setIssueResponding(false);
     }
   };
 
@@ -499,14 +504,6 @@ export default function AMFollowUpsPage() {
 
         {/* Vendor Issues Tab */}
         <TabsContent value="vendor-issues">
-          <div className="flex ltr:justify-end rtl:justify-start mb-4">
-            {subTab === "Pending" && (
-              <Button onClick={() => setIssueDialogOpen(true)}>
-                <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                {t("Add Issue")}
-              </Button>
-            )}
-          </div>
           <Card>
             <CardContent className="p-0">
               {loading ? (
@@ -527,6 +524,7 @@ export default function AMFollowUpsPage() {
                       <TableHead>{t("Due Date")}</TableHead>
                       <TableHead>{t("Status")}</TableHead>
                       <TableHead>{t("Created")}</TableHead>
+                      <TableHead className="ltr:text-right rtl:text-left">{t("Action")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -546,6 +544,12 @@ export default function AMFollowUpsPage() {
                           <Badge variant="outline">{t(i.status)}</Badge>
                         </TableCell>
                         <TableCell>{formatDate(i.createdAt)}</TableCell>
+                        <TableCell className="ltr:text-right rtl:text-left">
+                          <Button size="sm" variant="outline" onClick={() => openViewIssue(i)}>
+                            <Eye className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                            {t("View")}
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -736,71 +740,86 @@ export default function AMFollowUpsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* New Issue Dialog */}
-      <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
-        <DialogContent>
+      {/* Vendor Issue View / Respond Dialog */}
+      <Dialog open={!!viewIssue} onOpenChange={(open) => { if (!open) closeViewIssue(); }}>
+        <DialogContent className="!max-w-2xl w-[92vw] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("Report Vendor Issue")}</DialogTitle>
+            <DialogTitle>{t("Vendor Issue")}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>{t("Vendor")} *</Label>
-              <Select value={newIssue.vendorId} onValueChange={v => setNewIssue(p => ({ ...p, vendorId: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("Select vendor")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {vendors.map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>{t("Title")} *</Label>
-              <Input
-                value={newIssue.title}
-                onChange={e => setNewIssue(p => ({ ...p, title: e.target.value }))}
-                placeholder={t("Issue title")}
-              />
-            </div>
-            <div>
-              <Label>{t("Description")}</Label>
-              <Textarea
-                value={newIssue.description}
-                onChange={e => setNewIssue(p => ({ ...p, description: e.target.value }))}
-                placeholder={t("Describe the issue...")}
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label>{t("Severity")}</Label>
-              <Select value={newIssue.severity} onValueChange={v => setNewIssue(p => ({ ...p, severity: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Critical">{t("Critical")}</SelectItem>
-                  <SelectItem value="High">{t("High")}</SelectItem>
-                  <SelectItem value="Medium">{t("Medium")}</SelectItem>
-                  <SelectItem value="Low">{t("Low")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>{t("Due Date")}</Label>
-              <Input
-                type="date"
-                value={newIssue.dueDate}
-                onChange={e => setNewIssue(p => ({ ...p, dueDate: e.target.value }))}
-              />
-            </div>
-          </div>
+          {viewIssue && (() => {
+            const translated = translatedVendorIssues.find(v => v.id === viewIssue.id) || viewIssue;
+            const responded = !!viewIssue.resolution || viewIssue.status !== 'Open' && viewIssue.status !== 'Awaiting Response';
+            return (
+              <div className="space-y-4">
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t("Title")}</dt>
+                    <dd className="mt-0.5 font-medium text-foreground">{translated.title}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t("Vendor")}</dt>
+                    <dd className="mt-0.5 font-medium text-foreground">{translated.vendor.name}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t("Severity")}</dt>
+                    <dd className="mt-0.5">
+                      {translated.severity ? (
+                        <Badge className={SEVERITY_COLORS[translated.severity] || ""}>{t(translated.severity)}</Badge>
+                      ) : "-"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t("Status")}</dt>
+                    <dd className="mt-0.5"><Badge variant="outline">{t(translated.status)}</Badge></dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t("Due Date")}</dt>
+                    <dd className="mt-0.5 font-medium text-foreground">{formatDate(translated.dueDate)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t("Reported")}</dt>
+                    <dd className="mt-0.5 font-medium text-foreground">
+                      {translated.reportedBy?.fullName || "-"}{translated.createdAt ? ` · ${formatDate(translated.createdAt)}` : ""}
+                    </dd>
+                  </div>
+                </dl>
+
+                {translated.description && (
+                  <div>
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("Description")}</Label>
+                    <div className="mt-1 rounded-md border bg-muted/30 p-3 text-sm whitespace-pre-wrap text-foreground">
+                      {translated.description}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <Label className="text-sm font-medium">{t("Response")}{!responded && " *"}</Label>
+                  <Textarea
+                    value={issueResponse}
+                    onChange={(e) => setIssueResponse(e.target.value)}
+                    placeholder={t("Enter your response to this issue...")}
+                    rows={6}
+                    disabled={responded || issueResponding}
+                    className="mt-1"
+                  />
+                  {responded && (
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      {t("This issue has already been responded to.")}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>{t("Cancel")}</Button>
-            <Button onClick={handleCreateIssue} disabled={!newIssue.vendorId || !newIssue.title.trim()}>
-              {t("Create Issue")}
-            </Button>
+            <Button variant="outline" onClick={closeViewIssue}>{t("Close")}</Button>
+            {viewIssue && !viewIssue.resolution && (viewIssue.status === 'Open' || viewIssue.status === 'Awaiting Response') && (
+              <Button onClick={handleSubmitIssueResponse} disabled={!issueResponse.trim() || issueResponding}>
+                {issueResponding && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+                {t("Submit Response")}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { notificationService } from '@/lib/notification-service';
 import { translateRecord } from '@/lib/translation-service';
+import { isValidEmailFormat } from '@/lib/validations/email';
 
 // GET /api/tprm/am-sme-management — List SMEs created by this AM
 export const GET = withAuth(
@@ -67,6 +68,10 @@ export const POST = withAuth(
           { error: 'Full name, email, username, and password are required' },
           { status: 400 }
         );
+      }
+
+      if (!isValidEmailFormat(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
       }
 
       // Check for duplicates
@@ -161,6 +166,10 @@ export const PATCH = withAuth(
 
       if (!existing) {
         return NextResponse.json({ error: 'SME not found' }, { status: 404 });
+      }
+
+      if (email && !isValidEmailFormat(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
       }
 
       // Check duplicate email

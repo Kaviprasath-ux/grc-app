@@ -74,6 +74,7 @@ interface Vendor {
   cloud: boolean;
   accessToData: boolean;
   pii: boolean;
+  onboardingAnswers: string | null;
   businessJustification: string | null;
   vendorCertification: string | null;
   monitoringVendor: MonitoringVendorSummary | null;
@@ -118,6 +119,7 @@ function VendorAccordionItem({
   t,
   hideEditDelete,
   isAdmin,
+  onboardingQuestions,
 }: {
   vendor: Vendor;
   isExpanded: boolean;
@@ -129,6 +131,7 @@ function VendorAccordionItem({
   t: (s: string) => string;
   hideEditDelete?: boolean;
   isAdmin?: boolean;
+  onboardingQuestions: { id: string; title: string; isActive?: boolean; children?: { id: string; title: string; isActive?: boolean }[] }[];
 }) {
   const a = vendor.monitoringVendor?.assessments[0];
   const effOverall = a?.calculatedOverallScore ?? a?.overallScore ?? null;
@@ -275,26 +278,62 @@ function VendorAccordionItem({
           </div>
 
           {/* ── Vendor Risk Profile group box ── */}
-          <div className="mx-4 mb-3 border border-slate-200 rounded-md overflow-hidden">
-            <div className="bg-primary-50 border-b border-slate-200 px-3 py-1.5">
-              <span className="text-xs font-semibold text-slate-700">{t("Vendor Risk Profile")}</span>
-            </div>
-            <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                [t("Access to Network"), vendor.accessToNetwork],
-                [t("Cloud"),             vendor.cloud],
-                [t("Access to Data"),    vendor.accessToData],
-                [t("PII"),               vendor.pii],
-              ].map(([label, val]) => (
-                <div key={String(label)} className="flex gap-2">
-                  <span className="text-xs text-slate-400">{label} :</span>
-                  <span className={`text-xs font-medium ${val ? "text-red-600" : "text-slate-600"}`}>
-                    {val ? t("Yes") : t("No")}
-                  </span>
+          {(() => {
+            // Build rows dynamically from the customer's configured onboarding
+            // questions + this vendor's stored answers. Falls back to the legacy
+            // hardcoded fields only when no onboarding answers exist for the vendor.
+            let answers: Record<string, string> = {};
+            try {
+              if (vendor.onboardingAnswers) answers = JSON.parse(vendor.onboardingAnswers);
+            } catch { /* ignore */ }
+
+            const rows: { id: string; label: string; value: string }[] = [];
+            for (const pq of onboardingQuestions) {
+              const pAns = answers[pq.id];
+              if (pAns) rows.push({ id: pq.id, label: pq.title, value: pAns });
+              for (const child of (pq.children || []).filter((c) => c.isActive !== false)) {
+                const cAns = answers[child.id];
+                if (cAns) rows.push({ id: child.id, label: child.title, value: cAns });
+              }
+            }
+
+            const fallback: [string, boolean][] = [
+              [t("Access to Network"), vendor.accessToNetwork],
+              [t("Cloud"),             vendor.cloud],
+              [t("Access to Data"),    vendor.accessToData],
+              [t("PII"),               vendor.pii],
+            ];
+
+            return (
+              <div className="mx-4 mb-3 border border-slate-200 rounded-md overflow-hidden">
+                <div className="bg-primary-50 border-b border-slate-200 px-3 py-1.5">
+                  <span className="text-xs font-semibold text-slate-700">{t("Vendor Risk Profile")}</span>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {rows.length > 0
+                    ? rows.map((r) => {
+                        const isYes = r.value.toLowerCase() === "yes";
+                        return (
+                          <div key={r.id} className="flex gap-2">
+                            <span className="text-xs text-slate-400">{r.label} :</span>
+                            <span className={`text-xs font-medium ${isYes ? "text-red-600" : "text-slate-600"}`}>
+                              {r.value}
+                            </span>
+                          </div>
+                        );
+                      })
+                    : fallback.map(([label, val]) => (
+                        <div key={label} className="flex gap-2">
+                          <span className="text-xs text-slate-400">{label} :</span>
+                          <span className={`text-xs font-medium ${val ? "text-red-600" : "text-slate-600"}`}>
+                            {val ? t("Yes") : t("No")}
+                          </span>
+                        </div>
+                      ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── Security Monitoring group box ── */}
           {vendor.monitoringVendor && (
@@ -345,6 +384,7 @@ export default function VendorManagementPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [rawServiceCategories, setRawServiceCategories] = useState<{ id: string; name: string }[]>([]);
   const { data: serviceCategories } = useTranslatedData(rawServiceCategories, { modelName: 'TPRMServiceCategory' });
+  const [onboardingQuestions, setOnboardingQuestions] = useState<{ id: string; title: string; isActive?: boolean; children?: { id: string; title: string; isActive?: boolean }[] }[]>([]);
 
   // Configuration check state
   const [configCheck, setConfigCheck] = useState<{ complete: boolean; missing: string[] } | null>(null);
@@ -392,12 +432,14 @@ export default function VendorManagementPage() {
 
   const loadLookups = useCallback(async () => {
     try {
-      const [deptRes, catRes] = await Promise.all([
+      const [deptRes, catRes, obqRes] = await Promise.all([
         fetch("/api/tprm/configurations/departments"),
         fetch("/api/tprm/configurations/service-categories"),
+        fetch("/api/tprm/configurations/onboarding-questions"),
       ]);
       if (deptRes.ok) setDepartments(await deptRes.json());
       if (catRes.ok) setRawServiceCategories(await catRes.json());
+      if (obqRes.ok) setOnboardingQuestions(await obqRes.json());
     } catch { /* silent */ }
   }, []);
 
@@ -782,6 +824,7 @@ export default function VendorManagementPage() {
                 t={t}
                 hideEditDelete={isCustomerAdmin || isSuperAdmin}
                 isAdmin={isSuperAdmin}
+                onboardingQuestions={onboardingQuestions}
               />
             ))}
           </div>

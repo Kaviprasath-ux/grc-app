@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Download, Search, X, AlertTriangle, Home, ChevronRight, Loader2,
-  Eye, FileText, ExternalLink, MessageSquare, ShieldCheck, Send, Ban, ArrowLeft, Forward,
+  Eye, FileText, ExternalLink, MessageSquare, ShieldCheck, Send, Ban, ArrowLeft, Forward, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -203,6 +203,7 @@ export default function BOIssuesPage() {
 
   // Vendor Issue detail dialog
   const [viewVendorIssue, setViewVendorIssue] = useState<VendorIssueEntry | null>(null);
+  const [closingVendorIssueId, setClosingVendorIssueId] = useState<string | null>(null);
   const [commentsOnlyId, setCommentsOnlyId] = useState<string | null>(null);
 
   // Dynamic data translation
@@ -239,6 +240,26 @@ export default function BOIssuesPage() {
   }, [toast, t]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Close a vendor issue (BO action on Vendor Issues tab)
+  const handleCloseVendorIssue = useCallback(async (issueId: string) => {
+    setClosingVendorIssueId(issueId);
+    try {
+      const res = await fetch("/api/tprm/bo-issues", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: issueId, kind: "vendor-issue", status: "Closed" }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast({ title: t("Success"), description: t("Vendor issue closed") });
+      setViewVendorIssue(null);
+      loadData();
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to close vendor issue"), variant: "destructive" });
+    } finally {
+      setClosingVendorIssueId(null);
+    }
+  }, [toast, t, loadData]);
 
   // Opens the comment dialog before performing an action
   const openCommentDialog = useCallback((remediationId: string, targetStatus: string) => {
@@ -451,7 +472,7 @@ export default function BOIssuesPage() {
     {
       id: "actions", header: t("Action"),
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => setViewVendorIssue(row.original)}>
+        <Button variant="ghost" size="sm" onClick={() => setViewVendorIssue(row.original)} title={t("View")}>
           <Eye className="h-4 w-4 text-primary" />
         </Button>
       ),
@@ -720,8 +741,8 @@ export default function BOIssuesPage() {
               </div>
               {viewVendorIssue.resolution && (
                 <div>
-                  <Label className="text-xs font-semibold">{t("Resolution")}</Label>
-                  <p className="text-sm mt-1 text-muted-foreground">{viewVendorIssue.resolution}</p>
+                  <Label className="text-xs font-semibold">{t("Response")}</Label>
+                  <p className="text-sm mt-1 text-muted-foreground whitespace-pre-wrap">{viewVendorIssue.resolution}</p>
                 </div>
               )}
               {viewVendorIssue.reportedBy && (
@@ -732,8 +753,21 @@ export default function BOIssuesPage() {
               )}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="!flex-col !items-stretch sm:!flex-col gap-2">
             <Button variant="outline" onClick={() => setViewVendorIssue(null)}>{t("Close")}</Button>
+            {viewVendorIssue && !["Closed", "Resolved"].includes(viewVendorIssue.status) && (
+              <Button
+                onClick={() => handleCloseVendorIssue(viewVendorIssue.id)}
+                disabled={closingVendorIssueId === viewVendorIssue.id}
+              >
+                {closingVendorIssueId === viewVendorIssue.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                )}
+                {t("Close Issue")}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

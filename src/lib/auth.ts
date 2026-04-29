@@ -398,5 +398,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   session: {
     strategy: "jwt",
+    // Rolling 30-minute inactivity expiry: cookie lives 30 min; on any request
+    // older than 5 min, the JWT is re-issued, sliding the window forward.
+    // Inactive ≥30 min → token expires and the user is forced back to /login.
+    maxAge: 30 * 60,
+    updateAge: 5 * 60,
+  },
+  jwt: {
+    maxAge: 30 * 60,
   },
 });

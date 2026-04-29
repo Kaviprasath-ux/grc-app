@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { notificationService } from '@/lib/notification-service';
 import { translateRecord } from '@/lib/translation-service';
 import { checkUserLimit, checkFactoryUserLimit } from '@/lib/tprm-subscription';
+import { isValidEmailFormat } from '@/lib/validations/email';
 
 // TPRM-specific roles that can be assigned by the customer admin (CustomerAdministrator)
 const TPRM_USER_ROLES = [
@@ -109,6 +110,10 @@ export const POST = withAuth(
           { error: 'Full name, email, username, password, and role are required' },
           { status: 400 }
         );
+      }
+
+      if (!isValidEmailFormat(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
       }
 
       // Account Manager users cannot be created from User Management
@@ -301,6 +306,10 @@ export const PATCH = withAuth(
 
       if (!existingUser) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      if (email && !isValidEmailFormat(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
       }
 
       // Check for duplicate email (exclude current user)
