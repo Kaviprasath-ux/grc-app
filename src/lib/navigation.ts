@@ -101,7 +101,7 @@ export const navigation: NavItem[] = [
           { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
           { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },
           { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList, permission: "compliance.evidence:view" },
-          { name: "Technical Evidence", href: "/compliance/technical-evidence", icon: Database, permission: "compliance.technical-evidence:view" },
+          // { name: "Technical Evidence", href: "/compliance/technical-evidence", icon: Database, permission: "compliance.technical-evidence:view" },
         ],
       },
     ],
@@ -135,7 +135,7 @@ export const navigation: NavItem[] = [
       { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
       { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },
       { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList, permission: "compliance.evidence:view" },
-      { name: "Technical Evidence", href: "/compliance/technical-evidence", icon: Database, permission: "compliance.technical-evidence:view" },
+      // { name: "Technical Evidence", href: "/compliance/technical-evidence", icon: Database, permission: "compliance.technical-evidence:view" },
 
       // Below items are for CustomerAdministrator and other roles, not GRCAdministrator
       { name: "Exception Management", href: "/compliance/exceptions", icon: AlertTriangle, permission: "compliance.exceptions:view" },
