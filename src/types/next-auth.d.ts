@@ -1,6 +1,7 @@
 import { DefaultSession, DefaultUser } from "next-auth";
 import { JWT, DefaultJWT } from "next-auth/jwt";
 import { UserPermission } from "@/lib/permissions";
+import type { SubscriptionStatus, SubscriptionType } from "@prisma/client";
 
 declare module "next-auth" {
   interface Session {
@@ -19,7 +20,12 @@ declare module "next-auth" {
       // Module flags from CustomerAccount
       isGrcAdded: boolean;
       isTprmAdded: boolean;
+      isInternalAuditEnabled: boolean;
       isQpostComplianceEnabled: boolean;
+      // Subscription snapshot — populated when SUBSCRIPTION_GATING_ENABLED=true.
+      // Used by middleware to gate routes; null when gating disabled or no subscription.
+      subscriptionStatus: SubscriptionStatus | null;
+      subscriptionType: SubscriptionType | null;
       roles: string[];
       permissions: UserPermission[];
     } & DefaultSession["user"];
@@ -39,7 +45,10 @@ declare module "next-auth" {
     // Module flags from CustomerAccount
     isGrcAdded: boolean;
     isTprmAdded: boolean;
+    isInternalAuditEnabled: boolean;
     isQpostComplianceEnabled: boolean;
+    subscriptionStatus: SubscriptionStatus | null;
+    subscriptionType: SubscriptionType | null;
     roles: string[];
     permissions: UserPermission[];
   }
@@ -60,7 +69,10 @@ declare module "next-auth/jwt" {
     // Module flags from CustomerAccount
     isGrcAdded: boolean;
     isTprmAdded: boolean;
+    isInternalAuditEnabled: boolean;
     isQpostComplianceEnabled: boolean;
+    subscriptionStatus: SubscriptionStatus | null;
+    subscriptionType: SubscriptionType | null;
     roles: string[];
     permissions: UserPermission[];
   }

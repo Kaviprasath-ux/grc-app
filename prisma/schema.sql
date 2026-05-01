@@ -1,3 +1,24 @@
+-- CreateEnum
+CREATE TYPE "PlanTier" AS ENUM ('BASIC', 'MEDIUM', 'PRO');
+
+-- CreateEnum
+CREATE TYPE "BillingCycle" AS ENUM ('MONTHLY', 'YEARLY');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionStatus" AS ENUM ('TRIAL', 'ACTIVE', 'EXPIRING_SOON', 'EXPIRED', 'GRACE_PERIOD', 'SUSPENDED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionType" AS ENUM ('PAID', 'TRIAL', 'COMPLIMENTARY');
+
+-- CreateEnum
+CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'ISSUED', 'PAID', 'FAILED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "PaymentStatus" AS ENUM ('CREATED', 'AUTHORIZED', 'CAPTURED', 'FAILED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "DiscountType" AS ENUM ('PERCENTAGE', 'FIXED');
+
 -- CreateTable
 CREATE TABLE "CustomerAccount" (
     "id" TEXT NOT NULL,
@@ -7,6 +28,7 @@ CREATE TABLE "CustomerAccount" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isGrcAdded" BOOLEAN NOT NULL DEFAULT true,
     "isTprmAdded" BOOLEAN NOT NULL DEFAULT false,
+    "isInternalAuditEnabled" BOOLEAN NOT NULL DEFAULT false,
     "isQpostComplianceEnabled" BOOLEAN NOT NULL DEFAULT false,
     "emailNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true,
     "theme" TEXT,
@@ -29,10 +51,174 @@ CREATE TABLE "SubscriptionPlan" (
     "frameworksUsed" INTEGER NOT NULL DEFAULT 0,
     "accountsUsed" INTEGER NOT NULL DEFAULT 0,
     "status" TEXT NOT NULL DEFAULT 'Active',
+    "moduleCode" TEXT,
+    "tier" "PlanTier",
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "SubscriptionPlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ModuleTierPricing" (
+    "id" TEXT NOT NULL,
+    "moduleCode" TEXT NOT NULL,
+    "tier" "PlanTier" NOT NULL,
+    "monthlyPrice" DECIMAL(12,2) NOT NULL,
+    "yearlyPrice" DECIMAL(12,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'INR',
+    "userLimit" INTEGER NOT NULL,
+    "vendorLimit" INTEGER,
+    "assessmentLimit" INTEGER,
+    "frameworkLimit" INTEGER,
+    "auditLimit" INTEGER,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedBy" TEXT,
+
+    CONSTRAINT "ModuleTierPricing_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Subscription" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "status" "SubscriptionStatus" NOT NULL DEFAULT 'ACTIVE',
+    "subscriptionType" "SubscriptionType" NOT NULL DEFAULT 'PAID',
+    "trialEndsAt" TIMESTAMP(3),
+    "autoRenew" BOOLEAN NOT NULL DEFAULT true,
+    "gstin" TEXT,
+    "billingAddress" JSONB,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Subscription_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ModuleSubscription" (
+    "id" TEXT NOT NULL,
+    "subscriptionId" TEXT NOT NULL,
+    "moduleCode" TEXT NOT NULL,
+    "tier" "PlanTier" NOT NULL,
+    "billingCycle" "BillingCycle" NOT NULL,
+    "unitPrice" DECIMAL(12,2) NOT NULL,
+    "userLimit" INTEGER NOT NULL,
+    "vendorLimit" INTEGER,
+    "assessmentLimit" INTEGER,
+    "frameworkLimit" INTEGER,
+    "auditLimit" INTEGER,
+    "currency" TEXT NOT NULL DEFAULT 'INR',
+    "cycleStart" TIMESTAMP(3) NOT NULL,
+    "cycleEnd" TIMESTAMP(3) NOT NULL,
+    "cancelledAt" TIMESTAMP(3),
+    "previousTier" "PlanTier",
+    "tierChangedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ModuleSubscription_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CustomerPlanOverride" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "moduleCode" TEXT NOT NULL,
+    "tier" "PlanTier",
+    "monthlyPrice" DECIMAL(12,2),
+    "yearlyPrice" DECIMAL(12,2),
+    "userLimit" INTEGER,
+    "vendorLimit" INTEGER,
+    "assessmentLimit" INTEGER,
+    "frameworkLimit" INTEGER,
+    "auditLimit" INTEGER,
+    "reason" TEXT,
+    "validFrom" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "validUntil" TIMESTAMP(3),
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CustomerPlanOverride_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BundleDiscount" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "minModules" INTEGER NOT NULL,
+    "minTier" "PlanTier",
+    "discountType" "DiscountType" NOT NULL,
+    "discountValue" DECIMAL(10,2) NOT NULL,
+    "appliesToCycle" "BillingCycle",
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "validFrom" TIMESTAMP(3),
+    "validUntil" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BundleDiscount_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Invoice" (
+    "id" TEXT NOT NULL,
+    "invoiceNumber" TEXT NOT NULL,
+    "subscriptionId" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "issueDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "periodStart" TIMESTAMP(3) NOT NULL,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
+    "subtotal" DECIMAL(12,2) NOT NULL,
+    "discountAmount" DECIMAL(12,2) NOT NULL DEFAULT 0,
+    "taxRate" DECIMAL(5,2) NOT NULL DEFAULT 18.00,
+    "taxAmount" DECIMAL(12,2) NOT NULL,
+    "total" DECIMAL(12,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'INR',
+    "status" "InvoiceStatus" NOT NULL DEFAULT 'DRAFT',
+    "pdfPath" TEXT,
+    "paymentId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InvoiceItem" (
+    "id" TEXT NOT NULL,
+    "invoiceId" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "moduleCode" TEXT NOT NULL,
+    "tier" "PlanTier" NOT NULL,
+    "quantity" INTEGER NOT NULL DEFAULT 1,
+    "unitPrice" DECIMAL(12,2) NOT NULL,
+    "amount" DECIMAL(12,2) NOT NULL,
+
+    CONSTRAINT "InvoiceItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Payment" (
+    "id" TEXT NOT NULL,
+    "subscriptionId" TEXT NOT NULL,
+    "amount" DECIMAL(12,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'INR',
+    "provider" TEXT NOT NULL DEFAULT 'RAZORPAY',
+    "providerOrderId" TEXT,
+    "providerPaymentId" TEXT,
+    "providerSignature" TEXT,
+    "status" "PaymentStatus" NOT NULL DEFAULT 'CREATED',
+    "errorCode" TEXT,
+    "errorDescription" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -3802,6 +3988,36 @@ CREATE TABLE "_EngagementTeamMembers" (
 CREATE UNIQUE INDEX "CustomerAccount_code_key" ON "CustomerAccount"("code");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ModuleTierPricing_moduleCode_tier_key" ON "ModuleTierPricing"("moduleCode", "tier");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Subscription_customerAccountId_key" ON "Subscription"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "ModuleSubscription_cycleEnd_idx" ON "ModuleSubscription"("cycleEnd");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ModuleSubscription_subscriptionId_moduleCode_key" ON "ModuleSubscription"("subscriptionId", "moduleCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CustomerPlanOverride_customerAccountId_moduleCode_key" ON "CustomerPlanOverride"("customerAccountId", "moduleCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Invoice_invoiceNumber_key" ON "Invoice"("invoiceNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Invoice_paymentId_key" ON "Invoice"("paymentId");
+
+-- CreateIndex
+CREATE INDEX "Invoice_customerAccountId_idx" ON "Invoice"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Payment_providerOrderId_key" ON "Payment"("providerOrderId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Payment_providerPaymentId_key" ON "Payment"("providerPaymentId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Role_name_key" ON "Role"("name");
 
 -- CreateIndex
@@ -4907,6 +5123,30 @@ CREATE INDEX "_EngagementTeamMembers_B_index" ON "_EngagementTeamMembers"("B");
 
 -- AddForeignKey
 ALTER TABLE "SubscriptionPlan" ADD CONSTRAINT "SubscriptionPlan_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ModuleSubscription" ADD CONSTRAINT "ModuleSubscription_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CustomerPlanOverride" ADD CONSTRAINT "CustomerPlanOverride_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InvoiceItem" ADD CONSTRAINT "InvoiceItem_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE CASCADE ON UPDATE CASCADE;

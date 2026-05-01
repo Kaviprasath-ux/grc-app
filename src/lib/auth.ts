@@ -4,7 +4,11 @@ import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import type { SubscriptionStatus, SubscriptionType } from "@prisma/client";
 import { expandRolePermissions, type UserPermission } from "@/lib/permissions";
+import { getAccessSnapshot } from "@/lib/module-access";
+
+const SUBSCRIPTION_GATING_ENABLED = process.env.SUBSCRIPTION_GATING_ENABLED === "true";
 
 // Shared query for loading user with all relations needed for session
 const userSelect = {
@@ -36,6 +40,7 @@ const userSelect = {
       // no app-side error). The logo is fetched on demand via /api/settings/logo.
       isGrcAdded: true,
       isTprmAdded: true,
+      isInternalAuditEnabled: true,
       isQpostComplianceEnabled: true,
     },
   },
@@ -87,8 +92,11 @@ async function ensureTprmUserRole(userId: string, tprmRole: string | null, exist
   }
 }
 
-// Helper to build the user object returned to NextAuth from a DB user
-function buildAuthUser(dbUser: {
+// Helper to build the user object returned to NextAuth from a DB user.
+// Async because, when SUBSCRIPTION_GATING_ENABLED=true, it queries the new
+// Subscription/ModuleSubscription tables to derive module access flags from
+// real subscription state instead of the legacy CustomerAccount booleans.
+async function buildAuthUser(dbUser: {
   id: string;
   fullName: string;
   email: string;
@@ -96,7 +104,7 @@ function buildAuthUser(dbUser: {
   departmentId: string | null;
   department: { id: string; name: string } | null;
   customerAccountId: string | null;
-  customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean } | null;
+  customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isInternalAuditEnabled: boolean; isQpostComplianceEnabled: boolean } | null;
   auditHeadId: string | null;
   userRoles: { role: { id: string; name: string } }[];
 }, extraRoles?: string[]) {
@@ -104,6 +112,34 @@ function buildAuthUser(dbUser: {
   if (extraRoles) roleNames.push(...extraRoles.filter(r => !roleNames.includes(r)));
   const effectiveRoles = roleNames.length > 0 ? roleNames : ['Contributor'];
   const primaryRole = effectiveRoles[0] || 'Contributor';
+
+  // Default: legacy CustomerAccount boolean flags drive module access.
+  // Legacy accounts (created before module flags) have both as false — default isGrcAdded=true
+  let isGrcAdded = (dbUser.customerAccount?.isGrcAdded === false && dbUser.customerAccount?.isTprmAdded === false)
+    ? true
+    : (dbUser.customerAccount?.isGrcAdded ?? true);
+  let isTprmAdded = dbUser.customerAccount?.isTprmAdded ?? false;
+  let isInternalAuditEnabled = dbUser.customerAccount?.isInternalAuditEnabled ?? false;
+  let subscriptionStatus: SubscriptionStatus | null = null;
+  let subscriptionType: SubscriptionType | null = null;
+
+  // Subscription gating: when the env flag is on, override module access flags
+  // from the new Subscription/ModuleSubscription state. Customers whose modules
+  // are SUSPENDED, never-purchased, or fully cancelled lose access here.
+  // Subscription status is also captured so middleware can gate routes.
+  if (SUBSCRIPTION_GATING_ENABLED && dbUser.customerAccountId) {
+    try {
+      const snap = await getAccessSnapshot(dbUser.customerAccountId);
+      isGrcAdded = snap.isGrcAdded;
+      isTprmAdded = snap.isTprmAdded;
+      isInternalAuditEnabled = snap.isInternalAuditEnabled;
+      subscriptionStatus = snap.subscriptionStatus;
+      subscriptionType = snap.subscriptionType;
+    } catch (e) {
+      // Defensive: if subscription read fails, fall back to legacy flags so login still works.
+      console.error('[AUTH] getAccessSnapshot failed, falling back to legacy flags:', e);
+    }
+  }
 
   return {
     id: dbUser.id,
@@ -117,12 +153,12 @@ function buildAuthUser(dbUser: {
     customerAccountCode: dbUser.customerAccount?.code || null,
     customerAccountName: dbUser.customerAccount?.name || null,
     auditHeadId: dbUser.auditHeadId,
-    // Legacy accounts (created before module flags) have both as false — default isGrcAdded=true
-    isGrcAdded: (dbUser.customerAccount?.isGrcAdded === false && dbUser.customerAccount?.isTprmAdded === false)
-      ? true
-      : (dbUser.customerAccount?.isGrcAdded ?? true),
-    isTprmAdded: dbUser.customerAccount?.isTprmAdded ?? false,
+    isGrcAdded,
+    isTprmAdded,
+    isInternalAuditEnabled,
     isQpostComplianceEnabled: dbUser.customerAccount?.isQpostComplianceEnabled ?? false,
+    subscriptionStatus,
+    subscriptionType,
     roles: effectiveRoles,
     permissions: [] as UserPermission[],
   };
@@ -227,7 +263,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           extraRoles = [tprmSystemRole];
         }
 
-        return buildAuthUser(user, extraRoles);
+        return await buildAuthUser(user, extraRoles);
         } catch (error) {
           console.error('[AUTH] Error during authentication:', error);
           return null;
@@ -323,7 +359,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.auditHeadId = user.auditHeadId;
           token.isGrcAdded = user.isGrcAdded;
           token.isTprmAdded = user.isTprmAdded;
+          token.isInternalAuditEnabled = user.isInternalAuditEnabled;
           token.isQpostComplianceEnabled = user.isQpostComplianceEnabled;
+          token.subscriptionStatus = user.subscriptionStatus ?? null;
+          token.subscriptionType = user.subscriptionType ?? null;
           token.roles = user.roles;
         } else {
           // OAuth flow: user object only has OAuth profile data
@@ -348,7 +387,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 await ensureTprmUserRole(dbUser.id, dbUser.tprmRole, oauthRoleNames);
                 oauthExtraRoles = [oauthTprmSystemRole];
               }
-              const authUser = buildAuthUser(dbUser, oauthExtraRoles);
+              const authUser = await buildAuthUser(dbUser, oauthExtraRoles);
               token.id = authUser.id; // Critical: override OAuth provider ID with DB user ID
               token.role = authUser.role;
               token.department = authUser.department;
@@ -360,7 +399,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               token.auditHeadId = authUser.auditHeadId;
               token.isGrcAdded = authUser.isGrcAdded;
               token.isTprmAdded = authUser.isTprmAdded;
+              token.isInternalAuditEnabled = authUser.isInternalAuditEnabled;
               token.isQpostComplianceEnabled = authUser.isQpostComplianceEnabled;
+              token.subscriptionStatus = authUser.subscriptionStatus ?? null;
+              token.subscriptionType = authUser.subscriptionType ?? null;
               token.roles = authUser.roles;
             }
           }
@@ -383,14 +425,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.auditHeadId = token.auditHeadId as string | null;
         session.user.isGrcAdded = (token.isGrcAdded as boolean) ?? false;
         session.user.isTprmAdded = (token.isTprmAdded as boolean) ?? false;
+        session.user.isInternalAuditEnabled = (token.isInternalAuditEnabled as boolean) ?? session.user.isGrcAdded;
         session.user.isQpostComplianceEnabled = (token.isQpostComplianceEnabled as boolean) ?? false;
+        session.user.subscriptionStatus = (token.subscriptionStatus as SubscriptionStatus | null) ?? null;
+        session.user.subscriptionType = (token.subscriptionType as SubscriptionType | null) ?? null;
         session.user.roles = (token.roles as string[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)
-        // Filter permissions based on module flags (isGrcAdded / isTprmAdded)
+        // Filter permissions based on module flags (isGrcAdded / isTprmAdded / isInternalAuditEnabled)
         session.user.permissions = expandRolePermissions(
           session.user.roles,
-          { isGrcAdded: session.user.isGrcAdded, isTprmAdded: session.user.isTprmAdded, isQpostComplianceEnabled: session.user.isQpostComplianceEnabled }
+          {
+            isGrcAdded: session.user.isGrcAdded,
+            isTprmAdded: session.user.isTprmAdded,
+            isInternalAuditEnabled: session.user.isInternalAuditEnabled,
+            isQpostComplianceEnabled: session.user.isQpostComplianceEnabled,
+          }
         );
       }
       return session;

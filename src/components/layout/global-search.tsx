@@ -79,12 +79,13 @@ export function GlobalSearch() {
       {
         isGrcAdded: session.user.isGrcAdded ?? false,
         isTprmAdded: session.user.isTprmAdded ?? false,
+        isInternalAuditEnabled: session.user.isInternalAuditEnabled ?? false,
         isQpostComplianceEnabled: session.user.isQpostComplianceEnabled ?? false,
       }
     );
 
     return flattenNavItems(filtered);
-  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded, session?.user?.isQpostComplianceEnabled]);
+  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded, session?.user?.isInternalAuditEnabled, session?.user?.isQpostComplianceEnabled]);
 
   // Group items by their parent module
   const groupedItems = useMemo(() => {

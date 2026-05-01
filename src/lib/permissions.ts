@@ -29,6 +29,15 @@ export const RESOURCES = {
   // Email configuration (GRCAdministrator only)
   'grc.email-settings': '/grc/email-settings',
   'grc.email-templates': '/grc/email-templates',
+  // Subscription Management (GRCAdministrator only)
+  'subscription.pricing': '/grc/subscription-pricing',
+  'subscription.bundle-discounts': '/grc/bundle-discounts',
+  'subscription.list': '/grc/subscriptions',
+  'subscription.detail': '/grc/subscriptions',
+  'subscription.customer-override': '/grc/customer-accounts',
+
+  // Customer-side Subscription portal (CustomerAdministrator)
+  'subscription.customer-portal': '/settings/subscription',
 
   // Organization Module (CustomerAdministrator territory)
   'organization.dashboard': '/organization',
@@ -286,6 +295,12 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     // Email configuration - GRCAdministrator manages email settings for all customers
     { resource: 'grc.email-settings', actions: ['*'], scope: 'all' },
     { resource: 'grc.email-templates', actions: ['*'], scope: 'all' },
+    // Subscription Management — GRCAdministrator owns pricing, discounts, all customer subscriptions
+    { resource: 'subscription.pricing', actions: ['*'], scope: 'all' },
+    { resource: 'subscription.bundle-discounts', actions: ['*'], scope: 'all' },
+    { resource: 'subscription.list', actions: ['*'], scope: 'all' },
+    { resource: 'subscription.detail', actions: ['*'], scope: 'all' },
+    { resource: 'subscription.customer-override', actions: ['*'], scope: 'all' },
     // Compliance module - specific resources only (Frameworks, Controls, Governance, Evidence, Domain)
     { resource: 'compliance.framework', actions: ['*'], scope: 'all' },
     { resource: 'compliance.controls', actions: ['*'], scope: 'all' },
@@ -309,6 +324,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.*', actions: ['*'], scope: 'all' },
     { resource: 'compliance.*', actions: ['*'], scope: 'all' },
     { resource: 'qpost-compliance.*', actions: ['*'], scope: 'all' },
+    // Customer-side Subscription portal — view and act on own subscription
+    { resource: 'subscription.customer-portal', actions: ['*'], scope: 'all' },
     // Asset Management - explicit resources (excluding asset.my-inventory)
     { resource: 'asset.dashboard', actions: ['*'], scope: 'all' },
     { resource: 'asset.inventory', actions: ['*'], scope: 'all' },
@@ -791,12 +808,21 @@ function resourceMatches(pattern: string, resource: string): boolean {
  * When provided, TPRM resources are excluded if isTprmAdded=false,
  * and GRC/organization resources are excluded if isGrcAdded=false.
  * GRCAdministrator and TPRMAdmin roles ignore these flags (system-level roles).
+ *
+ * NEW (subscription gating): when SUBSCRIPTION_GATING_ENABLED env flag is true,
+ * audit.* resources gate on isInternalAuditEnabled (independent module).
+ * When false (default), audit.* keeps gating on isGrcAdded (legacy behavior).
  */
 interface ModuleFlags {
   isGrcAdded?: boolean;
   isTprmAdded?: boolean;
   isQpostComplianceEnabled?: boolean;
+  isInternalAuditEnabled?: boolean;
 }
+
+// Feature flag — when true, Internal Audit is gated independently of GRC.
+// When false (default), audit.* keeps the legacy isGrcAdded-based gating.
+const SUBSCRIPTION_GATING_ENABLED = process.env.SUBSCRIPTION_GATING_ENABLED === 'true';
 
 /**
  * Check if a resource belongs to the TPRM module
@@ -806,8 +832,15 @@ function isTprmResource(resource: string): boolean {
 }
 
 /**
- * Check if a resource belongs to GRC modules (organization, compliance, asset, risk, audit)
- * Excludes 'grc.' prefix since that is GRCAdministrator-specific system admin pages.
+ * Check if a resource belongs to the Internal Audit module
+ */
+function isInternalAuditResource(resource: string): boolean {
+  return resource.startsWith('audit.');
+}
+
+/**
+ * Legacy: resources that historically gated on isGrcAdded — includes audit.* for back-compat.
+ * Used when SUBSCRIPTION_GATING_ENABLED=false.
  */
 function isGrcModuleResource(resource: string): boolean {
   return (
@@ -817,6 +850,20 @@ function isGrcModuleResource(resource: string): boolean {
     resource.startsWith('asset.') ||
     resource.startsWith('risk.') ||
     resource.startsWith('audit.')
+  );
+}
+
+/**
+ * GRC-only resources excluding audit.* (used when SUBSCRIPTION_GATING_ENABLED=true).
+ * Internal Audit is then gated separately via isInternalAuditEnabled.
+ */
+function isGrcOnlyResource(resource: string): boolean {
+  return (
+    resource.startsWith('organization.') ||
+    resource.startsWith('compliance.') ||
+    resource.startsWith('qpost-compliance.') ||
+    resource.startsWith('asset.') ||
+    resource.startsWith('risk.')
   );
 }
 
@@ -855,7 +902,19 @@ export function expandRolePermissions(
         // Apply module flag filtering for non-system roles
         if (!isSystemRole && moduleFlags) {
           if (!moduleFlags.isTprmAdded && isTprmResource(resource)) continue;
-          if (!moduleFlags.isGrcAdded && isGrcModuleResource(resource)) continue;
+
+          if (SUBSCRIPTION_GATING_ENABLED) {
+            // New behavior: Internal Audit is independent of GRC.
+            // - audit.* resources gate on isInternalAuditEnabled
+            // - all other GRC resources gate on isGrcAdded
+            if (!moduleFlags.isInternalAuditEnabled && isInternalAuditResource(resource)) continue;
+            if (!moduleFlags.isGrcAdded && isGrcOnlyResource(resource)) continue;
+          } else {
+            // Legacy behavior: audit.* gates on isGrcAdded (kept for back-compat
+            // until existing customers are migrated and gating flag is enabled).
+            if (!moduleFlags.isGrcAdded && isGrcModuleResource(resource)) continue;
+          }
+
           if (!moduleFlags.isQpostComplianceEnabled && resource.startsWith('qpost-compliance.')) continue;
           if (moduleFlags.isQpostComplianceEnabled && resource.startsWith('compliance.')) continue;
         }

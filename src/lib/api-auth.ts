@@ -30,6 +30,10 @@ export interface AuthenticatedRequest extends NextRequest {
     customerAccountName: string | null;
     // Audit Head isolation: auditHeadId for audit team members
     auditHeadId: string | null;
+    // Subscription snapshot — populated when SUBSCRIPTION_GATING_ENABLED=true.
+    // null otherwise; consumed by checkSubscriptionGate() to gate writes.
+    subscriptionStatus: string | null;
+    subscriptionType: string | null;
     roles: string[];
     permissions: UserPermission[];
   };
@@ -110,6 +114,8 @@ export function withAuth<T extends { params?: Promise<unknown> }>(
         customerAccountName: user.customerAccountName || null,
         // Audit Head isolation: Include auditHeadId
         auditHeadId: user.auditHeadId || null,
+        subscriptionStatus: user.subscriptionStatus ?? null,
+        subscriptionType: user.subscriptionType ?? null,
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -159,6 +165,8 @@ export function withAuthOnly<T extends { params?: Promise<unknown> }>(
         customerAccountName: user.customerAccountName || null,
         // Audit Head isolation: Include auditHeadId
         auditHeadId: user.auditHeadId || null,
+        subscriptionStatus: user.subscriptionStatus ?? null,
+        subscriptionType: user.subscriptionType ?? null,
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -516,6 +524,8 @@ export async function getApiSession(): Promise<AuthenticatedRequest['user'] | nu
     customerAccountName: user.customerAccountName || null,
     // Audit Head isolation: Include auditHeadId
     auditHeadId: user.auditHeadId || null,
+    subscriptionStatus: user.subscriptionStatus ?? null,
+    subscriptionType: user.subscriptionType ?? null,
     roles: user.roles || [],
     permissions: user.permissions || [],
   };

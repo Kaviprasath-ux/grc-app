@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { SubscriptionBanner } from "./subscription-banner";
 import { HelpChatbot } from "@/components/help-chatbot/help-chatbot";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -72,6 +73,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           helpOpen={helpOpen}
           onHelpToggle={() => setHelpOpen((p) => !p)}
         />
+        <SubscriptionBanner />
         <main className="flex-1 p-4 lg:p-6 min-w-0">{children}</main>
       </div>
 

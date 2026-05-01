@@ -46,6 +46,9 @@ import {
   UserCog,
   FileBarChart,
   Factory,
+  IndianRupee,
+  Tag,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 import { UserPermission, hasPermission, Action } from "@/lib/permissions";
@@ -94,6 +97,24 @@ export const navigation: NavItem[] = [
         permission: "grc.customers:view",
       },
       {
+        name: "Subscription Pricing",
+        href: "/grc/subscription-pricing",
+        icon: IndianRupee,
+        permission: "subscription.pricing:view",
+      },
+      {
+        name: "Bundle Discounts",
+        href: "/grc/bundle-discounts",
+        icon: Tag,
+        permission: "subscription.bundle-discounts:view",
+      },
+      {
+        name: "All Subscriptions",
+        href: "/grc/subscriptions",
+        icon: CreditCard,
+        permission: "subscription.list:view",
+      },
+      {
         name: "Compliance",
         icon: Shield,
         children: [
@@ -120,6 +141,7 @@ export const navigation: NavItem[] = [
       { name: "Users", href: "/organization/users", icon: Users, permission: "organization.users:view" },
       { name: "Process", href: "/organization/process", icon: GitBranch, permission: "organization.process:view" },
       { name: "Organization Settings", href: "/organization/settings", icon: Settings, permission: "organization.settings:view" },
+      { name: "Subscription & Billing", href: "/settings/subscription", icon: CreditCard, permission: "subscription.customer-portal:view" },
       { name: "Reports", href: "/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
     ],
   },
@@ -557,6 +579,7 @@ function transformNavItemsForRole(items: NavItem[], userRole: string): NavItem[]
 interface NavModuleFlags {
   isGrcAdded?: boolean;
   isTprmAdded?: boolean;
+  isInternalAuditEnabled?: boolean;
   isQpostComplianceEnabled?: boolean;
 }
 

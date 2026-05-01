@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedEmailTemplates } from "./seed-email-templates";
+import { seedSubscriptionCatalog } from "./seed-subscription-catalog";
 
 const prisma = new PrismaClient();
 
@@ -5441,6 +5442,11 @@ async function main() {
   } else {
     console.log("⚠️ Skipping TPRM dummy data - could not find one or more TPRM users (as, ap, it, auditor)");
   }
+
+  // ==================== SUBSCRIPTION CATALOG (GLOBAL) ====================
+  // 9 ModuleTierPricing rows + 1 sample BundleDiscount.
+  // Admin-configurable later via /grc/subscription-pricing.
+  await seedSubscriptionCatalog(prisma);
 
   // ==================== EMAIL TEMPLATES (GLOBAL - SYSTEM DEFAULT) ====================
   // Seed all 73 English email templates as system defaults

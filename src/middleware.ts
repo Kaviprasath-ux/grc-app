@@ -17,6 +17,22 @@ const ROUTE_TO_RESOURCE: Record<string, string> = Object.entries(RESOURCES)
     return acc;
   }, {});
 
+const SUBSCRIPTION_GATING_ENABLED = process.env.SUBSCRIPTION_GATING_ENABLED === "true";
+
+// Paths that remain accessible even for SUSPENDED customers (so they can renew
+// or contact support). Everything else under module routes redirects to the
+// subscription page when SUSPENDED.
+const SUSPENDED_ALLOWLIST_PREFIXES = [
+  "/settings/subscription", // billing portal — primary renewal path
+  "/login",
+  "/logout",
+  "/signup",
+];
+
+function isSuspendedAllowlisted(pathname: string): boolean {
+  return SUSPENDED_ALLOWLIST_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 /**
  * NextAuth v5 middleware.
  *
@@ -66,6 +82,20 @@ export default auth((req) => {
     }
   }
 
+  // ── 3) Subscription gating (feature-flagged) ──
+  // When SUBSCRIPTION_GATING_ENABLED=true, customers in SUSPENDED state are
+  // redirected to /settings/subscription on any non-allowlisted page so they
+  // can renew. The full-page interstitial banner (subscription-banner.tsx)
+  // covers any case where the redirect somehow doesn't fire (defence in depth).
+  if (SUBSCRIPTION_GATING_ENABLED) {
+    const status = req.auth.user?.subscriptionStatus;
+    if (status === "SUSPENDED" && !isSuspendedAllowlisted(pathname)) {
+      const renewUrl = new URL("/settings/subscription", req.url);
+      renewUrl.searchParams.set("suspended", "1");
+      return NextResponse.redirect(renewUrl);
+    }
+  }
+
   return NextResponse.next();
 });
 
@@ -79,6 +109,6 @@ export const config = {
      * - /_next (Next.js internals)
      * - /favicon.ico, /logo*, /icons, etc. (static assets)
      */
-    "/((?!login|api|_next|favicon\\.ico|logo|icons|uploads).*)",
+    "/((?!login|signup|api|_next|favicon\\.ico|logo|icons|uploads).*)",
   ],
 };
