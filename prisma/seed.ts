@@ -350,7 +350,6 @@ async function main() {
     "GRC Admin": "GRCAdministrator",
     "AuditHead": "AuditHead",
     "Auditor": "Auditor",
-    "Auditor": "Auditor",
     "Risk Manager": "Contributor",
     "User": "Contributor",
   };

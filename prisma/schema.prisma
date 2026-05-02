@@ -264,6 +264,16 @@ model ModuleTierPricing {
   @@unique([moduleCode, tier])
 }
 
+// Pending signup for payment flow (temporary storage until payment completes)
+model PendingSignup {
+  id              String   @id @default(cuid())
+  token           String   @unique
+  data            String   // JSON blob with signup data
+  razorpayOrderId String?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+}
+
 // Subscription envelope (one per customer)
 model Subscription {
   id                String             @id @default(cuid())

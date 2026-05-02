@@ -65,6 +65,7 @@
     "openai": "^6.32.0",
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.17.2",
+    "razorpay": "^2.9.6",
     "react": "19.2.3",
     "react-day-picker": "^9.13.0",
     "react-dom": "19.2.3",

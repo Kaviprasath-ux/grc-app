@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import { signIn } from "next-auth/react";
 import {
-  ArrowLeft, ArrowRight, Check, Sparkles, Loader2, Tag, AlertCircle, Eye, EyeOff,
+  ArrowLeft, ArrowRight, Check, Sparkles, Loader2, Tag, AlertCircle, Eye, EyeOff, CreditCard, RefreshCw,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import PaymentModal, { PaymentSuccessData } from "@/components/payment/PaymentModal";
 
 type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
 type PlanTier = "BASIC" | "MEDIUM" | "PRO";
@@ -39,6 +41,64 @@ interface BundleDiscountRow {
   appliesToCycle: BillingCycle | null;
 }
 
+// Razorpay types
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  notes?: Record<string, string>;
+  theme?: {
+    color?: string;
+    backdrop_color?: string;
+  };
+  handler: (response: RazorpayResponse) => void;
+  modal?: {
+    ondismiss?: () => void;
+    escape?: boolean;
+    confirm_close?: boolean;
+  };
+}
+
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: string, handler: (response: RazorpayFailedResponse) => void) => void;
+  close: () => void;
+}
+
+interface RazorpayFailedResponse {
+  error: {
+    code: string;
+    description: string;
+    source: string;
+    step: string;
+    reason: string;
+    metadata: {
+      order_id: string;
+      payment_id: string;
+    };
+  };
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
 const MODULE_META: Record<ModuleCode, { label: string; icon: string; description: string }> = {
   GRC:            { label: "GRC",            icon: "🛡️", description: "Governance, Risk & Compliance" },
   TPRM:           { label: "TPRM",           icon: "👥", description: "Third-Party Risk Management" },
@@ -57,16 +117,14 @@ function formatINR(n: number): string {
 }
 
 interface FormState {
-  // Step 1
   organizationName: string;
   gstin: string;
   adminFirstName: string;
   adminLastName: string;
   adminEmail: string;
+  adminPhone: string;
   adminPassword: string;
-  // Step 2
   selections: Array<{ moduleCode: ModuleCode; tier: PlanTier; enabled: boolean }>;
-  // Step 3
   cycle: BillingCycle;
 }
 
@@ -76,10 +134,19 @@ const INITIAL_FORM: FormState = {
   adminFirstName: "",
   adminLastName: "",
   adminEmail: "",
+  adminPhone: "",
   adminPassword: "",
   selections: ALL_MODULES.map((m) => ({ moduleCode: m, tier: "BASIC", enabled: false })),
   cycle: "YEARLY",
 };
+
+// Pending payment data for retry
+interface PendingPayment {
+  signupToken: string;
+  orderId: string;
+  amount: number;
+  keyId: string;
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -90,6 +157,25 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "initiating" | "processing" | "completing" | "failed">("idle");
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  // Store pending payment for retry (use state instead of ref so it triggers re-render)
+  const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
+  const razorpayInstanceRef = useRef<RazorpayInstance | null>(null);
+
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [shouldOpenModal, setShouldOpenModal] = useState(false);
+
+  // Open modal when pending payment is set and shouldOpenModal is true
+  useEffect(() => {
+    if (shouldOpenModal && pendingPayment) {
+      setShowPaymentModal(true);
+      setShouldOpenModal(false);
+    }
+  }, [shouldOpenModal, pendingPayment]);
 
   useEffect(() => {
     (async () => {
@@ -110,12 +196,11 @@ export default function SignupPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function getPrice(moduleCode: ModuleCode, tier: PlanTier): { monthly: number; yearly: number } {
+  const getPrice = useCallback((moduleCode: ModuleCode, tier: PlanTier): { monthly: number; yearly: number } => {
     const row = pricing.find((p) => p.moduleCode === moduleCode && p.tier === tier);
     return { monthly: row?.monthlyPrice ?? 0, yearly: row?.yearlyPrice ?? 0 };
-  }
+  }, [pricing]);
 
-  // Live total (yearly cycle if chosen)
   const enabledLines = useMemo(
     () => form.selections.filter((s) => s.enabled),
     [form.selections]
@@ -126,9 +211,8 @@ export default function SignupPage() {
       const p = getPrice(s.moduleCode, s.tier);
       return sum + (form.cycle === "MONTHLY" ? p.monthly : p.yearly);
     }, 0);
-  }, [enabledLines, form.cycle, pricing]);
+  }, [enabledLines, form.cycle, getPrice]);
 
-  // Best matching discount
   const bestDiscount = useMemo(() => {
     if (enabledLines.length === 0) return null;
     let best: { rule: BundleDiscountRow; amount: number } | null = null;
@@ -151,7 +235,6 @@ export default function SignupPage() {
   const taxAmount = Math.round(taxableAmount * 0.18);
   const total = taxableAmount + taxAmount;
 
-  // ── Validation per step ──
   function step1Valid() {
     return (
       form.organizationName.trim().length >= 2 &&
@@ -162,13 +245,29 @@ export default function SignupPage() {
       (form.gstin === "" || form.gstin.length === 15)
     );
   }
+
   function step2Valid() {
     return enabledLines.length >= 1;
   }
 
-  async function submit(path: "TRIAL" | "SUBSCRIBE") {
+  async function autoLoginAndRedirect(userName: string, password: string) {
+    const signed = await signIn("credentials", {
+      username: userName,
+      password: password,
+      redirect: false,
+    });
+    if (signed?.error) {
+      router.push(`/login?username=${encodeURIComponent(userName)}&signedUp=1`);
+      return;
+    }
+    router.push("/settings/subscription?signedUp=1");
+  }
+
+  // Handle trial signup (no payment)
+  async function submitTrial() {
     setSubmitting(true);
     setError(null);
+    setPaymentError(null);
     try {
       const res = await fetch("/api/public/signup", {
         method: "POST",
@@ -182,24 +281,13 @@ export default function SignupPage() {
           adminPassword: form.adminPassword,
           modules: enabledLines.map((s) => ({ moduleCode: s.moduleCode, tier: s.tier })),
           cycle: form.cycle,
-          path,
+          path: "TRIAL",
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Signup failed");
 
-      // Auto sign-in via NextAuth credentials
-      const signed = await signIn("credentials", {
-        username: json.data.userName,
-        password: form.adminPassword,
-        redirect: false,
-      });
-      if (signed?.error) {
-        // If auto-login fails, send to login page
-        router.push(`/login?username=${encodeURIComponent(json.data.userName)}&signedUp=1`);
-        return;
-      }
-      router.push("/settings/subscription?signedUp=1");
+      await autoLoginAndRedirect(json.data.userName, form.adminPassword);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -207,280 +295,584 @@ export default function SignupPage() {
     }
   }
 
+  // Open custom payment modal with given payment data
+  function openPaymentModal(paymentData: PendingPayment) {
+    setPendingPayment(paymentData);
+    setShouldOpenModal(true); // This will trigger the useEffect to open the modal
+  }
+
+  // Handle payment success from modal
+  async function handlePaymentSuccess(data: PaymentSuccessData) {
+    setShowPaymentModal(false);
+    setPaymentStatus("completing");
+    setPaymentError(null);
+
+    const signupToken = pendingPayment?.signupToken;
+    if (!signupToken) {
+      setPaymentError("Session expired. Please try again.");
+      setSubmitting(false);
+      setPaymentStatus("failed");
+      return;
+    }
+
+    await completeSignup(
+      signupToken,
+      data.razorpay_order_id,
+      data.razorpay_payment_id,
+      data.razorpay_signature
+    );
+  }
+
+  // Handle payment error from modal
+  function handlePaymentError(errorMsg: string) {
+    setShowPaymentModal(false);
+    setSubmitting(false);
+    setPaymentStatus("failed");
+    setPaymentError(errorMsg + " Click 'Retry Payment' to try again.");
+  }
+
+  // Handle payment modal close
+  function handlePaymentModalClose() {
+    setShowPaymentModal(false);
+    setSubmitting(false);
+    setPaymentStatus("failed");
+    setPaymentError("Payment was cancelled. Click 'Retry Payment' to try again.");
+  }
+
+  // Legacy: Open Razorpay popup checkout (kept as fallback)
+  function openRazorpayCheckout(paymentData: PendingPayment) {
+    const { signupToken, orderId, amount, keyId } = paymentData;
+
+    const options: RazorpayOptions = {
+      key: keyId,
+      amount: amount,
+      currency: "INR",
+      name: "Verifai GRC",
+      description: `Subscription - ${enabledLines.map(s => s.moduleCode).join(", ")}`,
+      order_id: orderId,
+      prefill: {
+        name: `${form.adminFirstName} ${form.adminLastName}`.trim(),
+        email: form.adminEmail.trim().toLowerCase(),
+        contact: form.adminPhone.trim() || undefined,
+      },
+      notes: {
+        organization: form.organizationName.trim(),
+        modules: enabledLines.map(s => `${s.moduleCode}:${s.tier}`).join(","),
+        cycle: form.cycle,
+      },
+      theme: {
+        color: "#1c1917",
+      },
+      modal: {
+        escape: false,
+        confirm_close: true,
+        ondismiss: () => {
+          setSubmitting(false);
+          setPaymentStatus("failed");
+          setPaymentError("Payment was cancelled. Click 'Retry Payment' to try again.");
+        },
+      },
+      handler: async (response: RazorpayResponse) => {
+        // Payment successful - complete signup
+        setPaymentStatus("completing");
+        setPaymentError(null);
+        await completeSignup(
+          signupToken,
+          response.razorpay_order_id,
+          response.razorpay_payment_id,
+          response.razorpay_signature
+        );
+      },
+    };
+
+    const razorpay = new window.Razorpay(options);
+    razorpayInstanceRef.current = razorpay;
+
+    razorpay.on("payment.failed", (response: RazorpayFailedResponse) => {
+      console.error("[Razorpay] Payment failed:", response.error);
+      setSubmitting(false);
+      setPaymentStatus("failed");
+
+      // Provide user-friendly error messages
+      let errorMsg = "Payment failed. ";
+      switch (response.error.reason) {
+        case "payment_failed":
+          errorMsg += response.error.description || "Please try again with a different payment method.";
+          break;
+        case "payment_cancelled":
+          errorMsg += "Payment was cancelled. Click 'Retry Payment' to try again.";
+          break;
+        default:
+          errorMsg += response.error.description || "Please try again or contact support.";
+      }
+      setPaymentError(errorMsg);
+    });
+
+    razorpay.open();
+  }
+
+  // Handle paid signup with Razorpay
+  async function submitPaid() {
+    // Prevent double submission
+    if (submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    setPaymentError(null);
+    setPaymentStatus("initiating");
+
+    try {
+      // Step 1: Initiate payment - create Razorpay order
+      const initiateRes = await fetch("/api/public/signup/initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationName: form.organizationName.trim(),
+          gstin: form.gstin.trim() || null,
+          adminFirstName: form.adminFirstName.trim(),
+          adminLastName: form.adminLastName.trim(),
+          adminEmail: form.adminEmail.trim().toLowerCase(),
+          adminPassword: form.adminPassword,
+          modules: enabledLines.map((s) => ({ moduleCode: s.moduleCode, tier: s.tier })),
+          cycle: form.cycle,
+        }),
+      });
+
+      const initiateJson = await initiateRes.json();
+
+      if (!initiateRes.ok) {
+        throw new Error(initiateJson.error || "Failed to initiate payment");
+      }
+
+      const { signupToken, orderId, amount, keyId, stubMode, stubPaymentId } = initiateJson.data;
+
+      // Store for retry
+      setPendingPayment({ signupToken, orderId, amount, keyId });
+
+      // In stub mode, skip Razorpay checkout and complete directly
+      if (stubMode) {
+        setPaymentStatus("completing");
+        await completeSignup(signupToken, orderId, stubPaymentId || `stub_pay_${Date.now()}`, "stub_signature");
+        return;
+      }
+
+      // Step 2: Open Razorpay standard checkout (more reliable than custom modal)
+      setPaymentStatus("processing");
+      openRazorpayCheckout({ signupToken, orderId, amount, keyId });
+
+    } catch (e) {
+      setError((e as Error).message);
+      setSubmitting(false);
+      setPaymentStatus("idle");
+    }
+  }
+
+  // Retry payment with existing order
+  function retryPayment() {
+    if (!pendingPayment) {
+      // No pending payment, start fresh
+      submitPaid();
+      return;
+    }
+
+    setSubmitting(true);
+    setPaymentError(null);
+    setPaymentStatus("processing");
+    openRazorpayCheckout(pendingPayment);
+  }
+
+  // Complete signup after payment
+  async function completeSignup(
+    signupToken: string,
+    razorpay_order_id: string,
+    razorpay_payment_id: string,
+    razorpay_signature: string
+  ) {
+    try {
+      const completeRes = await fetch("/api/public/signup/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          signupToken,
+          razorpay_order_id,
+          razorpay_payment_id,
+          razorpay_signature,
+        }),
+      });
+
+      const completeJson = await completeRes.json();
+      if (!completeRes.ok) {
+        throw new Error(completeJson.error || "Failed to complete signup");
+      }
+
+      // Clear pending payment
+      setPendingPayment(null);
+
+      // Auto-login and redirect
+      await autoLoginAndRedirect(completeJson.data.userName, form.adminPassword);
+    } catch (e) {
+      setPaymentError((e as Error).message);
+      setSubmitting(false);
+      setPaymentStatus("failed");
+    }
+  }
+
+  function getPaymentStatusMessage() {
+    switch (paymentStatus) {
+      case "initiating":
+        return "Preparing payment...";
+      case "processing":
+        return "Complete payment in the popup...";
+      case "completing":
+        return "Creating your account...";
+      default:
+        return "Processing...";
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 to-amber-50 py-10 px-4">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-stone-900">Get started with Verifai GRC</h1>
-          <p className="text-stone-600 mt-2">
-            Already have an account?{" "}
-            <Link href="/login" className="text-stone-900 font-medium hover:underline">Sign in</Link>
-          </p>
-        </div>
+    <>
+      {/* Load Razorpay Checkout Script */}
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        onLoad={() => setRazorpayLoaded(true)}
+        strategy="afterInteractive"
+      />
 
-        {/* Step indicator */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="flex items-center">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step === n ? "bg-stone-900 text-white"
-                : step > n ? "bg-green-600 text-white"
-                : "bg-stone-200 text-stone-500"
-              }`}>
-                {step > n ? <Check className="h-4 w-4" /> : n}
-              </div>
-              {n < 4 && <div className={`h-0.5 w-12 ${step > n ? "bg-green-600" : "bg-stone-200"}`} />}
-            </div>
-          ))}
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-stone-50 to-amber-50 py-10 px-4">
+        <div className="max-w-3xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-semibold text-stone-900">Get started with Verifai GRC</h1>
+            <p className="text-stone-600 mt-2">
+              Already have an account?{" "}
+              <Link href="/login" className="text-stone-900 font-medium hover:underline">Sign in</Link>
+            </p>
+          </div>
 
-        <Card>
-          <CardContent className="p-6">
-            {error && (
-              <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3 flex gap-2 text-sm text-red-900">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                <div>{error}</div>
-              </div>
-            )}
-
-            {step === 1 && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-stone-900">Tell us about your organization</h2>
-                <div>
-                  <Label>Organization name *</Label>
-                  <Input value={form.organizationName} onChange={(e) => update("organizationName", e.target.value)} placeholder="Acme Pvt Ltd" />
+          {/* Step indicator */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="flex items-center">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  step === n ? "bg-stone-900 text-white"
+                  : step > n ? "bg-green-600 text-white"
+                  : "bg-stone-200 text-stone-500"
+                }`}>
+                  {step > n ? <Check className="h-4 w-4" /> : n}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                {n < 4 && <div className={`h-0.5 w-12 ${step > n ? "bg-green-600" : "bg-stone-200"}`} />}
+              </div>
+            ))}
+          </div>
+
+          <Card>
+            <CardContent className="p-6">
+              {error && (
+                <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3 flex gap-2 text-sm text-red-900">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div>{error}</div>
+                </div>
+              )}
+
+              {step === 1 && (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold text-stone-900">Tell us about your organization</h2>
                   <div>
-                    <Label>First name *</Label>
-                    <Input value={form.adminFirstName} onChange={(e) => update("adminFirstName", e.target.value)} />
+                    <Label>Organization name *</Label>
+                    <Input value={form.organizationName} onChange={(e) => update("organizationName", e.target.value)} placeholder="Acme Pvt Ltd" />
                   </div>
-                  <div>
-                    <Label>Last name *</Label>
-                    <Input value={form.adminLastName} onChange={(e) => update("adminLastName", e.target.value)} />
-                  </div>
-                </div>
-                <div>
-                  <Label>Work email *</Label>
-                  <Input type="email" value={form.adminEmail} onChange={(e) => update("adminEmail", e.target.value)} placeholder="you@company.com" />
-                </div>
-                <div>
-                  <Label>Password * <span className="text-xs text-stone-500">(min 8 chars)</span></Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      value={form.adminPassword}
-                      onChange={(e) => update("adminPassword", e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((p) => !p)}
-                      className="absolute ltr:right-2 rtl:left-2 top-1/2 -translate-y-1/2 text-stone-500"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <Label>GSTIN <span className="text-xs text-stone-500">(optional, 15 chars)</span></Label>
-                  <Input
-                    value={form.gstin}
-                    onChange={(e) => update("gstin", e.target.value.toUpperCase())}
-                    placeholder="27AAACS1234A1Z5"
-                    maxLength={15}
-                    className="font-mono"
-                  />
-                </div>
-                <div className="flex justify-end pt-2">
-                  <Button onClick={() => setStep(2)} disabled={!step1Valid()}>
-                    Continue
-                    <ArrowRight className="h-4 w-4 ltr:ml-1 rtl:mr-1" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-stone-900">Choose your modules</h2>
-                <p className="text-sm text-stone-600">Pick at least one module. Each module can be subscribed at Basic, Medium, or Pro.</p>
-                {form.selections.map((s, idx) => {
-                  const meta = MODULE_META[s.moduleCode];
-                  return (
-                    <div key={s.moduleCode} className={`border rounded-md p-4 ${s.enabled ? "border-stone-400 bg-stone-50" : "border-stone-200"}`}>
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={s.enabled}
-                          onCheckedChange={(v) => update("selections", form.selections.map((x, i) => i === idx ? { ...x, enabled: !!v } : x))}
-                          id={`m-${s.moduleCode}`}
-                        />
-                        <Label htmlFor={`m-${s.moduleCode}`} className="cursor-pointer flex-1">
-                          <span className="text-xl ltr:mr-2 rtl:ml-2">{meta.icon}</span>
-                          <span className="font-medium">{meta.label}</span>
-                          <span className="text-xs text-stone-600 block">{meta.description}</span>
-                        </Label>
-                      </div>
-                      {s.enabled && (
-                        <div className="grid grid-cols-3 gap-2 mt-3">
-                          {(["BASIC", "MEDIUM", "PRO"] as PlanTier[]).map((tier) => {
-                            const p = getPrice(s.moduleCode, tier);
-                            return (
-                              <button
-                                key={tier}
-                                onClick={() => update("selections", form.selections.map((x, i) => i === idx ? { ...x, tier } : x))}
-                                className={`p-3 rounded-md border-2 text-left ${
-                                  s.tier === tier ? `border-stone-900 ${TIER_BADGE[tier]}` : "border-stone-200 hover:border-stone-400 bg-white"
-                                }`}
-                              >
-                                <div className="text-xs font-semibold">{tier}</div>
-                                <div className="text-sm font-mono mt-1">
-                                  {form.cycle === "MONTHLY" ? `₹${formatINR(p.monthly)}/mo` : `₹${formatINR(p.yearly)}/yr`}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>First name *</Label>
+                      <Input value={form.adminFirstName} onChange={(e) => update("adminFirstName", e.target.value)} />
                     </div>
-                  );
-                })}
-                <div className="flex justify-between pt-2">
-                  <Button variant="outline" onClick={() => setStep(1)}>
-                    <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    Back
-                  </Button>
-                  <Button onClick={() => setStep(3)} disabled={!step2Valid()}>
-                    Continue
-                    <ArrowRight className="h-4 w-4 ltr:ml-1 rtl:mr-1" />
-                  </Button>
+                    <div>
+                      <Label>Last name *</Label>
+                      <Input value={form.adminLastName} onChange={(e) => update("adminLastName", e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Work email *</Label>
+                      <Input type="email" value={form.adminEmail} onChange={(e) => update("adminEmail", e.target.value)} placeholder="you@company.com" />
+                    </div>
+                    <div>
+                      <Label>Phone <span className="text-xs text-stone-500">(optional)</span></Label>
+                      <Input type="tel" value={form.adminPhone} onChange={(e) => update("adminPhone", e.target.value)} placeholder="+91 98765 43210" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Password * <span className="text-xs text-stone-500">(min 8 chars)</span></Label>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        value={form.adminPassword}
+                        onChange={(e) => update("adminPassword", e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((p) => !p)}
+                        className="absolute ltr:right-2 rtl:left-2 top-1/2 -translate-y-1/2 text-stone-500"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>GSTIN <span className="text-xs text-stone-500">(optional, 15 chars)</span></Label>
+                    <Input
+                      value={form.gstin}
+                      onChange={(e) => update("gstin", e.target.value.toUpperCase())}
+                      placeholder="27AAACS1234A1Z5"
+                      maxLength={15}
+                      className="font-mono"
+                    />
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <Button onClick={() => setStep(2)} disabled={!step1Valid()}>
+                      Continue
+                      <ArrowRight className="h-4 w-4 ltr:ml-1 rtl:mr-1" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {step === 3 && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-stone-900">Choose billing cycle</h2>
-                <div className="grid grid-cols-2 gap-3">
-                  {(["MONTHLY", "YEARLY"] as BillingCycle[]).map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => update("cycle", c)}
-                      className={`p-5 rounded-md border-2 text-left transition-colors ${
-                        form.cycle === c ? "border-stone-900 bg-stone-50" : "border-stone-200 hover:border-stone-400"
-                      }`}
-                    >
-                      <div className="font-semibold text-lg">{c === "MONTHLY" ? "Monthly" : "Yearly"}</div>
-                      {c === "YEARLY" && (
-                        <div className="text-sm text-green-700 mt-1">Save 2 months free</div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Live summary */}
-                <div className="rounded-md bg-stone-50 border border-stone-200 p-4 text-sm space-y-2">
-                  {enabledLines.map((s) => {
-                    const p = getPrice(s.moduleCode, s.tier);
-                    const cyclePrice = form.cycle === "MONTHLY" ? p.monthly : p.yearly;
+              {step === 2 && (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold text-stone-900">Choose your modules</h2>
+                  <p className="text-sm text-stone-600">Pick at least one module. Each module can be subscribed at Basic, Medium, or Pro.</p>
+                  {form.selections.map((s, idx) => {
+                    const meta = MODULE_META[s.moduleCode];
                     return (
-                      <div key={s.moduleCode} className="flex justify-between">
-                        <span>{MODULE_META[s.moduleCode].label} — {s.tier}</span>
-                        <span className="font-mono">₹{formatINR(cyclePrice)}</span>
+                      <div key={s.moduleCode} className={`border rounded-md p-4 ${s.enabled ? "border-stone-400 bg-stone-50" : "border-stone-200"}`}>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={s.enabled}
+                            onCheckedChange={(v) => update("selections", form.selections.map((x, i) => i === idx ? { ...x, enabled: !!v } : x))}
+                            id={`m-${s.moduleCode}`}
+                          />
+                          <Label htmlFor={`m-${s.moduleCode}`} className="cursor-pointer flex-1">
+                            <span className="text-xl ltr:mr-2 rtl:ml-2">{meta.icon}</span>
+                            <span className="font-medium">{meta.label}</span>
+                            <span className="text-xs text-stone-600 block">{meta.description}</span>
+                          </Label>
+                        </div>
+                        {s.enabled && (
+                          <div className="grid grid-cols-3 gap-2 mt-3">
+                            {(["BASIC", "MEDIUM", "PRO"] as PlanTier[]).map((tier) => {
+                              const p = getPrice(s.moduleCode, tier);
+                              return (
+                                <button
+                                  key={tier}
+                                  onClick={() => update("selections", form.selections.map((x, i) => i === idx ? { ...x, tier } : x))}
+                                  className={`p-3 rounded-md border-2 text-left ${
+                                    s.tier === tier ? `border-stone-900 ${TIER_BADGE[tier]}` : "border-stone-200 hover:border-stone-400 bg-white"
+                                  }`}
+                                >
+                                  <div className="text-xs font-semibold">{tier}</div>
+                                  <div className="text-sm font-mono mt-1">
+                                    {form.cycle === "MONTHLY" ? `₹${formatINR(p.monthly)}/mo` : `₹${formatINR(p.yearly)}/yr`}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
-                  <div className="border-t pt-2 flex justify-between">
-                    <span>Subtotal</span>
-                    <span className="font-mono">₹{formatINR(subtotal)}</span>
+                  <div className="flex justify-between pt-2">
+                    <Button variant="outline" onClick={() => setStep(1)}>
+                      <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                      Back
+                    </Button>
+                    <Button onClick={() => setStep(3)} disabled={!step2Valid()}>
+                      Continue
+                      <ArrowRight className="h-4 w-4 ltr:ml-1 rtl:mr-1" />
+                    </Button>
                   </div>
-                  {bestDiscount && (
-                    <div className="flex justify-between text-green-700">
-                      <span className="flex items-center gap-1"><Tag className="h-3 w-3" />{bestDiscount.rule.name}</span>
-                      <span className="font-mono">−₹{formatINR(bestDiscount.amount)}</span>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold text-stone-900">Choose billing cycle</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(["MONTHLY", "YEARLY"] as BillingCycle[]).map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => update("cycle", c)}
+                        className={`p-5 rounded-md border-2 text-left transition-colors ${
+                          form.cycle === c ? "border-stone-900 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                        }`}
+                      >
+                        <div className="font-semibold text-lg">{c === "MONTHLY" ? "Monthly" : "Yearly"}</div>
+                        {c === "YEARLY" && (
+                          <div className="text-sm text-green-700 mt-1">Save 2 months free</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Live summary */}
+                  <div className="rounded-md bg-stone-50 border border-stone-200 p-4 text-sm space-y-2">
+                    {enabledLines.map((s) => {
+                      const p = getPrice(s.moduleCode, s.tier);
+                      const cyclePrice = form.cycle === "MONTHLY" ? p.monthly : p.yearly;
+                      return (
+                        <div key={s.moduleCode} className="flex justify-between">
+                          <span>{MODULE_META[s.moduleCode].label} — {s.tier}</span>
+                          <span className="font-mono">₹{formatINR(cyclePrice)}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="border-t pt-2 flex justify-between">
+                      <span>Subtotal</span>
+                      <span className="font-mono">₹{formatINR(subtotal)}</span>
+                    </div>
+                    {bestDiscount && (
+                      <div className="flex justify-between text-green-700">
+                        <span className="flex items-center gap-1"><Tag className="h-3 w-3" />{bestDiscount.rule.name}</span>
+                        <span className="font-mono">−₹{formatINR(bestDiscount.amount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-stone-600">
+                      <span>GST 18%</span>
+                      <span className="font-mono">₹{formatINR(taxAmount)}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-semibold text-stone-900">
+                      <span>Total {form.cycle === "MONTHLY" ? "/month" : "/year"}</span>
+                      <span className="font-mono">₹{formatINR(total)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-2">
+                    <Button variant="outline" onClick={() => setStep(2)}>
+                      <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                      Back
+                    </Button>
+                    <Button onClick={() => setStep(4)}>
+                      Continue
+                      <ArrowRight className="h-4 w-4 ltr:ml-1 rtl:mr-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold text-stone-900">Almost there — choose how to start</h2>
+
+                  {/* Payment error with retry */}
+                  {paymentError && (
+                    <div className="rounded-md bg-red-50 border border-red-200 p-4">
+                      <div className="flex gap-2 text-sm text-red-900 mb-3">
+                        <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                        <div>{paymentError}</div>
+                      </div>
+                      <Button
+                        onClick={retryPayment}
+                        disabled={submitting}
+                        variant="outline"
+                        className="w-full border-red-300 text-red-700 hover:bg-red-100"
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry Payment
+                      </Button>
                     </div>
                   )}
-                  <div className="flex justify-between text-stone-600">
-                    <span>GST 18%</span>
-                    <span className="font-mono">₹{formatINR(taxAmount)}</span>
-                  </div>
-                  <div className="border-t pt-2 flex justify-between font-semibold text-stone-900">
-                    <span>Total {form.cycle === "MONTHLY" ? "/month" : "/year"}</span>
-                    <span className="font-mono">₹{formatINR(total)}</span>
-                  </div>
-                </div>
 
-                <div className="flex justify-between pt-2">
-                  <Button variant="outline" onClick={() => setStep(2)}>
-                    <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    Back
-                  </Button>
-                  <Button onClick={() => setStep(4)}>
-                    Continue
-                    <ArrowRight className="h-4 w-4 ltr:ml-1 rtl:mr-1" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-stone-900">Almost there — choose how to start</h2>
-
-                {/* Trial card */}
-                <button
-                  onClick={() => !submitting && submit("TRIAL")}
-                  disabled={submitting}
-                  className="w-full text-left border-2 border-blue-300 bg-blue-50/50 rounded-md p-5 hover:border-blue-500 transition-colors"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <Sparkles className="h-5 w-5 text-blue-700" />
-                    <h3 className="font-semibold text-stone-900">Start 14-day free trial</h3>
-                  </div>
-                  <p className="text-sm text-stone-700">
-                    Full access to your selected modules at <strong>Basic tier</strong>. No payment, no credit card.
-                    Subscribe before day 14 to keep going.
-                  </p>
-                  {submitting && (
-                    <div className="mt-3 flex items-center gap-2 text-stone-600 text-sm">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Creating your account…
+                  {/* Trial card */}
+                  <button
+                    onClick={() => !submitting && submitTrial()}
+                    disabled={submitting}
+                    className="w-full text-left border-2 border-blue-300 bg-blue-50/50 rounded-md p-5 hover:border-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <Sparkles className="h-5 w-5 text-blue-700" />
+                      <h3 className="font-semibold text-stone-900">Start 14-day free trial</h3>
                     </div>
-                  )}
-                </button>
+                    <p className="text-sm text-stone-700">
+                      Full access to your selected modules at <strong>Basic tier</strong>. No payment, no credit card.
+                      Subscribe before day 14 to keep going.
+                    </p>
+                    {submitting && paymentStatus === "idle" && (
+                      <div className="mt-3 flex items-center gap-2 text-stone-600 text-sm">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Creating your account…
+                      </div>
+                    )}
+                  </button>
 
-                {/* Subscribe card */}
-                <button
-                  onClick={() => !submitting && submit("SUBSCRIBE")}
-                  disabled={submitting}
-                  className="w-full text-left border-2 border-stone-900 bg-stone-50 rounded-md p-5 hover:bg-stone-100 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-stone-900">Subscribe — ₹{formatINR(total)}{form.cycle === "MONTHLY" ? "/mo" : "/yr"}</h3>
-                    <Badge>Recommended</Badge>
+                  {/* Subscribe card */}
+                  <button
+                    onClick={() => !submitting && paymentStatus !== "failed" && submitPaid()}
+                    disabled={submitting || paymentStatus === "failed"}
+                    className="w-full text-left border-2 border-stone-900 bg-stone-50 rounded-md p-5 hover:bg-stone-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-stone-700" />
+                        <h3 className="font-semibold text-stone-900">Subscribe — ₹{formatINR(total)}{form.cycle === "MONTHLY" ? "/mo" : "/yr"}</h3>
+                      </div>
+                      <Badge>Recommended</Badge>
+                    </div>
+                    <p className="text-sm text-stone-700">
+                      Pay securely with UPI, Cards, Net Banking, or Wallets. Full access at your chosen tiers.
+                      Auto-renews so your team never loses access. Cancel anytime.
+                    </p>
+                    {submitting && paymentStatus !== "idle" && paymentStatus !== "failed" && (
+                      <div className="mt-3 flex items-center gap-2 text-stone-600 text-sm">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {getPaymentStatusMessage()}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Secure payment note */}
+                  <div className="flex items-center justify-center gap-2 text-xs text-stone-500">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>256-bit SSL encrypted • Powered by Razorpay</span>
                   </div>
-                  <p className="text-sm text-stone-700">
-                    Full access at your chosen tiers. Auto-renews so your team never loses access.
-                    Cancel anytime.
-                  </p>
-                </button>
 
-                <div className="flex justify-start pt-2">
-                  <Button variant="outline" onClick={() => setStep(3)} disabled={submitting}>
-                    <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    Back
-                  </Button>
+                  <div className="flex justify-start pt-2">
+                    <Button variant="outline" onClick={() => { setStep(3); setPaymentError(null); setPaymentStatus("idle"); }} disabled={submitting && paymentStatus === "completing"}>
+                      <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                      Back
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Footer */}
-        <div className="text-center mt-6 text-xs text-stone-500">
-          By signing up, you agree to our Terms of Service and Privacy Policy.
+          {/* Footer */}
+          <div className="text-center mt-6 text-xs text-stone-500">
+            By signing up, you agree to our Terms of Service and Privacy Policy.
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Custom Payment Modal - Always render, control via isOpen */}
+      <PaymentModal
+        isOpen={showPaymentModal && !!pendingPayment}
+        onClose={handlePaymentModalClose}
+        onSuccess={handlePaymentSuccess}
+        onError={handlePaymentError}
+        orderId={pendingPayment?.orderId || ""}
+        amount={pendingPayment?.amount || 0}
+        currency="INR"
+        keyId={pendingPayment?.keyId || ""}
+        customerName={`${form.adminFirstName} ${form.adminLastName}`.trim()}
+        customerEmail={form.adminEmail.trim().toLowerCase()}
+        customerPhone={form.adminPhone.trim() || undefined}
+        description={`Subscription - ${enabledLines.map(s => s.moduleCode).join(", ")}`}
+      />
+    </>
   );
 }
