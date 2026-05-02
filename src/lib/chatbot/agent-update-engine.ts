@@ -211,12 +211,29 @@ async function generateUpdateSpec(
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/**
+ * Customer module toggles — used to disambiguate models that exist in both
+ * GRC and TPRM (currently: Department vs TPRMDepartment).
+ */
+export interface ModuleToggles {
+  isGrcAdded?: boolean;
+  isTprmAdded?: boolean;
+}
+
 function validateUpdateSpec(
   spec: UpdateSpec,
-  userRoles: string[]
+  userRoles: string[],
+  toggles: ModuleToggles = {}
 ): { valid: boolean; error?: string; modelMeta?: ModelMeta } {
   if (spec.model === "UNSUPPORTED") {
     return { valid: false, error: "This type of update is not supported. I can only update fields that you can edit in the application forms." };
+  }
+
+  // Toggle-aware redirect: TPRM-only customers updating "Department" actually
+  // mean TPRMDepartment (their GRC Department table is empty).
+  const isTprmOnly = !!toggles.isTprmAdded && !toggles.isGrcAdded;
+  if (isTprmOnly && spec.model === "Department") {
+    spec.model = "TPRMDepartment";
   }
 
   // Find model
@@ -434,13 +451,14 @@ export async function processAgentUpdate(
   customerAccountId: string,
   userId: string,
   userRoles: string[],
-  conversationHistory: ConversationMessage[] = []
+  conversationHistory: ConversationMessage[] = [],
+  toggles: ModuleToggles = {}
 ): Promise<AgentUpdateResult> {
   // Step 1: Generate update spec from natural language
   const { spec, tokensUsed } = await generateUpdateSpec(query, userRoles, conversationHistory);
 
   // Step 2: Validate
-  const validation = validateUpdateSpec(spec, userRoles);
+  const validation = validateUpdateSpec(spec, userRoles, toggles);
   if (!validation.valid || !validation.modelMeta) {
     return {
       content: validation.error || "I couldn't understand that update request. Could you rephrase it?",

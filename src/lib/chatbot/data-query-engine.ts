@@ -227,15 +227,40 @@ function remapFields(spec: QuerySpec, fieldMap: Record<string, string>): void {
 // ==================== QUERY VALIDATION ====================
 
 /**
+ * Customer module toggles — used to disambiguate models that exist in both
+ * GRC and TPRM (currently: Department vs TPRMDepartment).
+ */
+export interface ModuleToggles {
+  isGrcAdded?: boolean;
+  isTprmAdded?: boolean;
+}
+
+/**
+ * Redirect Department → TPRMDepartment for TPRM-only customers.
+ * (TPRM stores its own departments in a separate table; GRC Department is
+ * empty for these customers.) For mixed customers we let the LLM decide.
+ */
+function applyToggleRedirect(spec: QuerySpec, toggles: ModuleToggles): void {
+  const isTprmOnly = !!toggles.isTprmAdded && !toggles.isGrcAdded;
+  if (isTprmOnly && spec.model === "Department") {
+    spec.model = "TPRMDepartment";
+  }
+}
+
+/**
  * Validate that the query spec only uses whitelisted models and fields.
  */
 function validateQuerySpec(
   spec: QuerySpec,
-  userRoles: string[]
+  userRoles: string[],
+  toggles: ModuleToggles = {}
 ): { valid: boolean; error?: string; modelMeta?: ModelMeta } {
   if (spec.model === "UNSUPPORTED") {
     return { valid: false, error: "This type of data query is not supported yet." };
   }
+
+  // Toggle-aware redirect (e.g. Department → TPRMDepartment for TPRM-only customers)
+  applyToggleRedirect(spec, toggles);
 
   // Resolve model name: LLM might say "Vendor" instead of "TPRMVendor"
   let modelMeta = QUERYABLE_MODELS.find((m) => m.prismaModel === spec.model);
@@ -858,13 +883,14 @@ export async function processDataQuery(
   userRoles: string[],
   conversationHistory: ConversationMessage[] = [],
   session?: ChatSession,
-  moduleContext: string = "GRC"
+  moduleContext: string = "GRC",
+  toggles: ModuleToggles = {}
 ): Promise<DataQueryResult> {
   // Step 1: Generate query spec from natural language (with conversation context)
   const { spec, tokensUsed: specTokens } = await generateQuerySpec(query, userRoles, conversationHistory);
 
   // Step 2: Validate the spec
-  const validation = validateQuerySpec(spec, userRoles);
+  const validation = validateQuerySpec(spec, userRoles, toggles);
   if (!validation.valid || !validation.modelMeta) {
     return {
       content: validation.error || "I couldn't understand that data query. Could you rephrase it?",

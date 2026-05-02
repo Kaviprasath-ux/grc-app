@@ -556,6 +556,27 @@ export const QUERYABLE_MODELS: ModelMeta[] = [
     ],
   },
   {
+    prismaModel: "TPRMDepartment",
+    displayName: "TPRM Department",
+    aliases: [
+      "tprm department", "tprm departments",
+      "vendor department", "vendor departments",
+      "third party department", "third party departments",
+    ],
+    description:
+      "TPRM-specific departments (separate from GRC Organization departments). " +
+      "Customers using only the TPRM module store their departments here. " +
+      "When a TPRM-only customer asks about 'departments', this is the model — NOT the GRC Department model.",
+    nameField: "name",
+    allowedRoles: TPRM_ROLES,
+    allowedEditRoles: TPRM_EDIT_ROLES,
+    fields: [
+      { name: "name", type: "string", description: "TPRM department name", editable: true },
+      { name: "isActive", type: "boolean", description: "Whether the department is active", editable: true },
+      { name: "createdAt", type: "date", description: "Date created" },
+    ],
+  },
+  {
     prismaModel: "TPRMAssessment",
     displayName: "Assessment",
     aliases: [

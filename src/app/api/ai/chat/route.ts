@@ -98,11 +98,12 @@ export const POST = withAuthOnly(
     const primaryRole = userRoles[0] || "User";
     const isAdmin = userRoles.some((r) => ADMIN_ROLES.has(r));
     const productFlags = buildProductFlags(session);
-    const moduleContext = getModuleContext(userRoles, {
-      isGrcAdded: (session as Record<string, unknown>).isGrcAdded as boolean | undefined,
-      isTprmAdded: (session as Record<string, unknown>).isTprmAdded as boolean | undefined,
-      isInternalAuditEnabled: (session as Record<string, unknown>).isInternalAuditEnabled as boolean | undefined,
-    });
+    const moduleToggles = {
+      isGrcAdded: session.isGrcAdded,
+      isTprmAdded: session.isTprmAdded,
+      isInternalAuditEnabled: session.isInternalAuditEnabled,
+    };
+    const moduleContext = getModuleContext(userRoles, moduleToggles);
 
     let query = "";
     let intent = "unknown";
@@ -224,7 +225,7 @@ export const POST = withAuthOnly(
       // --- Agent Update (when agent mode is ON) ---
       if (intent === "agent_update" && agentMode) {
         const agentResult = await processAgentUpdate(
-          processedQuery, customerAccountId, userId, userRoles, conversationHistory
+          processedQuery, customerAccountId, userId, userRoles, conversationHistory, moduleToggles
         );
         responseContent = agentResult.content;
         tokensUsed = agentResult.tokensUsed;
@@ -256,7 +257,7 @@ export const POST = withAuthOnly(
 
       // --- Data Query (NLP-to-SQL) ---
       if (intent === "data_query") {
-        const dataResult = await processDataQuery(processedQuery, customerAccountId, userRoles, conversationHistory, session, moduleContext);
+        const dataResult = await processDataQuery(processedQuery, customerAccountId, userRoles, conversationHistory, session, moduleContext, moduleToggles);
         responseContent = dataResult.content;
         tokensUsed = dataResult.tokensUsed;
 

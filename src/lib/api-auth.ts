@@ -34,6 +34,11 @@ export interface AuthenticatedRequest extends NextRequest {
     // null otherwise; consumed by checkSubscriptionGate() to gate writes.
     subscriptionStatus: string | null;
     subscriptionType: string | null;
+    // Customer-account module toggles — drive module-aware behavior
+    // (e.g. chatbot Department → TPRMDepartment redirect for TPRM-only customers)
+    isGrcAdded: boolean;
+    isTprmAdded: boolean;
+    isInternalAuditEnabled: boolean;
     roles: string[];
     permissions: UserPermission[];
   };
@@ -116,6 +121,9 @@ export function withAuth<T extends { params?: Promise<unknown> }>(
         auditHeadId: user.auditHeadId || null,
         subscriptionStatus: user.subscriptionStatus ?? null,
         subscriptionType: user.subscriptionType ?? null,
+        isGrcAdded: user.isGrcAdded ?? false,
+        isTprmAdded: user.isTprmAdded ?? false,
+        isInternalAuditEnabled: user.isInternalAuditEnabled ?? false,
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -167,6 +175,9 @@ export function withAuthOnly<T extends { params?: Promise<unknown> }>(
         auditHeadId: user.auditHeadId || null,
         subscriptionStatus: user.subscriptionStatus ?? null,
         subscriptionType: user.subscriptionType ?? null,
+        isGrcAdded: user.isGrcAdded ?? false,
+        isTprmAdded: user.isTprmAdded ?? false,
+        isInternalAuditEnabled: user.isInternalAuditEnabled ?? false,
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -526,6 +537,9 @@ export async function getApiSession(): Promise<AuthenticatedRequest['user'] | nu
     auditHeadId: user.auditHeadId || null,
     subscriptionStatus: user.subscriptionStatus ?? null,
     subscriptionType: user.subscriptionType ?? null,
+    isGrcAdded: user.isGrcAdded ?? false,
+    isTprmAdded: user.isTprmAdded ?? false,
+    isInternalAuditEnabled: user.isInternalAuditEnabled ?? false,
     roles: user.roles || [],
     permissions: user.permissions || [],
   };
