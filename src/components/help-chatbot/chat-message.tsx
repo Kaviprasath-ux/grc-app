@@ -6,8 +6,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import type { HelpArticle } from "@/data/help-knowledge-base";
 import type { ScoredResult } from "@/lib/help-search";
 import { ExternalLink, User, Bot, ShieldAlert, Sparkles, BookOpen, Database, Pencil, Check, X } from "lucide-react";
+import { SpeakerButton } from "./voice/SpeakerButton";
 
 interface ChatMessageProps {
+  /** Stable message id used to highlight which message is being read aloud. */
+  messageId?: string;
   role: "user" | "bot";
   content: string;
   article?: HelpArticle;
@@ -23,9 +26,16 @@ interface ChatMessageProps {
   confirmationResult?: "confirmed" | "cancelled";
   onSelectArticle?: (article: HelpArticle) => void;
   onConfirmUpdate?: (updateId: string, confirm: boolean) => void;
+  /** TTS controls — supplied by parent; omit to hide the speaker button. */
+  speakingId?: string | null;
+  isSpeaking?: boolean;
+  isLoadingSpeech?: boolean;
+  onSpeak?: (text: string, id: string) => void;
+  onStopSpeak?: () => void;
 }
 
 export function ChatMessage({
+  messageId,
   role,
   content,
   article,
@@ -41,6 +51,11 @@ export function ChatMessage({
   confirmationResult,
   onSelectArticle,
   onConfirmUpdate,
+  speakingId,
+  isSpeaking,
+  isLoadingSpeech,
+  onSpeak,
+  onStopSpeak,
 }: ChatMessageProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -280,10 +295,49 @@ export function ChatMessage({
               </div>
             </div>
           )}
+
+          {/* Read-aloud control */}
+          {onSpeak && onStopSpeak && messageId && getSpeakableText(content, article) && (
+            <div className="flex items-center justify-end pt-1 -mb-1 -mr-1">
+              <SpeakerButton
+                text={getSpeakableText(content, article)}
+                messageId={messageId}
+                speakingId={speakingId ?? null}
+                isSpeaking={isSpeaking ?? false}
+                isLoading={isLoadingSpeech ?? false}
+                onSpeak={onSpeak}
+                onStop={onStopSpeak}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+/**
+ * Build a TTS-friendly version of the message:
+ *  - For article responses, prefer the article's prose answer (skip nav links).
+ *  - For RAG/plain text, strip markdown so it doesn't get spoken literally.
+ */
+function getSpeakableText(content: string, article?: HelpArticle): string {
+  if (article) {
+    const parts = [article.answer];
+    if (article.steps?.length) {
+      parts.push(article.steps.map((s, i) => `${i + 1}. ${s}`).join(". "));
+    }
+    return stripMarkdown(parts.join(". "));
+  }
+  return stripMarkdown(content);
+}
+
+function stripMarkdown(s: string): string {
+  return s
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/[#>`*_]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**

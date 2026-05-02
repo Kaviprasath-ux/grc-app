@@ -11,6 +11,10 @@ import { Input } from "@/components/ui/input";
 import { ChatMessage, TypingIndicator } from "./chat-message";
 import { ModuleCards, ModuleArticleList } from "./suggested-questions";
 import { helpModules as allModules } from "@/data/help-knowledge-base";
+import { MicButton } from "./voice/MicButton";
+import { VoiceSettings } from "./voice/VoiceSettings";
+import { useSpeak } from "@/hooks/useSpeak";
+import { useChatbotVoiceSettings } from "@/hooks/useChatbotVoiceSettings";
 
 interface HelpChatbotProps {
   isOpen: boolean;
@@ -41,12 +45,45 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
 
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Voice features
+  const { settings, setAutoSpeak, setVoice } = useChatbotVoiceSettings();
+  const speak = useSpeak();
+  const lastSpokenIdRef = useRef<string | null>(null);
+  // True when the user's most recent message came in via the mic — used to
+  // mirror voice-in → voice-out for that single turn.
+  const lastInputWasVoiceRef = useRef(false);
+
   // Auto-scroll to bottom when messages change or typing starts
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
+
+  // Auto-speak: read newly arrived bot messages aloud when either:
+  //   (a) the user sent the previous message via voice (mirror it back), or
+  //   (b) the user opted into "Auto-speak replies" globally.
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "bot") return;
+    if (last.id === "welcome") return;
+    if (last.id === lastSpokenIdRef.current) return;
+
+    const shouldSpeak = settings.autoSpeak || lastInputWasVoiceRef.current;
+    if (!shouldSpeak) return;
+
+    lastSpokenIdRef.current = last.id;
+    // Consume the voice-input flag — only the immediate reply gets read aloud.
+    lastInputWasVoiceRef.current = false;
+    void speak.speak(last.content, last.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, settings.autoSpeak]);
+
+  // Stop any in-flight TTS when the chatbot closes.
+  useEffect(() => {
+    if (!isOpen) speak.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Close on Escape key
   useEffect(() => {
@@ -63,7 +100,19 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
     if (!inputValue.trim()) return;
     const value = inputValue;
     setInputValue("");
+    speak.stop();
+    lastInputWasVoiceRef.current = false;
     void sendMessage(value);
+  };
+
+  // Voice transcript came in — submit it as a user message immediately.
+  const handleTranscript = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setInputValue("");
+    speak.stop();
+    lastInputWasVoiceRef.current = true;
+    void sendMessage(trimmed);
   };
 
   // Find module name for active module
@@ -117,10 +166,18 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
                 className="h-4 w-7 data-[state=checked]:bg-amber-400 data-[state=unchecked]:bg-white/20"
               />
             </div>
+            <VoiceSettings
+              settings={settings}
+              onAutoSpeakChange={setAutoSpeak}
+              onVoiceChange={setVoice}
+            />
             <Button
               variant="ghost"
               size="icon"
-              onClick={clearChat}
+              onClick={() => {
+                speak.stop();
+                clearChat();
+              }}
               className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10 rounded-full"
               title={t("Clear chat")}
             >
@@ -147,6 +204,7 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
           {messages.map((msg) => (
             <ChatMessage
               key={msg.id}
+              messageId={msg.id}
               role={msg.role}
               content={msg.content}
               article={msg.article}
@@ -162,6 +220,11 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
               confirmationResult={msg.confirmationResult}
               onSelectArticle={selectArticle}
               onConfirmUpdate={confirmUpdate}
+              speakingId={speak.speakingId}
+              isSpeaking={speak.isSpeaking}
+              isLoadingSpeech={speak.isLoading}
+              onSpeak={speak.speak}
+              onStopSpeak={speak.stop}
             />
           ))}
 
@@ -194,6 +257,11 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
         {/* Input Area */}
         <div className="border-t border-slate-200 p-3 flex-shrink-0 rounded-b-2xl">
           <form onSubmit={handleSubmit} className="flex items-center gap-2">
+            <MicButton
+              onTranscript={handleTranscript}
+              onRecordingStart={() => speak.stop()}
+              disabled={isTyping}
+            />
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
