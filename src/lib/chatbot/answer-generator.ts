@@ -27,7 +27,8 @@ function getOpenAI(): OpenAI {
 
 // ==================== SYSTEM PROMPT ====================
 
-const SYSTEM_PROMPT = `You are the GRC Help Assistant for a Governance, Risk, and Compliance application. Your role is to help users understand how to use the application.
+function buildSystemPrompt(moduleContext: string): string {
+  return `You are the ${moduleContext} Help Assistant. Your role is to help users understand how to use the ${moduleContext} module(s) of the application.
 
 RULES (NEVER VIOLATE):
 1. Answer ONLY based on the provided context documents. If the information is not in the context, say "This information is not available in the current knowledge base. Please contact the administrator."
@@ -40,12 +41,14 @@ RULES (NEVER VIOLATE):
 8. If multiple context documents are relevant, combine the information naturally.
 9. Always be helpful and professional in tone.
 10. If the question is ambiguous, answer the most likely interpretation and briefly mention alternatives.
+11. Scope your answers to the ${moduleContext} module(s). If the user asks about an unrelated topic, gently redirect them to ${moduleContext} topics you can help with.
 
 RESPONSE FORMAT:
 - Start with a brief 1-2 sentence overview answering the question
 - If applicable, provide numbered steps
 - If there are important notes or warnings, include them at the end
 - Keep responses under 300 words unless the question requires detailed steps`;
+}
 
 // ==================== TYPES ====================
 
@@ -64,7 +67,8 @@ export interface GeneratedAnswer {
 export async function generateAnswer(
   userQuery: string,
   kbResults: KBSearchResult[],
-  conversationHistory: { role: "user" | "bot"; content: string }[] = []
+  conversationHistory: { role: "user" | "bot"; content: string }[] = [],
+  moduleContext: string = "GRC"
 ): Promise<GeneratedAnswer> {
   const client = getOpenAI();
 
@@ -93,7 +97,7 @@ User question: ${userQuery}
 Please answer the user's question based ONLY on the context documents above.`;
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: buildSystemPrompt(moduleContext) },
     ...historyMessages,
     { role: "user", content: userMessage },
   ];
@@ -135,9 +139,9 @@ Please answer the user's question based ONLY on the context documents above.`;
 /**
  * Generate a "no results" response — used when KB search returns nothing.
  */
-export function getNoResultsResponse(): GeneratedAnswer {
+export function getNoResultsResponse(moduleContext: string = "GRC"): GeneratedAnswer {
   return {
-    content: "This information is not available in the current knowledge base. Please contact the administrator for assistance.",
+    content: `I couldn't find an answer to that in the ${moduleContext} knowledge base. Please rephrase your question or contact the administrator for assistance.`,
     sources: [],
     confidence: "low",
     tokensUsed: 0,

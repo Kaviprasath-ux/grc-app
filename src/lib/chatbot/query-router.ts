@@ -257,12 +257,16 @@ export async function routeQuery(
 
 /**
  * Generate a simple response for general chat messages.
+ *
+ * @param moduleContext Persona label derived from user's role/toggles
+ *   (e.g. "GRC", "TPRM", "Internal Audit", "GRC and TPRM"). Used so the
+ *   bot greets a TPRM user as "the TPRM Help Assistant" etc.
  */
-export function getGeneralChatResponse(query: string): string {
+export function getGeneralChatResponse(query: string, moduleContext: string = "GRC"): string {
   const lower = query.toLowerCase().trim();
 
   if (/^(hi|hello|hey|greetings|howdy)/i.test(lower)) {
-    return "Hello! I'm the GRC Help Assistant. I can help you with questions about risks, controls, compliance, audits, and more. What would you like to know?";
+    return `Hello! I'm the ${moduleContext} Help Assistant. I can help you with questions about the ${moduleContext} module(s). What would you like to know?`;
   }
 
   if (/^(thanks?|thank\s+you|thx|ty)/i.test(lower)) {
@@ -277,5 +281,5 @@ export function getGeneralChatResponse(query: string): string {
     return "Great! Let me know if there's anything else I can help with.";
   }
 
-  return "I'm here to help with GRC-related questions. What would you like to know?";
+  return `I'm here to help with ${moduleContext}-related questions. What would you like to know?`;
 }

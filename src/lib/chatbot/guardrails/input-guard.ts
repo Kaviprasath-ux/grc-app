@@ -85,7 +85,7 @@ export interface InputGuardResult {
  * Check user input for prompt injection, data exfiltration, and blocked topics.
  * Returns { allowed: true } if safe, or { allowed: false, reason, userMessage } if blocked.
  */
-export function checkInputGuardrails(query: string): InputGuardResult {
+export function checkInputGuardrails(query: string, moduleContext: string = "GRC"): InputGuardResult {
   const trimmed = query.trim();
 
   // Empty/too short queries
@@ -105,7 +105,7 @@ export function checkInputGuardrails(query: string): InputGuardResult {
         allowed: false,
         reason: `injection_detected:${category}`,
         category,
-        userMessage: "I can only help with GRC-related questions about risks, controls, compliance, and audit. I cannot access credentials, system internals, or user personal data.",
+        userMessage: `I can only help with ${moduleContext}-related questions. I cannot access credentials, system internals, or user personal data.`,
       };
     }
   }
@@ -159,14 +159,15 @@ export function checkRateLimit(userId: string, isAdmin: boolean): InputGuardResu
 export function validateInput(
   query: string,
   userId: string,
-  isAdmin: boolean
+  isAdmin: boolean,
+  moduleContext: string = "GRC"
 ): InputGuardResult {
   // 1. Check rate limit
   const rateResult = checkRateLimit(userId, isAdmin);
   if (!rateResult.allowed) return rateResult;
 
   // 2. Check input guardrails (injection, exfiltration, blocked topics)
-  const inputResult = checkInputGuardrails(query);
+  const inputResult = checkInputGuardrails(query, moduleContext);
   if (!inputResult.allowed) return inputResult;
 
   return { allowed: true };

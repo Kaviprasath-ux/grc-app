@@ -802,7 +802,8 @@ async function formatResults(
   query: string,
   spec: QuerySpec,
   data: unknown,
-  modelMeta: ModelMeta
+  modelMeta: ModelMeta,
+  moduleContext: string = "GRC"
 ): Promise<{ content: string; tokensUsed: number }> {
   const client = getOpenAI();
 
@@ -825,7 +826,7 @@ async function formatResults(
     messages: [
       {
         role: "system",
-        content: `You are a GRC application assistant. Format the following data query result into a clear, concise natural language response. Use bullet points or tables where appropriate. Keep it under 200 words. Do NOT reveal table names, column names, or technical details. Use friendly, business-oriented language.`,
+        content: `You are the ${moduleContext} application assistant. Format the following data query result into a clear, concise natural language response. Use bullet points or tables where appropriate. Keep it under 200 words. Do NOT reveal table names, column names, or technical details. Use friendly, business-oriented language.`,
       },
       {
         role: "user",
@@ -856,7 +857,8 @@ export async function processDataQuery(
   customerAccountId: string,
   userRoles: string[],
   conversationHistory: ConversationMessage[] = [],
-  session?: ChatSession
+  session?: ChatSession,
+  moduleContext: string = "GRC"
 ): Promise<DataQueryResult> {
   // Step 1: Generate query spec from natural language (with conversation context)
   const { spec, tokensUsed: specTokens } = await generateQuerySpec(query, userRoles, conversationHistory);
@@ -890,7 +892,8 @@ export async function processDataQuery(
     query,
     spec,
     data,
-    validation.modelMeta
+    validation.modelMeta,
+    moduleContext
   );
 
   return {

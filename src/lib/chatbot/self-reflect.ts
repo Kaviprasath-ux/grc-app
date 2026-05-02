@@ -170,12 +170,13 @@ async function strategyReformulate(
   suggestedQuery: string,
   userRoles: string[],
   productFlags: ProductFlags,
-  conversationHistory: { role: "user" | "bot"; content: string }[]
+  conversationHistory: { role: "user" | "bot"; content: string }[],
+  moduleContext: string
 ): Promise<{ answer: GeneratedAnswer; kbResults: KBSearchResult[] } | null> {
   const kbResults = await searchKB(suggestedQuery, userRoles, productFlags);
   if (kbResults.length === 0) return null;
 
-  const answer = await generateAnswer(suggestedQuery, kbResults, conversationHistory);
+  const answer = await generateAnswer(suggestedQuery, kbResults, conversationHistory, moduleContext);
   return { answer, kbResults };
 }
 
@@ -186,13 +187,14 @@ async function strategyExpand(
   query: string,
   userRoles: string[],
   productFlags: ProductFlags,
-  conversationHistory: { role: "user" | "bot"; content: string }[]
+  conversationHistory: { role: "user" | "bot"; content: string }[],
+  moduleContext: string
 ): Promise<{ answer: GeneratedAnswer; kbResults: KBSearchResult[] } | null> {
   // Search with more results (top 8 instead of 5)
   const kbResults = await searchKB(query, userRoles, productFlags, 8);
   if (kbResults.length === 0) return null;
 
-  const answer = await generateAnswer(query, kbResults, conversationHistory);
+  const answer = await generateAnswer(query, kbResults, conversationHistory, moduleContext);
   return { answer, kbResults };
 }
 
@@ -204,7 +206,8 @@ async function strategyCombine(
   userRoles: string[],
   productFlags: ProductFlags,
   existingKBResults: KBSearchResult[],
-  conversationHistory: { role: "user" | "bot"; content: string }[]
+  conversationHistory: { role: "user" | "bot"; content: string }[],
+  moduleContext: string
 ): Promise<{ answer: GeneratedAnswer; kbResults: KBSearchResult[] } | null> {
   // Get keyword search results
   const keywordOptions: SearchOptions = {
@@ -242,7 +245,7 @@ async function strategyCombine(
 
   if (topCombined.length === 0) return null;
 
-  const answer = await generateAnswer(query, topCombined, conversationHistory);
+  const answer = await generateAnswer(query, topCombined, conversationHistory, moduleContext);
   return { answer, kbResults: topCombined };
 }
 
@@ -262,7 +265,8 @@ export async function generateReflectiveAnswer(
   kbResults: KBSearchResult[],
   userRoles: string[],
   productFlags: ProductFlags,
-  conversationHistory: { role: "user" | "bot"; content: string }[] = []
+  conversationHistory: { role: "user" | "bot"; content: string }[] = [],
+  moduleContext: string = "GRC"
 ): Promise<ReflectiveAnswer> {
   let totalTokensUsed = 0;
   let bestAnswer: GeneratedAnswer | null = null;
@@ -273,7 +277,7 @@ export async function generateReflectiveAnswer(
 
   // --- Attempt 1: Initial answer ---
   attempts++;
-  const initialAnswer = await generateAnswer(userQuery, kbResults, conversationHistory);
+  const initialAnswer = await generateAnswer(userQuery, kbResults, conversationHistory, moduleContext);
   totalTokensUsed += initialAnswer.tokensUsed;
   bestAnswer = initialAnswer;
 
@@ -330,7 +334,8 @@ export async function generateReflectiveAnswer(
           initialEval.suggestedQuery!,
           userRoles,
           productFlags,
-          conversationHistory
+          conversationHistory,
+          moduleContext
         ),
     });
   }
@@ -338,14 +343,14 @@ export async function generateReflectiveAnswer(
   // Strategy 2: Expand search
   strategies.push({
     name: "expand",
-    fn: () => strategyExpand(userQuery, userRoles, productFlags, conversationHistory),
+    fn: () => strategyExpand(userQuery, userRoles, productFlags, conversationHistory, moduleContext),
   });
 
   // Strategy 3: Combine KB + keyword
   strategies.push({
     name: "combine",
     fn: () =>
-      strategyCombine(userQuery, userRoles, productFlags, kbResults, conversationHistory),
+      strategyCombine(userQuery, userRoles, productFlags, kbResults, conversationHistory, moduleContext),
   });
 
   // Try strategies until we get a good answer or exhaust retries

@@ -22,6 +22,7 @@ import { getNoResultsResponse } from "@/lib/chatbot/answer-generator";
 import { processDataQuery } from "@/lib/chatbot/data-query-engine";
 import { processAgentUpdate, executeConfirmedUpdate } from "@/lib/chatbot/agent-update-engine";
 import { generateReflectiveAnswer } from "@/lib/chatbot/self-reflect";
+import { getModuleContext } from "@/lib/chatbot/module-context";
 import type { ProductFlags } from "@/lib/help-search";
 import {
   searchKnowledgeBase,
@@ -97,6 +98,11 @@ export const POST = withAuthOnly(
     const primaryRole = userRoles[0] || "User";
     const isAdmin = userRoles.some((r) => ADMIN_ROLES.has(r));
     const productFlags = buildProductFlags(session);
+    const moduleContext = getModuleContext(userRoles, {
+      isGrcAdded: (session as Record<string, unknown>).isGrcAdded as boolean | undefined,
+      isTprmAdded: (session as Record<string, unknown>).isTprmAdded as boolean | undefined,
+      isInternalAuditEnabled: (session as Record<string, unknown>).isInternalAuditEnabled as boolean | undefined,
+    });
 
     let query = "";
     let intent = "unknown";
@@ -141,7 +147,7 @@ export const POST = withAuthOnly(
       // ═══════════════════════════════════════════════════════════════
       // LAYER 1: INPUT GUARDRAILS
       // ═══════════════════════════════════════════════════════════════
-      const inputResult = validateInput(query, userId, isAdmin);
+      const inputResult = validateInput(query, userId, isAdmin, moduleContext);
       if (!inputResult.allowed) {
         blocked = true;
         blockReason = inputResult.reason;
@@ -238,7 +244,7 @@ export const POST = withAuthOnly(
 
       // --- General Chat ---
       if (intent === "general_chat") {
-        responseContent = getGeneralChatResponse(processedQuery);
+        responseContent = getGeneralChatResponse(processedQuery, moduleContext);
 
         return NextResponse.json({
           answer: responseContent,
@@ -250,7 +256,7 @@ export const POST = withAuthOnly(
 
       // --- Data Query (NLP-to-SQL) ---
       if (intent === "data_query") {
-        const dataResult = await processDataQuery(processedQuery, customerAccountId, userRoles, conversationHistory, session);
+        const dataResult = await processDataQuery(processedQuery, customerAccountId, userRoles, conversationHistory, session, moduleContext);
         responseContent = dataResult.content;
         tokensUsed = dataResult.tokensUsed;
 
@@ -307,7 +313,7 @@ export const POST = withAuthOnly(
         }
 
         // No results from either search
-        answer = getNoResultsResponse();
+        answer = getNoResultsResponse(moduleContext);
       } else {
         // Generate AI answer with self-reflection (evaluates quality, retries if needed)
         answer = await generateReflectiveAnswer(
@@ -315,7 +321,8 @@ export const POST = withAuthOnly(
           kbResults,
           userRoles,
           productFlags,
-          conversationHistory
+          conversationHistory,
+          moduleContext
         );
       }
 
