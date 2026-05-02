@@ -141,11 +141,20 @@ export const navigation: NavItem[] = [
       { name: "Users", href: "/organization/users", icon: Users, permission: "organization.users:view" },
       { name: "Process", href: "/organization/process", icon: GitBranch, permission: "organization.process:view" },
       { name: "Organization Settings", href: "/organization/settings", icon: Settings, permission: "organization.settings:view" },
-      { name: "Subscription & Billing", href: "/settings/subscription", icon: CreditCard, permission: "subscription.customer-portal:view" },
       { name: "Reports", href: "/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
     ],
   },
   // ==================== End Organization Section ====================
+
+  // ==================== Subscription & Billing (top-level, module-agnostic) ====================
+  // Surfaced for any CustomerAdministrator regardless of module mix (GRC-only, TPRM-only, combined).
+  {
+    name: "Subscription & Billing",
+    href: "/settings/subscription",
+    icon: CreditCard,
+    permission: "subscription.customer-portal:view",
+  },
+  // ==================== End Subscription & Billing ====================
 
   // ==================== Compliance Section ====================
   {
