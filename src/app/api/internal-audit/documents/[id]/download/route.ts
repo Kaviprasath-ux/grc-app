@@ -4,6 +4,7 @@ import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { getUploadBaseDir } from "@/lib/file-upload";
+import { maybeDecryptBytes } from "@/lib/encryption";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -27,13 +28,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     let fileBuffer: Buffer | null = null;
 
-    // 1. Try fileData from DB via raw SQL (bypasses Prisma client cache on Vercel)
+    // 1. Try fileData from DB via raw SQL (bypasses Prisma client cache on Vercel).
+    // Raw SQL bypasses the Prisma extension; decrypt manually.
     try {
       const rows = await prisma.$queryRaw<Array<{ fileData: Buffer | null }>>`
         SELECT "fileData" FROM "InternalAuditDocument" WHERE "id" = ${id}
       `;
       if (rows[0]?.fileData) {
-        fileBuffer = Buffer.from(rows[0].fileData);
+        fileBuffer = maybeDecryptBytes(Buffer.from(rows[0].fileData));
       }
     } catch {
       // raw SQL failed, will try disk fallback

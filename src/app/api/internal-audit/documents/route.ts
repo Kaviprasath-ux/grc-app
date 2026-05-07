@@ -4,6 +4,7 @@ import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from 
 import path from "path";
 import { saveUploadedFile } from "@/lib/file-upload";
 import { translateRecord, isTranslationConfigured } from "@/lib/translation-service";
+import { maybeEncryptBytes } from "@/lib/encryption";
 
 // GET documents organized by category with pagination
 export const GET = withAuth(
@@ -217,8 +218,10 @@ export const POST = withAuth(
         throw new Error('Failed to create document after multiple attempts');
       }
 
-      // Store file binary via raw SQL (bypasses Prisma client cache on Vercel)
-      await prisma.$executeRaw`UPDATE "InternalAuditDocument" SET "fileData" = ${Buffer.from(buffer)} WHERE "id" = ${document.id}`;
+      // Store file binary via raw SQL (bypasses Prisma client cache on Vercel).
+      // Raw SQL bypasses the Prisma extension; encrypt manually.
+      const encryptedFileData = maybeEncryptBytes(Buffer.from(buffer));
+      await prisma.$executeRaw`UPDATE "InternalAuditDocument" SET "fileData" = ${encryptedFileData} WHERE "id" = ${document.id}`;
 
       console.log(`[Document Upload] Created document ${document.documentCode} (${document.fileName}), fileData stored`);
 

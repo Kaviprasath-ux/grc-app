@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
 import { AI_ENDPOINTS, getEndpointName } from '@/lib/ai-endpoints';
+import { maybeDecryptBytes } from '@/lib/encryption';
 
 /**
  * Generate unique request ID for correlation
@@ -133,13 +134,14 @@ export const POST = withAuth(
       for (const doc of documents) {
         let buf: Buffer | null = null;
 
-        // 1. Try fileData from DB via raw SQL (bypasses Prisma client cache on Vercel)
+        // 1. Try fileData from DB via raw SQL (bypasses Prisma client cache on Vercel).
+        // Raw SQL bypasses the Prisma extension; decrypt manually.
         try {
           const rows = await prisma.$queryRaw<Array<{ fileData: Buffer | null }>>`
             SELECT "fileData" FROM "InternalAuditDocument" WHERE "id" = ${doc.id}
           `;
           if (rows[0]?.fileData) {
-            buf = Buffer.from(rows[0].fileData);
+            buf = maybeDecryptBytes(Buffer.from(rows[0].fileData));
             console.log('[Document Ingest] Using fileData from DB for: ' + doc.fileName);
           }
         } catch (rawErr) {

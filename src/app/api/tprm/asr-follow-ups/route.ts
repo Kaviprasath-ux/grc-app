@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from '@/lib/notification-service';
@@ -122,7 +123,7 @@ export const PATCH = withAuth(
         return NextResponse.json({ error: "Remediation not found" }, { status: 404 });
       }
 
-      let updateData: Record<string, unknown> = {};
+      let updateData: Prisma.TPRMIssueRemediationUncheckedUpdateInput = {};
 
       switch (action) {
         case "satisfied":
