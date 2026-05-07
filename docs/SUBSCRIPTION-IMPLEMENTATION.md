@@ -81,11 +81,11 @@ A complete tier-based subscription management system has been added to the GRC p
 
 | # | Step | URL | What was done |
 |---|---|---|---|
-| 10 | Tier pricing config | `/grc/subscription-pricing` | 9 cards (3 modules × 3 tiers). Edit price + all limits. Validation: yearly ≤ 12 × monthly. |
-| 11 | Bundle discount management | `/grc/bundle-discounts` | List/create/edit/delete rules. Live preview calculator. Tier-aware. |
+| 10 | Tier pricing config | `/subscription/pricing` | 9 cards (3 modules × 3 tiers). Edit price + all limits. Validation: yearly ≤ 12 × monthly. |
+| 11 | Bundle discount management | `/subscription/bundle-discounts` | List/create/edit/delete rules. Live preview calculator. Tier-aware. |
 | 12 | Customer override page | `/grc/customer-accounts/[id]/pricing` | Per-module override of price + tier + limits + reason + validity. |
-| 13 | All Subscriptions list | `/grc/subscriptions` | Table with KPIs (MRR, ARR, expiring, suspended), filters by status/cycle/module/tier/type. |
-| 14 | Subscription drill-in | `/grc/subscriptions/[id]` | Detail view + manual actions: extend, cancel, re-enable, **Grant Complimentary**, audit log. |
+| 13 | All Subscriptions list | `/subscription/list` | Table with KPIs (MRR, ARR, expiring, suspended), filters by status/cycle/module/tier/type. |
+| 14 | Subscription drill-in | `/subscription/list/[id]` | Detail view + manual actions: extend, cancel, re-enable, **Grant Complimentary**, audit log. |
 | 15 | Nav + permissions | navigation.ts + permissions.ts | Added 5 `subscription.*` resources granted to GRCAdministrator. 3 nav entries under GRC admin. |
 
 ### Phase 1D — Customer Admin Pages ✅ Complete (7 steps)
@@ -209,7 +209,7 @@ PAYMENT_STUB=true                    # leave on until Razorpay team finishes
 
 - `prisma generate` — runs on every deploy
 - New cron `/api/cron/subscription-alerts` — registered via `vercel.json`, daily 09:00 UTC
-- Routing for new pages (`/signup`, `/grc/subscription-pricing`, `/settings/subscription/*`, etc.)
+- Routing for new pages (`/signup`, `/subscription/pricing`, `/settings/subscription/*`, etc.)
 
 ---
 
@@ -261,11 +261,11 @@ sms-service.ts                ← MSG91 wrapper (stub mode)
 
 **Super admin:**
 ```
-(protected)/grc/subscription-pricing/page.tsx
-(protected)/grc/bundle-discounts/page.tsx
+(protected)/subscription/pricing/page.tsx
+(protected)/subscription/bundle-discounts/page.tsx
 (protected)/grc/customer-accounts/[id]/pricing/page.tsx
-(protected)/grc/subscriptions/page.tsx
-(protected)/grc/subscriptions/[id]/page.tsx
+(protected)/subscription/list/page.tsx
+(protected)/subscription/list/[id]/page.tsx
 ```
 
 **Customer admin:**
@@ -407,7 +407,7 @@ The system is dormant until you opt in. Recommended sequence:
    - Super admin sees 3 new nav entries (Subscription Pricing, Bundle Discounts, All Subscriptions)
    - Customer admin sees Subscription & Billing nav
    - `/signup` is publicly accessible
-   - `/grc/subscriptions` lists all migrated customers correctly
+   - `/subscription/list` lists all migrated customers correctly
 3. **Internal trial.** Have your team create a few test customers via `/signup`. Run end-to-end: subscribe, renew, add module, upgrade.
 4. **Soft launch.** Surface `/signup` link on marketing site. Monitor for ~1 week.
 5. **Flip `SUBSCRIPTION_GATING_ENABLED=true`** in Vercel. Now subscription state actively gates module access.
@@ -494,8 +494,8 @@ All passing. TypeScript compile: 0 errors across the project.
 | Razorpay integration | `src/lib/payment-provider.ts` + `docs/payment-integration-spec.md` | Payment team |
 | MSG91 SMS templates (DLT) | `src/lib/sms-service.ts` + `MSG91_FLOW_TPL_*` env vars | SMS / compliance team |
 | Email template content | `/grc/email-templates` admin UI | Marketing / customer success |
-| Tier prices and limits | `/grc/subscription-pricing` | Product / pricing |
-| Bundle discount rules | `/grc/bundle-discounts` | Sales |
+| Tier prices and limits | `/subscription/pricing` | Product / pricing |
+| Bundle discount rules | `/subscription/bundle-discounts` | Sales |
 | Per-customer special pricing | `/grc/customer-accounts/[id]/pricing` | Sales |
 
 ---

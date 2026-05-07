@@ -54,15 +54,17 @@ assert(hasEdit("subscription.detail"), "GRCAdmin can edit subscription detail (e
 console.log("\nNavigation tree");
 const grcSection = navigation.find((n) => n.name === "GRC");
 assert(grcSection !== undefined, "GRC section exists in navigation");
-const subPricing = grcSection?.children?.find((c) => c.name === "Subscription Pricing");
-const bundleDiscounts = grcSection?.children?.find((c) => c.name === "Bundle Discounts");
-const allSubs = grcSection?.children?.find((c) => c.name === "All Subscriptions");
+const subscriptionSection = navigation.find((n) => n.name === "Subscription");
+assert(subscriptionSection !== undefined, "Subscription section exists in navigation");
+const subPricing = subscriptionSection?.children?.find((c) => c.name === "Subscription Pricing");
+const bundleDiscounts = subscriptionSection?.children?.find((c) => c.name === "Bundle Discounts");
+const allSubs = subscriptionSection?.children?.find((c) => c.name === "All Subscriptions");
 assert(subPricing !== undefined, "Subscription Pricing nav item present");
-assert(subPricing?.href === "/grc/subscription-pricing", "Subscription Pricing href correct");
+assert(subPricing?.href === "/subscription/pricing", "Subscription Pricing href correct");
 assert(bundleDiscounts !== undefined, "Bundle Discounts nav item present");
-assert(bundleDiscounts?.href === "/grc/bundle-discounts", "Bundle Discounts href correct");
+assert(bundleDiscounts?.href === "/subscription/bundle-discounts", "Bundle Discounts href correct");
 assert(allSubs !== undefined, "All Subscriptions nav item present");
-assert(allSubs?.href === "/grc/subscriptions", "All Subscriptions href correct");
+assert(allSubs?.href === "/subscription/list", "All Subscriptions href correct");
 
 // ── filterNavigationByPermissionsAndRole shows them for GRCAdmin ──
 console.log("\nFilter for GRCAdministrator");

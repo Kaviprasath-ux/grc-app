@@ -248,7 +248,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
           <Home className="h-4 w-4" />{t("GRC Admin")}
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/grc/subscriptions" className="hover:text-stone-900">{t("All Subscriptions")}</Link>
+        <Link href="/subscription/list" className="hover:text-stone-900">{t("All Subscriptions")}</Link>
         <ChevronRight className="h-4 w-4" />
         <span className="text-stone-900 font-medium">{sub.customerAccount.name}</span>
       </nav>

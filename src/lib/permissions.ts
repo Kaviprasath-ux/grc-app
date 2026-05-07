@@ -30,10 +30,10 @@ export const RESOURCES = {
   'grc.email-settings': '/grc/email-settings',
   'grc.email-templates': '/grc/email-templates',
   // Subscription Management (GRCAdministrator only)
-  'subscription.pricing': '/grc/subscription-pricing',
-  'subscription.bundle-discounts': '/grc/bundle-discounts',
-  'subscription.list': '/grc/subscriptions',
-  'subscription.detail': '/grc/subscriptions',
+  'subscription.pricing': '/subscription/pricing',
+  'subscription.bundle-discounts': '/subscription/bundle-discounts',
+  'subscription.list': '/subscription/list',
+  'subscription.detail': '/subscription/list',
   'subscription.customer-override': '/grc/customer-accounts',
 
   // Customer-side Subscription portal (CustomerAdministrator)

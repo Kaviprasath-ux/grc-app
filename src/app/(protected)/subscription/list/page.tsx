@@ -284,7 +284,7 @@ export default function AllSubscriptionsPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link href={`/grc/subscriptions/${r.subscriptionId}`}>
+                      <Link href={`/subscription/list/${r.subscriptionId}`}>
                         <Button variant="outline" size="sm">{t("View")}</Button>
                       </Link>
                     </td>

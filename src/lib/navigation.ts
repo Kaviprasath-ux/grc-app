@@ -97,24 +97,6 @@ export const navigation: NavItem[] = [
         permission: "grc.customers:view",
       },
       {
-        name: "Subscription Pricing",
-        href: "/grc/subscription-pricing",
-        icon: IndianRupee,
-        permission: "subscription.pricing:view",
-      },
-      {
-        name: "Bundle Discounts",
-        href: "/grc/bundle-discounts",
-        icon: Tag,
-        permission: "subscription.bundle-discounts:view",
-      },
-      {
-        name: "All Subscriptions",
-        href: "/grc/subscriptions",
-        icon: CreditCard,
-        permission: "subscription.list:view",
-      },
-      {
         name: "Compliance",
         icon: Shield,
         children: [
@@ -312,6 +294,33 @@ export const navigation: NavItem[] = [
     ],
   },
   // ==================== End TPRM Section ====================
+
+  // ==================== Subscription Section (GRCAdministrator) ====================
+  {
+    name: "Subscription",
+    icon: CreditCard,
+    children: [
+      {
+        name: "Subscription Pricing",
+        href: "/subscription/pricing",
+        icon: IndianRupee,
+        permission: "subscription.pricing:view",
+      },
+      {
+        name: "Bundle Discounts",
+        href: "/subscription/bundle-discounts",
+        icon: Tag,
+        permission: "subscription.bundle-discounts:view",
+      },
+      {
+        name: "All Subscriptions",
+        href: "/subscription/list",
+        icon: CreditCard,
+        permission: "subscription.list:view",
+      },
+    ],
+  },
+  // ==================== End Subscription Section ====================
 
   // ==================== Email Section (separate module) ====================
   {
