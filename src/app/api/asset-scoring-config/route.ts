@@ -21,7 +21,7 @@ export const GET = withAuth(
             calculationType: "high_of_all",
             isActive: true,
             customerAccountId,
-          } as Record<string, unknown>,
+          },
         });
       }
 
@@ -72,7 +72,7 @@ export const PUT = withAuth(
             calculationType,
             isActive: true,
             customerAccountId,
-          } as Record<string, unknown>,
+          },
         });
       }
 

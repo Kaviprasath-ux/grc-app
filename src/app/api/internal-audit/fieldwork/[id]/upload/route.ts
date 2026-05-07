@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 import { saveUploadedFile } from '@/lib/file-upload';
 import { translateRecord, isTranslationConfigured } from '@/lib/translation-service';
+import { maybeEncryptBytes } from '@/lib/encryption';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -88,8 +89,12 @@ export const POST = withAuth(
               },
             });
 
-            // Store file binary in DB for Vercel persistence
-            await prisma.$executeRaw`UPDATE "FieldworkEvidenceAttachment" SET "fileData" = ${Buffer.from(buffer)} WHERE "id" = ${attachment.id}`;
+            // Store file binary in DB for Vercel persistence.
+            // Raw SQL bypasses the Prisma client extension, so we apply
+            // field-level encryption manually here. maybeEncryptBytes is a
+            // no-op when ENCRYPTION_ENABLED is off.
+            const encryptedFileData = maybeEncryptBytes(Buffer.from(buffer));
+            await prisma.$executeRaw`UPDATE "FieldworkEvidenceAttachment" SET "fileData" = ${encryptedFileData} WHERE "id" = ${attachment.id}`;
 
             // Translate file name
             if (session.customerAccountId && isTranslationConfigured()) {
@@ -136,8 +141,12 @@ export const POST = withAuth(
               },
             });
 
-            // Store file binary in DB for Vercel persistence
-            await prisma.$executeRaw`UPDATE "FieldworkEvidenceAttachment" SET "fileData" = ${Buffer.from(buffer)} WHERE "id" = ${attachment.id}`;
+            // Store file binary in DB for Vercel persistence.
+            // Raw SQL bypasses the Prisma client extension, so we apply
+            // field-level encryption manually here. maybeEncryptBytes is a
+            // no-op when ENCRYPTION_ENABLED is off.
+            const encryptedFileData = maybeEncryptBytes(Buffer.from(buffer));
+            await prisma.$executeRaw`UPDATE "FieldworkEvidenceAttachment" SET "fileData" = ${encryptedFileData} WHERE "id" = ${attachment.id}`;
 
             // Translate file name
             if (session.customerAccountId && isTranslationConfigured()) {

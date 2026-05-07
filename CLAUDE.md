@@ -99,6 +99,24 @@ npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma 
 
 Navigation is permission-filtered via `src/lib/navigation.ts`. Each nav item specifies a `permission` field (`resource:action` format) to control visibility.
 
+### Encryption (At Rest + In Transit)
+
+The application implements field-level encryption (AES-256-GCM) for sensitive `fileData` Bytes columns and TLS hardening for all network paths. **See `docs/SECURITY.md` for the canonical reference** — algorithms, key custody, rotation runbook, compliance mapping (ISO 27001 / SOC2 / GDPR / PCI), incident response.
+
+**Quick rules for contributors:**
+
+- **All `fileData` Bytes columns are auto-encrypted** by the Prisma client extension in `src/lib/prisma.ts`. Reading and writing through `prisma.X.findUnique` / `prisma.X.create` etc. requires no special handling — encrypt/decrypt is transparent.
+- **Raw SQL bypasses the extension.** Any `$queryRaw` / `$executeRaw` that touches an encrypted field (see `src/lib/encrypted-fields.ts`) must wrap manually with `maybeEncryptBytes` / `maybeDecryptBytes` from `@/lib/encryption`. The audit log of every such site is in `docs/encryption-raw-sql-audit.md` — update it when adding new ones.
+- **Adding a new encrypted field:** add to `src/lib/encrypted-fields.ts`, grep all call sites, wrap raw-SQL paths, run `npm run encrypt:migrate`, then `npm run encrypt:verify`. Detailed procedure in `docs/SECURITY.md` Section 5.
+- **Kill switch:** `ENCRYPTION_ENABLED` env var (per-app on DigitalOcean). When unset/false, the extension is a no-op. This is how single-branch deploys stage UAT vs Prod — flip the env var on UAT first, validate 24-48h, then flip Prod.
+- **Never** commit `FIELD_ENCRYPTION_KEY`, `NEXTAUTH_SECRET`, `PYTHON_API_SECRET`, or DB passwords. Use DO encrypted env vars + offline backup in a password manager.
+- **Never** log sensitive data raw — use `safeLog` from `@/lib/safe-log` which redacts known-sensitive keys.
+
+**npm scripts:**
+- `npm run encrypt:migrate` — one-time encryption of existing rows (idempotent)
+- `npm run encrypt:verify` — sample-and-decrypt smoke test
+- `npm run encrypt:rotate-key` — 90-day master-key rotation
+
 ## Key Patterns
 
 ### API Route Pattern

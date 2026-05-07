@@ -316,6 +316,17 @@ export function validateAIConfig(): { valid: boolean; errors: string[] } {
     errors.push('PYTHON_API_SECRET is not configured');
   }
 
+  // Reject plaintext HTTP to the Python AI backend in production. Translation
+  // and AI calls carry user content (audit findings, evidence text) that must
+  // not traverse the network unencrypted. Local dev is allowed to use http://.
+  if (
+    process.env.NODE_ENV === 'production' &&
+    AI_CONFIG.baseUrl &&
+    !AI_CONFIG.baseUrl.startsWith('https://')
+  ) {
+    errors.push('AI_API_BASE_URL must use HTTPS in production');
+  }
+
   return {
     valid: errors.length === 0,
     errors,

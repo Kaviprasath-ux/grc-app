@@ -18,7 +18,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "test:e2e:codegen": "playwright codegen http://localhost:3000"
+    "test:e2e:codegen": "playwright codegen http://localhost:3000",
+    "encrypt:migrate": "npx tsx scripts/migrate-encrypt-existing.ts",
+    "encrypt:verify": "npx tsx scripts/verify-encryption.ts",
+    "encrypt:rotate-key": "npx tsx scripts/rotate-master-key.ts"
   },
   "prisma": {
     "seed": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
