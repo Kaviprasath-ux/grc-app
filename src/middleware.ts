@@ -56,6 +56,20 @@ function isSuspendedAllowlisted(pathname: string): boolean {
 export default auth((req) => {
   const { pathname, searchParams } = req.nextUrl;
 
+  // ── 0) HTTPS enforcement ──
+  // Belt-and-suspenders. DigitalOcean App Platform terminates TLS at its proxy
+  // and forwards x-forwarded-proto. If anything ever served us via plain HTTP
+  // (misconfigured proxy, internal probe), 301 it to HTTPS so the browser
+  // upgrades and HSTS does its job.
+  if (process.env.NODE_ENV === "production") {
+    const proto = req.headers.get("x-forwarded-proto");
+    if (proto === "http") {
+      const httpsUrl = new URL(req.url);
+      httpsUrl.protocol = "https:";
+      return NextResponse.redirect(httpsUrl, 301);
+    }
+  }
+
   // ── 1) Authentication ──
   if (!req.auth) {
     const loginUrl = new URL("/login", req.url);
