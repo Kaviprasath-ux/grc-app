@@ -141,3 +141,61 @@ export function isWriteAllowed(status: SubscriptionStatus): boolean {
 export function isAccessAllowed(status: SubscriptionStatus): boolean {
   return status !== "SUSPENDED";
 }
+
+// ─── V2 lifecycle helpers (SUBSCRIPTION_V2_ENABLED) ──────────────
+// BASE plan = Year 1 promo; GENERAL plan = Year 2+ standard (monthly or annual);
+// COMPLIMENTARY = super-admin override (no contract, no expiry).
+//
+// All inputs are pure: no DB calls, no clock dependency beyond optional now arg.
+
+export interface ContractBearer {
+  /** Day the BASE phase ends; null when not on V2 yet or already past. */
+  baseEndDate?: Date | null;
+  /** Lock-in end date (= contractStartDate + 2 years). Null = no contract. */
+  contractEndDate?: Date | null;
+  /** When the customer requested cancellation (for after-contract processing). */
+  cancellationRequestedAt?: Date | null;
+}
+
+/**
+ * True while the module is still in its Year-1 BASE phase.
+ * Returns false if baseEndDate is null (V1 row or already flipped).
+ */
+export function isBasePeriod(ms: ContractBearer, now: Date = new Date()): boolean {
+  if (!ms.baseEndDate) return false;
+  return now < ms.baseEndDate;
+}
+
+/**
+ * True while the customer is inside their 2-year contract lock-in
+ * (cannot cancel, cannot downgrade billing cycle mid-contract).
+ * Returns false if contractEndDate is null (V1 row or COMPLIMENTARY).
+ */
+export function isInLockInPeriod(ms: ContractBearer, now: Date = new Date()): boolean {
+  if (!ms.contractEndDate) return false;
+  return now < ms.contractEndDate;
+}
+
+/**
+ * True if the customer is allowed to cancel now. Inverse of isInLockInPeriod
+ * for V2; always allowed for V1 / COMPLIMENTARY (no contractEndDate set).
+ */
+export function canCancelNow(ms: ContractBearer, now: Date = new Date()): boolean {
+  return !isInLockInPeriod(ms, now);
+}
+
+/**
+ * Days until the BASE→GENERAL flip. Negative if already flipped, null if not on BASE.
+ */
+export function daysUntilBaseFlip(ms: ContractBearer, now: Date = new Date()): number | null {
+  if (!ms.baseEndDate) return null;
+  return daysUntilExpiry(ms.baseEndDate, now);
+}
+
+/**
+ * Days until contract lock-in ends. Negative if already past, null if no contract.
+ */
+export function daysUntilContractEnd(ms: ContractBearer, now: Date = new Date()): number | null {
+  if (!ms.contractEndDate) return null;
+  return daysUntilExpiry(ms.contractEndDate, now);
+}

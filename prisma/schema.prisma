@@ -223,6 +223,17 @@ enum SubscriptionType {
   COMPLIMENTARY
 }
 
+// V2 plan model (SUBSCRIPTION_V2_ENABLED)
+// Replaces tier-based pricing with a two-plan lifecycle:
+//   BASE          - promotional Year-1 plan (cheap, e.g. INR 100/yr)
+//   GENERAL       - standard Year-2+ plan (monthly or annual)
+//   COMPLIMENTARY - super-admin override; bypasses Base/General entirely (POC, testing, legacy migrations)
+enum PlanType {
+  BASE
+  GENERAL
+  COMPLIMENTARY
+}
+
 enum InvoiceStatus {
   DRAFT
   ISSUED
@@ -242,6 +253,38 @@ enum PaymentStatus {
 enum DiscountType {
   PERCENTAGE
   FIXED
+}
+
+// V2 catalog: per-module pricing + limits per plan type (BASE / GENERAL).
+// Super admin edits one row per (moduleCode, planType). 3 modules x 2 plans = 6 rows.
+// Every numeric limit has a paired unlimited* boolean - when true, the limit is uncapped.
+model ModulePlanPricing {
+  id         String   @id @default(cuid())
+  moduleCode String // "GRC" | "TPRM" | "INTERNAL_AUDIT"
+  planType   PlanType // BASE or GENERAL (COMPLIMENTARY rows not stored here)
+
+  // Pricing - BASE has yearly only; GENERAL has both (customer chooses cycle at signup)
+  monthlyPrice Decimal? @db.Decimal(12, 2)
+  yearlyPrice  Decimal  @db.Decimal(12, 2)
+  currency     String   @default("INR")
+
+  // Limits + per-limit unlimited flags
+  userLimit            Int     @default(0)
+  unlimitedUsers       Boolean @default(false)
+  frameworkLimit       Int?
+  unlimitedFrameworks  Boolean @default(false)
+  vendorLimit          Int?
+  unlimitedVendors     Boolean @default(false)
+  assessmentLimit      Int?
+  unlimitedAssessments Boolean @default(false)
+  auditLimit           Int?
+  unlimitedAudits      Boolean @default(false)
+
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@unique([moduleCode, planType])
 }
 
 // Catalog: tier pricing + limits per module (admin-edited)
@@ -264,11 +307,26 @@ model ModuleTierPricing {
   @@unique([moduleCode, tier])
 }
 
+// Razorpay subscription/mandate webhook events (idempotency log).
+// On each incoming webhook, upsert by eventId; if the row already had
+// processedAt set, return 200 immediately and do nothing else.
+model RazorpayEvent {
+  id          String    @id @default(cuid())
+  eventId     String    @unique // x-razorpay-event-id header / event.id from payload
+  eventType   String // subscription.charged | subscription.halted | subscription.completed | etc.
+  payload     Json
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+  errorText   String?
+
+  @@index([eventType, receivedAt])
+}
+
 // Pending signup for payment flow (temporary storage until payment completes)
 model PendingSignup {
   id              String   @id @default(cuid())
   token           String   @unique
-  data            String   // JSON blob with signup data
+  data            String // JSON blob with signup data
   razorpayOrderId String?
   expiresAt       DateTime
   createdAt       DateTime @default(now())
@@ -316,11 +374,29 @@ model ModuleSubscription {
   // Tier change tracking
   previousTier    PlanTier?
   tierChangedAt   DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+
+  // V2 lifecycle (SUBSCRIPTION_V2_ENABLED). All nullable for V1 back-compat.
+  // Flow: signup -> planType=BASE for 1y -> baseEndDate flips to planType=GENERAL.
+  // Customer locked in until contractEndDate (= contractStartDate + 2y).
+  planType                PlanType?
+  nextPlanType            PlanType?
+  baseStartDate           DateTime?
+  baseEndDate             DateTime?
+  contractStartDate       DateTime?
+  contractEndDate         DateTime?
+  generalBillingCycle     BillingCycle?
+  generalStartDate        DateTime?
+  mandateId               String?
+  mandateStatus           String?
+  cancellationRequestedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([subscriptionId, moduleCode])
   @@index([cycleEnd])
+  @@index([baseEndDate])
+  @@index([contractEndDate])
 }
 
 // Per-customer override (price + tier + limits) — super admin special pricing

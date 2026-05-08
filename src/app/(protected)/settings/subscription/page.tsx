@@ -20,6 +20,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
 type PlanTier = "BASIC" | "MEDIUM" | "PRO";
+type PlanType = "BASE" | "GENERAL" | "COMPLIMENTARY" | null;
 type BillingCycle = "MONTHLY" | "YEARLY";
 type SubscriptionStatus = "TRIAL" | "ACTIVE" | "EXPIRING_SOON" | "EXPIRED" | "GRACE_PERIOD" | "SUSPENDED" | "CANCELLED";
 type SubscriptionType = "PAID" | "TRIAL" | "COMPLIMENTARY";
@@ -34,6 +35,14 @@ interface ModuleData {
   cycleEnd: string;
   cancelledAt: string | null;
   status: SubscriptionStatus;
+  // V2 lifecycle (null on V1 rows)
+  planType?: PlanType;
+  nextPlanType?: PlanType;
+  baseEndDate?: string | null;
+  contractEndDate?: string | null;
+  generalBillingCycle?: BillingCycle | null;
+  generalStartDate?: string | null;
+  cancellationRequestedAt?: string | null;
   limits: {
     userLimit: number;
     userUsed: number | null;
@@ -144,11 +153,21 @@ export default function CustomerSubscriptionPage() {
         body: JSON.stringify({}),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Cancel failed");
-      toast({
-        title: t("Subscription cancelled"),
-        description: t("You'll keep access until your modules' cycle ends."),
-      });
+      if (!res.ok && res.status !== 202) throw new Error(json.error || "Cancel failed");
+      // 202 = queued for after contract end (V2 lock-in path)
+      if (res.status === 202 || json.queued > 0) {
+        toast({
+          title: t("Cancellation queued"),
+          description: json.availableOn
+            ? `${t("Will process on")} ${formatDate(json.availableOn)}`
+            : t("Will process when your contract ends."),
+        });
+      } else {
+        toast({
+          title: t("Subscription cancelled"),
+          description: t("You'll keep access until your modules' cycle ends."),
+        });
+      }
       await reload();
     } catch (e) {
       toast({ variant: "destructive", title: t("Cancel failed"), description: (e as Error).message });
@@ -358,6 +377,9 @@ export default function CustomerSubscriptionPage() {
         </CardContent>
       </Card>
 
+      {/* ============= V2 lifecycle banners ============= */}
+      <V2LifecycleBanners modules={data.modules} t={t} />
+
       {/* Active modules grid */}
       <div>
         <h2 className="text-lg font-semibold text-stone-900 mb-3">{t("Active Modules")}</h2>
@@ -377,30 +399,68 @@ export default function CustomerSubscriptionPage() {
       </div>
 
       {/* Danger zone: cancel subscription */}
-      {!isComp && data.modules.some((m) => !m.cancelledAt) && (
-        <Card className="border-red-200">
-          <CardHeader className="border-b border-red-100 py-3 bg-red-50/50">
-            <CardTitle className="text-base text-red-900 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              {t("Cancel Subscription")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <p className="text-sm text-stone-700">
-              {t("Cancelling stops auto-renew and prevents future invoices. You keep full access until each module's cycle ends. This is reversible — contact your administrator to re-enable.")}
-            </p>
-            <Button
-              variant="outline"
-              className="mt-3 border-red-300 text-red-700 hover:bg-red-50"
-              onClick={() => setShowCancelDialog(true)}
-              disabled={busy}
-            >
-              <Ban className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-              {t("Cancel Subscription")}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {!isComp && data.modules.some((m) => !m.cancelledAt) && (() => {
+        // V2-aware cancel control:
+        //  - All active modules in lock-in -> "Schedule cancellation" (queues)
+        //  - Any cancellationRequestedAt set -> show "queued" state
+        //  - Otherwise -> normal immediate cancel
+        const active = data.modules.filter((m) => !m.cancelledAt);
+        const allLocked = active.length > 0 && active.every((m) => {
+          if (!m.contractEndDate) return false;
+          return new Date(m.contractEndDate).getTime() > Date.now();
+        });
+        const anyQueued = active.some((m) => m.cancellationRequestedAt);
+        const earliestContractEnd = active
+          .map((m) => m.contractEndDate)
+          .filter((d): d is string => Boolean(d))
+          .sort()[0];
+        const queuedRunsOn = earliestContractEnd ? formatDate(earliestContractEnd) : null;
+
+        return (
+          <Card className="border-red-200">
+            <CardHeader className="border-b border-red-100 py-3 bg-red-50/50">
+              <CardTitle className="text-base text-red-900 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                {anyQueued
+                  ? t("Cancellation queued")
+                  : allLocked
+                    ? t("Schedule cancellation")
+                    : t("Cancel Subscription")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {anyQueued ? (
+                <p className="text-sm text-stone-700">
+                  {t("Cancellation will be processed on")} <strong>{queuedRunsOn}</strong>{" "}
+                  {t("(end of your 2-year contract). Your subscription remains active until then.")}
+                </p>
+              ) : allLocked ? (
+                <p className="text-sm text-stone-700">
+                  {t("Your 2-year contract is active. You can queue a cancellation now and it will take effect on")}{" "}
+                  <strong>{queuedRunsOn}</strong>.
+                </p>
+              ) : (
+                <p className="text-sm text-stone-700">
+                  {t("Cancelling stops auto-renew and prevents future invoices. You keep full access until each module's cycle ends. This is reversible — contact your administrator to re-enable.")}
+                </p>
+              )}
+              <Button
+                variant="outline"
+                className="mt-3 border-red-300 text-red-700 hover:bg-red-50"
+                onClick={() => setShowCancelDialog(true)}
+                disabled={busy || anyQueued}
+              >
+                <Ban className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                {anyQueued
+                  ? t("Already queued")
+                  : allLocked
+                    ? t("Schedule cancellation")
+                    : t("Cancel Subscription")}
+              </Button>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Cancel confirmation dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
@@ -546,5 +606,112 @@ function ModuleCard({ m, isComp, t }: { m: ModuleData; isComp: boolean; t: (s: s
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * V2 lifecycle banners. Each banner is independent — multiple can show.
+ * Rendering rules:
+ *   1. cancellationQueued banner — highest priority; explains pending cancel
+ *   2. inBasePeriod banner — informational; "Year 1 Base ends X, General starts Y"
+ *   3. inLockIn banner — when no queue but customer is in contract
+ *   4. eligibleToCancel banner — contract over, can finally cancel
+ * V1 rows have no V2 fields → renders nothing (graceful no-op).
+ */
+function V2LifecycleBanners({ modules, t }: { modules: ModuleData[]; t: (s: string) => string }) {
+  const now = Date.now();
+  const active = modules.filter((m) => !m.cancelledAt);
+  if (active.length === 0) return null;
+
+  // Anyone queued for cancellation?
+  const queued = active.filter((m) => m.cancellationRequestedAt);
+  const queuedDate = queued
+    .map((m) => m.contractEndDate)
+    .filter((d): d is string => Boolean(d))
+    .sort()[0];
+
+  // Earliest BASE flip
+  const inBase = active.filter(
+    (m) => m.planType === "BASE" && m.baseEndDate && new Date(m.baseEndDate).getTime() > now
+  );
+  const earliestBaseEnd = inBase
+    .map((m) => m.baseEndDate!)
+    .sort()[0];
+  const generalCycle = inBase[0]?.generalBillingCycle;
+
+  // Lock-in (active contract, no queue yet)
+  const inLockIn = active.filter(
+    (m) => m.contractEndDate && new Date(m.contractEndDate).getTime() > now
+  );
+  const earliestContractEnd = inLockIn
+    .map((m) => m.contractEndDate!)
+    .sort()[0];
+
+  // Eligible to cancel (contract has ended, no queue)
+  const eligibleToCancel = active.some(
+    (m) =>
+      m.contractEndDate &&
+      new Date(m.contractEndDate).getTime() <= now &&
+      !m.cancellationRequestedAt
+  );
+
+  // Nothing V2-relevant? Render nothing (V1 / pre-V2 customers).
+  if (!queued.length && !inBase.length && !inLockIn.length && !eligibleToCancel) return null;
+
+  return (
+    <div className="space-y-2">
+      {queued.length > 0 && queuedDate && (
+        <Banner tone="amber" icon={<AlertTriangle className="h-4 w-4" />}>
+          <strong>{t("Cancellation queued.")}</strong>{" "}
+          {t("Will process on")} <strong>{formatDate(queuedDate)}</strong>{" "}
+          {t("(end of your 2-year contract). Subscription remains active until then.")}
+        </Banner>
+      )}
+
+      {inBase.length > 0 && earliestBaseEnd && (
+        <Banner tone="emerald" icon={<Sparkles className="h-4 w-4" />}>
+          <strong>{t("Year 1 (Base) ends")} {formatDate(earliestBaseEnd)}.</strong>{" "}
+          {t("General plan auto-starts then —")}{" "}
+          {generalCycle === "MONTHLY" ? t("billed monthly") : t("billed yearly")}.
+        </Banner>
+      )}
+
+      {!queued.length && inLockIn.length > 0 && earliestContractEnd && (
+        <Banner tone="blue" icon={<Shield className="h-4 w-4" />}>
+          <strong>{t("Contract locked until")} {formatDate(earliestContractEnd)}.</strong>{" "}
+          {t("Cancellation can be queued and will process at contract end.")}
+        </Banner>
+      )}
+
+      {!queued.length && !inLockIn.length && eligibleToCancel && (
+        <Banner tone="stone" icon={<AlertCircle className="h-4 w-4" />}>
+          <strong>{t("Contract complete.")}</strong>{" "}
+          {t("Your 2-year commitment has ended. You may cancel anytime.")}
+        </Banner>
+      )}
+    </div>
+  );
+}
+
+function Banner({
+  tone,
+  icon,
+  children,
+}: {
+  tone: "amber" | "emerald" | "blue" | "stone";
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const styles: Record<string, string> = {
+    amber: "border-amber-200 bg-amber-50 text-amber-900",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    blue: "border-blue-200 bg-blue-50 text-blue-900",
+    stone: "border-stone-200 bg-stone-50 text-stone-900",
+  };
+  return (
+    <div className={`rounded-lg border p-3 flex items-start gap-2 text-sm ${styles[tone]}`}>
+      <div className="mt-0.5 flex-shrink-0">{icon}</div>
+      <div>{children}</div>
+    </div>
   );
 }

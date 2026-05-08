@@ -51,6 +51,10 @@ export interface SyncResult {
 /**
  * Sync one ModuleSubscription to the legacy SubscriptionPlan table.
  * Idempotent: re-running with the same input is safe.
+ *
+ * V2 awareness: when ms.planType is set (V2), per-limit unlimited flags are
+ * read live from ModulePlanPricing. COMPLIMENTARY rows always sync as
+ * fully-unlimited.
  */
 export async function syncSubscriptionPlan(moduleSubscriptionId: string): Promise<SyncResult> {
   const ms = await prisma.moduleSubscription.findUnique({
@@ -66,24 +70,51 @@ export async function syncSubscriptionPlan(moduleSubscriptionId: string): Promis
   const isCancelled = ms.cancelledAt !== null;
   const moduleCode = ms.moduleCode;
 
+  // V2 unlimited-flag lookup. For V1 rows (planType=null) all flags stay false,
+  // preserving existing "null limit = unlimited" semantics for non-user limits.
+  let unlimitedUsers = false;
+  let unlimitedFrameworks = false;
+  let unlimitedVendors = false;
+  let unlimitedAssessments = false;
+
+  if (ms.planType === "COMPLIMENTARY") {
+    unlimitedUsers = unlimitedFrameworks = unlimitedVendors = unlimitedAssessments = true;
+  } else if (ms.planType === "BASE" || ms.planType === "GENERAL") {
+    const pricing = await prisma.modulePlanPricing.findUnique({
+      where: { moduleCode_planType: { moduleCode, planType: ms.planType } },
+    });
+    if (pricing) {
+      unlimitedUsers = pricing.unlimitedUsers;
+      unlimitedFrameworks = pricing.unlimitedFrameworks;
+      unlimitedVendors = pricing.unlimitedVendors;
+      unlimitedAssessments = pricing.unlimitedAssessments;
+    }
+  }
+
   const data = {
     customerAccountId,
     moduleCode,
     tier: ms.tier,
     startDate: ms.cycleStart,
     expiryDate: ms.cycleEnd,
-    maxAccountsAllowed: ms.userLimit,
+    maxAccountsAllowed: unlimitedUsers ? UNLIMITED_LEGACY_VALUE : ms.userLimit,
     maxFrameworksAllowed:
       moduleCode === "GRC"
-        ? (ms.frameworkLimit === null ? UNLIMITED_LEGACY_VALUE : ms.frameworkLimit)
+        ? (unlimitedFrameworks || ms.frameworkLimit === null
+            ? UNLIMITED_LEGACY_VALUE
+            : ms.frameworkLimit)
         : 0,
     vendorLimit:
       moduleCode === "TPRM"
-        ? (ms.vendorLimit === null ? UNLIMITED_LEGACY_VALUE : (ms.vendorLimit ?? 0))
+        ? (unlimitedVendors || ms.vendorLimit === null
+            ? UNLIMITED_LEGACY_VALUE
+            : (ms.vendorLimit ?? 0))
         : 0,
     assessmentLimit:
       moduleCode === "TPRM"
-        ? (ms.assessmentLimit === null ? UNLIMITED_LEGACY_VALUE : (ms.assessmentLimit ?? 0))
+        ? (unlimitedAssessments || ms.assessmentLimit === null
+            ? UNLIMITED_LEGACY_VALUE
+            : (ms.assessmentLimit ?? 0))
         : 0,
     status: isCancelled ? "Inactive" : "Active",
   };

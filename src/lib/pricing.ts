@@ -18,7 +18,15 @@
  */
 
 import prisma from "@/lib/prisma";
-import type { PlanTier, BillingCycle, ModuleTierPricing, BundleDiscount, CustomerPlanOverride } from "@prisma/client";
+import type {
+  PlanTier,
+  PlanType,
+  BillingCycle,
+  ModuleTierPricing,
+  ModulePlanPricing,
+  BundleDiscount,
+  CustomerPlanOverride,
+} from "@prisma/client";
 
 export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
 
@@ -271,6 +279,221 @@ export async function computeQuote(input: ComputeQuoteInput): Promise<QuoteResul
 
   // Bundle discount
   const best = await getBestBundleDiscount(input.lines, input.cycle, subtotal, now);
+  const discountAmount = best ? best.amount : 0;
+  const taxableAmount = round2(subtotal - discountAmount);
+  const taxAmount = round2(taxableAmount * (taxRate / 100));
+  const total = round2(taxableAmount + taxAmount);
+
+  return {
+    cycle: input.cycle,
+    currency: DEFAULT_CURRENCY,
+    lineItems,
+    subtotal,
+    bundleDiscount: best
+      ? {
+          id: best.rule.id,
+          name: best.rule.name,
+          amount: discountAmount,
+          discountType: best.rule.discountType as "PERCENTAGE" | "FIXED",
+          discountValue: Number(best.rule.discountValue),
+        }
+      : null,
+    taxableAmount,
+    taxRate,
+    taxAmount,
+    total,
+  };
+}
+
+// ─── V2 (BASE / GENERAL) quote engine ─────────────────────────────
+// Active when SUBSCRIPTION_V2_ENABLED=true. Coexists with V1 above; V1 paths
+// keep working until callers migrate. Differences from V1:
+//   - No PlanTier dimension (super admin sets one limit set per planType×module)
+//   - BASE always charges yearlyPrice (cycle arg ignored)
+//   - GENERAL respects cycle (MONTHLY or YEARLY)
+//   - BundleDiscount.minTier is ignored in V2 (no tiers)
+//   - CustomerPlanOverride is keyed (customerAccountId, moduleCode) — same row
+//     as V1; we just read the price columns
+
+export interface QuoteLineRequestV2 {
+  moduleCode: ModuleCode;
+  planType: PlanType; // BASE | GENERAL (COMPLIMENTARY does not generate invoices)
+}
+
+export interface QuoteLineItemV2 extends QuoteLineRequestV2 {
+  description: string;
+  fullCyclePrice: number;
+  unitPrice: number;
+  monthsCharged: number;
+  isProRated: boolean;
+  priceSource: "STANDARD" | "OVERRIDE";
+}
+
+export interface ComputeQuoteV2Input {
+  customerAccountId?: string;
+  lines: QuoteLineRequestV2[];
+  /** GENERAL respects this; BASE forces YEARLY internally. */
+  cycle: BillingCycle;
+  anchorEndDate?: Date;
+  now?: Date;
+  taxRatePercent?: number;
+}
+
+export interface QuoteResultV2 {
+  cycle: BillingCycle;
+  currency: string;
+  lineItems: QuoteLineItemV2[];
+  subtotal: number;
+  bundleDiscount: {
+    id: string;
+    name: string;
+    amount: number;
+    discountType: "PERCENTAGE" | "FIXED";
+    discountValue: number;
+  } | null;
+  taxableAmount: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+}
+
+export async function getModulePlanPricing(
+  moduleCode: ModuleCode,
+  planType: PlanType,
+): Promise<ModulePlanPricing> {
+  if (planType === "COMPLIMENTARY") {
+    throw new Error("COMPLIMENTARY plans do not have pricing — bypass quoting");
+  }
+  const row = await prisma.modulePlanPricing.findUnique({
+    where: { moduleCode_planType: { moduleCode, planType } },
+  });
+  if (!row) {
+    throw new Error(`No V2 pricing configured for ${moduleCode} ${planType} — seed ModulePlanPricing`);
+  }
+  if (!row.isActive) {
+    throw new Error(`V2 pricing for ${moduleCode} ${planType} is inactive`);
+  }
+  return row;
+}
+
+/**
+ * V2 price resolver. BASE always uses yearlyPrice (1-year promo); GENERAL respects cycle.
+ * Customer override (price columns) wins when present and active.
+ */
+export async function getModulePriceV2(
+  moduleCode: ModuleCode,
+  planType: PlanType,
+  cycle: BillingCycle,
+  customerAccountId?: string,
+  now: Date = new Date(),
+): Promise<{ price: number; effectiveCycle: BillingCycle; source: "STANDARD" | "OVERRIDE" }> {
+  const effectiveCycle: BillingCycle = planType === "BASE" ? "YEARLY" : cycle;
+
+  if (customerAccountId) {
+    const override = await getCustomerOverride(customerAccountId, moduleCode, now);
+    if (override) {
+      const overridden = effectiveCycle === "MONTHLY" ? override.monthlyPrice : override.yearlyPrice;
+      if (overridden !== null) {
+        return { price: Number(overridden), effectiveCycle, source: "OVERRIDE" };
+      }
+    }
+  }
+
+  const standard = await getModulePlanPricing(moduleCode, planType);
+  let price: number;
+  if (effectiveCycle === "MONTHLY") {
+    if (standard.monthlyPrice === null) {
+      throw new Error(`${moduleCode} ${planType} has no monthlyPrice configured`);
+    }
+    price = Number(standard.monthlyPrice);
+  } else {
+    price = Number(standard.yearlyPrice);
+  }
+  return { price, effectiveCycle, source: "STANDARD" };
+}
+
+/**
+ * V2 bundle discount resolver. Same engine as V1 but ignores minTier (V2 has no tiers).
+ * Treats every active rule's tier check as satisfied.
+ */
+async function getBestBundleDiscountV2(
+  lineCount: number,
+  cycle: BillingCycle,
+  subtotal: number,
+  now: Date,
+): Promise<{ rule: BundleDiscount; amount: number } | null> {
+  const candidates = await prisma.bundleDiscount.findMany({
+    where: {
+      isActive: true,
+      OR: [{ appliesToCycle: null }, { appliesToCycle: cycle }],
+    },
+  });
+
+  let best: { rule: BundleDiscount; amount: number } | null = null;
+  for (const rule of candidates) {
+    if (!isDiscountValidNow(rule, now)) continue;
+    if (rule.appliesToCycle && rule.appliesToCycle !== cycle) continue;
+    if (lineCount < rule.minModules) continue;
+    // V2: ignore rule.minTier
+    const amount = computeDiscountAmount(rule, subtotal);
+    if (amount <= 0) continue;
+    if (!best || amount > best.amount) best = { rule, amount };
+  }
+  return best;
+}
+
+export async function computeQuoteV2(input: ComputeQuoteV2Input): Promise<QuoteResultV2> {
+  if (input.lines.length === 0) {
+    throw new Error("computeQuoteV2 requires at least one line");
+  }
+
+  const now = input.now ?? new Date();
+  const taxRate = input.taxRatePercent ?? DEFAULT_TAX_RATE;
+
+  // BASE forces yearly internally; GENERAL uses caller's cycle.
+  // If the caller mixes BASE and GENERAL in one quote (rare — usually a flip
+  // invoice charges only the new GENERAL line), we honour each line's own cycle.
+  const lineItems: QuoteLineItemV2[] = [];
+  for (const req of input.lines) {
+    const { price: fullCyclePrice, effectiveCycle, source } = await getModulePriceV2(
+      req.moduleCode,
+      req.planType,
+      input.cycle,
+      input.customerAccountId,
+      now,
+    );
+
+    let monthsCharged = effectiveCycle === "MONTHLY" ? 1 : 12;
+    let isProRated = false;
+    if (effectiveCycle === "YEARLY" && input.anchorEndDate) {
+      const months = wholeMonthsBetween(now, input.anchorEndDate);
+      if (months > 0 && months < 12) {
+        monthsCharged = months;
+        isProRated = true;
+      }
+    }
+
+    const unitPrice =
+      effectiveCycle === "YEARLY" && isProRated
+        ? round2(fullCyclePrice * (monthsCharged / 12))
+        : round2(fullCyclePrice);
+
+    const cycleLabel = effectiveCycle === "MONTHLY" ? "Monthly" : "Yearly";
+    const proLabel = isProRated ? `, ${monthsCharged}-month pro-rata` : "";
+    lineItems.push({
+      moduleCode: req.moduleCode,
+      planType: req.planType,
+      description: `${req.moduleCode} ${req.planType} (${cycleLabel}${proLabel})`,
+      fullCyclePrice,
+      unitPrice,
+      monthsCharged,
+      isProRated,
+      priceSource: source,
+    });
+  }
+
+  const subtotal = round2(lineItems.reduce((s, li) => s + li.unitPrice, 0));
+  const best = await getBestBundleDiscountV2(input.lines.length, input.cycle, subtotal, now);
   const discountAmount = best ? best.amount : 0;
   const taxableAmount = round2(subtotal - discountAmount);
   const taxAmount = round2(taxableAmount * (taxRate / 100));

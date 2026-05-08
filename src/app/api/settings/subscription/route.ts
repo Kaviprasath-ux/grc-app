@@ -130,6 +130,14 @@ export const GET = withAuth(
               cancelledAt: m.cancelledAt,
               now,
             }),
+            // V2 lifecycle (null on V1 rows)
+            planType: m.planType,
+            nextPlanType: m.nextPlanType,
+            baseEndDate: m.baseEndDate,
+            contractEndDate: m.contractEndDate,
+            generalBillingCycle: m.generalBillingCycle,
+            generalStartDate: m.generalStartDate,
+            cancellationRequestedAt: m.cancellationRequestedAt,
             limits: {
               userLimit: m.userLimit,
               userUsed: usedCount,

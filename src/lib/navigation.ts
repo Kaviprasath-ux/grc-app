@@ -301,8 +301,8 @@ export const navigation: NavItem[] = [
     icon: CreditCard,
     children: [
       {
-        name: "Subscription Pricing",
-        href: "/subscription/pricing",
+        name: "Plan Pricing",
+        href: "/subscription/plan-pricing",
         icon: IndianRupee,
         permission: "subscription.pricing:view",
       },

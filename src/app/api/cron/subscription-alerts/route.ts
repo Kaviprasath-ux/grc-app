@@ -166,7 +166,168 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // ── 2. Trial-ending windows ─────────────────────────────
+    // ── 2. V2 BASE→GENERAL flip warnings ────────────────────
+    // Same buckets pattern as #1. Reads m.baseEndDate and dispatches
+    // BASE_ENDING_30D / _15D / _7D when delta lands on those windows.
+    // Only fires for V2 modules (planType=BASE); V1 rows have null baseEndDate.
+    type FlipBucket = { customerAccountId: string; days: number; template: string; modules: string[]; baseEndDate: Date; generalBillingCycle: string | null };
+    const flipBuckets = new Map<string, FlipBucket>();
+    const FLIP_WINDOWS: Array<{ days: number; template: string }> = [
+      { days: 30, template: "BASE_ENDING_30D" },
+      { days: 15, template: "BASE_ENDING_15D" },
+      { days: 7,  template: "BASE_ENDING_7D"  },
+    ];
+
+    const v2Modules = await prisma.moduleSubscription.findMany({
+      where: { planType: "BASE", baseEndDate: { not: null }, cancelledAt: null },
+      include: { subscription: { select: { customerAccountId: true } } },
+    });
+    for (const ms of v2Modules) {
+      if (!ms.baseEndDate) continue;
+      const delta = daysBetween(today, ms.baseEndDate);
+      const win = FLIP_WINDOWS.find((w) => w.days === delta);
+      if (!win) continue;
+      const key = `${ms.subscription.customerAccountId}|${delta}`;
+      const existing = flipBuckets.get(key);
+      if (existing) existing.modules.push(ms.moduleCode);
+      else flipBuckets.set(key, {
+        customerAccountId: ms.subscription.customerAccountId,
+        days: delta,
+        template: win.template,
+        modules: [ms.moduleCode],
+        baseEndDate: ms.baseEndDate,
+        generalBillingCycle: ms.generalBillingCycle ?? null,
+      });
+    }
+    for (const bucket of flipBuckets.values()) {
+      const cust = await prisma.customerAccount.findUnique({ where: { id: bucket.customerAccountId } });
+      if (!cust) continue;
+      const admins = await prisma.user.findMany({
+        where: {
+          customerAccountId: bucket.customerAccountId,
+          isActive: true,
+          userRoles: { some: { role: { name: "CustomerAdministrator" } } },
+        },
+        select: { id: true, fullName: true, email: true },
+      });
+      const placeholders = {
+        customerName: cust.name,
+        moduleList: bucket.modules.join(", "),
+        daysLeft: String(bucket.days),
+        baseEndDate: bucket.baseEndDate.toISOString().slice(0, 10),
+        generalBillingCycle: bucket.generalBillingCycle ?? "yearly",
+        portalLink: `${appUrl()}/settings/subscription`,
+      };
+      for (const admin of admins) {
+        try {
+          await sendTemplatedEmail(
+            bucket.template,
+            admin.email,
+            { ...placeholders, recipientName: admin.fullName, recipientEmail: admin.email },
+            admin.fullName
+          );
+          result.sent++;
+        } catch (e) {
+          result.failed++;
+          errors.push(`${admin.email} ${bucket.template}: ${(e as Error).message}`);
+        }
+      }
+    }
+
+    // ── 3. V2 mandate-halted notice ─────────────────────────
+    // One MANDATE_FAILED email per customer with at least one halted mandate.
+    // Idempotent-ish: cron is daily so a stuck halted state will email each day
+    // until resolved — emit once per cron run is acceptable for now.
+    const halted = await prisma.moduleSubscription.findMany({
+      where: { mandateStatus: "halted", cancelledAt: null },
+      include: { subscription: { select: { customerAccountId: true } } },
+    });
+    const haltedByCustomer = new Set(halted.map((m) => m.subscription.customerAccountId));
+    for (const customerId of haltedByCustomer) {
+      const cust = await prisma.customerAccount.findUnique({ where: { id: customerId } });
+      if (!cust) continue;
+      const admins = await prisma.user.findMany({
+        where: {
+          customerAccountId: customerId,
+          isActive: true,
+          userRoles: { some: { role: { name: "CustomerAdministrator" } } },
+        },
+        select: { id: true, fullName: true, email: true },
+      });
+      const placeholders = {
+        customerName: cust.name,
+        gracePeriodDays: "7",
+        portalLink: `${appUrl()}/settings/subscription`,
+      };
+      for (const admin of admins) {
+        try {
+          await sendTemplatedEmail(
+            "MANDATE_FAILED",
+            admin.email,
+            { ...placeholders, recipientName: admin.fullName, recipientEmail: admin.email },
+            admin.fullName
+          );
+          result.sent++;
+        } catch (e) {
+          result.failed++;
+          errors.push(`${admin.email} MANDATE_FAILED: ${(e as Error).message}`);
+        }
+      }
+    }
+
+    // ── 4. V2 contract ending warnings (30 days before contractEndDate) ──
+    const contractEnding = await prisma.moduleSubscription.findMany({
+      where: { contractEndDate: { not: null }, cancelledAt: null, cancellationRequestedAt: null },
+      include: { subscription: { select: { customerAccountId: true } } },
+    });
+    type ContractBucket = { customerAccountId: string; contractEndDate: Date };
+    const contractBuckets = new Map<string, ContractBucket>();
+    for (const ms of contractEnding) {
+      if (!ms.contractEndDate) continue;
+      const delta = daysBetween(today, ms.contractEndDate);
+      if (delta !== 30) continue;
+      // One bucket per customer (use earliest contractEnd if multiple modules)
+      const existing = contractBuckets.get(ms.subscription.customerAccountId);
+      if (!existing || ms.contractEndDate < existing.contractEndDate) {
+        contractBuckets.set(ms.subscription.customerAccountId, {
+          customerAccountId: ms.subscription.customerAccountId,
+          contractEndDate: ms.contractEndDate,
+        });
+      }
+    }
+    for (const bucket of contractBuckets.values()) {
+      const cust = await prisma.customerAccount.findUnique({ where: { id: bucket.customerAccountId } });
+      if (!cust) continue;
+      const admins = await prisma.user.findMany({
+        where: {
+          customerAccountId: bucket.customerAccountId,
+          isActive: true,
+          userRoles: { some: { role: { name: "CustomerAdministrator" } } },
+        },
+        select: { id: true, fullName: true, email: true },
+      });
+      const placeholders = {
+        customerName: cust.name,
+        contractEndDate: bucket.contractEndDate.toISOString().slice(0, 10),
+        portalLink: `${appUrl()}/settings/subscription`,
+      };
+      for (const admin of admins) {
+        try {
+          await sendTemplatedEmail(
+            "CONTRACT_ENDING_30D",
+            admin.email,
+            { ...placeholders, recipientName: admin.fullName, recipientEmail: admin.email },
+            admin.fullName
+          );
+          result.sent++;
+        } catch (e) {
+          result.failed++;
+          errors.push(`${admin.email} CONTRACT_ENDING_30D: ${(e as Error).message}`);
+        }
+      }
+    }
+
+    // ── 5. Trial-ending windows ─────────────────────────────
     for (const sub of subs) {
       if (sub.subscriptionType !== "TRIAL" || !sub.trialEndsAt) continue;
       const delta = daysBetween(today, sub.trialEndsAt);
