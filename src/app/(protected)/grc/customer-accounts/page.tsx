@@ -57,6 +57,7 @@ interface CustomerAccount {
   isTprmAdded?: boolean;
   isGrcAdded?: boolean;
   isQpostComplianceEnabled?: boolean;
+  isInternalAuditEnabled?: boolean;
 }
 
 interface SubscriptionPlan {
@@ -214,6 +215,7 @@ export default function CustomerAccountsPage() {
     isGrcAdded: true, // Always true when creating from GRC; loaded from customer data when editing
     isTprmAdded: false,
     isQpostComplianceEnabled: false,
+    isInternalAuditEnabled: false,
     language: "en-US",
     timeZone: "Asia/Qatar",
     logoFile: null as File | null,
@@ -308,6 +310,7 @@ export default function CustomerAccountsPage() {
       isGrcAdded: true,
       isTprmAdded: false,
       isQpostComplianceEnabled: false,
+      isInternalAuditEnabled: false,
       language: "en-US",
       timeZone: "Asia/Qatar",
       logoFile: null,
@@ -433,10 +436,9 @@ export default function CustomerAccountsPage() {
       return;
     }
 
-    if (pendingSubscriptionPlans.length === 0) {
-      setShowSubscriptionWarningDialog(true);
-      return;
-    }
+    // V2: legacy "no subscription plan" warning removed — every superadmin-
+    // created customer now gets an automatic COMPLIMENTARY subscription via
+    // ensureComplimentarySubscription() server-side.
 
     setSubmitting(true);
     try {
@@ -453,6 +455,7 @@ export default function CustomerAccountsPage() {
           isGrcAdded: formData.isGrcAdded,
           isTprmAdded: formData.isTprmAdded,
           isQpostComplianceEnabled: formData.isQpostComplianceEnabled,
+          isInternalAuditEnabled: formData.isInternalAuditEnabled,
           language: formData.language,
           timeZone: formData.timeZone,
           role: "CustomerAdministrator",
@@ -549,6 +552,7 @@ export default function CustomerAccountsPage() {
           isGrcAdded: formData.isGrcAdded,
           isTprmAdded: formData.isTprmAdded,
           isQpostComplianceEnabled: formData.isQpostComplianceEnabled,
+          isInternalAuditEnabled: formData.isInternalAuditEnabled,
           language: formData.language,
           timeZone: formData.timeZone,
         }),
@@ -1035,6 +1039,7 @@ export default function CustomerAccountsPage() {
       isGrcAdded: customer.isGrcAdded !== false, // Default to true if not set
       isTprmAdded: customer.isTprmAdded || false,
       isQpostComplianceEnabled: customer.isQpostComplianceEnabled || false,
+      isInternalAuditEnabled: customer.isInternalAuditEnabled || false,
       language: customer.language || "en-US",
       timeZone: customer.timeZone || "Asia/Qatar",
       logoFile: null,
@@ -1507,6 +1512,30 @@ export default function CustomerAccountsPage() {
                       </label>
                     </div>
                   </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Is Internal Audit Enabled")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isInternalAuditEnabledNew"
+                          checked={!formData.isInternalAuditEnabled}
+                          onChange={() => setFormData({ ...formData, isInternalAuditEnabled: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isInternalAuditEnabledNew"
+                          checked={formData.isInternalAuditEnabled}
+                          onChange={() => setFormData({ ...formData, isInternalAuditEnabled: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1548,15 +1577,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse justify-between gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={() => openSubscriptionPlanDialog(undefined, true)}
-            >
-              {t("Subscription Plan")} {pendingSubscriptionPlans.length > 0 && `(${pendingSubscriptionPlans.length})`}
-            </Button>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse justify-end gap-2">
             <div className="flex gap-2 rtl:flex-row-reverse">
               <Button onClick={handleOnboardCustomer} disabled={submitting} size="sm" className="flex-1 sm:flex-none">
                 {submitting ? t("Saving...") : t("Save")}
@@ -1853,6 +1874,30 @@ export default function CustomerAccountsPage() {
                       </label>
                     </div>
                   </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Is Internal Audit Enabled")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isInternalAuditEnabledEdit"
+                          checked={!formData.isInternalAuditEnabled}
+                          onChange={() => setFormData({ ...formData, isInternalAuditEnabled: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isInternalAuditEnabledEdit"
+                          checked={formData.isInternalAuditEnabled}
+                          onChange={() => setFormData({ ...formData, isInternalAuditEnabled: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -1869,15 +1914,7 @@ export default function CustomerAccountsPage() {
           </div>
 
           {/* Fixed Footer */}
-          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse justify-between gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={() => openSubscriptionPlanDialog(selectedCustomer || undefined)}
-            >
-              {t("Subscription Plan")}
-            </Button>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg flex flex-col sm:flex-row sm:rtl:flex-row-reverse justify-end gap-2">
             <div className="flex gap-2 rtl:flex-row-reverse">
               <Button onClick={handleEditCustomer} disabled={submitting} size="sm" className="flex-1 sm:flex-none">
                 {submitting ? t("Saving...") : t("Save")}

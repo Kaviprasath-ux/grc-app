@@ -236,7 +236,7 @@ export default function CustomerSubscriptionPage() {
             <p className="text-sm mt-2 text-stone-600 max-w-md mx-auto">
               {t("Pick the modules you need (GRC, TPRM, Internal Audit), choose a tier, and pay. Modules unlock instantly.")}
             </p>
-            <Link href="/settings/subscription/renew">
+            <Link href="/settings/subscription/subscribe">
               <Button className="mt-5">
                 <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                 {t("Subscribe to a Plan")}
@@ -249,6 +249,12 @@ export default function CustomerSubscriptionPage() {
   }
 
   const isComp = data.subscriptionType === "COMPLIMENTARY";
+  // V2 = any module has a planType set (BASE / GENERAL / COMPLIMENTARY).
+  // V2 customers don't manually renew/add/upgrade — Razorpay autopay or
+  // super-admin handles all of that. Only legacy V1 rows (planType=null) need
+  // the manual toolbar.
+  const isV2 = data.modules.some((m) => Boolean(m.planType));
+  const showV1Toolbar = !isComp && !isV2;
   const isTrial = data.subscriptionType === "TRIAL";
 
   return (
@@ -339,8 +345,9 @@ export default function CustomerSubscriptionPage() {
             </div>
           )}
 
-          {/* Action toolbar */}
-          {!isComp && (
+          {/* V1 action toolbar — Renew / Add Module / Upgrade Tier.
+              Hidden for V2 (autopay + no tiers) and COMPLIMENTARY (no payment). */}
+          {showV1Toolbar && (
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Link href="/settings/subscription/renew">
                 <Button>
@@ -537,17 +544,20 @@ function ModuleCard({ m, isComp, t }: { m: ModuleData; isComp: boolean; t: (s: s
   const meta = MODULE_META[m.moduleCode];
   const cancelled = !!m.cancelledAt;
 
+  // Legacy SubscriptionPlan stores 999_999 as the "unlimited" sentinel for
+  // COMPLIMENTARY (and V2 unlimited flags). Treat any value at or above that
+  // threshold as unlimited so we never render "1/999999" to the customer.
   function renderLimit(label: string, used: number | null, limit: number | null, icon?: React.ReactNode) {
     if (used === null) return null;
-    const isUnlimited = limit === null;
-    const pct = isUnlimited || limit === 0 ? 0 : Math.min(100, (used / limit) * 100);
+    const isUnlimited = limit === null || limit >= 999_999;
+    const pct = isUnlimited || !limit || limit === 0 ? 0 : Math.min(100, (used / limit) * 100);
     return (
       <div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-stone-600 flex items-center gap-1">{icon}{label}</span>
-          <span className="font-mono">{used}/{isUnlimited ? "∞" : limit}</span>
+          <span className="font-mono">{used}/{isUnlimited ? t("Unlimited") : limit}</span>
         </div>
-        {!isUnlimited && limit > 0 && (
+        {!isUnlimited && limit !== null && limit > 0 && (
           <Progress value={pct} className={pct >= 90 ? "h-1 mt-1 [&>div]:bg-red-500" : "h-1 mt-1"} />
         )}
       </div>
@@ -563,8 +573,26 @@ function ModuleCard({ m, isComp, t }: { m: ModuleData; isComp: boolean; t: (s: s
             <div>
               <div className="font-semibold text-stone-900">{meta.label}</div>
               <div className="text-xs text-stone-500">
-                <Badge variant="outline" className="text-[10px] py-0">{m.tier}</Badge>
-                <span className="ltr:ml-1 rtl:mr-1">· {m.billingCycle}</span>
+                {/* V1 tier badge — only shown for legacy rows (planType=null).
+                    V2 rows (BASE / GENERAL / COMPLIMENTARY) have tier=BASIC as a
+                    placeholder, not real, so we hide it. */}
+                {!m.planType && (
+                  <>
+                    <Badge variant="outline" className="text-[10px] py-0">{m.tier}</Badge>
+                    <span className="ltr:ml-1 rtl:mr-1">· </span>
+                  </>
+                )}
+                {m.planType === "BASE" && (
+                  <Badge variant="outline" className="text-[10px] py-0 bg-emerald-50 text-emerald-700 border-emerald-200">{t("Base")}</Badge>
+                )}
+                {m.planType === "GENERAL" && (
+                  <Badge variant="outline" className="text-[10px] py-0 bg-blue-50 text-blue-700 border-blue-200">{t("General")}</Badge>
+                )}
+                {m.planType === "COMPLIMENTARY" && (
+                  <Badge variant="outline" className="text-[10px] py-0 bg-purple-50 text-purple-700 border-purple-200">{t("Complimentary")}</Badge>
+                )}
+                {m.planType && <span className="ltr:ml-1 rtl:mr-1">· </span>}
+                {m.billingCycle}
               </div>
             </div>
           </div>

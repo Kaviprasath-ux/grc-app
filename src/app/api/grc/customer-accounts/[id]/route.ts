@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { isValidEmailFormat } from "@/lib/validations/email";
 import { translateRecord } from "@/lib/translation-service";
+import { ensureComplimentarySubscription, type ModuleCode } from "@/lib/customer-complimentary";
 
 /**
  * GET /api/grc/customer-accounts/[id]
@@ -72,7 +73,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { customerName, email, userName, password, blocked, active, language, timeZone, isGrcAdded, isTprmAdded, isQpostComplianceEnabled } = body;
+    const { customerName, email, userName, password, blocked, active, language, timeZone, isGrcAdded, isTprmAdded, isQpostComplianceEnabled, isInternalAuditEnabled } = body;
 
     // Validate required fields
     if (!customerName || !email || !userName) {
@@ -143,15 +144,36 @@ export async function PUT(
       },
     });
 
-    // Update isGrcAdded/isTprmAdded/isQpostComplianceEnabled on the CustomerAccount if provided
-    if (existingUser.customerAccountId && (isGrcAdded !== undefined || isTprmAdded !== undefined || isQpostComplianceEnabled !== undefined)) {
+    // Update module flags on the CustomerAccount if provided
+    if (existingUser.customerAccountId && (isGrcAdded !== undefined || isTprmAdded !== undefined || isQpostComplianceEnabled !== undefined || isInternalAuditEnabled !== undefined)) {
       await prisma.$executeRawUnsafe(
-        `UPDATE "CustomerAccount" SET "isGrcAdded" = COALESCE($1, "isGrcAdded"), "isTprmAdded" = COALESCE($2, "isTprmAdded"), "isQpostComplianceEnabled" = COALESCE($3, "isQpostComplianceEnabled") WHERE id = $4`,
+        `UPDATE "CustomerAccount" SET "isGrcAdded" = COALESCE($1, "isGrcAdded"), "isTprmAdded" = COALESCE($2, "isTprmAdded"), "isQpostComplianceEnabled" = COALESCE($3, "isQpostComplianceEnabled"), "isInternalAuditEnabled" = COALESCE($4, "isInternalAuditEnabled") WHERE id = $5`,
         isGrcAdded !== undefined ? isGrcAdded === true : null,
         isTprmAdded !== undefined ? isTprmAdded === true : null,
         isQpostComplianceEnabled !== undefined ? isQpostComplianceEnabled === true : null,
+        isInternalAuditEnabled !== undefined ? isInternalAuditEnabled === true : null,
         existingUser.customerAccountId
       );
+
+      // Auto-provision a COMPLIMENTARY ModuleSubscription for any flag that's
+      // currently ON. Idempotent — existing active rows are left alone.
+      try {
+        const refreshed = await prisma.customerAccount.findUnique({
+          where: { id: existingUser.customerAccountId },
+          select: { isGrcAdded: true, isTprmAdded: true, isInternalAuditEnabled: true },
+        });
+        if (refreshed) {
+          const enabledModules: ModuleCode[] = [];
+          if (refreshed.isGrcAdded) enabledModules.push("GRC");
+          if (refreshed.isTprmAdded) enabledModules.push("TPRM");
+          if (refreshed.isInternalAuditEnabled) enabledModules.push("INTERNAL_AUDIT");
+          if (enabledModules.length > 0) {
+            await ensureComplimentarySubscription(existingUser.customerAccountId, enabledModules);
+          }
+        }
+      } catch (e) {
+        console.error("[edit-customer] ensureComplimentarySubscription failed:", (e as Error).message);
+      }
     }
 
     // Trigger dynamic translation for the customer account name
