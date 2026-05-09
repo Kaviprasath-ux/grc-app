@@ -139,6 +139,7 @@ export const POST = withAuth(
 
           const mandate = await createSubscriptionMandate({
             customerAccountId: session.customerAccountId!,
+            moduleCode: data.modules[0].moduleCode,
             generalBillingCycle: data.generalBillingCycle,
             unitAmount: baseTotal,
             description: `${customerCode} - ${data.modules.length} module(s) - 2yr autopay`,
