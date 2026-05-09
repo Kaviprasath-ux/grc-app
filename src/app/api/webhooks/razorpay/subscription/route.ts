@@ -46,7 +46,7 @@ import type { Prisma } from "@prisma/client";
 const subscriptionEntitySchema = z.object({
   id: z.string().optional(),
   status: z.string().optional(),
-  notes: z.record(z.string()).optional(),
+  notes: z.record(z.string(), z.string()).optional(),
   current_start: z.number().optional(),
   current_end: z.number().optional(),
   charge_at: z.number().optional(),

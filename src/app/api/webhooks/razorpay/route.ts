@@ -39,7 +39,7 @@ const paymentEntitySchema = z.object({
   method: z.string().optional(),
   error_code: z.string().optional(),
   error_description: z.string().optional(),
-  notes: z.record(z.string()).optional(),
+  notes: z.record(z.string(), z.string()).optional(),
 });
 
 /**
@@ -52,7 +52,7 @@ const orderEntitySchema = z.object({
   amount_due: z.number(),
   currency: z.string(),
   status: z.string(),
-  notes: z.record(z.string()).optional(),
+  notes: z.record(z.string(), z.string()).optional(),
 });
 
 /**
