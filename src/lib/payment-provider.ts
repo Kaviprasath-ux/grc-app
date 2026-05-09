@@ -509,6 +509,8 @@ export async function processPayment(req: PaymentRequest): Promise<PaymentResult
 /**
  * Verify payment signature from Razorpay Checkout callback.
  * This should be called from the frontend callback handler.
+ *
+ * SECURITY: Uses timing-safe comparison to prevent timing attacks.
  */
 export function verifyPaymentSignature(params: PaymentVerificationRequest): boolean {
   const secret = process.env.RAZORPAY_KEY_SECRET;
@@ -524,7 +526,13 @@ export function verifyPaymentSignature(params: PaymentVerificationRequest): bool
       .update(body)
       .digest("hex");
 
-    const isValid = expectedSignature === params.razorpay_signature;
+    // Use timing-safe comparison to prevent timing attacks
+    const sigBuf = Buffer.from(params.razorpay_signature, "hex");
+    const expBuf = Buffer.from(expectedSignature, "hex");
+
+    // Length check first (constant time), then timing-safe comparison
+    const isValid = sigBuf.length === expBuf.length &&
+                    crypto.timingSafeEqual(sigBuf, expBuf);
 
     if (!isValid) {
       console.warn("[Razorpay] Signature verification failed", {
@@ -542,12 +550,24 @@ export function verifyPaymentSignature(params: PaymentVerificationRequest): bool
 
 /**
  * Verify webhook signature from Razorpay.
+ *
+ * SECURITY:
+ * - Uses timing-safe comparison to prevent timing attacks
+ * - Fails closed in production if webhook secret not configured
+ * - Only allows bypass in development/stub mode
  */
 export function verifyWebhookSignature(body: string, signature: string): boolean {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
   if (!secret) {
-    console.warn("[Razorpay] RAZORPAY_WEBHOOK_SECRET not set - skipping webhook verification");
-    return true; // Allow in development
+    // SECURITY: Only allow bypass in non-production/stub mode
+    if (stubEnabled()) {
+      console.warn("[Razorpay] RAZORPAY_WEBHOOK_SECRET not set - allowing in stub mode");
+      return true;
+    }
+    // FAIL CLOSED in production - reject if secret not configured
+    console.error("[Razorpay] CRITICAL: RAZORPAY_WEBHOOK_SECRET not set in production - rejecting webhook");
+    return false;
   }
 
   try {
@@ -556,7 +576,17 @@ export function verifyWebhookSignature(body: string, signature: string): boolean
       .update(body)
       .digest("hex");
 
-    return expectedSignature === signature;
+    // Use timing-safe comparison to prevent timing attacks
+    const sigBuf = Buffer.from(signature, "hex");
+    const expBuf = Buffer.from(expectedSignature, "hex");
+
+    // Length check first (constant time), then timing-safe comparison
+    if (sigBuf.length !== expBuf.length) {
+      console.warn("[Razorpay] Webhook signature length mismatch");
+      return false;
+    }
+
+    return crypto.timingSafeEqual(sigBuf, expBuf);
   } catch (error) {
     console.error("[Razorpay] Error verifying webhook signature:", error);
     return false;

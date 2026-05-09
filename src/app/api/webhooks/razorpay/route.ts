@@ -10,47 +10,68 @@
  * - order.paid: Order was fully paid
  *
  * Security:
- * - Verifies Razorpay webhook signature using RAZORPAY_WEBHOOK_SECRET
+ * - Verifies Razorpay webhook signature using timing-safe comparison
+ * - Validates payload structure with Zod schema
  * - Logs all webhook events for audit trail
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { verifyWebhookSignature } from "@/lib/payment-provider";
 import { prisma } from "@/lib/prisma";
 
 // Disable body parsing - we need raw body for signature verification
 export const dynamic = "force-dynamic";
 
-interface RazorpayWebhookEvent {
-  event: string;
-  payload: {
-    payment?: {
-      entity: {
-        id: string;
-        order_id: string;
-        amount: number;
-        currency: string;
-        status: string;
-        method?: string;
-        error_code?: string;
-        error_description?: string;
-        notes?: Record<string, string>;
-      };
-    };
-    order?: {
-      entity: {
-        id: string;
-        amount: number;
-        amount_paid: number;
-        amount_due: number;
-        currency: string;
-        status: string;
-        notes?: Record<string, string>;
-      };
-    };
-  };
-  created_at: number;
-}
+// ============================================================================
+// Zod Validation Schemas
+// ============================================================================
+
+/**
+ * Payment entity schema for webhook validation.
+ */
+const paymentEntitySchema = z.object({
+  id: z.string(),
+  order_id: z.string(),
+  amount: z.number(),
+  currency: z.string(),
+  status: z.string(),
+  method: z.string().optional(),
+  error_code: z.string().optional(),
+  error_description: z.string().optional(),
+  notes: z.record(z.string()).optional(),
+});
+
+/**
+ * Order entity schema for webhook validation.
+ */
+const orderEntitySchema = z.object({
+  id: z.string(),
+  amount: z.number(),
+  amount_paid: z.number(),
+  amount_due: z.number(),
+  currency: z.string(),
+  status: z.string(),
+  notes: z.record(z.string()).optional(),
+});
+
+/**
+ * Main webhook event schema.
+ */
+const razorpayWebhookEventSchema = z.object({
+  event: z.string().min(1, "Event type is required"),
+  payload: z.object({
+    payment: z.object({
+      entity: paymentEntitySchema,
+    }).optional(),
+    order: z.object({
+      entity: orderEntitySchema,
+    }).optional(),
+  }),
+  created_at: z.number(),
+});
+
+type RazorpayWebhookEvent = z.infer<typeof razorpayWebhookEventSchema>;
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
@@ -79,8 +100,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse event
-    const event: RazorpayWebhookEvent = JSON.parse(rawBody);
+    // Parse and validate event with Zod
+    let event: RazorpayWebhookEvent;
+    try {
+      const parsed = JSON.parse(rawBody);
+      const validated = razorpayWebhookEventSchema.safeParse(parsed);
+
+      if (!validated.success) {
+        console.error("[Razorpay Webhook] Payload validation failed:", validated.error.flatten());
+        return NextResponse.json(
+          { error: "Invalid payload structure", details: validated.error.flatten() },
+          { status: 422 }
+        );
+      }
+
+      event = validated.data;
+    } catch {
+      console.error("[Razorpay Webhook] Failed to parse JSON");
+      return NextResponse.json(
+        { error: "Invalid JSON" },
+        { status: 400 }
+      );
+    }
 
     console.log(`[Razorpay Webhook] Received event: ${event.event}`, {
       paymentId: event.payload.payment?.entity.id,

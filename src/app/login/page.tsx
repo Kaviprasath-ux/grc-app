@@ -248,6 +248,13 @@ function LoginContent() {
             >
               {isLoading ? t("Logging in...") : t("Login")}
             </Button>
+
+            <div className="text-center text-sm text-muted-foreground">
+              {t("Don't have an account?")}{" "}
+              <a href="/signup" className="text-primary font-medium hover:underline">
+                {t("Sign Up")}
+              </a>
+            </div>
           </form>
         </CardContent>
       </Card>

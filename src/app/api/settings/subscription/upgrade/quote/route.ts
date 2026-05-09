@@ -10,13 +10,16 @@
  *
  * Downgrades are rejected (must go through sales — UI hides them too).
  *
+ * Bundle discounts are applied to the total upgrade subtotal.
+ *
  * Read-only — no DB writes.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
-import { getModulePrice, wholeMonthsBetween, round2, DEFAULT_TAX_RATE, DEFAULT_CURRENCY } from "@/lib/pricing";
+import { getModulePrice, wholeMonthsBetween, round2, getBestBundleDiscount, DEFAULT_TAX_RATE, DEFAULT_CURRENCY } from "@/lib/pricing";
+import type { QuoteLineRequest } from "@/lib/pricing";
 import { z } from "zod";
 
 const TIER_RANK: Record<string, number> = { BASIC: 0, MEDIUM: 1, PRO: 2 };
@@ -70,6 +73,11 @@ export const POST = withAuth(
       cycleEnd: Date;
     }> = [];
 
+    // Build line requests for bundle discount calculation (using new tiers)
+    const quoteLineRequests: QuoteLineRequest[] = [];
+    // Track the billing cycle for bundle discount lookup
+    let dominantCycle: "MONTHLY" | "YEARLY" = "YEARLY";
+
     for (const u of parsed.data.upgrades) {
       const ms = subscription.modules.find((m) => m.moduleCode === u.moduleCode && !m.cancelledAt);
       if (!ms) {
@@ -87,6 +95,8 @@ export const POST = withAuth(
       }
 
       const cycle = ms.billingCycle as "MONTHLY" | "YEARLY";
+      dominantCycle = cycle; // Use the last module's cycle (they should all be the same)
+
       const { price: currentPrice } = await getModulePrice(u.moduleCode, ms.tier, cycle, session.customerAccountId, now);
       const { price: newPrice } = await getModulePrice(u.moduleCode, u.newTier, cycle, session.customerAccountId, now);
       const diff = round2(newPrice - currentPrice);
@@ -127,16 +137,37 @@ export const POST = withAuth(
         description: `${u.moduleCode} module — upgrade ${ms.tier} → ${u.newTier} (${cycleLabel}${proLabel})`,
         cycleEnd: ms.cycleEnd,
       });
+
+      // Add to quote line requests for bundle discount (using the NEW tier)
+      quoteLineRequests.push({
+        moduleCode: u.moduleCode as "GRC" | "TPRM" | "INTERNAL_AUDIT",
+        tier: u.newTier as "BASIC" | "MEDIUM" | "PRO",
+      });
     }
 
     const subtotal = round2(lineItems.reduce((s, li) => s + li.unitPrice, 0));
-    const taxAmount = round2(subtotal * (DEFAULT_TAX_RATE / 100));
-    const total = round2(subtotal + taxAmount);
+
+    // Apply bundle discount to upgrade subtotal
+    const best = await getBestBundleDiscount(quoteLineRequests, dominantCycle, subtotal, now);
+    const discountAmount = best ? best.amount : 0;
+    const taxableAmount = round2(subtotal - discountAmount);
+    const taxAmount = round2(taxableAmount * (DEFAULT_TAX_RATE / 100));
+    const total = round2(taxableAmount + taxAmount);
 
     return NextResponse.json({
       data: {
         lineItems,
         subtotal,
+        bundleDiscount: best
+          ? {
+              id: best.rule.id,
+              name: best.rule.name,
+              amount: discountAmount,
+              discountType: best.rule.discountType as "PERCENTAGE" | "FIXED",
+              discountValue: Number(best.rule.discountValue),
+            }
+          : null,
+        taxableAmount,
         taxRate: DEFAULT_TAX_RATE,
         taxAmount,
         total,

@@ -18,13 +18,37 @@ import { processPayment, isStubMode } from "@/lib/payment-provider";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
+// Personal email domains to block (work email required)
+const PERSONAL_EMAIL_DOMAINS = [
+  "gmail.com", "googlemail.com",
+  "yahoo.com", "yahoo.in", "yahoo.co.in", "yahoo.co.uk",
+  "hotmail.com", "hotmail.co.uk", "outlook.com", "live.com", "msn.com",
+  "aol.com",
+  "icloud.com", "me.com", "mac.com",
+  "protonmail.com", "proton.me",
+  "zoho.com",
+  "yandex.com", "yandex.ru",
+  "mail.com", "email.com",
+  "gmx.com", "gmx.net",
+  "rediffmail.com", "rediff.com",
+  "inbox.com",
+  "fastmail.com",
+  "tutanota.com",
+];
+
+function isWorkEmail(email: string): boolean {
+  const domain = email.split("@")[1]?.toLowerCase();
+  if (!domain) return false;
+  return !PERSONAL_EMAIL_DOMAINS.includes(domain);
+}
+
 const Schema = z.object({
   // Step 1: Org & admin
   organizationName: z.string().min(2).max(120),
-  gstin: z.string().min(15).max(15).optional().nullable(),
   adminFirstName: z.string().min(1).max(60),
   adminLastName: z.string().min(1).max(60),
   adminEmail: z.string().email(),
+  adminPhone: z.string().min(10).max(20),
   adminPassword: z.string().min(8).max(128),
 
   // Step 2 + 3: modules + tiers + cycle
@@ -49,6 +73,14 @@ export async function POST(req: NextRequest) {
   const data = parsed.data;
 
   // ── Pre-flight checks ─────────────────────────────────────
+  // 0. Work email validation
+  if (!isWorkEmail(data.adminEmail)) {
+    return NextResponse.json(
+      { error: "Please use a work email address, not a personal one (e.g., gmail, yahoo, hotmail)" },
+      { status: 400 }
+    );
+  }
+
   // 1. Email/userName uniqueness
   const existingUser = await prisma.user.findFirst({
     where: { OR: [{ email: data.adminEmail }, { userName: data.adminEmail }] },

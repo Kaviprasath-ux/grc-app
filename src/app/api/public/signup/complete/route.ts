@@ -89,10 +89,10 @@ export async function POST(req: NextRequest) {
   // Parse stored data
   let data: {
     organizationName: string;
-    gstin?: string | null;
     adminFirstName: string;
     adminLastName: string;
     adminEmail: string;
+    adminPhone: string;
     adminPassword: string;
     modules: Array<{ moduleCode: ModuleCode; tier: PlanTier }>;
     cycle: "MONTHLY" | "YEARLY";
@@ -168,6 +168,7 @@ export async function POST(req: NextRequest) {
         data: {
           userName: data.adminEmail,
           email: data.adminEmail,
+          phone: data.adminPhone,
           firstName: data.adminFirstName,
           lastName: data.adminLastName,
           fullName: `${data.adminFirstName} ${data.adminLastName}`,
@@ -186,7 +187,6 @@ export async function POST(req: NextRequest) {
           status: "ACTIVE",
           subscriptionType: "PAID",
           autoRenew: true,
-          gstin: data.gstin || null,
           notes: `Paid signup on ${now.toISOString()}`,
         },
       });

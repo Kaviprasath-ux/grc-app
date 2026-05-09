@@ -371,8 +371,7 @@ const tCat = useCallback((id: string) => translatedCategories.find(c => c.id ===
 ## Test Credentials
 
 Default seeded users (from `prisma/seed.ts`):
-- GRC Admin: `grcadmin` / password (check seed file)
-- Audit Head: `abhishek` / `1`
+- Superadmin: `superadmin` / `1`
 
 ## Vercel Deployment (BA Testing Environment)
 
@@ -380,9 +379,7 @@ Default seeded users (from `prisma/seed.ts`):
 **https://grc-app-ba-testing.vercel.app**
 
 ### Test Credentials (Cloud)
-- Superadmin: `superadmin` / `Baarez@2025`
-- GRC Admin 2: `grcadmin2` / `Baarez@2025`
-- Audit Head: `abhishek` / `1`
+- Superadmin: `superadmin` / `1`
 
 ### Infrastructure
 | Component | Service | Details |
@@ -444,11 +441,8 @@ cd "C:\Claude apps\grc-app"
 # Reset database (clears all data)
 DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push --force-reset
 
-# Seed main data (superadmin, grcadmin2, frameworks, all modules)
+# Seed main data (superadmin only)
 DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed.ts
-
-# Seed BTS customer-specific data (bts users and their data)
-DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed-customer-bts.ts
 ```
 
 **Quick Redeploy (without database changes):**
@@ -477,11 +471,8 @@ DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c
 # Reset (clears all data and recreates schema)
 DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push --force-reset
 
-# Seed main data
+# Seed superadmin
 DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed.ts
-
-# Seed BTS customer data
-DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed-customer-bts.ts
 ```
 
 ### Key Notes
@@ -489,5 +480,5 @@ DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c
 - Local changes don't affect Vercel deployment until pushed and redeployed
 - The Vercel project is linked to: `omjc44-8839s-projects/grc-app-ba-testing`
 - **Use temp directory approach** to avoid git author permission errors during deployment
-- **Always run both seed files** (seed.ts and seed-customer-bts.ts) for complete data
+- Customer accounts should be created through the superadmin interface
 

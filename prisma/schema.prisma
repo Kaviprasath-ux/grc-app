@@ -668,6 +668,7 @@ model User {
   userId                       String?
   userName                     String
   email                        String
+  phone                        String?
   password                     String?
   firstName                    String
   lastName                     String
