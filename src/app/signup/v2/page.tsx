@@ -659,7 +659,7 @@ export default function SignupV2Page() {
                                 {t("Year 1")} - {t("Promotional Rate")}
                               </div>
                               <p className="text-sm text-emerald-700 mt-1">
-                                ₹{formatINR(year1MonthlyPerModule)}/{t("module")}/{t("month")}
+                                ₹{formatINR(year1MonthlyPerModule)}/{t("platform")}/{t("month")}
                               </p>
                             </div>
                             <div className="text-right">
@@ -685,7 +685,7 @@ export default function SignupV2Page() {
                                 {t("Year 2")} - {t("Standard Rate")}
                               </div>
                               <p className="text-sm text-stone-600 mt-1">
-                                ₹{formatINR(year2MonthlyPerModule)}/{t("module")}/{t("month")}
+                                ₹{formatINR(year2MonthlyPerModule)}/{t("platform")}/{t("month")}
                               </p>
                             </div>
                             <div className="text-right">
