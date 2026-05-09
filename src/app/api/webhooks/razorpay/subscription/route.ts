@@ -203,16 +203,14 @@ export async function POST(req: NextRequest) {
               where: { id: openInvoice.id },
               data: {
                 status: "PAID",
-                paidAt: new Date(),
               },
             });
 
-            // Create payment record
+            // Create payment record and link to invoice
             if (paymentEntity) {
-              await prisma.payment.create({
+              const payment = await prisma.payment.create({
                 data: {
                   subscriptionId: ms.subscriptionId,
-                  invoiceId: openInvoice.id,
                   amount: (paymentEntity.amount ?? 0) / 100, // Convert from paise
                   currency: paymentEntity.currency || "INR",
                   provider: "RAZORPAY",
@@ -222,6 +220,11 @@ export async function POST(req: NextRequest) {
                   status: "CAPTURED",
                   paidAt: new Date(),
                 },
+              });
+              // Link invoice to payment
+              await prisma.invoice.update({
+                where: { id: openInvoice.id },
+                data: { paymentId: payment.id },
               });
             }
 
@@ -250,17 +253,13 @@ export async function POST(req: NextRequest) {
 
         // Set subscription to SUSPENDED immediately
         for (const subId of subscriptionIds) {
+          const existingSub = await prisma.subscription.findUnique({ where: { id: subId } });
           await prisma.subscription.update({
             where: { id: subId },
             data: {
               status: "SUSPENDED",
               autoRenew: false,
-              notes: prisma.subscription
-                .findUnique({ where: { id: subId } })
-                .then(
-                  (s) =>
-                    `${s?.notes || ""} | AUTOPAY FAILED - Subscription ended on ${new Date().toISOString()}`
-                ),
+              notes: `${existingSub?.notes || ""} | AUTOPAY FAILED - Subscription ended on ${new Date().toISOString()}`,
             },
           });
         }
@@ -278,8 +277,8 @@ export async function POST(req: NextRequest) {
 
         // Disable module access flags
         for (const ms of moduleSubs) {
-          const customer = ms.subscription?.customerAccount;
-          if (customer) {
+          const customerAccountId = ms.subscription?.customerAccountId;
+          if (customerAccountId) {
             const updateData: Record<string, boolean> = {};
             if (ms.moduleCode === "GRC") updateData.isGrcAdded = false;
             if (ms.moduleCode === "TPRM") updateData.isTprmAdded = false;
@@ -288,7 +287,7 @@ export async function POST(req: NextRequest) {
 
             if (Object.keys(updateData).length > 0) {
               await prisma.customerAccount.update({
-                where: { id: ms.subscription?.customerAccountId },
+                where: { id: customerAccountId },
                 data: updateData,
               });
             }
