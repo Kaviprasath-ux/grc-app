@@ -882,8 +882,8 @@ function ControlListPageContent() {
                         interval={0}
                         height={isRTL ? 110 : 50}
                         tick={isRTL
-                          ? ({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => (
-                            <g transform={`translate(${x},${y})`} style={{ direction: 'ltr' as const }}>
+                          ? ({ x, y, payload }: { x?: number | string; y?: number | string; payload?: { value: string | number } }) => (
+                            <g transform={`translate(${x ?? 0},${y ?? 0})`} style={{ direction: 'ltr' as const }}>
                               <text
                                 x={0}
                                 y={12}
@@ -893,7 +893,7 @@ function ControlListPageContent() {
                                 transform="rotate(-55)"
                                 direction="ltr"
                               >
-                                {payload.value}
+                                {payload?.value}
                               </text>
                             </g>
                           )
