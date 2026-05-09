@@ -3,7 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Eye, EyeOff } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  CreditCard,
+  CheckCircle,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,42 +20,96 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 // SSO error messages mapped from URL query params
 const SSO_ERROR_MESSAGES: Record<string, string> = {
-  UserNotRegistered: "Your account is not registered. Please contact your administrator.",
+  UserNotRegistered:
+    "Your account is not registered. Please contact your administrator.",
   NoEmail: "No email address was provided by the sign-in provider.",
   EmailNotVerified: "Your email address is not verified with the provider.",
   SSOError: "An error occurred during sign-in. Please try again.",
-  OAuthAccountNotLinked: "This email is already associated with another sign-in method.",
-  Configuration: "SSO provider is not configured. Please contact your administrator.",
+  OAuthAccountNotLinked:
+    "This email is already associated with another sign-in method.",
+  Configuration:
+    "SSO provider is not configured. Please contact your administrator.",
+  MissingSubscriptionId: "Payment setup incomplete. Please try signing up again.",
+  InvalidSignature: "Payment verification failed. Please contact support.",
+  SubscriptionNotFound: "Could not find your subscription. Please contact support.",
+  ProcessingError: "An error occurred. Please try logging in or contact support.",
 };
 
 function LoginContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
+
   // Read callbackUrl and username from query params (from email deep-links)
   const callbackUrlParam = searchParams.get("callbackUrl");
   const usernameParam = searchParams.get("username");
+  const emailParam = searchParams.get("email");
+  const signupSuccess = searchParams.get("signup") === "success";
+  const successMessage = searchParams.get("message");
 
   // Validate callbackUrl: must be relative path starting with / (prevent open-redirect)
-  const safeCallbackUrl = callbackUrlParam && callbackUrlParam.startsWith("/") && !callbackUrlParam.startsWith("//")
-    ? callbackUrlParam
-    : "/";
+  const safeCallbackUrl =
+    callbackUrlParam &&
+    callbackUrlParam.startsWith("/") &&
+    !callbackUrlParam.startsWith("//")
+      ? callbackUrlParam
+      : "/";
 
-  const [username, setUsername] = useState(usernameParam || "");
+  const [username, setUsername] = useState(
+    usernameParam || emailParam || ""
+  );
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSsoLoading, setIsSsoLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // Read SSO error from URL params
+  // Mandate retry state
+  const [showMandateRetry, setShowMandateRetry] = useState(false);
+  const [mandateRetryLoading, setMandateRetryLoading] = useState(false);
+  const [mandateError, setMandateError] = useState("");
+
+  // Read SSO/signup errors and success from URL params
   useEffect(() => {
     const errorParam = searchParams.get("error");
     if (errorParam && SSO_ERROR_MESSAGES[errorParam]) {
       setError(t(SSO_ERROR_MESSAGES[errorParam]));
     }
-  }, [searchParams, t]);
+    if (signupSuccess && successMessage) {
+      setSuccess(successMessage);
+    }
+  }, [searchParams, t, signupSuccess, successMessage]);
+
+  // Try to auto-login from sessionStorage (after Razorpay redirect)
+  useEffect(() => {
+    const storedCreds = sessionStorage.getItem("signup_credentials");
+    if (storedCreds && signupSuccess) {
+      try {
+        const { email, password: pwd } = JSON.parse(storedCreds);
+        sessionStorage.removeItem("signup_credentials");
+        setUsername(email);
+        setPassword(pwd);
+        // Attempt auto-login after a short delay
+        setTimeout(async () => {
+          setIsLoading(true);
+          const result = await signIn("credentials", {
+            username: email,
+            password: pwd,
+            redirect: false,
+          });
+          if (!result?.error) {
+            router.push("/dashboard");
+            router.refresh();
+          }
+          setIsLoading(false);
+        }, 500);
+      } catch {
+        sessionStorage.removeItem("signup_credentials");
+      }
+    }
+  }, [signupSuccess, router]);
 
   // Bootstrap superadmin user on page load
   useEffect(() => {
@@ -66,6 +127,7 @@ function LoginContent() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setSuccess("");
 
     try {
       const result = await signIn("credentials", {
@@ -75,6 +137,10 @@ function LoginContent() {
       });
 
       if (result?.error) {
+        // Check if this might be a mandate pending situation
+        if (username) {
+          setShowMandateRetry(true);
+        }
         setError(t("Invalid username or password"));
       } else {
         // Redirect to callbackUrl (from email deep-link) or root for role-based landing
@@ -94,20 +160,118 @@ function LoginContent() {
     signIn(provider, { callbackUrl: safeCallbackUrl });
   };
 
+  const handleMandateRetry = async () => {
+    if (!username) {
+      setMandateError(t("Please enter your email first"));
+      return;
+    }
+
+    setMandateRetryLoading(true);
+    setMandateError("");
+
+    try {
+      const res = await fetch("/api/public/signup/retry-mandate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: username }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        if (json.alreadyActive) {
+          setMandateError(t("Your payment setup is already complete. Please try logging in again."));
+        } else {
+          setMandateError(json.error || t("Could not retrieve payment link"));
+        }
+        return;
+      }
+
+      // Redirect to Razorpay checkout
+      if (json.data?.checkoutUrl) {
+        window.location.href = json.data.checkoutUrl;
+      } else {
+        setMandateError(t("Payment link not available. Please contact support."));
+      }
+    } catch (e) {
+      setMandateError((e as Error).message || t("An error occurred"));
+    } finally {
+      setMandateRetryLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-muted p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2 pb-6">
           <div className="flex justify-center mb-4">
-            <img src="/logo 3.png" alt="GRC Platform" className="h-12 w-12 object-contain" />
+            <img
+              src="/logo 3.png"
+              alt="GRC Platform"
+              className="h-12 w-12 object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">{t("Welcome Back !")}</h1>
-          <p className="text-sm text-muted-foreground">{t("Log into your account")}</p>
+          <h1 className="text-2xl font-semibold text-foreground">
+            {t("Welcome Back !")}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {t("Log into your account")}
+          </p>
         </CardHeader>
         <CardContent>
+          {/* Success Banner */}
+          {success && (
+            <div className="p-3 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md mb-4 flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>{success}</span>
+            </div>
+          )}
+
+          {/* Error Banner */}
           {error && (
             <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md mb-4">
               {error}
+            </div>
+          )}
+
+          {/* Mandate Retry Banner */}
+          {showMandateRetry && (
+            <div className="p-4 text-sm bg-amber-50 border border-amber-200 rounded-md mb-4">
+              <div className="flex items-start gap-2 text-amber-800">
+                <CreditCard className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium mb-1">
+                    {t("Payment setup incomplete?")}
+                  </p>
+                  <p className="text-xs text-amber-700 mb-2">
+                    {t(
+                      "If you started signup but didn't complete the payment authorization, click below to continue."
+                    )}
+                  </p>
+                  {mandateError && (
+                    <p className="text-xs text-red-600 mb-2 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {mandateError}
+                    </p>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleMandateRetry}
+                    disabled={mandateRetryLoading}
+                    className="text-amber-800 border-amber-300 hover:bg-amber-100"
+                  >
+                    {mandateRetryLoading ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin ltr:mr-1 rtl:ml-1" />
+                        {t("Loading...")}
+                      </>
+                    ) : (
+                      t("Complete Payment Setup")
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -124,7 +288,10 @@ function LoginContent() {
                 t("Redirecting...")
               ) : (
                 <>
-                  <svg className="h-5 w-5 ltr:mr-2 rtl:ml-2" viewBox="0 0 24 24">
+                  <svg
+                    className="h-5 w-5 ltr:mr-2 rtl:ml-2"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                       fill="#4285F4"
@@ -158,7 +325,10 @@ function LoginContent() {
                 t("Redirecting...")
               ) : (
                 <>
-                  <svg className="h-5 w-5 ltr:mr-2 rtl:ml-2" viewBox="0 0 23 23">
+                  <svg
+                    className="h-5 w-5 ltr:mr-2 rtl:ml-2"
+                    viewBox="0 0 23 23"
+                  >
                     <rect x="1" y="1" width="10" height="10" fill="#f25022" />
                     <rect x="12" y="1" width="10" height="10" fill="#7fba00" />
                     <rect x="1" y="12" width="10" height="10" fill="#00a4ef" />
@@ -227,7 +397,9 @@ function LoginContent() {
                 <Checkbox
                   id="remember"
                   checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    setRememberMe(checked as boolean)
+                  }
                 />
                 <Label htmlFor="remember" className="text-sm font-normal">
                   {t("Remember me")}
@@ -251,7 +423,10 @@ function LoginContent() {
 
             <div className="text-center text-sm text-muted-foreground">
               {t("Don't have an account?")}{" "}
-              <a href="/signup" className="text-primary font-medium hover:underline">
+              <a
+                href="/signup/v2"
+                className="text-primary font-medium hover:underline"
+              >
                 {t("Sign Up")}
               </a>
             </div>
@@ -264,15 +439,17 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-muted p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardContent className="flex items-center justify-center p-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </CardContent>
-        </Card>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-muted p-4">
+          <Card className="w-full max-w-md shadow-lg">
+            <CardContent className="flex items-center justify-center p-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
       <LoginContent />
     </Suspense>
   );

@@ -1,21 +1,19 @@
 /**
- * POST /api/public/signup/v2 - V2 PUBLIC SIGNUP (UNAUTHENTICATED)
- *
- * Active when SUBSCRIPTION_V2_ENABLED=true. Coexists with V1 /api/public/signup.
+ * POST /api/public/signup/v2 - V2 PUBLIC SIGNUP WITH 14-DAY TRIAL
  *
  * V2 lifecycle on customer signup:
- *   - planType=BASE for each requested module
- *   - baseStart=today, baseEnd=+1y, cycleEnd=baseEnd
- *   - contractStart=today, contractEnd=+2y (2-year lock-in)
- *   - nextPlanType=GENERAL, generalStart=baseEnd
- *   - generalBillingCycle=<chosen by customer> (used by Phase 6 flip cron)
+ *   - Creates customer account with mandateStatus="pending"
+ *   - 14-day free trial begins after mandate authorization
+ *   - Subscription status = TRIAL
+ *   - Invoice status = DRAFT (will be charged after trial)
+ *   - Returns subscriptionId + razorpayKeyId for inline checkout
  *
- * NOTE: Razorpay mandate creation is Phase 5. For now, this route creates
- * the customer + V2 rows immediately so signup is testable end-to-end. The
- * BASE invoice (INR 100 + 18% GST = INR 118) is created and marked PAID via
- * stub payment (dev mode) or queued PENDING (prod). When Phase 5 lands, the
- * Razorpay mandate is created here and the BASE charge becomes the first
- * mandate charge.
+ * After trial:
+ *   - Razorpay auto-charges first invoice (BASE: ₹1,200/module + GST)
+ *   - Webhook flips invoice to PAID, status to ACTIVE
+ *
+ * If autopay fails or is disabled:
+ *   - Subscription ends immediately
  *
  * Body shape:
  *   organizationName, adminFirstName, adminLastName, adminEmail, adminPassword,
@@ -28,8 +26,11 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { syncSubscriptionPlan } from "@/lib/subscription-plan-sync";
 import { z } from "zod";
-import { createSubscriptionMandate } from "@/lib/payment-provider-mandate";
-import { isStubMode } from "@/lib/payment-provider";
+import {
+  createSubscriptionMandate,
+  getTrialDays,
+} from "@/lib/payment-provider-mandate";
+import { isStubMode, getRazorpayKeyId } from "@/lib/payment-provider";
 import { nextInvoiceNumber } from "@/lib/invoice-number";
 
 // 18% GST applied to every subscription invoice (Indian customer default).
@@ -55,7 +56,11 @@ const Schema = z.object({
 });
 
 function slugify(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 20);
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 20);
 }
 
 async function generateUniqueCustomerCode(orgName: string): Promise<string> {
@@ -63,7 +68,9 @@ async function generateUniqueCustomerCode(orgName: string): Promise<string> {
   for (let i = 0; i < 5; i++) {
     const suffix = i === 0 ? "" : `-${i}`;
     const candidate = `CUST_${slug.toUpperCase()}${suffix}`;
-    const exists = await prisma.customerAccount.findUnique({ where: { code: candidate } });
+    const exists = await prisma.customerAccount.findUnique({
+      where: { code: candidate },
+    });
     if (!exists) return candidate;
   }
   return `CUST_${slug.toUpperCase()}_${Date.now().toString(36).toUpperCase()}`;
@@ -72,6 +79,12 @@ async function generateUniqueCustomerCode(orgName: string): Promise<string> {
 function addYears(d: Date, years: number): Date {
   const r = new Date(d);
   r.setUTCFullYear(r.getUTCFullYear() + years);
+  return r;
+}
+
+function addDays(d: Date, days: number): Date {
+  const r = new Date(d);
+  r.setTime(r.getTime() + days * 24 * 60 * 60 * 1000);
   return r;
 }
 
@@ -98,7 +111,10 @@ export async function POST(req: NextRequest) {
   });
   if (existingUser) {
     return NextResponse.json(
-      { error: "An account with this email already exists. Please log in instead." },
+      {
+        error:
+          "An account with this email already exists. Please log in instead.",
+      },
       { status: 409 }
     );
   }
@@ -106,7 +122,10 @@ export async function POST(req: NextRequest) {
   // No duplicate moduleCodes
   const codes = new Set(data.modules.map((m) => m.moduleCode));
   if (codes.size !== data.modules.length) {
-    return NextResponse.json({ error: "Duplicate moduleCode in selection" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Duplicate moduleCode in selection" },
+      { status: 400 }
+    );
   }
 
   // Lookup BASE pricing rows for snapshot + price
@@ -122,12 +141,16 @@ export async function POST(req: NextRequest) {
       .map((m) => m.moduleCode)
       .filter((c) => !baseRows.find((r) => r.moduleCode === c));
     return NextResponse.json(
-      { error: `BASE plan pricing missing for: ${missing.join(", ")} - run seed-module-plan-pricing` },
+      {
+        error: `BASE plan pricing missing for: ${missing.join(", ")} - run seed-module-plan-pricing`,
+      },
       { status: 503 }
     );
   }
 
   const now = new Date();
+  const trialDays = getTrialDays();
+  const trialEndsAt = addDays(now, trialDays);
   const baseEnd = addYears(now, 1);
   const contractEnd = addYears(now, 2);
 
@@ -135,17 +158,60 @@ export async function POST(req: NextRequest) {
   const customerCode = await generateUniqueCustomerCode(data.organizationName);
 
   // Aggregate BASE charge for all selected modules (one mandate per signup).
-  const baseSubtotal = baseRows.reduce(
-    (s, r) => s + Number(r.yearlyPrice),
-    0
-  );
+  const baseSubtotal = baseRows.reduce((s, r) => s + Number(r.yearlyPrice), 0);
   const { tax: baseTax, total: baseTotal } = withGst(baseSubtotal);
 
   // Pre-generate invoice number outside the transaction
-  // (it has its own internal transaction for atomic counter advance).
   const invoiceNumber = await nextInvoiceNumber(now);
 
   try {
+    // Create mandates for each module (outside transaction since Razorpay is external)
+    const mandateResults: Array<{
+      moduleCode: string;
+      mandateId: string;
+      status: string;
+      checkoutUrl: string | null;
+      trialEndsAt: Date;
+    }> = [];
+
+    for (const m of data.modules) {
+      try {
+        const mandate = await createSubscriptionMandate({
+          customerAccountId: customerCode, // Use code as temp ID before customer is created
+          moduleCode: m.moduleCode,
+          generalBillingCycle: data.generalBillingCycle,
+          unitAmount: baseTotal / data.modules.length, // Split across modules
+          description: `${data.organizationName} - ${m.moduleCode} - 2yr subscription`,
+          customerEmail: data.adminEmail,
+          customerName: `${data.adminFirstName} ${data.adminLastName}`,
+          idempotencyKey: `signup-v2-${customerCode}-${m.moduleCode}`,
+        });
+
+        mandateResults.push({
+          moduleCode: m.moduleCode,
+          mandateId: mandate.mandateId,
+          status: mandate.status,
+          checkoutUrl: mandate.checkoutUrl,
+          trialEndsAt: mandate.trialEndsAt,
+        });
+      } catch (mandateError) {
+        // Check if this is a Razorpay credentials error
+        const err = mandateError as { statusCode?: number; error?: string; message?: string };
+        if (err.statusCode === 401 || err.error === "Unauthorized") {
+          console.error("[SIGNUP V2] Razorpay authentication failed. Check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, or set PAYMENT_STUB=true for development.");
+          return NextResponse.json(
+            { error: "Payment gateway configuration error. Please contact support or set PAYMENT_STUB=true for development." },
+            { status: 503 }
+          );
+        }
+        throw mandateError;
+      }
+    }
+
+    // Use first mandate's details for checkout
+    const primaryMandate = mandateResults[0];
+    const primaryCheckoutUrl = primaryMandate?.checkoutUrl || null;
+
     const result = await prisma.$transaction(
       async (tx) => {
         // 1. CustomerAccount with module flags
@@ -165,7 +231,11 @@ export async function POST(req: NextRequest) {
         const role = await tx.role.upsert({
           where: { name: "CustomerAdministrator" },
           update: {},
-          create: { name: "CustomerAdministrator", description: "Customer-level admin", isSystem: true },
+          create: {
+            name: "CustomerAdministrator",
+            description: "Customer-level admin",
+            isSystem: true,
+          },
         });
         const user = await tx.user.create({
           data: {
@@ -182,47 +252,44 @@ export async function POST(req: NextRequest) {
         });
         await tx.userRole.create({ data: { userId: user.id, roleId: role.id } });
 
-        // 3. Subscription envelope
+        // 3. Subscription envelope with TRIAL status
         const sub = await tx.subscription.create({
           data: {
             customerAccountId: customer.id,
-            status: "ACTIVE",
+            // In stub mode, treat as active; in real mode, start in TRIAL
+            status: isStubMode() ? "ACTIVE" : "TRIAL",
             subscriptionType: "PAID",
+            trialEndsAt: isStubMode() ? null : trialEndsAt,
             autoRenew: true,
             gstin: data.gstin || null,
-            notes: `V2 self-signup on ${now.toISOString()} (BASE→GENERAL ${data.generalBillingCycle})`,
+            notes: `V2 self-signup on ${now.toISOString()} (${trialDays}-day trial, BASE→GENERAL ${data.generalBillingCycle})`,
           },
         });
 
-        // 4. Create mandate (stub or real). One mandate per customer; mandateId
-        // is replicated onto each ModuleSubscription so future per-module
-        // operations (cancel, suspend) can reference it directly.
-        const mandate = await createSubscriptionMandate({
-          customerAccountId: customer.id,
-          generalBillingCycle: data.generalBillingCycle,
-          unitAmount: baseTotal,
-          description: `${data.organizationName} - ${data.modules.length} module(s) - 2yr autopay`,
-          customerEmail: data.adminEmail,
-          customerName: `${data.adminFirstName} ${data.adminLastName}`,
-          idempotencyKey: `signup-v2-${customerCode}`,
-        });
-
-        // 5. ModuleSubscription rows — one per module on BASE plan
+        // 4. ModuleSubscription rows — one per module on BASE plan with trial
         const moduleSubIds: string[] = [];
         for (const m of data.modules) {
           const baseRow = baseRows.find((r) => r.moduleCode === m.moduleCode)!;
+          const mandateResult = mandateResults.find(
+            (mr) => mr.moduleCode === m.moduleCode
+          )!;
+
           const created = await tx.moduleSubscription.create({
             data: {
               subscriptionId: sub.id,
               moduleCode: m.moduleCode,
-              // V1 fields (kept for back-compat): tier=BASIC as a placeholder, no longer load-bearing
+              // V1 fields (kept for back-compat)
               tier: "BASIC",
-              billingCycle: "YEARLY", // BASE is yearly
+              billingCycle: "YEARLY",
               unitPrice: baseRow.yearlyPrice,
               userLimit: baseRow.unlimitedUsers ? 999999 : baseRow.userLimit,
               vendorLimit: baseRow.unlimitedVendors ? 999999 : baseRow.vendorLimit,
-              assessmentLimit: baseRow.unlimitedAssessments ? 999999 : baseRow.assessmentLimit,
-              frameworkLimit: baseRow.unlimitedFrameworks ? 999999 : baseRow.frameworkLimit,
+              assessmentLimit: baseRow.unlimitedAssessments
+                ? 999999
+                : baseRow.assessmentLimit,
+              frameworkLimit: baseRow.unlimitedFrameworks
+                ? 999999
+                : baseRow.frameworkLimit,
               auditLimit: baseRow.unlimitedAudits ? 999999 : baseRow.auditLimit,
               cycleStart: now,
               cycleEnd: baseEnd,
@@ -235,22 +302,24 @@ export async function POST(req: NextRequest) {
               contractEndDate: contractEnd,
               generalBillingCycle: data.generalBillingCycle,
               generalStartDate: baseEnd,
-              mandateId: mandate.mandateId,
-              mandateStatus: mandate.status,
+              // Mandate fields
+              mandateId: mandateResult.mandateId,
+              mandateStatus: isStubMode() ? "active" : "pending",
+              checkoutUrl: mandateResult.checkoutUrl,
+              trialEndsAt: isStubMode() ? null : mandateResult.trialEndsAt,
             },
           });
           moduleSubIds.push(created.id);
         }
 
-        // 6. BASE invoice (for the Year-1 promo charge: INR 100/mod + 18% GST).
+        // 5. BASE invoice (DRAFT until trial ends and charge succeeds)
+        // In stub mode, mark as PAID immediately
         const invoice = await tx.invoice.create({
           data: {
             subscriptionId: sub.id,
             customerAccountId: customer.id,
             invoiceNumber,
-            // In stub mode the first charge is treated as captured immediately;
-            // in real Razorpay this would start as ISSUED and flip to PAID via webhook.
-            status: isStubMode() ? "PAID" : "ISSUED",
+            status: isStubMode() ? "PAID" : "DRAFT",
             subtotal: baseSubtotal,
             discountAmount: 0,
             taxAmount: baseTax,
@@ -260,7 +329,7 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // 7. Invoice line items — one per module
+        // 6. Invoice line items — one per module
         for (const m of data.modules) {
           const baseRow = baseRows.find((r) => r.moduleCode === m.moduleCode)!;
           const price = Number(baseRow.yearlyPrice);
@@ -268,7 +337,7 @@ export async function POST(req: NextRequest) {
             data: {
               invoiceId: invoice.id,
               moduleCode: m.moduleCode,
-              tier: "BASIC", // legacy column
+              tier: "BASIC",
               description: `${m.moduleCode} - BASE (Year 1, Yearly)`,
               quantity: 1,
               unitPrice: price,
@@ -277,9 +346,7 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        // 8. Payment record — in stub mode mark CAPTURED immediately so the
-        // customer is fully provisioned. In real mode this row would be created
-        // when the subscription.charged webhook fires.
+        // 7. Payment record — in stub mode mark CAPTURED immediately
         if (isStubMode()) {
           await tx.payment.create({
             data: {
@@ -303,17 +370,13 @@ export async function POST(req: NextRequest) {
           userName: user.userName,
           moduleSubIds,
           invoiceNumber,
-          mandate: {
-            mandateId: mandate.mandateId,
-            status: mandate.status,
-            checkoutUrl: mandate.checkoutUrl,
-          },
+          subscriptionId: sub.id,
         };
       },
       { timeout: 20000 }
     );
 
-    // Sync legacy SubscriptionPlan rows so the 16 V1 enforcement files keep working
+    // Sync legacy SubscriptionPlan rows so the V1 enforcement files keep working
     for (const id of result.moduleSubIds) {
       try {
         await syncSubscriptionPlan(id);
@@ -323,7 +386,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(
-      `[SIGNUP V2] ${result.customerCode} (${data.adminEmail}) - BASE for ${data.modules.length} module(s), GENERAL ${data.generalBillingCycle} after ${baseEnd.toISOString().slice(0, 10)}, contract until ${contractEnd.toISOString().slice(0, 10)}`
+      `[SIGNUP V2] ${result.customerCode} (${data.adminEmail}) - ${trialDays}-day trial, BASE for ${data.modules.length} module(s), GENERAL ${data.generalBillingCycle} after ${baseEnd.toISOString().slice(0, 10)}, contract until ${contractEnd.toISOString().slice(0, 10)}`
     );
 
     return NextResponse.json(
@@ -331,14 +394,22 @@ export async function POST(req: NextRequest) {
         data: {
           customerCode: result.customerCode,
           userName: result.userName,
+          trialEndsAt: trialEndsAt,
+          trialDays,
           baseEndDate: baseEnd,
           contractEndDate: contractEnd,
           generalBillingCycle: data.generalBillingCycle,
           invoiceNumber: result.invoiceNumber,
           baseAmount: baseTotal,
-          mandate: result.mandate,
-          // In real mode the client redirects to mandate.checkoutUrl; in stub
-          // mode the customer is already provisioned and can sign in immediately.
+          // For inline Razorpay checkout
+          razorpayKeyId: getRazorpayKeyId(),
+          mandate: {
+            subscriptionId: primaryMandate?.mandateId,
+            mandateId: primaryMandate?.mandateId,
+            status: primaryMandate?.status,
+            checkoutUrl: primaryCheckoutUrl,
+          },
+          // In stub mode, no payment flow needed
           stub: isStubMode(),
         },
       },
@@ -346,6 +417,9 @@ export async function POST(req: NextRequest) {
     );
   } catch (e) {
     console.error("[SIGNUP V2] failed:", e);
-    return NextResponse.json({ error: (e as Error).message || "Signup failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: (e as Error).message || "Signup failed" },
+      { status: 500 }
+    );
   }
 }

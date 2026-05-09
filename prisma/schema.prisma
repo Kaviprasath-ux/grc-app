@@ -322,6 +322,22 @@ model RazorpayEvent {
   @@index([eventType, receivedAt])
 }
 
+// Pre-created Razorpay subscription plans (one per moduleCode + planType + billingCycle)
+// Used by createSubscriptionMandate to get planId for subscription creation.
+model RazorpayPlan {
+  id             String   @id @default(cuid())
+  razorpayPlanId String   @unique
+  moduleCode     String // "GRC" | "TPRM" | "INTERNAL_AUDIT"
+  planType       String // "BASE" | "GENERAL"
+  billingCycle   String // "MONTHLY" | "YEARLY"
+  amount         Decimal  @db.Decimal(12, 2) // Amount in INR
+  currency       String   @default("INR")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@unique([moduleCode, planType, billingCycle])
+}
+
 // Pending signup for payment flow (temporary storage until payment completes)
 model PendingSignup {
   id              String   @id @default(cuid())
@@ -388,6 +404,8 @@ model ModuleSubscription {
   generalStartDate        DateTime?
   mandateId               String?
   mandateStatus           String?
+  checkoutUrl             String? // Razorpay checkout URL for mandate authorization (for retry)
+  trialEndsAt             DateTime? // End of 14-day trial period
   cancellationRequestedAt DateTime?
 
   createdAt DateTime @default(now())

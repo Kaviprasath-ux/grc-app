@@ -11,6 +11,9 @@ CREATE TYPE "SubscriptionStatus" AS ENUM ('TRIAL', 'ACTIVE', 'EXPIRING_SOON', 'E
 CREATE TYPE "SubscriptionType" AS ENUM ('PAID', 'TRIAL', 'COMPLIMENTARY');
 
 -- CreateEnum
+CREATE TYPE "PlanType" AS ENUM ('BASE', 'GENERAL', 'COMPLIMENTARY');
+
+-- CreateEnum
 CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'ISSUED', 'PAID', 'FAILED', 'REFUNDED');
 
 -- CreateEnum
@@ -60,6 +63,31 @@ CREATE TABLE "SubscriptionPlan" (
 );
 
 -- CreateTable
+CREATE TABLE "ModulePlanPricing" (
+    "id" TEXT NOT NULL,
+    "moduleCode" TEXT NOT NULL,
+    "planType" "PlanType" NOT NULL,
+    "monthlyPrice" DECIMAL(12,2),
+    "yearlyPrice" DECIMAL(12,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'INR',
+    "userLimit" INTEGER NOT NULL DEFAULT 0,
+    "unlimitedUsers" BOOLEAN NOT NULL DEFAULT false,
+    "frameworkLimit" INTEGER,
+    "unlimitedFrameworks" BOOLEAN NOT NULL DEFAULT false,
+    "vendorLimit" INTEGER,
+    "unlimitedVendors" BOOLEAN NOT NULL DEFAULT false,
+    "assessmentLimit" INTEGER,
+    "unlimitedAssessments" BOOLEAN NOT NULL DEFAULT false,
+    "auditLimit" INTEGER,
+    "unlimitedAudits" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedBy" TEXT,
+
+    CONSTRAINT "ModulePlanPricing_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ModuleTierPricing" (
     "id" TEXT NOT NULL,
     "moduleCode" TEXT NOT NULL,
@@ -77,6 +105,34 @@ CREATE TABLE "ModuleTierPricing" (
     "updatedBy" TEXT,
 
     CONSTRAINT "ModuleTierPricing_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RazorpayEvent" (
+    "id" TEXT NOT NULL,
+    "eventId" TEXT NOT NULL,
+    "eventType" TEXT NOT NULL,
+    "payload" JSONB NOT NULL,
+    "receivedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processedAt" TIMESTAMP(3),
+    "errorText" TEXT,
+
+    CONSTRAINT "RazorpayEvent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RazorpayPlan" (
+    "id" TEXT NOT NULL,
+    "razorpayPlanId" TEXT NOT NULL,
+    "moduleCode" TEXT NOT NULL,
+    "planType" TEXT NOT NULL,
+    "billingCycle" TEXT NOT NULL,
+    "amount" DECIMAL(12,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'INR',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RazorpayPlan_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -127,6 +183,19 @@ CREATE TABLE "ModuleSubscription" (
     "cancelledAt" TIMESTAMP(3),
     "previousTier" "PlanTier",
     "tierChangedAt" TIMESTAMP(3),
+    "planType" "PlanType",
+    "nextPlanType" "PlanType",
+    "baseStartDate" TIMESTAMP(3),
+    "baseEndDate" TIMESTAMP(3),
+    "contractStartDate" TIMESTAMP(3),
+    "contractEndDate" TIMESTAMP(3),
+    "generalBillingCycle" "BillingCycle",
+    "generalStartDate" TIMESTAMP(3),
+    "mandateId" TEXT,
+    "mandateStatus" TEXT,
+    "checkoutUrl" TEXT,
+    "trialEndsAt" TIMESTAMP(3),
+    "cancellationRequestedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -4001,7 +4070,22 @@ CREATE TABLE "_EngagementTeamMembers" (
 CREATE UNIQUE INDEX "CustomerAccount_code_key" ON "CustomerAccount"("code");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ModulePlanPricing_moduleCode_planType_key" ON "ModulePlanPricing"("moduleCode", "planType");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ModuleTierPricing_moduleCode_tier_key" ON "ModuleTierPricing"("moduleCode", "tier");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RazorpayEvent_eventId_key" ON "RazorpayEvent"("eventId");
+
+-- CreateIndex
+CREATE INDEX "RazorpayEvent_eventType_receivedAt_idx" ON "RazorpayEvent"("eventType", "receivedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RazorpayPlan_razorpayPlanId_key" ON "RazorpayPlan"("razorpayPlanId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RazorpayPlan_moduleCode_planType_billingCycle_key" ON "RazorpayPlan"("moduleCode", "planType", "billingCycle");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PendingSignup_token_key" ON "PendingSignup"("token");
@@ -4011,6 +4095,12 @@ CREATE UNIQUE INDEX "Subscription_customerAccountId_key" ON "Subscription"("cust
 
 -- CreateIndex
 CREATE INDEX "ModuleSubscription_cycleEnd_idx" ON "ModuleSubscription"("cycleEnd");
+
+-- CreateIndex
+CREATE INDEX "ModuleSubscription_baseEndDate_idx" ON "ModuleSubscription"("baseEndDate");
+
+-- CreateIndex
+CREATE INDEX "ModuleSubscription_contractEndDate_idx" ON "ModuleSubscription"("contractEndDate");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ModuleSubscription_subscriptionId_moduleCode_key" ON "ModuleSubscription"("subscriptionId", "moduleCode");
@@ -6451,3 +6541,13 @@ ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fk
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+┌─────────────────────────────────────────────────────────┐
+│  Update available 5.22.0 -> 7.8.0                       │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘

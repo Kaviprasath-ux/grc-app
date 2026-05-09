@@ -3,10 +3,10 @@
  *
  * Creates 6 rows: 3 modules (GRC, TPRM, INTERNAL_AUDIT) x 2 plan types (BASE, GENERAL).
  *
- *   BASE     - Year-1 promotional plan: INR 100/year, modest caps
- *   GENERAL  - Year-2+ standard plan: INR 1500/mo or INR 15000/yr, larger caps
+ *   BASE     - Year-1 promotional plan: INR 100/month = INR 1,200/year, modest caps
+ *   GENERAL  - Year-2+ standard plan: INR 15,000/month = INR 180,000/year, larger caps
  *
- * Super-admin can edit any of these later via /subscription/plan-pricing.
+ * Super-admin can edit any of these later via Settings > Subscription > Plan Pricing.
  *
  * Run: npx tsx scripts/seed-module-plan-pricing.ts
  */
@@ -35,8 +35,8 @@ const SEEDS: Seed[] = [
   {
     moduleCode: "GRC",
     planType: "BASE",
-    monthlyPrice: null,
-    yearlyPrice: 100,
+    monthlyPrice: null, // BASE is yearly only
+    yearlyPrice: 1200, // ₹100/month × 12
     userLimit: 5,
     frameworkLimit: 3,
     vendorLimit: null,
@@ -46,8 +46,8 @@ const SEEDS: Seed[] = [
   {
     moduleCode: "GRC",
     planType: "GENERAL",
-    monthlyPrice: 1500,
-    yearlyPrice: 15000,
+    monthlyPrice: 15000, // ₹15,000/month
+    yearlyPrice: 180000, // ₹15,000 × 12
     userLimit: 25,
     frameworkLimit: 10,
     vendorLimit: null,
@@ -58,8 +58,8 @@ const SEEDS: Seed[] = [
   {
     moduleCode: "TPRM",
     planType: "BASE",
-    monthlyPrice: null,
-    yearlyPrice: 100,
+    monthlyPrice: null, // BASE is yearly only
+    yearlyPrice: 1200, // ₹100/month × 12
     userLimit: 5,
     frameworkLimit: null,
     vendorLimit: 10,
@@ -69,8 +69,8 @@ const SEEDS: Seed[] = [
   {
     moduleCode: "TPRM",
     planType: "GENERAL",
-    monthlyPrice: 1500,
-    yearlyPrice: 15000,
+    monthlyPrice: 15000, // ₹15,000/month
+    yearlyPrice: 180000, // ₹15,000 × 12
     userLimit: 25,
     frameworkLimit: null,
     vendorLimit: 100,
@@ -81,8 +81,8 @@ const SEEDS: Seed[] = [
   {
     moduleCode: "INTERNAL_AUDIT",
     planType: "BASE",
-    monthlyPrice: null,
-    yearlyPrice: 100,
+    monthlyPrice: null, // BASE is yearly only
+    yearlyPrice: 1200, // ₹100/month × 12
     userLimit: 5,
     frameworkLimit: null,
     vendorLimit: null,
@@ -92,8 +92,8 @@ const SEEDS: Seed[] = [
   {
     moduleCode: "INTERNAL_AUDIT",
     planType: "GENERAL",
-    monthlyPrice: 1500,
-    yearlyPrice: 15000,
+    monthlyPrice: 15000, // ₹15,000/month
+    yearlyPrice: 180000, // ₹15,000 × 12
     userLimit: 25,
     frameworkLimit: null,
     vendorLimit: null,
@@ -103,21 +103,28 @@ const SEEDS: Seed[] = [
 ];
 
 async function run() {
-  console.log("Seeding ModulePlanPricing (6 rows)...\n");
+  console.log("Seeding/Updating ModulePlanPricing (6 rows)...\n");
   let created = 0;
   let updated = 0;
 
   for (const s of SEEDS) {
-    const existing = await prisma.modulePlanPricing.findUnique({
+    const result = await prisma.modulePlanPricing.upsert({
       where: { moduleCode_planType: { moduleCode: s.moduleCode, planType: s.planType } },
-    });
-    if (existing) {
-      console.log(`  = ${s.moduleCode} ${s.planType} - already exists, kept (id=${existing.id})`);
-      updated++;
-      continue;
-    }
-    await prisma.modulePlanPricing.create({
-      data: {
+      update: {
+        monthlyPrice: s.monthlyPrice,
+        yearlyPrice: s.yearlyPrice,
+        userLimit: s.userLimit,
+        unlimitedUsers: s.unlimitedUsers ?? false,
+        frameworkLimit: s.frameworkLimit,
+        unlimitedFrameworks: s.unlimitedFrameworks ?? false,
+        vendorLimit: s.vendorLimit,
+        unlimitedVendors: s.unlimitedVendors ?? false,
+        assessmentLimit: s.assessmentLimit,
+        unlimitedAssessments: s.unlimitedAssessments ?? false,
+        auditLimit: s.auditLimit,
+        unlimitedAudits: s.unlimitedAudits ?? false,
+      },
+      create: {
         moduleCode: s.moduleCode,
         planType: s.planType,
         monthlyPrice: s.monthlyPrice,
@@ -135,11 +142,19 @@ async function run() {
         isActive: true,
       },
     });
-    created++;
-    console.log(`  + ${s.moduleCode} ${s.planType} - INR ${s.yearlyPrice}/yr, ${s.userLimit} users`);
+
+    // Check if it was created or updated by comparing timestamps
+    const isNew = new Date(result.createdAt).getTime() === new Date(result.updatedAt).getTime();
+    if (isNew) {
+      created++;
+      console.log(`  + ${s.moduleCode} ${s.planType} - CREATED - ₹${s.yearlyPrice}/yr`);
+    } else {
+      updated++;
+      console.log(`  ✓ ${s.moduleCode} ${s.planType} - UPDATED - ₹${s.yearlyPrice}/yr (₹${s.monthlyPrice ?? 'N/A'}/mo)`);
+    }
   }
 
-  console.log(`\nDone. ${created} created, ${updated} kept (already exist).`);
+  console.log(`\nDone. ${created} created, ${updated} updated.`);
   await prisma.$disconnect();
 }
 
