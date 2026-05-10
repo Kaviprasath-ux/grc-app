@@ -751,7 +751,14 @@ export default function SignupV2Page() {
                       <label className="flex items-start gap-3 cursor-pointer">
                         <Checkbox
                           checked={contractAccepted}
-                          onCheckedChange={(v) => setContractAccepted(Boolean(v))}
+                          onCheckedChange={(v) => {
+                            const checked = Boolean(v);
+                            setContractAccepted(checked);
+                            // Auto-check autopay when contract is accepted (required for 2-year commitment)
+                            if (checked) {
+                              setAutopayAccepted(true);
+                            }
+                          }}
                           className="mt-0.5"
                         />
                         <div className="text-sm text-stone-800">
@@ -765,11 +772,12 @@ export default function SignupV2Page() {
                       </label>
                     </div>
 
-                    <div className="rounded-lg border-2 border-stone-200 bg-stone-50 p-4">
-                      <label className="flex items-start gap-3 cursor-pointer">
+                    <div className={`rounded-lg border-2 p-4 ${contractAccepted ? "border-stone-300 bg-stone-100" : "border-stone-200 bg-stone-50"}`}>
+                      <label className={`flex items-start gap-3 ${contractAccepted ? "cursor-not-allowed" : "cursor-pointer"}`}>
                         <Checkbox
                           checked={autopayAccepted}
                           onCheckedChange={(v) => setAutopayAccepted(Boolean(v))}
+                          disabled={contractAccepted}
                           className="mt-0.5"
                         />
                         <div className="text-sm text-stone-800">
