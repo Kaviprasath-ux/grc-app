@@ -87,7 +87,34 @@ function getRazorpayClient(): RazorpayInstance {
 }
 
 /**
+ * Get the Year 1 BASE price for a module (used for Day 14 charge).
+ */
+export async function getYear1PriceFromDb(moduleCode: string): Promise<number> {
+  const basePricing = await prisma.modulePlanPricing.findFirst({
+    where: { moduleCode, planType: "BASE", isActive: true },
+  });
+
+  return basePricing ? Number(basePricing.yearlyPrice) : BASE_YEARLY_PRICE;
+}
+
+/**
+ * Get the monthly GENERAL price for a module (used for Year 2+ monthly billing).
+ */
+export async function getMonthlyPriceFromDb(moduleCode: string): Promise<number> {
+  const generalPricing = await prisma.modulePlanPricing.findFirst({
+    where: { moduleCode, planType: "GENERAL", isActive: true },
+  });
+
+  if (generalPricing?.monthlyPrice) {
+    return Number(generalPricing.monthlyPrice);
+  }
+
+  return generalPricing ? Math.round(Number(generalPricing.yearlyPrice) / 12) : GENERAL_MONTHLY_PRICE;
+}
+
+/**
  * Get the full 2-year contract price for a module (Year 1 BASE + Year 2 GENERAL).
+ * @deprecated Use getYear1PriceFromDb for initial charge, then monthly billing
  */
 export async function getTwoYearPriceFromDb(moduleCode: string): Promise<number> {
   const basePricing = await prisma.modulePlanPricing.findFirst({
@@ -148,8 +175,193 @@ export function getPlanPrice(
 }
 
 /**
+ * Get or create a Razorpay plan for Year 1 (BASE plan).
+ * This is a one-time charge plan (total_count=1) for Year 1 only.
+ * After Year 1, a separate monthly subscription will be created.
+ */
+export async function getOrCreateYear1Plan(moduleCode: string): Promise<string> {
+  const planType = "YEAR1";
+  const billingCycle = "YEARLY";
+
+  // Check if plan exists in database
+  const existingPlan = await prisma.razorpayPlan.findFirst({
+    where: {
+      moduleCode,
+      planType,
+      billingCycle,
+      isActive: true,
+    },
+  });
+
+  if (existingPlan) {
+    return existingPlan.razorpayPlanId;
+  }
+
+  // Get Year 1 price from database
+  const amount = await getYear1PriceFromDb(moduleCode);
+  const moduleName = MODULE_NAMES[moduleCode] || moduleCode;
+  const planName = `${moduleName} - Year 1 (BASE)`;
+
+  // Stub mode: return a fake plan ID
+  if (isStubMode()) {
+    const stubPlanId = `STUB-PLAN-${moduleCode}-YEAR1`;
+
+    await prisma.razorpayPlan.create({
+      data: {
+        razorpayPlanId: stubPlanId,
+        moduleCode,
+        planType,
+        billingCycle,
+        amount,
+        currency: "INR",
+        isActive: true,
+      },
+    });
+
+    return stubPlanId;
+  }
+
+  // Create plan in Razorpay (one-time yearly charge)
+  const razorpay = getRazorpayClient();
+
+  let razorpayPlan;
+  try {
+    razorpayPlan = await razorpay.plans.create({
+      period: "yearly",
+      interval: 1,
+      item: {
+        name: planName,
+        amount: amount * 100, // Convert to paise
+        currency: "INR",
+        description: `${moduleName} - Year 1 Promotional Rate (BASE plan)`,
+      },
+      notes: {
+        moduleCode,
+        planType: "YEAR1",
+        year1Price: String(amount),
+      },
+    });
+  } catch (err) {
+    const error = err as { statusCode?: number; error?: { description?: string }; message?: string };
+    console.error("[RazorpayPlanManager] Failed to create Year 1 plan:", error);
+    throw new Error(
+      `Razorpay Year 1 plan creation failed: ${error.error?.description || error.message || "Unknown error"}`
+    );
+  }
+
+  // Store in database
+  await prisma.razorpayPlan.create({
+    data: {
+      razorpayPlanId: razorpayPlan.id,
+      moduleCode,
+      planType,
+      billingCycle,
+      amount,
+      currency: "INR",
+      isActive: true,
+    },
+  });
+
+  console.log(`[RazorpayPlanManager] Created Year 1 plan: ${razorpayPlan.id} (${planName}) - ₹${amount}`);
+
+  return razorpayPlan.id;
+}
+
+/**
+ * Get or create a Razorpay plan for Year 2+ monthly billing (GENERAL plan).
+ * This is used after Year 1 ends to start monthly recurring charges.
+ */
+export async function getOrCreateMonthlyPlan(moduleCode: string): Promise<string> {
+  const planType = "MONTHLY";
+  const billingCycle = "MONTHLY";
+
+  // Check if plan exists in database
+  const existingPlan = await prisma.razorpayPlan.findFirst({
+    where: {
+      moduleCode,
+      planType,
+      billingCycle,
+      isActive: true,
+    },
+  });
+
+  if (existingPlan) {
+    return existingPlan.razorpayPlanId;
+  }
+
+  // Get monthly price from database
+  const amount = await getMonthlyPriceFromDb(moduleCode);
+  const moduleName = MODULE_NAMES[moduleCode] || moduleCode;
+  const planName = `${moduleName} - Monthly (GENERAL)`;
+
+  // Stub mode: return a fake plan ID
+  if (isStubMode()) {
+    const stubPlanId = `STUB-PLAN-${moduleCode}-MONTHLY`;
+
+    await prisma.razorpayPlan.create({
+      data: {
+        razorpayPlanId: stubPlanId,
+        moduleCode,
+        planType,
+        billingCycle,
+        amount,
+        currency: "INR",
+        isActive: true,
+      },
+    });
+
+    return stubPlanId;
+  }
+
+  // Create plan in Razorpay (monthly recurring)
+  const razorpay = getRazorpayClient();
+
+  let razorpayPlan;
+  try {
+    razorpayPlan = await razorpay.plans.create({
+      period: "monthly",
+      interval: 1,
+      item: {
+        name: planName,
+        amount: amount * 100, // Convert to paise
+        currency: "INR",
+        description: `${moduleName} - Monthly Standard Rate (GENERAL plan)`,
+      },
+      notes: {
+        moduleCode,
+        planType: "MONTHLY",
+        monthlyPrice: String(amount),
+      },
+    });
+  } catch (err) {
+    const error = err as { statusCode?: number; error?: { description?: string }; message?: string };
+    console.error("[RazorpayPlanManager] Failed to create monthly plan:", error);
+    throw new Error(
+      `Razorpay monthly plan creation failed: ${error.error?.description || error.message || "Unknown error"}`
+    );
+  }
+
+  // Store in database
+  await prisma.razorpayPlan.create({
+    data: {
+      razorpayPlanId: razorpayPlan.id,
+      moduleCode,
+      planType,
+      billingCycle,
+      amount,
+      currency: "INR",
+      isActive: true,
+    },
+  });
+
+  console.log(`[RazorpayPlanManager] Created monthly plan: ${razorpayPlan.id} (${planName}) - ₹${amount}/mo`);
+
+  return razorpayPlan.id;
+}
+
+/**
  * Get or create a Razorpay plan for the full 2-year contract.
- * This is a one-time charge plan (total_count=1) for Year 1 + Year 2 combined.
+ * @deprecated Use getOrCreateYear1Plan for initial charge, then getOrCreateMonthlyPlan after Year 1
  */
 export async function getOrCreate2YearPlan(moduleCode: string): Promise<string> {
   const planType = "2YEAR";

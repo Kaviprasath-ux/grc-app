@@ -32,6 +32,12 @@ import {
 } from "@/lib/payment-provider-mandate";
 import { isStubMode, getRazorpayKeyId } from "@/lib/payment-provider";
 import { nextInvoiceNumber } from "@/lib/invoice-number";
+import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rate-limiter";
+import {
+  logSignupInitiated,
+  logSignupCompleted,
+  logSignupFailed,
+} from "@/lib/payment-audit";
 
 // 18% GST applied to every subscription invoice (Indian customer default).
 const GST_PERCENT = 18;
@@ -89,6 +95,27 @@ function addDays(d: Date, days: number): Date {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limiting - 5 signup attempts per 15 minutes per IP
+  const clientIp = getClientIp(req.headers);
+  const rateLimit = checkRateLimit(`signup:${clientIp}`, RATE_LIMITS.SIGNUP);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      {
+        error: "Too many signup attempts. Please try again later.",
+        retryAfter: rateLimit.retryAfterSecs,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSecs),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Math.floor(rateLimit.resetAt / 1000)),
+        },
+      }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -104,6 +131,13 @@ export async function POST(req: NextRequest) {
     );
   }
   const data = parsed.data;
+
+  // Audit log: signup initiated
+  void logSignupInitiated(
+    data.adminEmail,
+    data.modules.map((m) => m.moduleCode),
+    clientIp
+  );
 
   // Email uniqueness
   const existingUser = await prisma.user.findFirst({
@@ -389,6 +423,14 @@ export async function POST(req: NextRequest) {
       `[SIGNUP V2] ${result.customerCode} (${data.adminEmail}) - ${trialDays}-day trial, BASE for ${data.modules.length} module(s), GENERAL ${data.generalBillingCycle} after ${baseEnd.toISOString().slice(0, 10)}, contract until ${contractEnd.toISOString().slice(0, 10)}`
     );
 
+    // Audit log: signup completed
+    void logSignupCompleted(
+      result.customerId,
+      data.adminEmail,
+      data.modules.map((m) => m.moduleCode),
+      primaryMandate?.mandateId || "NONE"
+    );
+
     return NextResponse.json(
       {
         data: {
@@ -416,9 +458,14 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (e) {
+    const errorMessage = (e as Error).message || "Signup failed";
     console.error("[SIGNUP V2] failed:", e);
+
+    // Audit log: signup failed
+    void logSignupFailed(data.adminEmail, errorMessage, clientIp);
+
     return NextResponse.json(
-      { error: (e as Error).message || "Signup failed" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

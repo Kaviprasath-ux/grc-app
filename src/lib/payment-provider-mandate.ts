@@ -5,9 +5,14 @@
  *   1. createSubscriptionMandate() -> Razorpay subscription with trial period
  *   2. Customer authorizes the mandate (UPI Autopay / e-NACH / card auth)
  *   3. 14-day free trial begins (no charge)
- *   4. After trial ends, Razorpay auto-charges first invoice (BASE: ₹1,200/module)
- *   5. After Year 1, GENERAL plan kicks in (₹15,000/module/month)
+ *   4. After trial ends (Day 14), Razorpay auto-charges Year 1 invoice (BASE plan)
+ *   5. After Year 1, monthly billing starts at GENERAL rate
  *   6. cancelMandate() can stop recurrence after contract end
+ *
+ * Billing Schedule:
+ *   - Day 0: Card verification (₹2)
+ *   - Day 14: Year 1 charge (BASE yearly price per module)
+ *   - Day 14 + 1 year: Monthly billing starts (GENERAL monthly price per module)
  *
  * Stub mode (PAYMENT_STUB=true)
  *   No real Razorpay call is made. createSubscriptionMandate returns a fake
@@ -22,7 +27,7 @@
 
 import { randomUUID } from "crypto";
 import { isStubMode } from "@/lib/payment-provider";
-import { getOrCreate2YearPlan, getTwoYearPriceFromDb } from "@/lib/razorpay-plan-manager";
+import { getOrCreateYear1Plan, getYear1PriceFromDb } from "@/lib/razorpay-plan-manager";
 
 // Trial period in days (can be configured via env)
 const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS || "14", 10);
@@ -143,6 +148,10 @@ function getRazorpayClient(): RazorpayInstance {
  *
  * In stub mode returns a fake authenticated mandate with no checkoutUrl.
  * In production, creates a Razorpay subscription with start_at = trial end date.
+ *
+ * Billing flow:
+ *   - Day 14: Year 1 charge (BASE yearly price)
+ *   - Day 14 + 1 year: Monthly billing starts (handled by separate monthly subscription)
  */
 export async function createSubscriptionMandate(input: CreateMandateInput): Promise<CreateMandateResult> {
   // Calculate trial end date
@@ -162,33 +171,33 @@ export async function createSubscriptionMandate(input: CreateMandateInput): Prom
     };
   }
 
-  // Get or create the 2-year plan in Razorpay (full contract amount)
-  const planId = await getOrCreate2YearPlan(input.moduleCode);
+  // Get or create the Year 1 plan in Razorpay (BASE yearly price only)
+  const planId = await getOrCreateYear1Plan(input.moduleCode);
 
   const razorpay = getRazorpayClient();
 
   // Create subscription with trial (start_at defines when first charge happens)
-  // Full 2-year amount charged on day 14 (after trial)
+  // Year 1 amount charged on day 14 (after trial)
   const subscriptionOptions: RazorpaySubscriptionCreateOptions = {
     plan_id: planId,
-    total_count: 1, // One-time charge for full 2-year contract
+    total_count: 1, // One-time charge for Year 1
     quantity: 1,
     start_at: Math.floor(trialEndsAt.getTime() / 1000), // Unix timestamp - charge after trial
     customer_notify: 0, // We handle notifications
     notes: {
       customerAccountId: input.customerAccountId,
       moduleCode: input.moduleCode,
-      planType: "2YEAR",
+      planType: "YEAR1",
       trialDays: TRIAL_DAYS.toString(),
       idempotencyKey: input.idempotencyKey || "",
     },
   };
 
-  console.log(`[Mandate] Creating 2-year subscription with trial:`, {
+  console.log(`[Mandate] Creating Year 1 subscription with trial:`, {
     moduleCode: input.moduleCode,
     planId,
     startAt: trialEndsAt.toISOString(),
-    chargeType: "Full 2-year contract",
+    chargeType: "Year 1 BASE plan",
   });
 
   const subscription = await razorpay.subscriptions.create(subscriptionOptions);
@@ -318,14 +327,14 @@ function mapRazorpayStatus(
 }
 
 /**
- * Calculate total amount for first charge (full 2-year contract + GST).
+ * Calculate total amount for first charge (Year 1 BASE price + GST).
  */
 export async function calculateFirstChargeAmount(moduleCode: string): Promise<{
   subtotal: number;
   tax: number;
   total: number;
 }> {
-  const subtotal = await getTwoYearPriceFromDb(moduleCode);
+  const subtotal = await getYear1PriceFromDb(moduleCode);
   const tax = Math.round(subtotal * 0.18 * 100) / 100; // 18% GST
   const total = subtotal + tax;
 

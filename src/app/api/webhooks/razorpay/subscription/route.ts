@@ -33,6 +33,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { verifyWebhookSignature, isStubMode } from "@/lib/payment-provider";
+import { getOrCreateMonthlyPlan, getMonthlyPriceFromDb } from "@/lib/razorpay-plan-manager";
+import {
+  logWebhookEvent,
+  logPaymentCharge,
+  logSubscriptionStatus,
+} from "@/lib/payment-audit";
 import type { Prisma } from "@prisma/client";
 
 // ============================================================================
@@ -122,6 +128,9 @@ export async function POST(req: NextRequest) {
     mandateId,
     paymentId: paymentEntity?.id,
   });
+
+  // Audit log: webhook received
+  void logWebhookEvent(eventId, eventType, mandateId, "RECEIVED");
 
   // Idempotency check - return 200 if already processed.
   const existing = await prisma.razorpayEvent.findUnique({
@@ -231,8 +240,22 @@ export async function POST(req: NextRequest) {
             console.log(
               `[Razorpay Webhook] Invoice ${openInvoice.invoiceNumber} marked PAID`
             );
+
+            // Audit log: payment charged
+            void logPaymentCharge(
+              ms.subscriptionId,
+              mandateId,
+              (paymentEntity?.amount ?? 0) / 100,
+              "SUCCESS",
+              paymentEntity?.id
+            );
             break; // One invoice per charge event
           }
+        }
+
+        // Audit log: subscription activated
+        for (const subId of subscriptionIds) {
+          void logSubscriptionStatus(subId, mandateId, "ACTIVATED");
         }
         break;
 
@@ -298,14 +321,112 @@ export async function POST(req: NextRequest) {
         console.log(
           `[Razorpay Webhook] Subscription TERMINATED due to autopay failure: ${mandateId}`
         );
+
+        // Audit log: subscription halted
+        for (const subId of subscriptionIds) {
+          void logSubscriptionStatus(subId, mandateId, "HALTED");
+        }
         break;
 
       case "subscription.completed":
-        // All charges completed (contract fulfilled)
-        await prisma.moduleSubscription.updateMany({
+        // Year 1 subscription completed - transition to monthly billing
+        const completedModuleSubs = await prisma.moduleSubscription.findMany({
           where: { mandateId },
-          data: { mandateStatus: "completed" },
+          include: {
+            subscription: true,
+          },
         });
+
+        for (const ms of completedModuleSubs) {
+          // Check if this is a Year 1 subscription (planType = "BASE")
+          const isYear1 = ms.planType === "BASE";
+
+          if (isYear1 && ms.subscription) {
+            console.log(
+              `[Razorpay Webhook] Year 1 completed for ${ms.moduleCode}, transitioning to monthly billing`
+            );
+
+            try {
+              // Create monthly subscription for Year 2+
+              const monthlyPlanId = await getOrCreateMonthlyPlan(ms.moduleCode);
+              const monthlyPrice = await getMonthlyPriceFromDb(ms.moduleCode);
+
+              // Create new Razorpay subscription for monthly billing
+              if (!isStubMode()) {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                const Razorpay = require("razorpay");
+                const razorpay = new Razorpay({
+                  key_id: process.env.RAZORPAY_KEY_ID,
+                  key_secret: process.env.RAZORPAY_KEY_SECRET,
+                });
+
+                // Create monthly subscription (starts immediately)
+                const monthlySub = await razorpay.subscriptions.create({
+                  plan_id: monthlyPlanId,
+                  total_count: 12, // 12 months for Year 2
+                  quantity: 1,
+                  customer_notify: 0,
+                  notes: {
+                    customerAccountId: ms.subscription.customerAccountId,
+                    moduleCode: ms.moduleCode,
+                    planType: "MONTHLY",
+                    year: "2",
+                  },
+                });
+
+                // Update ModuleSubscription with new mandate
+                await prisma.moduleSubscription.update({
+                  where: { id: ms.id },
+                  data: {
+                    mandateId: monthlySub.id,
+                    mandateStatus: "created",
+                    planType: "GENERAL",
+                    unitPrice: monthlyPrice,
+                    billingCycle: "MONTHLY",
+                    cycleStart: new Date(),
+                    cycleEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+                  },
+                });
+
+                console.log(
+                  `[Razorpay Webhook] Created monthly subscription ${monthlySub.id} for ${ms.moduleCode}`
+                );
+              } else {
+                // Stub mode - just update the record
+                await prisma.moduleSubscription.update({
+                  where: { id: ms.id },
+                  data: {
+                    mandateId: `STUB-MONTHLY-${ms.moduleCode}-${Date.now()}`,
+                    mandateStatus: "active",
+                    planType: "GENERAL",
+                    unitPrice: monthlyPrice,
+                    billingCycle: "MONTHLY",
+                    cycleStart: new Date(),
+                    cycleEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                  },
+                });
+              }
+            } catch (transitionError) {
+              console.error(
+                `[Razorpay Webhook] Failed to transition ${ms.moduleCode} to monthly:`,
+                transitionError
+              );
+              // Mark as halted so admin can manually intervene
+              await prisma.moduleSubscription.update({
+                where: { id: ms.id },
+                data: {
+                  mandateStatus: "halted",
+                },
+              });
+            }
+          } else {
+            // Not a Year 1 subscription, just mark as completed
+            await prisma.moduleSubscription.update({
+              where: { id: ms.id },
+              data: { mandateStatus: "completed" },
+            });
+          }
+        }
         console.log(`[Razorpay Webhook] Mandate completed: ${mandateId}`);
         break;
 
@@ -372,6 +493,10 @@ export async function POST(req: NextRequest) {
     }
 
     await markProcessed(eventId);
+
+    // Audit log: webhook processed
+    void logWebhookEvent(eventId, eventType, mandateId, "PROCESSED");
+
     return NextResponse.json({
       data: { processed: true, eventType, mandateId },
     });
@@ -382,6 +507,10 @@ export async function POST(req: NextRequest) {
       where: { eventId },
       data: { errorText: msg },
     });
+
+    // Audit log: webhook failed
+    void logWebhookEvent(eventId, eventType, mandateId, "FAILED", msg);
+
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

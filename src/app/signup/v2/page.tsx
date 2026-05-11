@@ -423,12 +423,12 @@ export default function SignupV2Page() {
   const year1Yearly = selectedBaseRows.reduce((s, r) => s + r.yearlyPrice, 0);
   const year1YearlyWithGst = Math.round(year1Yearly * 1.18);
 
-  // Year 2 pricing (GENERAL plan) - from database, always yearly
-  const year2MonthlyPerModule = selectedGeneralRows.length > 0
-    ? (selectedGeneralRows[0].monthlyPrice ?? Math.round(selectedGeneralRows[0].yearlyPrice / 12))
-    : 15000; // Default ₹15,000/month if no data
-  const year2Yearly = selectedGeneralRows.reduce((s, r) => s + r.yearlyPrice, 0);
-  const year2YearlyWithGst = Math.round(year2Yearly * 1.18);
+  // Year 2 pricing (GENERAL plan) - monthly billing after Year 1
+  const year2MonthlyTotal = selectedGeneralRows.reduce(
+    (s, r) => s + (r.monthlyPrice ?? Math.round(r.yearlyPrice / 12)),
+    0
+  );
+  const year2MonthlyWithGst = Math.round(year2MonthlyTotal * 1.18);
 
   return (
     <>
@@ -650,55 +650,92 @@ export default function SignupV2Page() {
                       </div>
                     ) : (
                       <div className="divide-y divide-stone-200">
-                        {/* Year 1 */}
+                        {/* Year 1 - Module-wise breakdown */}
                         <div className="p-4 bg-emerald-50">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="font-medium text-emerald-900 flex items-center gap-2">
-                                <Zap className="h-4 w-4" />
-                                {t("Year 1")} - {t("Promotional Rate")}
+                          <div className="flex items-center gap-2 mb-3">
+                            <Zap className="h-4 w-4 text-emerald-700" />
+                            <span className="font-medium text-emerald-900">
+                              {t("Year 1")} - {t("Promotional Rate")}
+                            </span>
+                            <span className="ml-auto text-xs text-emerald-800 bg-emerald-100 rounded px-2 py-1">
+                              {t("Charged after 14-day trial")}
+                            </span>
+                          </div>
+
+                          {/* Module-wise breakdown */}
+                          <div className="space-y-2 mb-3">
+                            {selectedBaseRows.map((row) => (
+                              <div key={row.moduleCode} className="flex items-center justify-between text-sm bg-white/60 rounded px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-emerald-700">
+                                    {MODULE_META[row.moduleCode]?.icon}
+                                  </div>
+                                  <span className="text-emerald-900">{MODULE_META[row.moduleCode]?.label || row.moduleCode}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-mono text-emerald-900">₹{formatINR(row.yearlyPrice)}/{t("yr")}</span>
+                                  <span className="text-xs text-emerald-700 ml-1">
+                                    (₹{formatINR(Math.round(row.yearlyPrice / 12))}/{t("mo")})
+                                  </span>
+                                </div>
                               </div>
-                              <p className="text-sm text-emerald-700 mt-1">
-                                ₹{formatINR(year1MonthlyPerModule)}/{t("platform")}/{t("month")}
-                              </p>
-                            </div>
+                            ))}
+                          </div>
+
+                          {/* Year 1 Total */}
+                          <div className="flex items-center justify-between pt-2 border-t border-emerald-200">
+                            <span className="text-sm font-medium text-emerald-900">{t("Year 1 Total")}</span>
                             <div className="text-right">
                               <div className="font-mono font-semibold text-emerald-900">
-                                ₹{formatINR(year1Yearly)}/{t("yr")}
+                                ₹{formatINR(year1Yearly)}
                               </div>
                               <div className="text-xs text-emerald-700">
                                 + 18% GST = ₹{formatINR(year1YearlyWithGst)}
                               </div>
                             </div>
                           </div>
-                          <div className="mt-2 text-xs text-emerald-800 bg-emerald-100 rounded px-2 py-1 inline-block">
-                            {t("Charged after 14-day trial period")}
-                          </div>
                         </div>
 
-                        {/* Year 2 */}
+                        {/* Year 2 - Module-wise breakdown */}
                         <div className="p-4 bg-stone-50">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="font-medium text-stone-900 flex items-center gap-2">
-                                <Calendar className="h-4 w-4" />
-                                {t("Year 2")} - {t("Standard Rate")}
+                          <div className="flex items-center gap-2 mb-3">
+                            <Calendar className="h-4 w-4 text-stone-700" />
+                            <span className="font-medium text-stone-900">
+                              {t("Year 2")} - {t("Standard Rate")}
+                            </span>
+                            <span className="ml-auto text-xs text-stone-600 bg-stone-200 rounded px-2 py-1">
+                              {t("Monthly billing")}
+                            </span>
+                          </div>
+
+                          {/* Module-wise breakdown */}
+                          <div className="space-y-2 mb-3">
+                            {selectedGeneralRows.map((row) => (
+                              <div key={row.moduleCode} className="flex items-center justify-between text-sm bg-white/60 rounded px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-stone-600">
+                                    {MODULE_META[row.moduleCode]?.icon}
+                                  </div>
+                                  <span className="text-stone-900">{MODULE_META[row.moduleCode]?.label || row.moduleCode}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-mono text-stone-900">₹{formatINR(row.monthlyPrice ?? Math.round(row.yearlyPrice / 12))}/{t("mo")}</span>
+                                </div>
                               </div>
-                              <p className="text-sm text-stone-600 mt-1">
-                                ₹{formatINR(year2MonthlyPerModule)}/{t("platform")}/{t("month")}
-                              </p>
-                            </div>
+                            ))}
+                          </div>
+
+                          {/* Year 2 Total */}
+                          <div className="flex items-center justify-between pt-2 border-t border-stone-300">
+                            <span className="text-sm font-medium text-stone-900">{t("Year 2 Monthly")}</span>
                             <div className="text-right">
                               <div className="font-mono font-semibold text-stone-900">
-                                ₹{formatINR(year2Yearly)}/{t("yr")}
+                                ₹{formatINR(selectedGeneralRows.reduce((s, r) => s + (r.monthlyPrice ?? Math.round(r.yearlyPrice / 12)), 0))}/{t("mo")}
                               </div>
                               <div className="text-xs text-stone-600">
-                                + 18% GST = ₹{formatINR(year2YearlyWithGst)}
+                                + 18% GST = ₹{formatINR(Math.round(selectedGeneralRows.reduce((s, r) => s + (r.monthlyPrice ?? Math.round(r.yearlyPrice / 12)), 0) * 1.18))}/{t("mo")}
                               </div>
                             </div>
-                          </div>
-                          <div className="mt-2 text-xs text-stone-700">
-                            {t("Billed annually starting Year 2")}
                           </div>
                         </div>
                       </div>
@@ -718,7 +755,7 @@ export default function SignupV2Page() {
                           {/* Today - Verification */}
                           <div className="flex items-center gap-3 p-2 bg-white/60 rounded-md border border-blue-200">
                             <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                              ₹2
+                              ₹5
                             </div>
                             <div>
                               <div className="text-sm font-medium text-blue-900">{t("Today")}</div>
@@ -726,17 +763,32 @@ export default function SignupV2Page() {
                             </div>
                           </div>
 
-                          {/* After 14 days - Full 2-year charge */}
+                          {/* After 14 days - Year 1 charge */}
                           <div className="flex items-center gap-3 p-2 bg-white/60 rounded-md border border-blue-200">
                             <div className="h-8 w-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                               14d
                             </div>
                             <div className="flex-1">
                               <div className="text-sm font-medium text-blue-900">{t("After 14-day trial")}</div>
-                              <div className="text-xs text-blue-700">{t("Full 2-year subscription charged")}</div>
+                              <div className="text-xs text-blue-700">{t("Year 1 subscription charged")}</div>
                             </div>
                             <div className="text-right">
-                              <div className="text-sm font-bold text-blue-900">₹{formatINR(year1YearlyWithGst + year2YearlyWithGst)}</div>
+                              <div className="text-sm font-bold text-blue-900">₹{formatINR(year1YearlyWithGst)}</div>
+                              <div className="text-[10px] text-blue-600">{t("incl. GST")}</div>
+                            </div>
+                          </div>
+
+                          {/* After Year 1 - Monthly billing */}
+                          <div className="flex items-center gap-3 p-2 bg-white/60 rounded-md border border-blue-200">
+                            <div className="h-8 w-8 rounded-full bg-stone-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                              Y2+
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-blue-900">{t("After Year 1")}</div>
+                              <div className="text-xs text-blue-700">{t("Monthly billing starts")}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-bold text-blue-900">₹{formatINR(year2MonthlyWithGst)}/{t("mo")}</div>
                               <div className="text-[10px] text-blue-600">{t("incl. GST")}</div>
                             </div>
                           </div>
