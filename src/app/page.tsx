@@ -1,73 +1,39 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { moduleHomeForRoles, type ModuleCode } from "@/lib/url-module-map";
 
 export default async function Home() {
   const session = await auth();
 
-  // If not authenticated, redirect to login page
   if (!session?.user) {
     redirect("/login");
   }
 
-  // Redirect GRCAdmin users to GRC landing page
-  if (session?.user?.roles?.includes("GRCAdministrator")) {
+  const roles = session.user.roles ?? [];
+
+  // GRCAdministrator always lands on the super-admin home — they don't use
+  // the workspace picker.
+  if (roles.includes("GRCAdministrator")) {
     redirect("/grc");
   }
 
-  // Redirect AuditHead users to Internal Audit dashboard
-  if (session?.user?.roles?.includes("AuditHead")) {
-    redirect("/internal-audit/dashboard");
-  }
+  // Compute available workspaces — subscription ∩ user-has-role-in-module.
+  // Route by count: 0 → subscription-required, 1 → role-specific home,
+  // 2+ → picker.
+  const subscribed = new Set<ModuleCode>();
+  if (session.user.isGrcAdded) subscribed.add("GRC");
+  if (session.user.isInternalAuditEnabled) subscribed.add("INTERNAL_AUDIT");
+  if (session.user.isTprmAdded) subscribed.add("TPRM");
+  const userRoleModules = new Set(session.user.roleModules ?? []);
+  const available = (["GRC", "INTERNAL_AUDIT", "TPRM"] as ModuleCode[]).filter(
+    (m) => subscribed.has(m) && userRoleModules.has(m),
+  );
 
-  // Redirect Auditee users to Fieldwork (they don't have dashboard access)
-  if (session?.user?.roles?.includes("Auditee")) {
-    redirect("/internal-audit/fieldwork");
+  if (available.length === 0) {
+    redirect("/subscription-required");
   }
-
-  // Redirect FactoryAdmin and FactoryAssessor to Assessment Factory page
-  if (session?.user?.roles?.includes("FactoryAdmin") || session?.user?.roles?.includes("FactoryAssessor")) {
-    redirect("/tprm/asr-assessment-factory");
+  if (available.length === 1) {
+    redirect(moduleHomeForRoles(available[0], roles));
   }
-
-  // Redirect InternalITTeam users to IT Issues page
-  if (session?.user?.roles?.includes("InternalITTeam")) {
-    redirect("/tprm/it-issues");
-  }
-
-  // Redirect AccountManager and SME users to AM Assessments page
-  if (session?.user?.roles?.includes("AccountManager") || session?.user?.roles?.includes("TPRMSME")) {
-    redirect("/tprm/am-assessments");
-  }
-
-  // Redirect TPRMAuditor users to Assessor Dashboard
-  if (session?.user?.roles?.includes("TPRMAuditor")) {
-    redirect("/tprm/asr-dashboard");
-  }
-
-  // Redirect TPRMAssessor users to Assessor Dashboard
-  if (session?.user?.roles?.includes("TPRMAssessor")) {
-    redirect("/tprm/asr-dashboard");
-  }
-
-  // Redirect TPRMApprover users to Assessor Dashboard
-  if (session?.user?.roles?.includes("TPRMApprover")) {
-    redirect("/tprm/asr-dashboard");
-  }
-
-  // Redirect BusinessOwner users to BO Dashboard
-  if (session?.user?.roles?.includes("BusinessOwner")) {
-    redirect("/tprm/bo-dashboard");
-  }
-
-  // Redirect RelationshipManager users to RM Dashboard
-  if (session?.user?.roles?.includes("RelationshipManager")) {
-    redirect("/tprm/rm-dashboard");
-  }
-
-  // Redirect TPRM-only users (isTprmAdded=true, isGrcAdded=false) to Program Monitor
-  if (session?.user?.isTprmAdded && !session?.user?.isGrcAdded) {
-    redirect("/tprm/program-monitor");
-  }
-
-  redirect("/dashboard");
+  redirect("/select-module");
 }

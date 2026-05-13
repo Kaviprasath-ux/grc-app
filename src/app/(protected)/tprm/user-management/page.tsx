@@ -48,6 +48,23 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AllUsersTab } from "@/components/shared/AllUsersTab";
+import { UserExistsConfirmDialog } from "@/components/shared/UserExistsConfirmDialog";
+import { AssignRoleDialog } from "@/components/shared/AssignRoleDialog";
+import type { ModuleCode } from "@/lib/role-module-map";
+
+// Display-name → system-role-name map (mirrors auth.ts TPRM_ROLE_TO_SYSTEM_ROLE)
+const TPRM_DISPLAY_TO_SYSTEM: Record<string, string> = {
+  "Business Owner": "BusinessOwner",
+  "Relationship Manager": "RelationshipManager",
+  "Assessor": "TPRMAssessor",
+  "Approver": "TPRMApprover",
+  "Auditor": "TPRMAuditor",
+  "Account Manager": "AccountManager",
+  "SME": "TPRMSME",
+  "Internal IT Team": "InternalITTeam",
+};
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isAlphaWithSpaces, isAlphanumeric } from "@/lib/validations";
 import { validateEmail } from "@/lib/validations/email";
@@ -143,6 +160,18 @@ export default function UserManagementPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<TPRMUser | null>(null);
   const [formData, setFormData] = useState<UserFormData>(emptyForm);
+
+  // Cross-module Add User flow (P9.6): when the username/email already
+  // exists in the customer but not in TPRM, offer to assign the existing
+  // user to TPRM instead of creating a duplicate.
+  const [existingUserConfirm, setExistingUserConfirm] = useState<{
+    user: { id: string; userName?: string | null; fullName?: string | null; email?: string | null; designation?: string | null; departmentName?: string | null };
+    existingModules: ModuleCode[];
+    pendingRole: string;
+  } | null>(null);
+  const [pendingAssignTarget, setPendingAssignTarget] = useState<{
+    user: { id: string; userName?: string | null; fullName?: string | null; email?: string | null };
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Validation errors (field-level)
@@ -260,6 +289,43 @@ export default function UserManagementPage() {
     setFormErrors({});
     setSubmitting(true);
     try {
+      // Phase 9.6: smart Add User check — if a user with this username/email
+      // already exists in the customer (but not in TPRM), offer to attach
+      // the TPRM role to that user rather than refusing the create.
+      const qs = new URLSearchParams();
+      if (formData.userName) qs.set("userName", formData.userName);
+      if (formData.email) qs.set("email", formData.email);
+      qs.set("moduleCode", "TPRM");
+      const checkRes = await fetch(`/api/users/check-existing?${qs.toString()}`);
+      if (checkRes.ok) {
+        const check = await checkRes.json();
+        if (check.exists) {
+          // Phase 10: cross-customer collision — block without leaking data.
+          if (check.sameCustomer === false) {
+            const msg = t("This username or email is already in use. Please choose a different one.");
+            setFormErrors({ userName: msg, email: msg });
+            addScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+            setSubmitting(false);
+            return;
+          }
+          if (check.alreadyInModule) {
+            const msg = t("This user already exists and is assigned in this module.");
+            setFormErrors({ userName: msg, email: msg });
+            addScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+            setSubmitting(false);
+            return;
+          }
+          // Same customer, different module — open the confirm dialog.
+          setExistingUserConfirm({
+            user: check.user,
+            existingModules: check.roleModules || [],
+            pendingRole: TPRM_DISPLAY_TO_SYSTEM[formData.tprmRole] || formData.tprmRole,
+          });
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const res = await fetch("/api/tprm/user-management", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -824,18 +890,31 @@ export default function UserManagementPage() {
         )}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <DataGrid
-          columns={userColumns}
-          data={filteredUsers}
-          searchPlaceholder={t("Search users...")}
-          toolbarExtra={roleFilterToolbar}
-        />
-      )}
+      <Tabs defaultValue="module-users">
+        <TabsList>
+          <TabsTrigger value="module-users">{t("TPRM Users")}</TabsTrigger>
+          <TabsTrigger value="all-users">{t("All Users")}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="module-users" className="mt-4 sm:mt-6">
+          {loading ? (
+            <div className="flex items-center justify-center min-h-[300px]">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <DataGrid
+              columns={userColumns}
+              data={filteredUsers}
+              searchPlaceholder={t("Search users...")}
+              toolbarExtra={roleFilterToolbar}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="all-users" className="mt-4 sm:mt-6">
+          <AllUsersTab currentModule="TPRM" />
+        </TabsContent>
+      </Tabs>
 
       {/* Create User Dialog — matches Organization Users layout */}
       <Dialog open={showCreateDialog} onOpenChange={(open) => {
@@ -917,6 +996,38 @@ export default function UserManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Cross-module Add User confirm + assign flow */}
+      {existingUserConfirm && (
+        <UserExistsConfirmDialog
+          open={true}
+          existingUser={existingUserConfirm.user}
+          existingModules={existingUserConfirm.existingModules}
+          targetModule="TPRM"
+          onClose={() => setExistingUserConfirm(null)}
+          onConfirm={() => {
+            const state = existingUserConfirm;
+            setExistingUserConfirm(null);
+            setPendingAssignTarget({ user: state.user });
+          }}
+        />
+      )}
+      {pendingAssignTarget && (
+        <AssignRoleDialog
+          open={true}
+          user={pendingAssignTarget.user}
+          moduleCode="TPRM"
+          onClose={() => setPendingAssignTarget(null)}
+          onSuccess={() => {
+            setPendingAssignTarget(null);
+            // Close the Create User dialog and refresh the lists.
+            setShowCreateDialog(false);
+            setFormData(emptyForm);
+            setFormErrors({});
+            fetchUsers();
+          }}
+        />
+      )}
     </div>
   );
 }

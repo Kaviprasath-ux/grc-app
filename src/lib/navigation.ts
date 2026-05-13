@@ -69,12 +69,22 @@ export interface NavItem {
    * Used for items like Log Out.
    */
   alwaysVisible?: boolean;
+  /**
+   * Phase 5a — module this top-level section belongs to.
+   *   - "GRC" / "TPRM" / "INTERNAL_AUDIT": shown when currentModule matches
+   *   - "SYSTEM": super-admin only; hidden when a customer-module workspace is active
+   *   - undefined: cross-cutting (Log Out, Subscription & Billing) — always visible
+   *
+   * Only meaningful on top-level sections; ignored on children.
+   */
+  module?: "GRC" | "TPRM" | "INTERNAL_AUDIT" | "SYSTEM";
 }
 
 export const navigation: NavItem[] = [
   // ==================== GRC Module Section (GRCAdministrator) ====================
   {
     name: "GRC",
+    module: "SYSTEM",
     icon: Shield,
     permission: "grc.customer-accounts:view",
     children: [
@@ -114,6 +124,7 @@ export const navigation: NavItem[] = [
   // ==================== Organization Section (CustomerAdministrator) ====================
   {
     name: "Organization",
+    module: "GRC",
     icon: Building2,
     permission: "organization.dashboard:view",
     children: [
@@ -130,6 +141,7 @@ export const navigation: NavItem[] = [
 
   // ==================== Subscription & Billing (top-level, module-agnostic) ====================
   // Surfaced for any CustomerAdministrator regardless of module mix (GRC-only, TPRM-only, combined).
+  // No module tag → cross-cutting, visible in every workspace.
   {
     name: "Subscription & Billing",
     href: "/settings/subscription",
@@ -141,6 +153,7 @@ export const navigation: NavItem[] = [
   // ==================== Compliance Section ====================
   {
     name: "Compliance",
+    module: "GRC",
     icon: Shield,
     children: [
       { name: "Regulatory Intelligence Hub", href: "/compliance/regulatory-intelligence", icon: Radar, permission: "compliance.regulatory-intelligence:view" },
@@ -162,6 +175,7 @@ export const navigation: NavItem[] = [
   // ==================== QPost Compliance Section ====================
   {
     name: "QPost Compliance",
+    module: "GRC",
     icon: Shield,
     children: [
       // { name: "Regulatory Intelligence Hub", href: "/qpost-compliance/regulatory-intelligence", icon: Radar, permission: "qpost-compliance.regulatory-intelligence:view" }, // HIDDEN for QPost — kept for future use
@@ -182,6 +196,7 @@ export const navigation: NavItem[] = [
   // ==================== Asset Management Section ====================
   {
     name: "Asset Management",
+    module: "GRC",
     icon: Package,
     permission: "asset.dashboard:view",
     children: [
@@ -196,6 +211,7 @@ export const navigation: NavItem[] = [
   // ==================== Risk Management Section ====================
   {
     name: "Risk Management",
+    module: "GRC",
     icon: AlertTriangle,
     permission: "risk.dashboard:view",
     children: [
@@ -216,6 +232,7 @@ export const navigation: NavItem[] = [
   // Auditees see: Fieldwork, Report, CAPA Tracking
   {
     name: "Internal Audit",
+    module: "INTERNAL_AUDIT",
     icon: ClipboardCheck,
     children: [
       { name: "Dashboard", href: "/internal-audit/dashboard", icon: LayoutDashboard, permission: "audit.dashboard:view" },
@@ -238,6 +255,7 @@ export const navigation: NavItem[] = [
   // Module flag filtering controls whether GRC and/or TPRM sections appear in the sidebar.
   {
     name: "TPRM",
+    module: "TPRM",
     icon: ShieldCheck,
     children: [
       { name: "Customer Accounts", href: "/tprm/account-overview", icon: LayoutDashboard, permission: "tprm.account-overview:view" },
@@ -298,6 +316,7 @@ export const navigation: NavItem[] = [
   // ==================== Subscription Section (GRCAdministrator) ====================
   {
     name: "Subscription",
+    module: "SYSTEM",
     icon: CreditCard,
     children: [
       {
@@ -325,6 +344,7 @@ export const navigation: NavItem[] = [
   // ==================== Email Section (separate module) ====================
   {
     name: "Email",
+    module: "SYSTEM",
     icon: Mail,
     children: [
       {
@@ -459,7 +479,6 @@ const ROLE_PATH_MAP: Record<string, string> = {
   "Contributor": "contributor",
   "DepartmentReviewer": "department-reviewer",
   "DepartmentContributor": "department-contributor",
-  "TPRMCustomerAdmin": "tprm-customer-admin",
   "FactoryAdmin": "factory-admin",
   "FactoryAssessor": "factory-assessor",
   "TPRMAdmin": "tprm-admin",
@@ -549,7 +568,6 @@ function getPrimaryRole(roles: string[]): string {
     "DepartmentReviewer",
     "Contributor",
     "DepartmentContributor",
-    "TPRMCustomerAdmin",
     "FactoryAdmin",
     "FactoryAssessor",
     "TPRMAdmin",
@@ -616,7 +634,15 @@ export function filterNavigationByPermissionsAndRole(
   items: NavItem[],
   userPermissions: UserPermission[],
   userRoles: string[],
-  moduleFlags?: NavModuleFlags
+  moduleFlags?: NavModuleFlags,
+  /**
+   * Phase 5a — when set, only top-level sections tagged with this module
+   * (or untagged cross-cutting sections) are kept. SYSTEM-tagged sections
+   * are also kept for users with isGRCAdministrator role.
+   * Pass `null` (or omit) to keep legacy behaviour: show everything that
+   * passes permission/role checks.
+   */
+  currentModule?: "GRC" | "TPRM" | "INTERNAL_AUDIT" | null
 ): NavItem[] {
   const primaryRole = getPrimaryRole(userRoles);
 
@@ -624,8 +650,23 @@ export function filterNavigationByPermissionsAndRole(
   const isSystemRole = userRoles.some(r =>
     r === 'GRCAdministrator' || r === 'TPRMAdmin' || r === 'FactoryAdmin' || r === 'FactoryAssessor' || r === 'InternalITTeam' || r === 'TPRMAuditor'
   );
+  const isGRCAdministrator = userRoles.includes('GRCAdministrator');
 
   let navItems = items;
+
+  // Phase 5a — workspace scoping. When the user has picked a current module,
+  // hide top-level sections belonging to other modules. SYSTEM sections stay
+  // for GRCAdministrator only. Untagged sections (Subscription & Billing,
+  // Log Out) are cross-cutting and always show.
+  // GRCAdministrator: skip the filter entirely so super-admin always sees
+  // their full tree (they don't use the picker).
+  if (currentModule && !isGRCAdministrator) {
+    navItems = navItems.filter((item) => {
+      if (!item.module) return true;
+      if (item.module === "SYSTEM") return false;
+      return item.module === currentModule;
+    });
+  }
 
   // Factory roles and IT roles always get flattened TPRM nav (their items should be top-level)
   const isFactoryRole = userRoles.some(r => r === 'FactoryAdmin' || r === 'FactoryAssessor');

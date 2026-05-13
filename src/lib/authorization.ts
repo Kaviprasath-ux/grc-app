@@ -247,7 +247,11 @@ export class AuthorizationError extends Error {
 /**
  * Assign a role to a user
  */
-export async function assignRole(userId: string, roleName: string): Promise<void> {
+export async function assignRole(
+  userId: string,
+  roleName: string,
+  moduleCode: "GRC" | "TPRM" | "INTERNAL_AUDIT" | null = null,
+): Promise<void> {
   const role = await prisma.role.findUnique({
     where: { name: roleName },
   });
@@ -256,19 +260,16 @@ export async function assignRole(userId: string, roleName: string): Promise<void
     throw new Error(`Role not found: ${roleName}`);
   }
 
-  await prisma.userRole.upsert({
-    where: {
-      userId_roleId: {
-        userId,
-        roleId: role.id,
-      },
-    },
-    update: {},
-    create: {
-      userId,
-      roleId: role.id,
-    },
+  // Prisma's composite-key WHERE clause doesn't accept null even when the column
+  // is nullable, so use findFirst + create to handle moduleCode = null (system roles).
+  const existing = await prisma.userRole.findFirst({
+    where: { userId, roleId: role.id, moduleCode },
   });
+  if (!existing) {
+    await prisma.userRole.create({
+      data: { userId, roleId: role.id, moduleCode },
+    });
+  }
 }
 
 /**

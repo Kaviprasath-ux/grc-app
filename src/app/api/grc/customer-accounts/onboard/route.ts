@@ -6,6 +6,7 @@ import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from 
 import { isValidEmailFormat } from '@/lib/validations/email';
 import { translateRecord } from '@/lib/translation-service';
 import { ensureComplimentarySubscription, type ModuleCode } from '@/lib/customer-complimentary';
+import { assertUserGloballyUnique } from '@/lib/user-uniqueness';
 
 interface SubscriptionPlanInput {
   startDate: string;
@@ -75,22 +76,10 @@ export async function POST(req: NextRequest) {
       nextCode = `GRC_${String(nextNum).padStart(3, "0")}`;
     }
 
-    // Check if username already exists
-    const existingUser = await prisma.user.findFirst({
-      where: { userName },
-    });
-
-    if (existingUser) {
-      return NextResponse.json({ error: "Username already exists" }, { status: 400 });
-    }
-
-    // Check if email already exists
-    const existingEmail = await prisma.user.findFirst({
-      where: { email },
-    });
-
-    if (existingEmail) {
-      return NextResponse.json({ error: "Email already exists" }, { status: 400 });
+    // Phase 10 — global uniqueness on userName + email.
+    const unique = await assertUserGloballyUnique({ userName, email });
+    if (!unique.ok) {
+      return NextResponse.json({ error: unique.message, field: unique.field }, { status: 409 });
     }
 
     // Get or create the CustomerAdministrator role (FIXED - cannot be changed)
@@ -112,6 +101,15 @@ export async function POST(req: NextRequest) {
     // Hash the password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Resolve which modules this customer will have active. CustomerAdministrator
+    // is a multi-module role, so we need one UserRole row per enabled module
+    // (matches Phase 3 assignRoleByName behavior in /api/users).
+    // isGrcAdded defaults to true when not explicitly false.
+    const enabledModulesForUser: ModuleCode[] = [];
+    if (isGrcAdded !== false) enabledModulesForUser.push("GRC");
+    if (isTprmAdded === true) enabledModulesForUser.push("TPRM");
+    if (isInternalAuditEnabled === true) enabledModulesForUser.push("INTERNAL_AUDIT");
+
     // Use a transaction to create CustomerAccount, User, and SubscriptionPlans together
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create the CustomerAccount
@@ -128,7 +126,18 @@ export async function POST(req: NextRequest) {
         isGrcAdded !== false, isTprmAdded === true, isQpostComplianceEnabled === true, isInternalAuditEnabled === true, customerAccount.id
       );
 
-      // 2. Create the User linked to CustomerAccount
+      // 2. Create the User linked to CustomerAccount, with one UserRole row
+      //    per enabled module (so session.user.roleModules covers them all).
+      //    Falls back to a single moduleCode=null row when no modules enabled,
+      //    so the user still has a role record (edge case — shouldn't happen
+      //    in practice since at least one module flag must be set).
+      const userRoleCreates = enabledModulesForUser.length > 0
+        ? enabledModulesForUser.map((moduleCode) => ({
+            roleId: customerAdminRole.id,
+            moduleCode,
+          }))
+        : [{ roleId: customerAdminRole.id, moduleCode: null }];
+
       const newUser = await tx.user.create({
         data: {
           userId: `USR-${Date.now()}-${userName.substring(0, 4).toUpperCase()}`,
@@ -146,9 +155,7 @@ export async function POST(req: NextRequest) {
           language: language || "en-US",
           timezone: timeZone || "Asia/Qatar",
           userRoles: {
-            create: {
-              roleId: customerAdminRole.id,
-            },
+            create: userRoleCreates,
           },
         },
         include: {

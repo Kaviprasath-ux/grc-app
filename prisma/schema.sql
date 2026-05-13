@@ -340,6 +340,7 @@ CREATE TABLE "UserRole" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "roleId" TEXT NOT NULL,
+    "moduleCode" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "UserRole_pkey" PRIMARY KEY ("id")
@@ -4133,7 +4134,10 @@ CREATE UNIQUE INDEX "Permission_resource_action_scope_key" ON "Permission"("reso
 CREATE UNIQUE INDEX "RolePermission_roleId_permissionId_key" ON "RolePermission"("roleId", "permissionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserRole_userId_roleId_key" ON "UserRole"("userId", "roleId");
+CREATE INDEX "UserRole_userId_moduleCode_idx" ON "UserRole"("userId", "moduleCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserRole_userId_roleId_moduleCode_key" ON "UserRole"("userId", "roleId", "moduleCode");
 
 -- CreateIndex
 CREATE INDEX "Organization_customerAccountId_idx" ON "Organization"("customerAccountId");
@@ -4145,16 +4149,16 @@ CREATE INDEX "Department_customerAccountId_idx" ON "Department"("customerAccount
 CREATE UNIQUE INDEX "Department_customerAccountId_name_key" ON "Department"("customerAccountId", "name");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_userName_key" ON "User"("userName");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
 CREATE INDEX "User_customerAccountId_idx" ON "User"("customerAccountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_customerAccountId_userId_key" ON "User"("customerAccountId", "userId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "User_customerAccountId_userName_key" ON "User"("customerAccountId", "userName");
-
--- CreateIndex
-CREATE UNIQUE INDEX "User_customerAccountId_email_key" ON "User"("customerAccountId", "email");
 
 -- CreateIndex
 CREATE INDEX "OAuthAccount_userId_idx" ON "OAuthAccount"("userId");
@@ -6541,13 +6545,3 @@ ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fk
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-┌─────────────────────────────────────────────────────────┐
-│  Update available 5.22.0 -> 7.8.0                       │
-│                                                         │
-│  This is a major update - please follow the guide at    │
-│  https://pris.ly/d/major-version-upgrade                │
-│                                                         │
-│  Run the following to update                            │
-│    npm i --save-dev prisma@latest                       │
-│    npm i @prisma/client@latest                          │
-└─────────────────────────────────────────────────────────┘

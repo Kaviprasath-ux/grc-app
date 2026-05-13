@@ -25,6 +25,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLogo } from "@/contexts/LogoContext";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useTranslatedRecord } from "@/hooks/useTranslatedData";
+import { useModule } from "@/contexts/ModuleContext";
+import { getModulesForRole } from "@/lib/role-module-map";
+import type { RoleName } from "@/lib/permissions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,11 +109,31 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
   const { data: translatedUser } = useTranslatedRecord(userRecord, { modelName: 'User' });
   const displayName = translatedUser?.fullName || session?.user?.name || t("User");
 
-  // Format role name for display (handles acronyms like TPRM, GRC)
-  const rawRole = session?.user?.roles?.[0]
-    ?.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+  // Phase 9 — show the role for the CURRENT workspace, not just the first
+  // entry in roles[]. A multi-module user (e.g. aman: DepartmentReviewer/GRC
+  // + BusinessOwner/TPRM) should see "Business Owner" while inside the TPRM
+  // workspace, not "Department Reviewer".
+  const { currentModule } = useModule();
+  const sessionRoles = (session?.user?.roles ?? []) as RoleName[];
+  const roleForModule = (() => {
+    if (!sessionRoles.length) return "";
+    // System users (GRCAdministrator etc.) have no currentModule — show as-is.
+    if (!currentModule) return sessionRoles[0];
+    const matches = sessionRoles.filter((r) => {
+      const mods = (() => {
+        try { return getModulesForRole(r); } catch { return null; }
+      })();
+      if (!mods) return false;
+      if (mods === "system") return true;
+      return Array.isArray(mods) && mods.includes(currentModule);
+    });
+    // Prefer non-CustomerAdministrator (the specific role label is more useful)
+    return matches.find((r) => r !== "CustomerAdministrator") || matches[0] || sessionRoles[0];
+  })();
+  const rawRole = roleForModule
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .trim() || "";
+    .trim();
   const displayRole = rawRole ? t(rawRole) : t("User");
 
   // Notifications hook

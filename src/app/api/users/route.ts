@@ -5,15 +5,26 @@ import { auth } from "@/lib/auth";
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 import { isValidEmailFormat } from '@/lib/validations/email';
 import { translateRecord } from '@/lib/translation-service';
+import { assignRoleByName, RoleAssignmentError } from '@/lib/customer-role-validator';
+import { assertUserGloballyUnique } from '@/lib/user-uniqueness';
+import type { RoleName } from '@/lib/permissions';
 
 // GET all users (with optional role and department filters)
 // Note: User model doesn't have auditHeadId or reportingManagerId fields - those filters removed
+//
+// Query params:
+//   role           - filter to users holding a specific role name
+//   departmentId   - filter to a department
+//   includeModules - when "true", each user includes a roleModules: ModuleCode[]
+//                    array (distinct UserRole.moduleCode values, null excluded).
+//                    Used by the "All Users" tab to render module badges.
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
     const departmentId = searchParams.get("departmentId");
+    const includeModules = searchParams.get("includeModules") === "true";
 
     // Build where clause for role filtering and multi-tenant isolation
     const where: any = {};
@@ -50,8 +61,20 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { fullName: "asc" },
     });
-    // Remove password from response
-    const safeUsers = users.map(({ password, ...user }) => user);
+    // Remove password from response and (optionally) attach roleModules
+    const safeUsers = users.map(({ password, ...user }) => {
+      if (!includeModules) return user;
+      const roleModules = Array.from(
+        new Set(
+          user.userRoles
+            .map((r) => r.moduleCode)
+            .filter((m): m is "GRC" | "TPRM" | "INTERNAL_AUDIT" =>
+              m === "GRC" || m === "TPRM" || m === "INTERNAL_AUDIT",
+            ),
+        ),
+      );
+      return { ...user, roleModules };
+    });
     return NextResponse.json(safeUsers);
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -154,26 +177,10 @@ export async function POST(request: NextRequest) {
     }, 0);
     const finalUserId = `USR${String(maxUSRId + 1).padStart(4, "0")}`;
 
-    const existingByUserName = await prisma.user.findFirst({
-      where: { userName, customerAccountId: customerAccountId || undefined },
-      select: { id: true },
-    });
-    if (existingByUserName) {
-      return NextResponse.json(
-        { error: `Username "${userName}" is already taken. Please choose a different username.` },
-        { status: 409 }
-      );
-    }
-
-    const existingByEmail = await prisma.user.findFirst({
-      where: { email, customerAccountId: customerAccountId || undefined },
-      select: { id: true },
-    });
-    if (existingByEmail) {
-      return NextResponse.json(
-        { error: `Email "${email}" is already taken. Please choose a different email.` },
-        { status: 409 }
-      );
+    // Phase 10 — global uniqueness (userName + email).
+    const unique = await assertUserGloballyUnique({ userName, email });
+    if (!unique.ok) {
+      return NextResponse.json({ error: unique.message, field: unique.field }, { status: 409 });
     }
 
     // Check subscription plan limits before creating user
@@ -205,9 +212,11 @@ export async function POST(request: NextRequest) {
     // Hash password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Use transaction to ensure user creation and subscription update are atomic
+    // Use transaction to ensure user creation, role assignment, and subscription
+    // update are atomic. Role assignment runs through assignRoleByName which
+    // enforces the three-platform rules (subscription gating + one role per module).
     const user = await prisma.$transaction(async (tx) => {
-      // Create the user
+      // Create the user (without UserRole — that comes next so we can validate).
       const newUser = await tx.user.create({
         data: {
           userId: finalUserId,
@@ -224,35 +233,30 @@ export async function POST(request: NextRequest) {
           timezone: timezone || "UTC",
           isActive: isActive ?? true,
           isBlocked: isBlocked ?? false,
-          // Use relation connect syntax for foreign keys
           ...(departmentId && {
             department: { connect: { id: departmentId } },
           }),
           ...(customerAccountId && {
             customerAccount: { connect: { id: customerAccountId } },
           }),
-          // Track creator for DR/DC framework visibility
           ...(createdById && {
             createdBy: { connect: { id: createdById } },
           }),
-          // Create UserRole entry if role exists in Role table
-          ...(roleRecord && {
-            userRoles: {
-              create: {
-                roleId: roleRecord.id,
-              },
-            },
-          }),
-        },
-        include: {
-          department: true,
-          userRoles: {
-            include: {
-              role: true,
-            },
-          },
         },
       });
+
+      // Assign role(s) — derives moduleCode(s) from the role-module map and
+      // runs subscription/one-per-module validators. Throws RoleAssignmentError
+      // on violation, which rolls back the transaction.
+      if (roleRecord && customerAccountId) {
+        await assignRoleByName({
+          userId: newUser.id,
+          roleName: role as RoleName,
+          roleId: roleRecord.id,
+          customerAccountId,
+          tx: tx as unknown as typeof prisma,
+        });
+      }
 
       // Increment accountsUsed in the active subscription plan (within same transaction)
       if (customerAccountId) {
@@ -272,7 +276,14 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return newUser;
+      // Re-fetch with userRoles populated (assignRoleByName ran after create).
+      return tx.user.findUniqueOrThrow({
+        where: { id: newUser.id },
+        include: {
+          department: true,
+          userRoles: { include: { role: true } },
+        },
+      });
     });
 
     // Remove password from response BEFORE sending notification
@@ -306,6 +317,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(safeUser, { status: 201 });
   } catch (error: unknown) {
+    if (error instanceof RoleAssignmentError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: 403 }
+      );
+    }
     console.error("Error creating user:", error);
     if ((error as { code?: string }).code === "P2002") {
       return NextResponse.json(

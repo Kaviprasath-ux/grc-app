@@ -4,6 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Pencil, Trash2, Search, Upload, Download, Home, ChevronRight, ChevronLeft, Eye, Users as UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { DataGrid } from "@/components/shared";
+import { AllUsersTab } from "@/components/shared/AllUsersTab";
+import { UserExistsConfirmDialog } from "@/components/shared/UserExistsConfirmDialog";
+import { AssignRoleDialog } from "@/components/shared/AssignRoleDialog";
+import { getModulesForRole, type ModuleCode } from "@/lib/role-module-map";
+import type { RoleName } from "@/lib/permissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,6 +123,50 @@ const allUserRoles = [
   "DepartmentContributor",
 ];
 
+// Phase 4: filter the Function dropdown by subscribed modules.
+// Function → module mapping:
+//   - Business / Security → GRC roles  (isGrcAdded)
+//   - Audit               → IA roles   (isInternalAuditEnabled)
+// GRCAdministrator (super admin) always sees all functions regardless of flags.
+function getAllowedFunctions(opts: {
+  isGRCAdmin: boolean;
+  isGrcAdded: boolean;
+  isInternalAuditEnabled: boolean;
+}): { value: string; label: string }[] {
+  if (opts.isGRCAdmin) {
+    return [
+      { value: "Business", label: "Business" },
+      { value: "Security", label: "Security" },
+      { value: "Audit", label: "Audit" },
+    ];
+  }
+  const fns: { value: string; label: string }[] = [];
+  if (opts.isGrcAdded) {
+    fns.push({ value: "Business", label: "Business" });
+    fns.push({ value: "Security", label: "Security" });
+  }
+  if (opts.isInternalAuditEnabled) {
+    fns.push({ value: "Audit", label: "Audit" });
+  }
+  return fns;
+}
+
+// Map server-returned RoleAssignmentError codes to friendly user-facing messages.
+function roleErrorMessage(code: string, fallback: string): string {
+  switch (code) {
+    case "MODULE_NOT_SUBSCRIBED":
+      return "This role belongs to a module the customer hasn't subscribed to. Contact your administrator to enable that module first.";
+    case "DUPLICATE_ROLE_IN_MODULE":
+      return "This user already holds a role in the same module. Remove the existing role before assigning a new one.";
+    case "ROLE_MODULE_MISMATCH":
+      return "Selected role does not match the customer's subscribed modules.";
+    case "ROLE_NOT_IN_MAP":
+      return "Selected role is not recognised. Please pick a different role.";
+    default:
+      return fallback;
+  }
+}
+
 export default function UsersPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
@@ -154,12 +203,41 @@ export default function UsersPage() {
   );
   const currentUserDepartmentId = session?.user?.departmentId;
 
+  // Phase 4: function dropdown filtered by subscribed modules.
+  const allowedFunctions = getAllowedFunctions({
+    isGRCAdmin: userRoles.includes("GRCAdministrator"),
+    isGrcAdded: session?.user?.isGrcAdded ?? false,
+    isInternalAuditEnabled: session?.user?.isInternalAuditEnabled ?? false,
+  });
+
   // Dialog states
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [isViewUserOpen, setIsViewUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
+
+  // Cross-module Add User flow (P9.4): when the username/email already
+  // belongs to a user in another module, the confirm dialog opens and the
+  // admin can choose to attach the new module's role to that existing user.
+  const [existingUserConfirm, setExistingUserConfirm] = useState<{
+    user: {
+      id: string;
+      userName?: string | null;
+      fullName?: string | null;
+      email?: string | null;
+      designation?: string | null;
+      departmentName?: string | null;
+    };
+    existingModules: ModuleCode[];
+    targetModule: ModuleCode;
+    pendingRole: string;
+  } | null>(null);
+  const [pendingAssignTarget, setPendingAssignTarget] = useState<{
+    user: { id: string; userName?: string | null; fullName?: string | null; email?: string | null };
+    module: ModuleCode;
+    suggestedRole?: string;
+  } | null>(null);
 
   // Change password dialog states
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -336,6 +414,52 @@ export default function UsersPage() {
     setIsSaving(true);
 
     try {
+      // Phase 8 smart Add User: check if this username/email already exists
+      // for the customer. If so, EITHER show validation error (already in this
+      // module) OR confirm popup (exists in a different module — offer to
+      // attach the new role rather than refuse the create).
+      const roleModules = getModulesForRole(userForm.role as RoleName);
+      const targetModule =
+        Array.isArray(roleModules) && roleModules.length === 1
+          ? roleModules[0]
+          : null;
+      if (targetModule) {
+        const qs = new URLSearchParams();
+        if (userForm.userName) qs.set("userName", userForm.userName);
+        if (userForm.email) qs.set("email", userForm.email);
+        qs.set("moduleCode", targetModule);
+        const checkRes = await fetch(`/api/users/check-existing?${qs.toString()}`);
+        if (checkRes.ok) {
+          const check = await checkRes.json();
+          if (check.exists) {
+            // Phase 10: cross-customer collision — block. Don't show tenant data.
+            if (check.sameCustomer === false) {
+              const msg = t("This username or email is already in use. Please choose a different one.");
+              setUserFormErrors({ userName: msg, email: msg });
+              addUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+              setIsSaving(false);
+              return;
+            }
+            if (check.alreadyInModule) {
+              const msg = t("This user already exists and is assigned in this module.");
+              setUserFormErrors({ userName: msg, email: msg });
+              addUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+              setIsSaving(false);
+              return;
+            }
+            // Same customer, different module — confirm popup.
+            setExistingUserConfirm({
+              user: check.user,
+              existingModules: check.roleModules || [],
+              targetModule,
+              pendingRole: userForm.role,
+            });
+            setIsSaving(false);
+            return;
+          }
+        }
+      }
+
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -367,7 +491,15 @@ export default function UsersPage() {
         fetchData(); // Refresh next user ID
         toast({ title: t("Success"), description: t("User created successfully") });
       } else {
-        const error = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
+        const error: { error?: string; code?: string } = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
+        // Phase 3 RoleAssignmentError: server returned a typed code → show clear toast.
+        if (res.status === 403 && error.code) {
+          const friendly = roleErrorMessage(error.code, error.error || t("Cannot assign this role"));
+          toast({ variant: "destructive", title: t("Role assignment blocked"), description: t(friendly) });
+          setUserFormErrors({ role: t(friendly) });
+          addUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
         const errorMsg = error.error || t("Failed to create user");
         const fieldErrors: Record<string, string> = {};
         if (errorMsg.toLowerCase().includes("email")) {
@@ -438,7 +570,15 @@ export default function UsersPage() {
         setEditingUser(null);
         toast({ title: t("Success"), description: t("User updated successfully") });
       } else {
-        const error = await res.json().catch(() => ({ error: "Failed to update user" }));
+        const error: { error?: string; code?: string } = await res.json().catch(() => ({ error: "Failed to update user" }));
+        // Phase 3 RoleAssignmentError surfacing.
+        if (res.status === 403 && error.code) {
+          const friendly = roleErrorMessage(error.code, error.error || t("Cannot assign this role"));
+          toast({ variant: "destructive", title: t("Role assignment blocked"), description: t(friendly) });
+          setEditUserFormErrors({ role: t(friendly) });
+          editUserScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
         const errorMsg = error.error || t("Failed to update user");
         const fieldErrors: Record<string, string> = {};
         if (errorMsg.toLowerCase().includes("email")) {
@@ -943,6 +1083,7 @@ export default function UsersPage() {
         <TabsList className={`w-full sm:w-auto inline-flex ${isRTL ? "flex-row-reverse" : ""}`}>
           <TabsTrigger value="account-overview" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("Account Overview")}</TabsTrigger>
           <TabsTrigger value="user-management" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("User Management")}</TabsTrigger>
+          <TabsTrigger value="all-users" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("All Users")}</TabsTrigger>
         </TabsList>
         </div>
 
@@ -1169,7 +1310,46 @@ export default function UsersPage() {
             </div>
           </div>
         </TabsContent>
+
+        {/* All Users Tab — cross-module view with Assign Role action */}
+        <TabsContent value="all-users" className="mt-4 sm:mt-6">
+          <AllUsersTab currentModule="GRC" />
+        </TabsContent>
       </Tabs>
+
+      {/* Cross-module Add User confirm + assign flow */}
+      {existingUserConfirm && (
+        <UserExistsConfirmDialog
+          open={true}
+          existingUser={existingUserConfirm.user}
+          existingModules={existingUserConfirm.existingModules}
+          targetModule={existingUserConfirm.targetModule}
+          onClose={() => setExistingUserConfirm(null)}
+          onConfirm={() => {
+            // Replace the confirm dialog with the role-pick dialog.
+            const state = existingUserConfirm;
+            setExistingUserConfirm(null);
+            // We pre-selected the role they typed in the Add User form, but
+            // the AssignRoleDialog lets them confirm/change it.
+            setPendingAssignTarget({ user: state.user, module: state.targetModule, suggestedRole: state.pendingRole });
+          }}
+        />
+      )}
+      {pendingAssignTarget && (
+        <AssignRoleDialog
+          open={true}
+          user={pendingAssignTarget.user}
+          moduleCode={pendingAssignTarget.module}
+          onClose={() => setPendingAssignTarget(null)}
+          onSuccess={() => {
+            setPendingAssignTarget(null);
+            // Close the Add User dialog too — assignment happened on the existing user.
+            resetForm();
+            setIsAddUserOpen(false);
+            fetchData();
+          }}
+        />
+      )}
 
       {/* Add User Dialog */}
       <Dialog open={isAddUserOpen} onOpenChange={(open) => {
@@ -1345,9 +1525,11 @@ export default function UsersPage() {
                       <SelectValue placeholder={t("Select function")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                      <SelectItem value="Business">{t("Business")}</SelectItem>
-                      <SelectItem value="Security">{t("Security")}</SelectItem>
-                      <SelectItem value="Audit">{t("Audit")}</SelectItem>
+                      {allowedFunctions.map((f) => (
+                        <SelectItem key={f.value} value={f.value}>
+                          {t(f.label)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {userFormErrors.function && (<div className="mt-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-2"><p className="text-sm text-red-600">{userFormErrors.function}</p></div>)}
@@ -1724,9 +1906,11 @@ export default function UsersPage() {
                     <SelectValue placeholder={t("Select function")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                    <SelectItem value="Business">{t("Business")}</SelectItem>
-                    <SelectItem value="Security">{t("Security")}</SelectItem>
-                    <SelectItem value="Audit">{t("Audit")}</SelectItem>
+                    {allowedFunctions.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>
+                        {t(f.label)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

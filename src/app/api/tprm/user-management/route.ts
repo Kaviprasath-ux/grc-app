@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { notificationService } from '@/lib/notification-service';
 import { translateRecord } from '@/lib/translation-service';
 import { checkUserLimit, checkFactoryUserLimit } from '@/lib/tprm-subscription';
+import { assertUserGloballyUnique } from '@/lib/user-uniqueness';
 import { isValidEmailFormat } from '@/lib/validations/email';
 
 // TPRM-specific roles that can be assigned by the customer admin (CustomerAdministrator)
@@ -151,21 +152,12 @@ export const POST = withAuth(
         return NextResponse.json({ error: userCheck.message }, { status: 403 });
       }
 
-      // Check for duplicate username within same tenant
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          customerAccountId,
-          OR: [
-            { userName: { equals: userName, mode: 'insensitive' } },
-            { email: { equals: email, mode: 'insensitive' } },
-          ],
-        },
-      });
-
-      if (existingUser) {
+      // Phase 10 — global uniqueness across all customers.
+      const unique = await assertUserGloballyUnique({ userName, email });
+      if (!unique.ok) {
         return NextResponse.json(
-          { error: 'A user with this username or email already exists' },
-          { status: 409 }
+          { error: unique.message, field: unique.field },
+          { status: 409 },
         );
       }
 
@@ -312,19 +304,13 @@ export const PATCH = withAuth(
         return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
       }
 
-      // Check for duplicate email (exclude current user)
+      // Phase 10 — global email uniqueness on edit (excluding current row).
       if (email && email !== existingUser.email) {
-        const emailExists = await prisma.user.findFirst({
-          where: {
-            customerAccountId,
-            email: { equals: email, mode: 'insensitive' },
-            NOT: { id },
-          },
-        });
-        if (emailExists) {
+        const unique = await assertUserGloballyUnique({ email, excludeUserId: id });
+        if (!unique.ok) {
           return NextResponse.json(
-            { error: 'A user with this email already exists' },
-            { status: 409 }
+            { error: unique.message, field: unique.field },
+            { status: 409 },
           );
         }
       }
@@ -421,8 +407,8 @@ export const PATCH = withAuth(
             create: { name: newSystemRoleName, description: `TPRM ${tprmRole} role`, isSystem: true },
           });
           await prisma.userRole.upsert({
-            where: { userId_roleId: { userId: id, roleId: newRole.id } },
-            create: { userId: id, roleId: newRole.id },
+            where: { userId_roleId_moduleCode: { userId: id, roleId: newRole.id, moduleCode: "TPRM" } },
+            create: { userId: id, roleId: newRole.id, moduleCode: "TPRM" },
             update: {},
           });
         }

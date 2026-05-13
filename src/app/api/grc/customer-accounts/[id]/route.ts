@@ -170,6 +170,37 @@ export async function PUT(
           if (enabledModules.length > 0) {
             await ensureComplimentarySubscription(existingUser.customerAccountId, enabledModules);
           }
+
+          // Phase 5b.1 sync: when a module flag flips ON, the customer's
+          // CustomerAdministrator users need a matching UserRole row so the
+          // session-level roleModules intersection includes the new module.
+          // Without this, an existing customer admin would lose access to
+          // the freshly-enabled module on next login.
+          const customerAdminRole = await prisma.role.findUnique({
+            where: { name: "CustomerAdministrator" },
+            select: { id: true },
+          });
+          if (customerAdminRole && enabledModules.length > 0) {
+            const customerAdmins = await prisma.user.findMany({
+              where: {
+                customerAccountId: existingUser.customerAccountId,
+                userRoles: { some: { roleId: customerAdminRole.id } },
+              },
+              select: { id: true },
+            });
+            for (const ca of customerAdmins) {
+              for (const moduleCode of enabledModules) {
+                const has = await prisma.userRole.findFirst({
+                  where: { userId: ca.id, roleId: customerAdminRole.id, moduleCode },
+                });
+                if (!has) {
+                  await prisma.userRole.create({
+                    data: { userId: ca.id, roleId: customerAdminRole.id, moduleCode },
+                  });
+                }
+              }
+            }
+          }
         }
       } catch (e) {
         console.error("[edit-customer] ensureComplimentarySubscription failed:", (e as Error).message);

@@ -27,6 +27,10 @@ declare module "next-auth" {
       subscriptionStatus: SubscriptionStatus | null;
       subscriptionType: SubscriptionType | null;
       roles: string[];
+      // Phase 5b.1: distinct module codes the user holds at least one role in.
+      // Excludes null (system roles). Used by ModuleContext to compute the
+      // workspace picker's available cards (subscription ∩ has-role).
+      roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[];
       permissions: UserPermission[];
     } & DefaultSession["user"];
   }
@@ -50,6 +54,7 @@ declare module "next-auth" {
     subscriptionStatus: SubscriptionStatus | null;
     subscriptionType: SubscriptionType | null;
     roles: string[];
+    roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[];
     permissions: UserPermission[];
   }
 }
@@ -74,6 +79,7 @@ declare module "next-auth/jwt" {
     subscriptionStatus: SubscriptionStatus | null;
     subscriptionType: SubscriptionType | null;
     roles: string[];
+    roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[];
     permissions: UserPermission[];
   }
 }

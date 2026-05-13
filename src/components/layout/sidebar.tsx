@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navigation, filterNavigationByPermissionsAndRole, type NavItem } from "@/lib/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLogo } from "@/contexts/LogoContext";
+import { useModule } from "@/contexts/ModuleContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -221,6 +222,8 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
   const { data: session, status } = useSession();
   const { t, isRTL } = useLanguage();
   const { logoUrl } = useLogo();
+  const { currentModule, availableModules, isSystemUser } = useModule();
+  const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const filteredNavigation = useMemo(() => {
@@ -237,9 +240,13 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
         isTprmAdded: session.user.isTprmAdded ?? false,
         isInternalAuditEnabled: session.user.isInternalAuditEnabled ?? false,
         isQpostComplianceEnabled: session.user.isQpostComplianceEnabled ?? false,
-      }
+      },
+      currentModule,
     );
-  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded, session?.user?.isInternalAuditEnabled, session?.user?.isQpostComplianceEnabled]);
+  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded, session?.user?.isInternalAuditEnabled, session?.user?.isQpostComplianceEnabled, currentModule]);
+
+  // "Switch workspace" button only useful when the user has 2+ modules.
+  const canSwitchWorkspace = !isSystemUser && availableModules.length >= 2;
 
   return (
     <aside
@@ -281,6 +288,36 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
       {/* Navigation */}
       <ScrollArea className={collapsed ? "h-[calc(100vh-64px)] pt-2" : "h-[calc(100vh-120px)] pt-2"}>
         <nav className="pb-4">
+          {/* Switch workspace — multi-module users only */}
+          {canSwitchWorkspace && (
+            collapsed ? (
+              <div className="flex justify-center mb-2 px-2">
+                <button
+                  onClick={() => router.push("/select-module")}
+                  title={t("Switch workspace")}
+                  className="flex items-center justify-center w-10 h-10 rounded-lg text-primary-600 hover:bg-primary-50"
+                >
+                  <ArrowLeftRight className="h-[18px] w-[18px]" />
+                </button>
+              </div>
+            ) : (
+              <div className="px-3 mb-2">
+                <button
+                  onClick={() => router.push("/select-module")}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    "text-primary-700 bg-primary-50 hover:bg-primary-100",
+                    isRTL && "flex-row-reverse",
+                  )}
+                >
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white text-primary-600">
+                    <ArrowLeftRight className="h-[18px] w-[18px]" />
+                  </div>
+                  <span>{t("Switch workspace")}</span>
+                </button>
+              </div>
+            )
+          )}
           {status === "loading" ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent"></div>

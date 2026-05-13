@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { SubscriptionBanner } from "./subscription-banner";
 import { HelpChatbot } from "@/components/help-chatbot/help-chatbot";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useModule } from "@/contexts/ModuleContext";
+import { getModuleFromPath } from "@/lib/url-module-map";
 import { cn } from "@/lib/utils";
 
 interface MainLayoutProps {
@@ -18,6 +22,37 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const { isRTL } = useLanguage();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const { availableModules, isSystemUser } = useModule();
+
+  // Phase 6 — Layout subscription gate.
+  //
+  // Intercepts deep-links to module-specific routes (eg /tprm/program-monitor,
+  // /internal-audit/dashboard) when the user has no active subscription or no
+  // role for that module. Sends them to /subscription-required instead of
+  // letting them load a broken/empty page.
+  //
+  // Skipped for:
+  //   - Loading auth state (status !== "authenticated")
+  //   - GRCAdministrator (super-admin can go anywhere)
+  //   - SYSTEM-tagged paths (super-admin namespace — permission gate handles it)
+  //   - Paths with no module mapping (cross-cutting routes like /settings/*)
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    if (!pathname) return;
+    if (isSystemUser) return;
+
+    const urlModule = getModuleFromPath(pathname);
+    if (!urlModule || urlModule === "SYSTEM") return;
+
+    // availableModules = subscription ∩ has-role (see ModuleContext).
+    // If the URL's module isn't in that set, block the page.
+    if (!availableModules.includes(urlModule)) {
+      router.replace(`/subscription-required?module=${urlModule}`);
+    }
+  }, [status, pathname, isSystemUser, availableModules, router, session?.user?.id]);
 
   // Load sidebar preference from localStorage
   useEffect(() => {

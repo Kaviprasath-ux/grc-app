@@ -3,6 +3,10 @@ import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import { isValidEmailFormat } from "@/lib/validations/email";
 import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
+import { assignRoleByName, RoleAssignmentError } from '@/lib/customer-role-validator';
+import { getModulesForRole } from '@/lib/role-module-map';
+import { assertUserGloballyUnique } from '@/lib/user-uniqueness';
+import type { RoleName } from '@/lib/permissions';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -49,40 +53,50 @@ export const PUT = withAuth(
         return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
       }
 
-      // Check email uniqueness if email is being changed
+      // Phase 10 — email is globally unique. Validate any change against
+      // every customer, not just this tenant.
       if (email && email !== existingUser.email) {
-        const emailExists = await prisma.user.findFirst({ where: { email, customerAccountId: existingUser.customerAccountId || undefined } });
-        if (emailExists) {
-          return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+        const unique = await assertUserGloballyUnique({ email, excludeUserId: id });
+        if (!unique.ok) {
+          return NextResponse.json({ error: unique.message, field: unique.field }, { status: 409 });
         }
       }
 
-      // If role is being updated, also update the UserRole junction table
-      if (role) {
-        let roleRecord = await prisma.role.findFirst({
-          where: { name: role }
-        });
-
-        // If role doesn't exist, create it (this handles cases where seeding wasn't run)
+      // If role is being updated, replace ONLY the UserRole rows for the
+      // module(s) the new role belongs to. A user can hold roles in multiple
+      // modules (Phase 5b.1) — editing his GRC role should never wipe his
+      // TPRM or IA role.
+      if (role && existingUser.customerAccountId) {
+        let roleRecord = await prisma.role.findFirst({ where: { name: role } });
         if (!roleRecord) {
           roleRecord = await prisma.role.create({
-            data: {
-              name: role,
-              description: `${role} role`,
-              isSystem: false,
-            },
+            data: { name: role, description: `${role} role`, isSystem: false },
           });
         }
 
-        // Delete existing user roles and create new one
-        await prisma.userRole.deleteMany({
-          where: { userId: id }
-        });
-        await prisma.userRole.create({
-          data: {
+        // Determine which moduleCode rows to replace.
+        //   "system"            → only the null-moduleCode row(s) get replaced
+        //   single-module role  → only that module's row(s)
+        //   multi-module role (CustomerAdministrator) → all the role's modules
+        //                        (assignRoleByName will create rows only for
+        //                        the customer's active subset of those)
+        let scopeFilter: { userId: string; moduleCode?: { in: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[] } | null };
+        const modules = getModulesForRole(role as RoleName);
+        if (modules === "system") {
+          scopeFilter = { userId: id, moduleCode: null };
+        } else {
+          scopeFilter = { userId: id, moduleCode: { in: modules } };
+        }
+
+        await prisma.$transaction(async (tx) => {
+          await tx.userRole.deleteMany({ where: scopeFilter });
+          await assignRoleByName({
             userId: id,
-            roleId: roleRecord.id,
-          }
+            roleName: role as RoleName,
+            roleId: roleRecord!.id,
+            customerAccountId: existingUser.customerAccountId!,
+            tx: tx as unknown as typeof prisma,
+          });
         });
       }
 
@@ -126,6 +140,12 @@ export const PUT = withAuth(
       const { password: _, ...safeUser } = user;
       return NextResponse.json(safeUser);
     } catch (error: unknown) {
+      if (error instanceof RoleAssignmentError) {
+        return NextResponse.json(
+          { error: error.message, code: error.code },
+          { status: 403 }
+        );
+      }
       console.error("Error updating user:", error);
       if ((error as { code?: string }).code === "P2025") {
         return NextResponse.json({ error: "User not found" }, { status: 404 });

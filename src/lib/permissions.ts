@@ -219,14 +219,8 @@ export const ROLES = {
     description: 'Creates/edits content within own department',
   },
   // TPRM Module roles
-  // NOTE: TPRMCustomerAdmin is DEPRECATED — use CustomerAdministrator instead.
-  // CustomerAdministrator now serves both GRC and TPRM customers; module visibility
-  // is controlled by isGrcAdded/isTprmAdded flags on the CustomerAccount.
-  // Kept in code for backward compatibility with existing users who may have this role.
-  TPRMCustomerAdmin: {
-    name: 'TPRMCustomerAdmin',
-    description: 'DEPRECATED — use CustomerAdministrator instead. Customer-level TPRM administrator',
-  },
+  // Note: TPRMCustomerAdmin was removed in Phase 7 cleanup. Customer-level
+  // TPRM admins now use CustomerAdministrator + moduleCode="TPRM" (Phase 3).
   FactoryAdmin: {
     name: 'FactoryAdmin',
     description: 'Assessment Factory administrator, manages factory users and assessments',
@@ -343,7 +337,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.risk-register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     // CustomerAdmin can manage audit settings (types, categories, etc.) but NOT access User Management
     { resource: 'audit.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
-    // TPRM module — same access as TPRMCustomerAdmin
+    // TPRM module — gated by moduleCode="TPRM" assignment + customer's isTprmAdded flag
     { resource: 'tprm.program-monitor', actions: ['view'], scope: 'all' },
     { resource: 'tprm.control-center', actions: ['*'], scope: 'all' },
     { resource: 'tprm.user-management', actions: ['*'], scope: 'all' },
@@ -592,41 +586,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
   ],
 
-  // DEPRECATED: TPRMCustomerAdmin — kept for backward compatibility.
-  // New accounts should use CustomerAdministrator instead. Permissions are identical
-  // to CustomerAdministrator; module flag filtering (isGrcAdded/isTprmAdded) controls visibility.
-  TPRMCustomerAdmin: [
-    // GRC modules (only active when isGrcAdded=true via module flag filtering)
-    { resource: 'organization.*', actions: ['*'], scope: 'all' },
-    { resource: 'compliance.*', actions: ['*'], scope: 'all' },
-    { resource: 'asset.dashboard', actions: ['*'], scope: 'all' },
-    { resource: 'asset.inventory', actions: ['*'], scope: 'all' },
-    { resource: 'asset.classification', actions: ['*'], scope: 'all' },
-    { resource: 'asset.settings', actions: ['*'], scope: 'all' },
-    { resource: 'asset.reports', actions: ['*'], scope: 'all' },
-    { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
-    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
-    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
-    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
-    { resource: 'risk.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
-    { resource: 'risk.reports', actions: ['view'], scope: 'all' },
-    { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
-    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
-    // TPRM modules (only active when isTprmAdded=true via module flag filtering)
-    { resource: 'tprm.program-monitor', actions: ['view'], scope: 'all' },
-    { resource: 'tprm.control-center', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.user-management', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.vendor-management', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.reports', actions: ['view'], scope: 'all' },
-    { resource: 'tprm.monitoring', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.configurations', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.master-data', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.settings', actions: ['*'], scope: 'all' },
-    { resource: 'tprm.support', actions: ['view'], scope: 'all' },
-  ],
-
   // Factory Admin - Assessment Factory + user management (can create FactoryAssessor users)
   FactoryAdmin: [
     { resource: 'tprm.factory-user-management', actions: ['*'], scope: 'all' },
@@ -809,9 +768,8 @@ function resourceMatches(pattern: string, resource: string): boolean {
  * and GRC/organization resources are excluded if isGrcAdded=false.
  * GRCAdministrator and TPRMAdmin roles ignore these flags (system-level roles).
  *
- * NEW (subscription gating): when SUBSCRIPTION_GATING_ENABLED env flag is true,
- * audit.* resources gate on isInternalAuditEnabled (independent module).
- * When false (default), audit.* keeps gating on isGrcAdded (legacy behavior).
+ * Three-platform model: audit.* gates on isInternalAuditEnabled, organization/
+ * compliance/asset/risk.* gate on isGrcAdded, tprm.* gates on isTprmAdded.
  */
 interface ModuleFlags {
   isGrcAdded?: boolean;
@@ -819,10 +777,6 @@ interface ModuleFlags {
   isQpostComplianceEnabled?: boolean;
   isInternalAuditEnabled?: boolean;
 }
-
-// Feature flag — when true, Internal Audit is gated independently of GRC.
-// When false (default), audit.* keeps the legacy isGrcAdded-based gating.
-const SUBSCRIPTION_GATING_ENABLED = process.env.SUBSCRIPTION_GATING_ENABLED === 'true';
 
 /**
  * Check if a resource belongs to the TPRM module
@@ -839,23 +793,8 @@ function isInternalAuditResource(resource: string): boolean {
 }
 
 /**
- * Legacy: resources that historically gated on isGrcAdded — includes audit.* for back-compat.
- * Used when SUBSCRIPTION_GATING_ENABLED=false.
- */
-function isGrcModuleResource(resource: string): boolean {
-  return (
-    resource.startsWith('organization.') ||
-    resource.startsWith('compliance.') ||
-    resource.startsWith('qpost-compliance.') ||
-    resource.startsWith('asset.') ||
-    resource.startsWith('risk.') ||
-    resource.startsWith('audit.')
-  );
-}
-
-/**
- * GRC-only resources excluding audit.* (used when SUBSCRIPTION_GATING_ENABLED=true).
- * Internal Audit is then gated separately via isInternalAuditEnabled.
+ * GRC-only resources (excluding audit.*, which is gated separately via
+ * isInternalAuditEnabled).
  */
 function isGrcOnlyResource(resource: string): boolean {
   return (
@@ -899,21 +838,12 @@ export function expandRolePermissions(
         : perm.actions as Action[];
 
       for (const resource of resources) {
-        // Apply module flag filtering for non-system roles
+        // Apply module flag filtering for non-system roles.
+        // Three-platform model: each module gated by its own flag.
         if (!isSystemRole && moduleFlags) {
           if (!moduleFlags.isTprmAdded && isTprmResource(resource)) continue;
-
-          if (SUBSCRIPTION_GATING_ENABLED) {
-            // New behavior: Internal Audit is independent of GRC.
-            // - audit.* resources gate on isInternalAuditEnabled
-            // - all other GRC resources gate on isGrcAdded
-            if (!moduleFlags.isInternalAuditEnabled && isInternalAuditResource(resource)) continue;
-            if (!moduleFlags.isGrcAdded && isGrcOnlyResource(resource)) continue;
-          } else {
-            // Legacy behavior: audit.* gates on isGrcAdded (kept for back-compat
-            // until existing customers are migrated and gating flag is enabled).
-            if (!moduleFlags.isGrcAdded && isGrcModuleResource(resource)) continue;
-          }
+          if (!moduleFlags.isInternalAuditEnabled && isInternalAuditResource(resource)) continue;
+          if (!moduleFlags.isGrcAdded && isGrcOnlyResource(resource)) continue;
 
           if (!moduleFlags.isQpostComplianceEnabled && resource.startsWith('qpost-compliance.')) continue;
           if (moduleFlags.isQpostComplianceEnabled && resource.startsWith('compliance.')) continue;

@@ -8,8 +8,6 @@ import type { SubscriptionStatus, SubscriptionType } from "@prisma/client";
 import { expandRolePermissions, type UserPermission } from "@/lib/permissions";
 import { getAccessSnapshot } from "@/lib/module-access";
 
-const SUBSCRIPTION_GATING_ENABLED = process.env.SUBSCRIPTION_GATING_ENABLED === "true";
-
 // Shared query for loading user with all relations needed for session
 const userSelect = {
   id: true,
@@ -81,9 +79,10 @@ async function ensureTprmUserRole(userId: string, tprmRole: string | null, exist
       update: {},
       create: { name: systemRoleName, description: `TPRM ${tprmRole} role`, isSystem: true },
     });
+    // TPRM auto-repair: this assignment is always module-scoped to TPRM.
     await prisma.userRole.upsert({
-      where: { userId_roleId: { userId, roleId: role.id } },
-      create: { userId, roleId: role.id },
+      where: { userId_roleId_moduleCode: { userId, roleId: role.id, moduleCode: "TPRM" } },
+      create: { userId, roleId: role.id, moduleCode: "TPRM" },
       update: {},
     });
   } catch {
@@ -106,28 +105,34 @@ async function buildAuthUser(dbUser: {
   customerAccountId: string | null;
   customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isInternalAuditEnabled: boolean; isQpostComplianceEnabled: boolean } | null;
   auditHeadId: string | null;
-  userRoles: { role: { id: string; name: string } }[];
+  userRoles: { moduleCode: string | null; role: { id: string; name: string } }[];
 }, extraRoles?: string[]) {
   const roleNames = dbUser.userRoles.map(ur => ur.role.name);
   if (extraRoles) roleNames.push(...extraRoles.filter(r => !roleNames.includes(r)));
   const effectiveRoles = roleNames.length > 0 ? roleNames : ['Contributor'];
   const primaryRole = effectiveRoles[0] || 'Contributor';
 
-  // Default: legacy CustomerAccount boolean flags drive module access.
-  // Legacy accounts (created before module flags) have both as false — default isGrcAdded=true
-  let isGrcAdded = (dbUser.customerAccount?.isGrcAdded === false && dbUser.customerAccount?.isTprmAdded === false)
-    ? true
-    : (dbUser.customerAccount?.isGrcAdded ?? true);
+  // Phase 5b.1: distinct module codes the user holds at least one role in.
+  // Drives the workspace picker (subscription ∩ has-role). System roles
+  // (moduleCode=null) are excluded — they don't anchor to any module.
+  const validModules = new Set<"GRC" | "TPRM" | "INTERNAL_AUDIT">();
+  for (const ur of dbUser.userRoles) {
+    if (ur.moduleCode === "GRC" || ur.moduleCode === "TPRM" || ur.moduleCode === "INTERNAL_AUDIT") {
+      validModules.add(ur.moduleCode);
+    }
+  }
+  const roleModules = Array.from(validModules);
+
+  // Module access is derived from current Subscription / ModuleSubscription
+  // state via getAccessSnapshot. The CustomerAccount.is* booleans are used
+  // only as a defensive fallback when the subscription read fails.
+  let isGrcAdded = dbUser.customerAccount?.isGrcAdded ?? false;
   let isTprmAdded = dbUser.customerAccount?.isTprmAdded ?? false;
   let isInternalAuditEnabled = dbUser.customerAccount?.isInternalAuditEnabled ?? false;
   let subscriptionStatus: SubscriptionStatus | null = null;
   let subscriptionType: SubscriptionType | null = null;
 
-  // Subscription gating: when the env flag is on, override module access flags
-  // from the new Subscription/ModuleSubscription state. Customers whose modules
-  // are SUSPENDED, never-purchased, or fully cancelled lose access here.
-  // Subscription status is also captured so middleware can gate routes.
-  if (SUBSCRIPTION_GATING_ENABLED && dbUser.customerAccountId) {
+  if (dbUser.customerAccountId) {
     try {
       const snap = await getAccessSnapshot(dbUser.customerAccountId);
       isGrcAdded = snap.isGrcAdded;
@@ -160,6 +165,7 @@ async function buildAuthUser(dbUser: {
     subscriptionStatus,
     subscriptionType,
     roles: effectiveRoles,
+    roleModules,
     permissions: [] as UserPermission[],
   };
 }
@@ -364,6 +370,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.subscriptionStatus = user.subscriptionStatus ?? null;
           token.subscriptionType = user.subscriptionType ?? null;
           token.roles = user.roles;
+          token.roleModules = user.roleModules ?? [];
         } else {
           // OAuth flow: user object only has OAuth profile data
           // Must query DB to load roles, department, customerAccount, etc.
@@ -404,6 +411,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               token.subscriptionStatus = authUser.subscriptionStatus ?? null;
               token.subscriptionType = authUser.subscriptionType ?? null;
               token.roles = authUser.roles;
+              token.roleModules = authUser.roleModules ?? [];
             }
           }
         }
@@ -430,6 +438,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.subscriptionStatus = (token.subscriptionStatus as SubscriptionStatus | null) ?? null;
         session.user.subscriptionType = (token.subscriptionType as SubscriptionType | null) ?? null;
         session.user.roles = (token.roles as string[]) || [];
+        session.user.roleModules = (token.roleModules as ("GRC" | "TPRM" | "INTERNAL_AUDIT")[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)
         // Filter permissions based on module flags (isGrcAdded / isTprmAdded / isInternalAuditEnabled)

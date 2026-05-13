@@ -559,14 +559,18 @@ model RolePermission {
 
 // User-Role Junction Table (users can have multiple roles)
 model UserRole {
-  id        String   @id @default(cuid())
-  userId    String
-  roleId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  roleId     String
+  // Module this assignment applies to: "GRC" | "TPRM" | "INTERNAL_AUDIT".
+  // null = system-wide role (e.g., GRCAdministrator) — applies across all modules.
+  moduleCode String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
-  @@unique([userId, roleId])
+  @@unique([userId, roleId, moduleCode])
+  @@index([userId, moduleCode])
 }
 
 // ==================== ORGANIZATION MODULE ====================
@@ -684,8 +688,11 @@ model Department {
 model User {
   id                           String                        @id @default(cuid())
   userId                       String?
-  userName                     String
-  email                        String
+  // Globally unique. Username and email belong to one person across the whole
+  // system; cross-tenant collisions are blocked at the DB level. This matches
+  // the auth.ts login query which doesn't filter by customerAccountId.
+  userName                     String                        @unique
+  email                        String                        @unique
   phone                        String?
   password                     String?
   firstName                    String
@@ -822,10 +829,11 @@ model User {
   // Technical Evidence relations
   technicalEvidenceCollections TechnicalEvidenceCollection[] @relation("TechEvidenceCollector")
 
-  // Multi-tenant: userId, userName and email are unique per customer account, not globally
+  // Multi-tenant: userId stays unique per customer (so each tenant can have
+  // their own USR-001 sequence). userName and email are globally unique
+  // (declared inline on the field) — same person can't exist twice in the
+  // system, even across customers.
   @@unique([customerAccountId, userId])
-  @@unique([customerAccountId, userName])
-  @@unique([customerAccountId, email])
   @@index([customerAccountId])
 }
 

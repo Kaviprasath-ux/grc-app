@@ -5,6 +5,7 @@ import { Toaster as SonnerToaster } from "sonner";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LogoProvider } from "@/contexts/LogoContext";
+import { ModuleProvider } from "@/contexts/ModuleContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +25,9 @@ export default function RootLayout({
           <LanguageProvider>
             <ThemeProvider>
               <LogoProvider>
-                {children}
+                <ModuleProvider>
+                  {children}
+                </ModuleProvider>
               </LogoProvider>
             </ThemeProvider>
           </LanguageProvider>
