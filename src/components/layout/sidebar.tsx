@@ -248,6 +248,14 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
   // "Switch workspace" button only useful when the user has 2+ modules.
   const canSwitchWorkspace = !isSystemUser && availableModules.length >= 2;
 
+  // Module scoping (navigation.ts) only kicks in once currentModule is known.
+  // On a fresh page load currentModule hydrates from cookie one tick after the
+  // session is ready — during that gap the nav would be rendered unscoped,
+  // showing every module's sections (e.g. duplicate "Organization" entries).
+  // Hold the nav behind the loading state until scoping is resolved.
+  const moduleScopePending =
+    !isSystemUser && availableModules.length > 0 && currentModule === null;
+
   // Brand label next to the logo — driven by the current workspace.
   // Per BA spec: "Verifai GRC" / "Verifai TPRM" / "Verifai Internal Audit",
   // and plain "Verifai" when there's no current module (super admin, picker
@@ -334,7 +342,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
               </div>
             )
           )}
-          {status === "loading" ? (
+          {status === "loading" || moduleScopePending ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent"></div>
               {!collapsed && <span className="text-xs text-slate-400">{t("Loading...")}</span>}
@@ -342,7 +350,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
           ) : (
             filteredNavigation.map((item) => (
               <NavItemComponent
-                key={item.name}
+                key={item.module ? `${item.module}:${item.name}` : item.name}
                 item={item}
                 collapsed={collapsed}
                 onNavigate={onNavigate}
