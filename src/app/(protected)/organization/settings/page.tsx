@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, ChevronRight, Home, Package, Mail, Globe, ImageIcon, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -93,10 +93,26 @@ const categoryApiEndpoints: Record<string, string> = {
   "document-types": "/api/organization-settings/user-document-type",
 };
 
+// Settings categories that are GRC-specific and should NOT appear in the
+// IA Organization > Settings page. Per BA spec, IA Settings keeps only:
+//   - Location (Organization Locations)
+//   - Designation
+//   - User Document Types
+// Plus Logo + Email Notifications (cross-cutting, kept for both modules).
+const GRC_ONLY_SETTING_IDS = new Set(["bia", "implementation", "frequency", "translations"]);
+
 export default function OrganizationSettingsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const { t, isRTL } = useLanguage();
+
+  // True when rendered under /internal-audit/organization/settings or
+  // /tprm/organization/settings — both route files re-export this component.
+  const isTrimmedOrgScope =
+    pathname?.startsWith("/internal-audit/") ||
+    pathname?.startsWith("/tprm/") ||
+    false;
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(initialSettingsData);
   const [loadingData, setLoadingData] = useState(false);
@@ -683,7 +699,9 @@ export default function OrganizationSettingsPage() {
 
       {/* Settings Card Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {settingCategories.map((category) => {
+        {settingCategories
+          .filter((category) => !(isTrimmedOrgScope && GRC_ONLY_SETTING_IDS.has(category.id)))
+          .map((category) => {
           const Icon = category.icon;
 
           return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -47,7 +47,19 @@ interface ReportData {
 
 export default function OrganizationReportsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { t, isRTL } = useLanguage();
+
+  // True when rendered under /internal-audit/organization/reports or
+  // /tprm/organization/reports — both route files re-export this component.
+  // In trimmed scope we hide:
+  //   - The "Management Report" featured card (GRC-specific charts)
+  //   - The "Processes" category tab + any process-by-* reports
+  // Only Issue and User reports remain (5 cards total).
+  const isTrimmedOrgScope =
+    pathname?.startsWith("/internal-audit/") ||
+    pathname?.startsWith("/tprm/") ||
+    false;
   const [selectedReport, setSelectedReport] = useState<typeof reportTypes[0] | null>(null);
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -230,14 +242,30 @@ export default function OrganizationReportsPage() {
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
+  // In IA scope, drop the entire "processes" category — IA's Organization
+  // Reports only show Issue + User reports.
+  const visibleReportTypes = isTrimmedOrgScope
+    ? reportTypes.filter((r) => r.category !== "processes")
+    : reportTypes;
+  const visibleCategoryTabs = isTrimmedOrgScope
+    ? categoryTabs.filter((c) => c.id !== "processes")
+    : categoryTabs;
+
   // Filter reports by category and search
-  const filteredReports = reportTypes.filter((report) => {
+  const filteredReports = visibleReportTypes.filter((report) => {
     const matchesCategory = activeCategory === "all" || report.category === activeCategory;
     const matchesSearch = searchQuery === "" ||
       report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  // If the activeCategory is "processes" but we're in IA scope, snap back to "all"
+  useEffect(() => {
+    if (isTrimmedOrgScope && activeCategory === "processes") {
+      setActiveCategory("all");
+    }
+  }, [isTrimmedOrgScope, activeCategory]);
 
   return (
     <div className="space-y-6">
@@ -260,7 +288,8 @@ export default function OrganizationReportsPage() {
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Reports")}</h1>
       </div>
 
-      {/* Management Report - Featured Card */}
+      {/* Management Report - Featured Card. Hidden in IA scope (GRC-only). */}
+      {!isTrimmedOrgScope && (
       <button
         onClick={() => setIsManagementDialogOpen(true)}
         className="group w-full bg-primary-50/60 rounded-xl border border-primary-200/60 p-3 sm:p-5 flex items-center gap-3 sm:gap-4 text-start transition-all hover:bg-primary-50 hover:border-primary-300 hover:shadow-sm cursor-pointer"
@@ -275,6 +304,7 @@ export default function OrganizationReportsPage() {
         </div>
         <ChevronRight className={`h-4 w-4 text-primary-300 flex-shrink-0 transition-transform group-hover:text-primary-500 ${isRTL ? "rotate-180 group-hover:-translate-x-0.5" : "group-hover:translate-x-0.5"}`} />
       </button>
+      )}
 
       {/* Reports Card */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={isRTL ? { direction: 'rtl' } : undefined}>
@@ -282,10 +312,10 @@ export default function OrganizationReportsPage() {
         <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3 sm:px-5 py-3 border-b border-slate-100 ${isRTL ? "sm:flex-row-reverse" : ""}`}>
           {/* Category Tabs */}
           <div className={`flex items-center gap-1 overflow-x-auto ${isRTL ? "flex-row-reverse" : ""}`}>
-            {categoryTabs.map((tab) => {
+            {visibleCategoryTabs.map((tab) => {
               const count = tab.id === "all"
-                ? reportTypes.length
-                : reportTypes.filter((r) => r.category === tab.id).length;
+                ? visibleReportTypes.length
+                : visibleReportTypes.filter((r) => r.category === tab.id).length;
               return (
                 <button
                   key={tab.id}

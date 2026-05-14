@@ -395,10 +395,10 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
                 ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-sm"
                 : "bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 hover:from-primary-100 hover:to-primary-200 border border-primary-200"
             }`}
-            title={`${t("Help Assistant")} (F1)`}
+            title={`${t("AI Chat & Voice Bot")} (F1)`}
           >
             <MessageCircleQuestion className="h-4 w-4" />
-            <span className="text-xs font-semibold hidden sm:inline">{t("Help")}</span>
+            <span className="text-xs font-semibold hidden sm:inline">{t("AI Chat & Voice Bot")}</span>
           </Button>
         )}
 

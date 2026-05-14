@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft, Home, ChevronLeft, ChevronRight, Download, FileText, Search } from "lucide-react";
@@ -129,11 +129,32 @@ interface Regulation {
 function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
   const initialTab = searchParams.get("tab") || "overview";
   const fromDashboard = searchParams.get("from") === "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  // When the page is rendered under /internal-audit/organization/profile or
+  // /tprm/organization/profile, only the Company Info ("overview") and
+  // Departments tabs are relevant. Services, Regulations, and Organization
+  // Chart are GRC-specific. The route files at /internal-audit/organization/
+  // profile/page.tsx and /tprm/organization/profile/page.tsx re-export this
+  // same component; this flag is the single hook that hides the GRC-only
+  // tabs in the IA and TPRM workspaces.
+  const isTrimmedOrgScope =
+    pathname?.startsWith("/internal-audit/") ||
+    pathname?.startsWith("/tprm/") ||
+    false;
+
+  // Defense against a URL like ?tab=services in IA/TPRM scope — clamp
+  // activeTab to a permitted value if it's outside the allowed set.
+  useEffect(() => {
+    if (isTrimmedOrgScope && !["overview", "departments"].includes(activeTab)) {
+      setActiveTab("overview");
+    }
+  }, [isTrimmedOrgScope, activeTab]);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -692,10 +713,16 @@ function ProfilePageContent() {
         <div className={`overflow-x-auto -mx-1 px-1 ${isRTL ? "flex justify-end" : ""}`}>
           <TabsList className={`w-full sm:w-auto inline-flex ${isRTL ? "flex-row-reverse" : ""}`}>
             <TabsTrigger value="overview" className="text-xs sm:text-sm">{t("Company Info")}</TabsTrigger>
-            <TabsTrigger value="services" className="text-xs sm:text-sm">{t("Services")}</TabsTrigger>
-            <TabsTrigger value="regulations" className="text-xs sm:text-sm">{t("Regulations")}</TabsTrigger>
+            {!isTrimmedOrgScope && (
+              <TabsTrigger value="services" className="text-xs sm:text-sm">{t("Services")}</TabsTrigger>
+            )}
+            {!isTrimmedOrgScope && (
+              <TabsTrigger value="regulations" className="text-xs sm:text-sm">{t("Regulations")}</TabsTrigger>
+            )}
             <TabsTrigger value="departments" className="text-xs sm:text-sm">{t("Departments")}</TabsTrigger>
-            <TabsTrigger value="orgchart" className="text-xs sm:text-sm">{t("Organization Chart")}</TabsTrigger>
+            {!isTrimmedOrgScope && (
+              <TabsTrigger value="orgchart" className="text-xs sm:text-sm">{t("Organization Chart")}</TabsTrigger>
+            )}
           </TabsList>
         </div>
 

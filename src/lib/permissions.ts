@@ -794,11 +794,12 @@ function isInternalAuditResource(resource: string): boolean {
 
 /**
  * GRC-only resources (excluding audit.*, which is gated separately via
- * isInternalAuditEnabled).
+ * isInternalAuditEnabled, AND excluding organization.*, which is now
+ * cross-cutting per the BA spec for the three-platform model — TPRM-only
+ * and IA-only customers also need access to Organization).
  */
 function isGrcOnlyResource(resource: string): boolean {
   return (
-    resource.startsWith('organization.') ||
     resource.startsWith('compliance.') ||
     resource.startsWith('qpost-compliance.') ||
     resource.startsWith('asset.') ||

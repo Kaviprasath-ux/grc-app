@@ -145,7 +145,7 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
             </div>
             <div>
               <h3 className="text-sm font-semibold leading-tight">
-                {t("Help Assistant")}
+                {t("AI Chat & Voice Bot")}
               </h3>
               <p className="text-[11px] text-primary-100 leading-tight">
                 {t("Ask anything about the application")}

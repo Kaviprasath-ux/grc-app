@@ -135,20 +135,65 @@ export const navigation: NavItem[] = [
       { name: "Process", href: "/organization/process", icon: GitBranch, permission: "organization.process:view" },
       { name: "Organization Settings", href: "/organization/settings", icon: Settings, permission: "organization.settings:view" },
       { name: "Reports", href: "/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
+      // Subscription & Billing — moved here from the top-level per BA spec.
+      { name: "Subscription & Billing", href: "/settings/subscription", icon: CreditCard, permission: "subscription.customer-portal:view" },
     ],
   },
   // ==================== End Organization Section ====================
 
-  // ==================== Subscription & Billing (top-level, module-agnostic) ====================
-  // Surfaced for any CustomerAdministrator regardless of module mix (GRC-only, TPRM-only, combined).
-  // No module tag → cross-cutting, visible in every workspace.
+  // ==================== Internal Audit > Organization Section ====================
+  // BA feedback: customers with only the Internal Audit module also need an
+  // Organization area to manage company profile, departments, users, etc.
+  // This is a trimmed parallel to the GRC Organization:
+  //   - no Dashboard (GRC charts only)
+  //   - no Process (different IA workflow planned later)
+  //   - Profile shows only Company Info + Departments tabs (URL-aware in page)
+  //   - Settings hides BIA / Implementation / Process Frequency / Translations
+  //   - Reports hides Management Report + process-by-* reports
+  // Routes live under /internal-audit/organization/* and mostly re-export the
+  // GRC pages with URL-aware filtering.
   {
-    name: "Subscription & Billing",
-    href: "/settings/subscription",
-    icon: CreditCard,
-    permission: "subscription.customer-portal:view",
+    name: "Organization",
+    module: "INTERNAL_AUDIT",
+    icon: Building2,
+    permission: "organization.profile:view",
+    children: [
+      { name: "Profile", href: "/internal-audit/organization/profile", icon: User, permission: "organization.profile:view" },
+      { name: "Context", href: "/internal-audit/organization/context", icon: Briefcase, permission: "organization.context:view" },
+      { name: "Users", href: "/internal-audit/organization/users", icon: Users, permission: "organization.users:view" },
+      { name: "Organization Settings", href: "/internal-audit/organization/settings", icon: Settings, permission: "organization.settings:view" },
+      { name: "Reports", href: "/internal-audit/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
+      { name: "Subscription & Billing", href: "/settings/subscription", icon: CreditCard, permission: "subscription.customer-portal:view" },
+    ],
   },
-  // ==================== End Subscription & Billing ====================
+  // ==================== End Internal Audit > Organization Section ====================
+
+  // ==================== TPRM > Organization Section ====================
+  // BA feedback: TPRM customers also need an Organization area, with a few
+  // tweaks vs IA:
+  //   - Dashboard link points at the existing TPRM Program Monitor (TPRM has
+  //     its own dashboard pages; we don't build a separate org dashboard)
+  //   - No Context tab (not needed for TPRM)
+  //   - Users links to the existing /tprm/user-management (TPRM-specific UI)
+  //   - Vendor Management surfaced inside Organization too
+  //   - Profile / Settings / Reports use the same URL-aware re-exports
+  //     as IA (Company Info + Departments, trimmed settings, trimmed reports)
+  {
+    name: "Organization",
+    module: "TPRM",
+    icon: Building2,
+    permission: "organization.profile:view",
+    children: [
+      { name: "Dashboard", href: "/tprm/program-monitor", icon: LayoutDashboard, permission: "tprm.program-monitor:view" },
+      { name: "Profile", href: "/tprm/organization/profile", icon: User, permission: "organization.profile:view" },
+      { name: "Users", href: "/tprm/user-management", icon: Users, permission: "tprm.user-management:view" },
+      { name: "Vendor Management", href: "/tprm/vendor-management", icon: Building2, permission: "tprm.vendor-management:view" },
+      { name: "Organization Settings", href: "/tprm/organization/settings", icon: Settings, permission: "organization.settings:view" },
+      { name: "Reports", href: "/tprm/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
+      { name: "Subscription & Billing", href: "/settings/subscription", icon: CreditCard, permission: "subscription.customer-portal:view" },
+    ],
+  },
+  // ==================== End TPRM > Organization Section ====================
 
   // ==================== Compliance Section ====================
   {
@@ -309,6 +354,8 @@ export const navigation: NavItem[] = [
       { name: "Issue Management", href: "/tprm/it-issues", icon: AlertTriangle, permission: "tprm.it-issues:view" },
       // ---- Factory Admin / Factory Assessor menu items ----
       { name: "User Management", href: "/tprm/factory-user-management", icon: Users, permission: "tprm.factory-user-management:view" },
+      // Subscription & Billing for TPRM lives inside the TPRM > Organization
+      // section above (see TPRM > Organization Section).
     ],
   },
   // ==================== End TPRM Section ====================
@@ -673,14 +720,17 @@ export function filterNavigationByPermissionsAndRole(
   const isITRole = userRoles.some(r => r === 'InternalITTeam');
   const isTPRMAuditor = userRoles.some(r => r === 'TPRMAuditor');
   if (isFactoryRole || isITRole || isTPRMAuditor) {
-    navItems = flattenTprmNavigation(items);
+    // Use navItems (post-currentModule filter), not items (raw input), so the
+    // workspace scoping isn't undone here. Bug fix discovered when TPRM-only
+    // customer admin saw all 3 Organization sections instead of only TPRM's.
+    navItems = flattenTprmNavigation(navItems);
     if (isTPRMAuditor) {
       navItems = reorderForTPRMAuditor(navItems);
     }
   }
   // For non-system roles with ONLY TPRM (no GRC), flatten TPRM children to top-level
   else if (!isSystemRole && moduleFlags?.isTprmAdded && !moduleFlags?.isGrcAdded) {
-    navItems = flattenTprmNavigation(items);
+    navItems = flattenTprmNavigation(navItems);
   }
 
   // Toggle between Compliance and QPost Compliance based on module flag
