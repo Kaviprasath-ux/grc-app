@@ -178,7 +178,16 @@ export async function POST(req: NextRequest) {
           role: "CustomerAdministrator",
         },
       });
-      await tx.userRole.create({ data: { userId: user.id, roleId: role.id } });
+      // Create one UserRole row per enabled module — CustomerAdministrator is
+      // multi-module and needs an entry per module the customer has active.
+      // Without per-module rows the user hits "No active workspaces" on first login.
+      const enabledModuleCodes: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[] = [];
+      if (enabledCodes.has("GRC")) enabledModuleCodes.push("GRC");
+      if (enabledCodes.has("TPRM")) enabledModuleCodes.push("TPRM");
+      if (enabledCodes.has("INTERNAL_AUDIT")) enabledModuleCodes.push("INTERNAL_AUDIT");
+      for (const moduleCode of enabledModuleCodes) {
+        await tx.userRole.create({ data: { userId: user.id, roleId: role.id, moduleCode } });
+      }
 
       // 4. Subscription
       const sub = await tx.subscription.create({

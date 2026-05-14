@@ -227,8 +227,11 @@ export const POST = withAuth(
           update: {},
           create: { name: systemRoleName, description: `TPRM ${tprmRole} role`, isSystem: true },
         });
+        // Phase 10 fix: tag the UserRole with moduleCode: "TPRM" so the user's
+        // session.user.roleModules picks it up. Without this, /select-module
+        // sees the user has no module roles and redirects to /subscription-required.
         await prisma.userRole.create({
-          data: { userId: user.id, roleId: systemRole.id },
+          data: { userId: user.id, roleId: systemRole.id, moduleCode: "TPRM" },
         });
       }
 

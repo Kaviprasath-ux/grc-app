@@ -217,7 +217,7 @@ export const POST = withAuth(
                   update: {},
                   create: { name: "AccountManager", description: "TPRM Account Manager role", isSystem: true },
                 });
-                await prisma.userRole.create({ data: { userId: user.id, roleId: amRole.id } });
+                await prisma.userRole.create({ data: { userId: user.id, roleId: amRole.id, moduleCode: "TPRM" } });
                 createdAMs.set(amEmail.toLowerCase(), user.id);
                 results.amCreated++;
               } catch { /* non-fatal */ }

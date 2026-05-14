@@ -195,10 +195,15 @@ export const PUT = withAuth(
       });
 
       if (roleRecords.length > 0) {
+        // All roles handled by this endpoint are Internal Audit roles
+        // (AUDIT_ROLES list above). Tag every UserRole row with
+        // moduleCode: "INTERNAL_AUDIT" so the user's session.user.roleModules
+        // picks them up — without this the user hits "No active workspaces".
         await prisma.userRole.createMany({
           data: roleRecords.map((r) => ({
             userId: id,
             roleId: r.id,
+            moduleCode: "INTERNAL_AUDIT",
           })),
         });
       }
