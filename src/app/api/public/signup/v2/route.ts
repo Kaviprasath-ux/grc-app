@@ -284,7 +284,13 @@ export async function POST(req: NextRequest) {
             role: "CustomerAdministrator",
           },
         });
-        await tx.userRole.create({ data: { userId: user.id, roleId: role.id } });
+        // Create UserRole for each module the customer is subscribing to.
+        // This is required for ModuleContext to recognize which modules the user has access to.
+        for (const m of data.modules) {
+          await tx.userRole.create({
+            data: { userId: user.id, roleId: role.id, moduleCode: m.moduleCode },
+          });
+        }
 
         // 3. Subscription envelope with TRIAL status
         const sub = await tx.subscription.create({

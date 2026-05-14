@@ -31,13 +31,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw, Home, ChevronRight, Users, FileText } from "lucide-react";
+import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw, Home, ChevronRight, Users, FileText, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName, isAlphanumeric } from "@/lib/validations";
 import { validateEmail } from "@/lib/validations/email";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import CancellationRequestsTab from "@/components/shared/CancellationRequestsTab";
 
 interface CustomerAccount {
   id: string;
@@ -1135,98 +1137,121 @@ export default function CustomerAccountsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Customer Accounts")}</h1>
-        <Button onClick={() => setShowOnboardDialog(true)} size="sm" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Onboard Customer")}
-        </Button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden overflow-x-auto">
-        <Table className="min-w-[800px]">
-          <TableHeader>
-            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Customer Code")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Customer Name")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Last Login")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Blocked")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Active")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {customers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="py-0">
-                  <div className="py-16 text-center">
-                    <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
-                      <Users className="h-6 w-6 text-primary-500" />
-                    </div>
-                    <h3 className="text-base font-semibold text-slate-800 mb-1">
-                      {t("No Customer Accounts Found")}
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                      {t("Create a new customer account to get started.")}
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              customers.map((customer) => (
-                <TableRow key={customer.id} className="border-b border-slate-100 last:border-0">
-                  <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{tCustomerName(customer)}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{customer.email}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{customer.name}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{customer.lastLogin || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{customer.blocked ? t("Yes") : t("No")}</TableCell>
-                  <TableCell className="py-3">
-                    <span className={customer.active
-                      ? "px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700"
-                      : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600"
-                    }>
-                      {customer.active ? t("Yes") : t("No")}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3 pr-5">
-                    <div className="flex items-center gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditDialog(customer)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openLogoDialog(customer)}
-                        title={t("View Logo")}
-                      >
-                        <Image className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(customer)}
-                        title={t("Delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+      {/* Tabs */}
+      <Tabs defaultValue="accounts" className="space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <TabsList>
+            <TabsTrigger value="accounts" className="gap-2">
+              <Users className="h-4 w-4" />
+              {t("Accounts")}
+            </TabsTrigger>
+            <TabsTrigger value="cancellations" className="gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              {t("Cancellation Requests")}
+            </TabsTrigger>
+          </TabsList>
+          <Button onClick={() => setShowOnboardDialog(true)} size="sm" className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Onboard Customer")}
+          </Button>
+        </div>
+
+        {/* Customer Accounts Tab */}
+        <TabsContent value="accounts" className="mt-0">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Customer Code")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Customer Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Email")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Name")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Last Login")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Blocked")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Active")}</TableHead>
+                  <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {customers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="py-0">
+                      <div className="py-16 text-center">
+                        <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                          <Users className="h-6 w-6 text-primary-500" />
+                        </div>
+                        <h3 className="text-base font-semibold text-slate-800 mb-1">
+                          {t("No Customer Accounts Found")}
+                        </h3>
+                        <p className="text-sm text-slate-500">
+                          {t("Create a new customer account to get started.")}
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  customers.map((customer) => (
+                    <TableRow key={customer.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-3 pl-5 text-sm font-medium text-slate-900">{customer.customerCode}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{tCustomerName(customer)}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{customer.email}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{customer.name}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{customer.lastLogin || "-"}</TableCell>
+                      <TableCell className="py-3 text-sm text-slate-700">{customer.blocked ? t("Yes") : t("No")}</TableCell>
+                      <TableCell className="py-3">
+                        <span className={customer.active
+                          ? "px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700"
+                          : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600"
+                        }>
+                          {customer.active ? t("Yes") : t("No")}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3 pr-5">
+                        <div className="flex items-center gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={() => openEditDialog(customer)}
+                            title={t("Edit")}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={() => openLogoDialog(customer)}
+                            title={t("View Logo")}
+                          >
+                            <Image className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                            onClick={() => openDeleteDialog(customer)}
+                            title={t("Delete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Cancellation Requests Tab */}
+        <TabsContent value="cancellations" className="mt-0">
+          <CancellationRequestsTab />
+        </TabsContent>
+      </Tabs>
 
       {/* Onboard Customer Dialog */}
       <Dialog open={showOnboardDialog} onOpenChange={(open) => { setShowOnboardDialog(open); if (!open) { setFormErrors({}); } }}>
