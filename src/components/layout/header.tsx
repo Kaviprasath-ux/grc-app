@@ -282,33 +282,29 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
           )}
         </Link>
 
-        {/* Date and Time */}
-        <div className="hidden lg:flex items-center gap-3 ms-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+        {/* Date and Time — compact form (icon + value only) at xl+, full labels at ultra-wide */}
+        <div className="hidden xl:flex items-center gap-2 ms-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
             <Calendar className="h-4 w-4 text-primary-500" />
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-500 font-medium">{t("Date")}</span>
-              <span className="text-xs text-slate-700 font-semibold whitespace-nowrap">
-                {currentTime ? format(currentTime, "dd MMM yyyy", { locale: dateFnsLocale }) : "--"}
-              </span>
-            </div>
+            <span className="hidden min-[1700px]:inline text-xs text-slate-500 font-medium">{t("Date")}</span>
+            <span className="text-xs text-slate-700 font-semibold whitespace-nowrap">
+              {currentTime ? format(currentTime, "dd MMM yyyy", { locale: dateFnsLocale }) : "--"}
+            </span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
             <Clock className="h-4 w-4 text-primary-500" />
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-500 font-medium">{t("Time")}</span>
-              <span className="text-xs text-slate-700 font-semibold whitespace-nowrap">
-                {currentTime ? format(currentTime, "h:mm a", { locale: dateFnsLocale }) : "--"}
-              </span>
-            </div>
+            <span className="hidden min-[1700px]:inline text-xs text-slate-500 font-medium">{t("Time")}</span>
+            <span className="text-xs text-slate-700 font-semibold whitespace-nowrap">
+              {currentTime ? format(currentTime, "h:mm a", { locale: dateFnsLocale }) : "--"}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         {/* Global Search */}
-        <div className="lg:ms-4">
+        <div className="lg:ms-2">
           <GlobalSearch />
         </div>
 
@@ -398,7 +394,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
             title={`${t("AI Chat & Voice Bot")} (F1)`}
           >
             <MessageCircleQuestion className="h-4 w-4" />
-            <span className="text-xs font-semibold hidden sm:inline">{t("AI Chat & Voice Bot")}</span>
+            <span className="text-xs font-semibold hidden min-[1700px]:inline">{t("AI Chat & Voice Bot")}</span>
           </Button>
         )}
 
@@ -501,18 +497,18 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-3 ps-2 pe-3 py-2 h-auto hover:bg-slate-100 rounded-lg"
+              className="flex items-center gap-2 ps-1.5 pe-2 py-2 h-auto hover:bg-slate-100 rounded-lg"
             >
               <Avatar className="h-9 w-9 border-2 border-primary-200">
                 <AvatarFallback className="bg-gradient-to-br from-primary-500 to-primary-600 text-white text-sm font-semibold">
                   {session?.user?.name ? getInitials(session.user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden xl:flex flex-col items-start">
-                <span className="text-sm font-semibold text-slate-800">
+              <div className="hidden xl:flex flex-col items-start max-w-[200px]">
+                <span className="text-sm font-semibold text-slate-800 truncate max-w-full">
                   {displayName}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 truncate max-w-full whitespace-nowrap">
                   {displayRole}
                 </span>
               </div>

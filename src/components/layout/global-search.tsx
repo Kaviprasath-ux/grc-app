@@ -131,7 +131,7 @@ export function GlobalSearch() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="hidden md:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 h-9 w-64 lg:w-80 transition-colors"
+          className="hidden md:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 h-9 w-44 xl:w-52 min-[1700px]:w-72 transition-colors"
         >
           <Search className="h-4 w-4 text-slate-400 shrink-0" />
           <span className="text-sm text-slate-400 flex-1 text-start">{t("Search")}...</span>
