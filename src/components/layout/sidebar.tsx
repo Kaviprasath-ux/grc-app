@@ -239,11 +239,12 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
         isGrcAdded: session.user.isGrcAdded ?? false,
         isTprmAdded: session.user.isTprmAdded ?? false,
         isInternalAuditEnabled: session.user.isInternalAuditEnabled ?? false,
+        isTechnicalEvidenceEnabled: session.user.isTechnicalEvidenceEnabled ?? false,
         isQpostComplianceEnabled: session.user.isQpostComplianceEnabled ?? false,
       },
       currentModule,
     );
-  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded, session?.user?.isInternalAuditEnabled, session?.user?.isQpostComplianceEnabled, currentModule]);
+  }, [session?.user?.permissions, session?.user?.roles, session?.user?.isGrcAdded, session?.user?.isTprmAdded, session?.user?.isInternalAuditEnabled, session?.user?.isTechnicalEvidenceEnabled, session?.user?.isQpostComplianceEnabled, currentModule]);
 
   // "Switch workspace" button only useful when the user has 2+ modules.
   const canSwitchWorkspace = !isSystemUser && availableModules.length >= 2;
@@ -266,7 +267,9 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
       ? t("Verifai TPRM")
       : currentModule === "INTERNAL_AUDIT"
         ? t("Verifai Internal Audit")
-        : t("Verifai");
+        : currentModule === "TECHNICAL_EVIDENCE"
+          ? t("Verifai Technical Evidence")
+          : t("Verifai");
 
   return (
     <aside

@@ -24,8 +24,9 @@ export default async function Home() {
   if (session.user.isGrcAdded) subscribed.add("GRC");
   if (session.user.isInternalAuditEnabled) subscribed.add("INTERNAL_AUDIT");
   if (session.user.isTprmAdded) subscribed.add("TPRM");
+  if (session.user.isTechnicalEvidenceEnabled) subscribed.add("TECHNICAL_EVIDENCE");
   const userRoleModules = new Set(session.user.roleModules ?? []);
-  const available = (["GRC", "INTERNAL_AUDIT", "TPRM"] as ModuleCode[]).filter(
+  const available = (["GRC", "INTERNAL_AUDIT", "TPRM", "TECHNICAL_EVIDENCE"] as ModuleCode[]).filter(
     (m) => subscribed.has(m) && userRoleModules.has(m),
   );
 

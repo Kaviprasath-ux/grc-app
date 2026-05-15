@@ -692,6 +692,7 @@ interface NavModuleFlags {
   isGrcAdded?: boolean;
   isTprmAdded?: boolean;
   isInternalAuditEnabled?: boolean;
+  isTechnicalEvidenceEnabled?: boolean;
   isQpostComplianceEnabled?: boolean;
 }
 
