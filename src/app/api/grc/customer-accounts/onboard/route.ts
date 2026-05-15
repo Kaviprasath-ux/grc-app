@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { customerName, email, userName, password, blocked, active, language, timeZone, subscriptionPlans, isGrcAdded, isTprmAdded, isQpostComplianceEnabled, isInternalAuditEnabled } = body;
+    const { customerName, email, userName, password, blocked, active, language, timeZone, subscriptionPlans, isGrcAdded, isTprmAdded, isQpostComplianceEnabled, isInternalAuditEnabled, isTechnicalEvidenceEnabled } = body;
 
     // Validate required fields
     if (!customerName || !email || !userName || !password) {
@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
     if (isGrcAdded !== false) enabledModulesForUser.push("GRC");
     if (isTprmAdded === true) enabledModulesForUser.push("TPRM");
     if (isInternalAuditEnabled === true) enabledModulesForUser.push("INTERNAL_AUDIT");
+    if (isTechnicalEvidenceEnabled === true) enabledModulesForUser.push("TECHNICAL_EVIDENCE");
 
     // Use a transaction to create CustomerAccount, User, and SubscriptionPlans together
     const result = await prisma.$transaction(async (tx) => {
@@ -120,10 +121,10 @@ export async function POST(req: NextRequest) {
           isActive: active !== false,
         },
       });
-      // Set isGrcAdded/isTprmAdded/isQpostComplianceEnabled/isInternalAuditEnabled via raw SQL
+      // Set isGrcAdded/isTprmAdded/isQpostComplianceEnabled/isInternalAuditEnabled/isTechnicalEvidenceEnabled via raw SQL
       await tx.$executeRawUnsafe(
-        `UPDATE "CustomerAccount" SET "isGrcAdded" = $1, "isTprmAdded" = $2, "isQpostComplianceEnabled" = $3, "isInternalAuditEnabled" = $4 WHERE id = $5`,
-        isGrcAdded !== false, isTprmAdded === true, isQpostComplianceEnabled === true, isInternalAuditEnabled === true, customerAccount.id
+        `UPDATE "CustomerAccount" SET "isGrcAdded" = $1, "isTprmAdded" = $2, "isQpostComplianceEnabled" = $3, "isInternalAuditEnabled" = $4, "isTechnicalEvidenceEnabled" = $5 WHERE id = $6`,
+        isGrcAdded !== false, isTprmAdded === true, isQpostComplianceEnabled === true, isInternalAuditEnabled === true, isTechnicalEvidenceEnabled === true, customerAccount.id
       );
 
       // 2. Create the User linked to CustomerAccount, with one UserRole row
@@ -204,6 +205,7 @@ export async function POST(req: NextRequest) {
       if (isGrcAdded !== false) enabledModules.push("GRC");
       if (isTprmAdded === true) enabledModules.push("TPRM");
       if (isInternalAuditEnabled === true) enabledModules.push("INTERNAL_AUDIT");
+      if (isTechnicalEvidenceEnabled === true) enabledModules.push("TECHNICAL_EVIDENCE");
       if (enabledModules.length > 0) {
         await ensureComplimentarySubscription(result.customerAccount.id, enabledModules);
       }

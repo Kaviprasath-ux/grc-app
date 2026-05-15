@@ -60,6 +60,7 @@ interface CustomerAccount {
   isGrcAdded?: boolean;
   isQpostComplianceEnabled?: boolean;
   isInternalAuditEnabled?: boolean;
+  isTechnicalEvidenceEnabled?: boolean;
 }
 
 interface SubscriptionPlan {
@@ -218,6 +219,7 @@ export default function CustomerAccountsPage() {
     isTprmAdded: false,
     isQpostComplianceEnabled: false,
     isInternalAuditEnabled: false,
+    isTechnicalEvidenceEnabled: false,
     language: "en-US",
     timeZone: "Asia/Qatar",
     logoFile: null as File | null,
@@ -313,6 +315,7 @@ export default function CustomerAccountsPage() {
       isTprmAdded: false,
       isQpostComplianceEnabled: false,
       isInternalAuditEnabled: false,
+      isTechnicalEvidenceEnabled: false,
       language: "en-US",
       timeZone: "Asia/Qatar",
       logoFile: null,
@@ -458,6 +461,7 @@ export default function CustomerAccountsPage() {
           isTprmAdded: formData.isTprmAdded,
           isQpostComplianceEnabled: formData.isQpostComplianceEnabled,
           isInternalAuditEnabled: formData.isInternalAuditEnabled,
+          isTechnicalEvidenceEnabled: formData.isTechnicalEvidenceEnabled,
           language: formData.language,
           timeZone: formData.timeZone,
           role: "CustomerAdministrator",
@@ -555,6 +559,7 @@ export default function CustomerAccountsPage() {
           isTprmAdded: formData.isTprmAdded,
           isQpostComplianceEnabled: formData.isQpostComplianceEnabled,
           isInternalAuditEnabled: formData.isInternalAuditEnabled,
+          isTechnicalEvidenceEnabled: formData.isTechnicalEvidenceEnabled,
           language: formData.language,
           timeZone: formData.timeZone,
         }),
@@ -1042,6 +1047,7 @@ export default function CustomerAccountsPage() {
       isTprmAdded: customer.isTprmAdded || false,
       isQpostComplianceEnabled: customer.isQpostComplianceEnabled || false,
       isInternalAuditEnabled: customer.isInternalAuditEnabled || false,
+      isTechnicalEvidenceEnabled: customer.isTechnicalEvidenceEnabled || false,
       language: customer.language || "en-US",
       timeZone: customer.timeZone || "Asia/Qatar",
       logoFile: null,
@@ -1561,6 +1567,30 @@ export default function CustomerAccountsPage() {
                       </label>
                     </div>
                   </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Is Technical Evidence Enabled")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isTechnicalEvidenceEnabledNew"
+                          checked={!formData.isTechnicalEvidenceEnabled}
+                          onChange={() => setFormData({ ...formData, isTechnicalEvidenceEnabled: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isTechnicalEvidenceEnabledNew"
+                          checked={formData.isTechnicalEvidenceEnabled}
+                          onChange={() => setFormData({ ...formData, isTechnicalEvidenceEnabled: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1918,6 +1948,30 @@ export default function CustomerAccountsPage() {
                           name="isInternalAuditEnabledEdit"
                           checked={formData.isInternalAuditEnabled}
                           onChange={() => setFormData({ ...formData, isInternalAuditEnabled: true })}
+                          className="accent-primary"
+                        /> {t("Yes")}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t("Is Technical Evidence Enabled")}</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isTechnicalEvidenceEnabledEdit"
+                          checked={!formData.isTechnicalEvidenceEnabled}
+                          onChange={() => setFormData({ ...formData, isTechnicalEvidenceEnabled: false })}
+                          className="accent-primary"
+                        /> {t("No")}
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="isTechnicalEvidenceEnabledEdit"
+                          checked={formData.isTechnicalEvidenceEnabled}
+                          onChange={() => setFormData({ ...formData, isTechnicalEvidenceEnabled: true })}
                           className="accent-primary"
                         /> {t("Yes")}
                       </label>

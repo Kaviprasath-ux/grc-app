@@ -1,10 +1,11 @@
 /**
  * Seed default V2 plan pricing - idempotent, safe to re-run.
  *
- * Creates 6 rows: 3 modules (GRC, TPRM, INTERNAL_AUDIT) x 2 plan types (BASE, GENERAL).
+ * Creates 8 rows: 4 modules (GRC, TPRM, INTERNAL_AUDIT, TECHNICAL_EVIDENCE) x 2 plan types (BASE, GENERAL).
  *
  *   BASE     - Year-1 promotional plan: INR 100/month = INR 1,200/year, modest caps
  *   GENERAL  - Year-2+ standard plan: INR 15,000/month = INR 180,000/year, larger caps
+ *   TECHNICAL_EVIDENCE — initial pricing INR 1,000/month, INR 10,000/year (placeholder; editable in admin UI)
  *
  * Super-admin can edit any of these later via Settings > Subscription > Plan Pricing.
  *
@@ -14,7 +15,7 @@
 import prisma from "../src/lib/prisma";
 
 interface Seed {
-  moduleCode: "GRC" | "TPRM" | "INTERNAL_AUDIT";
+  moduleCode: "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
   planType: "BASE" | "GENERAL";
   monthlyPrice: number | null;
   yearlyPrice: number;
@@ -100,10 +101,35 @@ const SEEDS: Seed[] = [
     assessmentLimit: null,
     auditLimit: 50,
   },
+  // TECHNICAL_EVIDENCE -------------------------------
+  // Initial pricing per BA spec: ₹1,000/month, ₹10,000/year.
+  // Limits are nominal — TE doesn't currently enforce framework/vendor/assessment caps.
+  {
+    moduleCode: "TECHNICAL_EVIDENCE",
+    planType: "BASE",
+    monthlyPrice: null, // BASE is yearly only
+    yearlyPrice: 10000, // ₹10,000/year placeholder
+    userLimit: 5,
+    frameworkLimit: null,
+    vendorLimit: null,
+    assessmentLimit: null,
+    auditLimit: null,
+  },
+  {
+    moduleCode: "TECHNICAL_EVIDENCE",
+    planType: "GENERAL",
+    monthlyPrice: 1000, // ₹1,000/month
+    yearlyPrice: 10000, // ₹10,000/year (same as BASE — adjust in admin UI)
+    userLimit: 25,
+    frameworkLimit: null,
+    vendorLimit: null,
+    assessmentLimit: null,
+    auditLimit: null,
+  },
 ];
 
 async function run() {
-  console.log("Seeding/Updating ModulePlanPricing (6 rows)...\n");
+  console.log("Seeding/Updating ModulePlanPricing (8 rows)...\n");
   let created = 0;
   let updated = 0;
 

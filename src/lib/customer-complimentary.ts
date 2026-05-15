@@ -25,7 +25,7 @@
 import prisma from "@/lib/prisma";
 import { syncSubscriptionPlan } from "@/lib/subscription-plan-sync";
 
-export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 
 function addYears(d: Date, n: number): Date {
   const r = new Date(d);
