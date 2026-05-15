@@ -178,15 +178,10 @@ export default function TechnicalEvidenceViewerPage({
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
+          <Link href="/technical-evidence/dashboard" className="hover:text-primary-600 transition-colors">
+            {t("Technical Evidence")}
+          </Link>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <Link
-          href="/compliance/technical-evidence"
-          className="text-slate-500 hover:text-primary-600 transition-colors"
-        >
-          {t("Technical Evidence")}
-        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium truncate max-w-[200px]">
           {collection?.displayName || t("View Data")}

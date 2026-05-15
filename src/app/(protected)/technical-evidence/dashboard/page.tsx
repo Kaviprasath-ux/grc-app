@@ -109,10 +109,10 @@ export default function TechnicalEvidencePage() {
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
+          <span className="text-primary-700 font-medium">{t("Technical Evidence")}</span>
         </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{t("Technical Evidence")}</span>
+        <span className="text-primary-700 font-medium">{t("Dashboard")}</span>
       </nav>
 
       {/* Header */}
@@ -124,7 +124,7 @@ export default function TechnicalEvidencePage() {
           </h1>
         </div>
         {canCreate && (
-          <Link href="/compliance/technical-evidence/settings">
+          <Link href="/technical-evidence/settings">
             <Button variant="outline" size="sm">
               <Settings className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
               {t("Configure Credentials")}
@@ -180,7 +180,7 @@ export default function TechnicalEvidencePage() {
             {t("Configure credentials in Settings to enable data collection for this platform.")}
           </p>
           {canCreate && (
-            <Link href="/compliance/technical-evidence/settings">
+            <Link href="/technical-evidence/settings">
               <Button variant="outline" size="sm" className="mt-4">
                 <Settings className="h-4 w-4 ltr:mr-1.5 rtl:ml-1.5" />
                 {t("Configure Credentials")}

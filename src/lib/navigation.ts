@@ -114,7 +114,6 @@ export const navigation: NavItem[] = [
           { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
           { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },
           { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList, permission: "compliance.evidence:view" },
-          { name: "Technical Evidence", href: "/compliance/technical-evidence", icon: Database, permission: "compliance.technical-evidence:view" },
         ],
       },
     ],
@@ -195,6 +194,37 @@ export const navigation: NavItem[] = [
   },
   // ==================== End TPRM > Organization Section ====================
 
+  // ==================== Technical Evidence > Organization Section ====================
+  // 4th independent platform. Sidebar shows ONLY:
+  //   - Organization > Profile + Subscription & Billing
+  //   - Technical Evidence > Dashboard + Credential Vault
+  // No Compliance, Risk, Asset, or Internal Audit items here — TE is fully
+  // standalone (a customer can subscribe only to TE and see just this).
+  {
+    name: "Organization",
+    module: "TECHNICAL_EVIDENCE",
+    icon: Building2,
+    permission: "technical-evidence.organization-profile:view",
+    children: [
+      { name: "Profile", href: "/technical-evidence/organization/profile", icon: User, permission: "technical-evidence.organization-profile:view" },
+      { name: "Subscription & Billing", href: "/settings/subscription", icon: CreditCard, permission: "subscription.customer-portal:view" },
+    ],
+  },
+  // ==================== End Technical Evidence > Organization Section ====================
+
+  // ==================== Technical Evidence Section ====================
+  {
+    name: "Technical Evidence",
+    module: "TECHNICAL_EVIDENCE",
+    icon: Database,
+    permission: "technical-evidence.dashboard:view",
+    children: [
+      { name: "Dashboard", href: "/technical-evidence/dashboard", icon: LayoutDashboard, permission: "technical-evidence.dashboard:view" },
+      { name: "Credential Vault", href: "/technical-evidence/settings", icon: Key, permission: "technical-evidence.integration-credentials:view" },
+    ],
+  },
+  // ==================== End Technical Evidence Section ====================
+
   // ==================== Compliance Section ====================
   {
     name: "Compliance",
@@ -206,7 +236,6 @@ export const navigation: NavItem[] = [
       { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
       { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },
       { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList, permission: "compliance.evidence:view" },
-      { name: "Technical Evidence", href: "/compliance/technical-evidence", icon: Database, permission: "compliance.technical-evidence:view" },
 
       // Below items are for CustomerAdministrator and other roles, not GRCAdministrator
       { name: "Exception Management", href: "/compliance/exceptions", icon: AlertTriangle, permission: "compliance.exceptions:view" },

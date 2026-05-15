@@ -169,7 +169,7 @@ export function EvidenceCollectionCard({
             size="sm"
             className="text-xs h-8"
             onClick={() =>
-              router.push(`/compliance/technical-evidence/${collection.id}`)
+              router.push(`/technical-evidence/${collection.id}`)
             }
           >
             <Eye className="h-3.5 w-3.5 ltr:mr-1.5 rtl:ml-1.5" />

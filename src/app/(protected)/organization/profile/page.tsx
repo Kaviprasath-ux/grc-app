@@ -136,16 +136,16 @@ function ProfilePageContent() {
   const fromDashboard = searchParams.get("from") === "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  // When the page is rendered under /internal-audit/organization/profile or
-  // /tprm/organization/profile, only the Company Info ("overview") and
-  // Departments tabs are relevant. Services, Regulations, and Organization
-  // Chart are GRC-specific. The route files at /internal-audit/organization/
-  // profile/page.tsx and /tprm/organization/profile/page.tsx re-export this
-  // same component; this flag is the single hook that hides the GRC-only
-  // tabs in the IA and TPRM workspaces.
+  // When the page is rendered under /internal-audit/organization/profile,
+  // /tprm/organization/profile, or /technical-evidence/organization/profile,
+  // only the Company Info ("overview") and Departments tabs are relevant.
+  // Services, Regulations, and Organization Chart are GRC-specific. The
+  // route files in those workspace directories re-export this same component;
+  // this flag is the single hook that hides the GRC-only tabs.
   const isTrimmedOrgScope =
     pathname?.startsWith("/internal-audit/") ||
     pathname?.startsWith("/tprm/") ||
+    pathname?.startsWith("/technical-evidence/") ||
     false;
 
   // Defense against a URL like ?tab=services in IA/TPRM scope — clamp

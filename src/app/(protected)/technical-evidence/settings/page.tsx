@@ -124,12 +124,10 @@ export default function TechnicalEvidenceSettingsPage() {
         <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
-            <span>{t("Compliance")}</span>
+            <Link href="/technical-evidence/dashboard" className="hover:text-primary-600 transition-colors">
+              {t("Technical Evidence")}
+            </Link>
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-          <Link href="/compliance/technical-evidence" className="text-slate-500 hover:text-primary-600 transition-colors">
-            {t("Technical Evidence")}
-          </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Credential Vault")}</span>
         </nav>
@@ -157,12 +155,10 @@ export default function TechnicalEvidenceSettingsPage() {
       <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
+          <Link href="/technical-evidence/dashboard" className="hover:text-primary-600 transition-colors">
+            {t("Technical Evidence")}
+          </Link>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <Link href="/compliance/technical-evidence" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Technical Evidence")}
-        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Credential Vault")}</span>
       </nav>
@@ -184,7 +180,7 @@ export default function TechnicalEvidenceSettingsPage() {
             <button
               key={card.platform}
               className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex flex-col gap-3 ltr:text-left rtl:text-right cursor-pointer hover:border-primary-300 hover:shadow-sm transition-all"
-              onClick={() => router.push(`/compliance/technical-evidence/settings/${card.platform}`)}
+              onClick={() => router.push(`/technical-evidence/settings/${card.platform}`)}
             >
               <div className="flex items-center justify-between">
                 <div className="p-3 bg-primary-50 rounded-xl">
