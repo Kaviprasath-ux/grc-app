@@ -1,13 +1,16 @@
 /**
  * Seed script to create Razorpay subscription plans.
  *
- * This creates 6 plans:
- *   - GRC BASE Yearly (₹1,200)
- *   - GRC GENERAL Monthly (₹15,000) and Yearly (₹180,000)
- *   - TPRM BASE Yearly (₹1,200)
- *   - TPRM GENERAL Monthly (₹15,000) and Yearly (₹180,000)
- *   - INTERNAL_AUDIT BASE Yearly (₹1,200)
- *   - INTERNAL_AUDIT GENERAL Monthly (₹15,000) and Yearly (₹180,000)
+ * Creates 11 plans (4 modules × {BASE Yearly + GENERAL Monthly + GENERAL Yearly}
+ * minus 1 because Technical Evidence shares one yearly price across BASE/GENERAL):
+ *
+ *   GRC / TPRM / INTERNAL_AUDIT (each):
+ *     - BASE Yearly (₹1,200)
+ *     - GENERAL Monthly (₹15,000) and Yearly (₹180,000)
+ *
+ *   TECHNICAL_EVIDENCE:
+ *     - BASE Yearly (₹10,000) — initial pricing per BA spec
+ *     - GENERAL Monthly (₹1,000) and Yearly (₹10,000)
  *
  * Usage:
  *   PAYMENT_STUB=false npx tsx scripts/seed-razorpay-plans.ts
@@ -20,23 +23,27 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Pricing constants
+// Pricing constants for the original 3 modules
 const BASE_YEARLY_PRICE = 1200; // ₹100/month x 12 = ₹1,200/year
 const GENERAL_MONTHLY_PRICE = 15000; // ₹15,000/month
 const GENERAL_YEARLY_PRICE = 180000; // ₹15,000 x 12 = ₹180,000/year
 
-const MODULE_CODES = ["GRC", "TPRM", "INTERNAL_AUDIT"] as const;
+// Technical Evidence pricing (independent — different from the original 3)
+const TE_YEARLY_PRICE = 10000; // ₹10,000/year (covers BASE and GENERAL annual)
+const TE_MONTHLY_PRICE = 1000;  // ₹1,000/month
+
+const CORE_MODULE_CODES = ["GRC", "TPRM", "INTERNAL_AUDIT"] as const;
 
 const PLAN_CONFIGS = [
-  // BASE plans (yearly only)
-  ...MODULE_CODES.map((moduleCode) => ({
+  // BASE plans (yearly only) for original 3 modules
+  ...CORE_MODULE_CODES.map((moduleCode) => ({
     moduleCode,
     planType: "BASE" as const,
     billingCycle: "YEARLY" as const,
     amount: BASE_YEARLY_PRICE,
   })),
-  // GENERAL plans (monthly and yearly)
-  ...MODULE_CODES.flatMap((moduleCode) => [
+  // GENERAL plans (monthly and yearly) for original 3 modules
+  ...CORE_MODULE_CODES.flatMap((moduleCode) => [
     {
       moduleCode,
       planType: "GENERAL" as const,
@@ -50,12 +57,32 @@ const PLAN_CONFIGS = [
       amount: GENERAL_YEARLY_PRICE,
     },
   ]),
+  // TECHNICAL_EVIDENCE — its own pricing curve
+  {
+    moduleCode: "TECHNICAL_EVIDENCE" as const,
+    planType: "BASE" as const,
+    billingCycle: "YEARLY" as const,
+    amount: TE_YEARLY_PRICE,
+  },
+  {
+    moduleCode: "TECHNICAL_EVIDENCE" as const,
+    planType: "GENERAL" as const,
+    billingCycle: "MONTHLY" as const,
+    amount: TE_MONTHLY_PRICE,
+  },
+  {
+    moduleCode: "TECHNICAL_EVIDENCE" as const,
+    planType: "GENERAL" as const,
+    billingCycle: "YEARLY" as const,
+    amount: TE_YEARLY_PRICE,
+  },
 ];
 
 const MODULE_NAMES: Record<string, string> = {
   GRC: "Verifai GRC",
   TPRM: "Verifai TPRM",
   INTERNAL_AUDIT: "Verifai Internal Audit",
+  TECHNICAL_EVIDENCE: "Verifai Technical Evidence",
 };
 
 function isStubMode(): boolean {

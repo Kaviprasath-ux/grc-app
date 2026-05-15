@@ -54,9 +54,9 @@ const Schema = z.object({
   adminEmail: z.string().email(),
   adminPassword: z.string().min(8).max(128),
   modules: z
-    .array(z.object({ moduleCode: z.enum(["GRC", "TPRM", "INTERNAL_AUDIT"]) }))
+    .array(z.object({ moduleCode: z.enum(["GRC", "TPRM", "INTERNAL_AUDIT", "TECHNICAL_EVIDENCE"]) }))
     .min(1)
-    .max(3),
+    .max(4),
   generalBillingCycle: z.enum(["MONTHLY", "YEARLY"]),
   contractAccepted: z.literal(true), // must be exactly true
 });
@@ -258,6 +258,7 @@ export async function POST(req: NextRequest) {
             isGrcAdded: enabledCodes.has("GRC"),
             isTprmAdded: enabledCodes.has("TPRM"),
             isInternalAuditEnabled: enabledCodes.has("INTERNAL_AUDIT"),
+            isTechnicalEvidenceEnabled: enabledCodes.has("TECHNICAL_EVIDENCE"),
           },
         });
 

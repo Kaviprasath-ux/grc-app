@@ -15,6 +15,7 @@ import {
   Shield,
   Building2,
   ClipboardCheck,
+  Database,
   AlertCircle,
   CreditCard,
   Calendar,
@@ -27,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 type BillingCycle = "MONTHLY" | "YEARLY";
 
 interface PlanRow {
@@ -73,6 +74,11 @@ const MODULE_META: Record<
     label: "Internal Audit",
     icon: <ClipboardCheck className="h-5 w-5" />,
     description: "Audit planning, fieldwork & reporting",
+  },
+  TECHNICAL_EVIDENCE: {
+    label: "Technical Evidence",
+    icon: <Database className="h-5 w-5" />,
+    description: "Automated control evidence collection",
   },
 };
 

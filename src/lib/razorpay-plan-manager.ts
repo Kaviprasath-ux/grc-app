@@ -60,6 +60,7 @@ const MODULE_NAMES: Record<string, string> = {
   GRC: "Verifai GRC",
   TPRM: "Verifai TPRM",
   INTERNAL_AUDIT: "Verifai Internal Audit",
+  TECHNICAL_EVIDENCE: "Verifai Technical Evidence",
 };
 
 let razorpayInstance: RazorpayInstance | null = null;

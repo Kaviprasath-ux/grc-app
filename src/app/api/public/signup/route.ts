@@ -59,9 +59,9 @@ const Schema = z.object({
 
   // Step 2 + 3: modules + tiers + cycle
   modules: z.array(z.object({
-    moduleCode: z.enum(["GRC", "TPRM", "INTERNAL_AUDIT"]),
+    moduleCode: z.enum(["GRC", "TPRM", "INTERNAL_AUDIT", "TECHNICAL_EVIDENCE"]),
     tier: z.enum(["BASIC", "MEDIUM", "PRO"]),
-  })).min(1).max(3),
+  })).min(1).max(4),
   cycle: z.enum(["MONTHLY", "YEARLY"]),
 
   // Step 4: trial vs paid
@@ -161,6 +161,7 @@ export async function POST(req: NextRequest) {
           isGrcAdded: enabledCodes.has("GRC"),
           isTprmAdded: enabledCodes.has("TPRM"),
           isInternalAuditEnabled: enabledCodes.has("INTERNAL_AUDIT"),
+          isTechnicalEvidenceEnabled: enabledCodes.has("TECHNICAL_EVIDENCE"),
         },
       });
 
