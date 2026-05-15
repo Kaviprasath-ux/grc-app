@@ -60,7 +60,7 @@ function writeCookie(name: string, value: string | null) {
 }
 
 function isModuleCode(v: unknown): v is ModuleCode {
-  return v === "GRC" || v === "TPRM" || v === "INTERNAL_AUDIT";
+  return v === "GRC" || v === "TPRM" || v === "INTERNAL_AUDIT" || v === "TECHNICAL_EVIDENCE";
 }
 
 export function ModuleProvider({ children }: { children: React.ReactNode }) {
@@ -83,8 +83,9 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
     if (session.user.isGrcAdded) subscribed.add("GRC");
     if (session.user.isInternalAuditEnabled) subscribed.add("INTERNAL_AUDIT");
     if (session.user.isTprmAdded) subscribed.add("TPRM");
+    if (session.user.isTechnicalEvidenceEnabled) subscribed.add("TECHNICAL_EVIDENCE");
     const userRoleModules = new Set(session.user.roleModules ?? []);
-    return (["GRC", "INTERNAL_AUDIT", "TPRM"] as ModuleCode[]).filter(
+    return (["GRC", "INTERNAL_AUDIT", "TPRM", "TECHNICAL_EVIDENCE"] as ModuleCode[]).filter(
       (m) => subscribed.has(m) && userRoleModules.has(m),
     );
   }, [session?.user, isSystemUser]);

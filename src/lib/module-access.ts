@@ -19,7 +19,7 @@ import {
   isAccessAllowed,
 } from "@/lib/subscription-status";
 
-export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 
 /**
  * Returns the set of modules the customer currently has access to.
@@ -66,12 +66,14 @@ export async function getActiveModuleFlags(customerAccountId: string): Promise<{
   isGrcAdded: boolean;
   isTprmAdded: boolean;
   isInternalAuditEnabled: boolean;
+  isTechnicalEvidenceEnabled: boolean;
 }> {
   const active = await getActiveModules(customerAccountId);
   return {
     isGrcAdded: active.has("GRC"),
     isTprmAdded: active.has("TPRM"),
     isInternalAuditEnabled: active.has("INTERNAL_AUDIT"),
+    isTechnicalEvidenceEnabled: active.has("TECHNICAL_EVIDENCE"),
   };
 }
 
@@ -86,6 +88,7 @@ export async function getAccessSnapshot(customerAccountId: string): Promise<{
   isGrcAdded: boolean;
   isTprmAdded: boolean;
   isInternalAuditEnabled: boolean;
+  isTechnicalEvidenceEnabled: boolean;
   subscriptionStatus: SubscriptionStatus | null;
   subscriptionType: SubscriptionType | null;
 }> {
@@ -98,7 +101,7 @@ export async function getAccessSnapshot(customerAccountId: string): Promise<{
 
   if (!subscription) {
     return {
-      isGrcAdded: false, isTprmAdded: false, isInternalAuditEnabled: false,
+      isGrcAdded: false, isTprmAdded: false, isInternalAuditEnabled: false, isTechnicalEvidenceEnabled: false,
       subscriptionStatus: null, subscriptionType: null,
     };
   }
@@ -124,6 +127,7 @@ export async function getAccessSnapshot(customerAccountId: string): Promise<{
     isGrcAdded: active.has("GRC"),
     isTprmAdded: active.has("TPRM"),
     isInternalAuditEnabled: active.has("INTERNAL_AUDIT"),
+    isTechnicalEvidenceEnabled: active.has("TECHNICAL_EVIDENCE"),
     subscriptionStatus: status,
     subscriptionType: subscription.subscriptionType,
   };

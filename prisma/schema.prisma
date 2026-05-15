@@ -24,6 +24,7 @@ model CustomerAccount {
   isGrcAdded                    Boolean                        @default(true) // Whether this account has GRC module access (default true for legacy accounts)
   isTprmAdded                   Boolean                        @default(false) // Whether this account was onboarded via TPRM
   isInternalAuditEnabled        Boolean                        @default(false) // Whether this account has Internal Audit module access (independent of GRC)
+  isTechnicalEvidenceEnabled    Boolean                        @default(false) // Whether this account has Technical Evidence platform access (independent 4th platform)
   isQpostComplianceEnabled      Boolean                        @default(false) // Whether this account uses QPost Compliance module
   emailNotificationsEnabled     Boolean                        @default(true) // Toggle for non-mandatory email notifications
   theme                         String? // Color theme chosen by Customer Admin (e.g., terracotta, ocean, forest, royal, slate, crimson)
@@ -188,7 +189,7 @@ model SubscriptionPlan {
   accountsUsed         Int             @default(0)
   status               String          @default("Active") // Active, Inactive, Expired
   // New: per-module breakdown (additive, nullable for legacy rows)
-  moduleCode           String? // "GRC" | "TPRM" | "INTERNAL_AUDIT"
+  moduleCode           String? // "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"
   tier                 PlanTier? // BASIC | MEDIUM | PRO
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
@@ -260,7 +261,7 @@ enum DiscountType {
 // Every numeric limit has a paired unlimited* boolean - when true, the limit is uncapped.
 model ModulePlanPricing {
   id         String   @id @default(cuid())
-  moduleCode String // "GRC" | "TPRM" | "INTERNAL_AUDIT"
+  moduleCode String // "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"
   planType   PlanType // BASE or GENERAL (COMPLIMENTARY rows not stored here)
 
   // Pricing - BASE has yearly only; GENERAL has both (customer chooses cycle at signup)
@@ -290,7 +291,7 @@ model ModulePlanPricing {
 // Catalog: tier pricing + limits per module (admin-edited)
 model ModuleTierPricing {
   id              String   @id @default(cuid())
-  moduleCode      String // "GRC" | "TPRM" | "INTERNAL_AUDIT"
+  moduleCode      String // "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"
   tier            PlanTier
   monthlyPrice    Decimal  @db.Decimal(12, 2)
   yearlyPrice     Decimal  @db.Decimal(12, 2)
@@ -327,7 +328,7 @@ model RazorpayEvent {
 model RazorpayPlan {
   id             String   @id @default(cuid())
   razorpayPlanId String   @unique
-  moduleCode     String // "GRC" | "TPRM" | "INTERNAL_AUDIT"
+  moduleCode     String // "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"
   planType       String // "BASE" | "GENERAL"
   billingCycle   String // "MONTHLY" | "YEARLY"
   amount         Decimal  @db.Decimal(12, 2) // Amount in INR
@@ -373,7 +374,7 @@ model ModuleSubscription {
   id              String       @id @default(cuid())
   subscriptionId  String
   subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  moduleCode      String // "GRC" | "TPRM" | "INTERNAL_AUDIT"
+  moduleCode      String // "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"
   tier            PlanTier
   billingCycle    BillingCycle
   // Snapshot at purchase
@@ -562,7 +563,7 @@ model UserRole {
   id         String   @id @default(cuid())
   userId     String
   roleId     String
-  // Module this assignment applies to: "GRC" | "TPRM" | "INTERNAL_AUDIT".
+  // Module this assignment applies to: "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE".
   // null = system-wide role (e.g., GRCAdministrator) — applies across all modules.
   moduleCode String?
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)

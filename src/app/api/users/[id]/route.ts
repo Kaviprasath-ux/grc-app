@@ -80,7 +80,7 @@ export const PUT = withAuth(
         //   multi-module role (CustomerAdministrator) → all the role's modules
         //                        (assignRoleByName will create rows only for
         //                        the customer's active subset of those)
-        let scopeFilter: { userId: string; moduleCode?: { in: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[] } | null };
+        let scopeFilter: { userId: string; moduleCode?: { in: ("GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE")[] } | null };
         const modules = getModulesForRole(role as RoleName);
         if (modules === "system") {
           scopeFilter = { userId: id, moduleCode: null };

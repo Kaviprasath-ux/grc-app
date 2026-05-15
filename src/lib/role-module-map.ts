@@ -18,7 +18,7 @@
 
 import type { RoleName } from "@/lib/permissions";
 
-export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 
 export const ROLE_MODULES: Record<RoleName, ModuleCode[] | "system"> = {
   // ── System-wide roles ───────────────────────────────────────────
@@ -26,7 +26,7 @@ export const ROLE_MODULES: Record<RoleName, ModuleCode[] | "system"> = {
   TPRMAdmin: "system",
 
   // ── Cross-module customer admin (one row per subscribed module) ─
-  CustomerAdministrator: ["GRC", "TPRM", "INTERNAL_AUDIT"],
+  CustomerAdministrator: ["GRC", "TPRM", "INTERNAL_AUDIT", "TECHNICAL_EVIDENCE"],
 
   // ── GRC platform roles ──────────────────────────────────────────
   Reviewer: ["GRC"],

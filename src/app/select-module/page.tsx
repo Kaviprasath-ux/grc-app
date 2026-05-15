@@ -16,7 +16,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Shield, ClipboardCheck, ShieldCheck, ArrowRight } from "lucide-react";
+import { Shield, ClipboardCheck, ShieldCheck, Database, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { Card } from "@/components/ui/card";
@@ -53,6 +53,13 @@ const MODULE_CARDS: ModuleCard[] = [
     description: "Third-Party Risk Management — vendor assessments and monitoring",
     icon: ShieldCheck,
     accent: "bg-purple-50 text-purple-600",
+  },
+  {
+    code: "TECHNICAL_EVIDENCE",
+    title: "Technical Evidence",
+    description: "Automated control evidence collection from cloud and on-prem systems",
+    icon: Database,
+    accent: "bg-amber-50 text-amber-600",
   },
 ];
 

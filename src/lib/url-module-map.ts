@@ -18,7 +18,7 @@
  *   That's why /grc is mapped under SYSTEM, not GRC.
  */
 
-export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+export type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 
 // Module-or-system tag used on the system-only super-admin pages.
 // "SYSTEM" never gets shown as a workspace in the picker — it's only
@@ -49,6 +49,9 @@ export const URL_MODULE_PREFIXES: PrefixEntry[] = [
 
   // TPRM module
   { prefix: "/tprm",                    module: "TPRM" },
+
+  // Technical Evidence module (4th independent platform)
+  { prefix: "/technical-evidence",      module: "TECHNICAL_EVIDENCE" },
 
   // GRC platform (customer-side)
   { prefix: "/dashboard",               module: "GRC" },
@@ -98,6 +101,8 @@ export function getModuleHome(module: ModuleCode): string {
       return "/internal-audit/dashboard";
     case "TPRM":
       return "/tprm/program-monitor";
+    case "TECHNICAL_EVIDENCE":
+      return "/technical-evidence/dashboard";
   }
 }
 
@@ -137,6 +142,9 @@ export function moduleHomeForRoles(module: ModuleCode, roles: string[]): string 
       return "/tprm/asr-assessment-factory";
     if (roles.includes("InternalITTeam")) return "/tprm/it-issues";
     return getModuleHome("TPRM");
+  }
+  if (module === "TECHNICAL_EVIDENCE") {
+    return getModuleHome("TECHNICAL_EVIDENCE");
   }
   return getModuleHome("GRC");
 }

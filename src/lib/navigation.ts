@@ -77,7 +77,7 @@ export interface NavItem {
    *
    * Only meaningful on top-level sections; ignored on children.
    */
-  module?: "GRC" | "TPRM" | "INTERNAL_AUDIT" | "SYSTEM";
+  module?: "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE" | "SYSTEM";
 }
 
 export const navigation: NavItem[] = [
@@ -689,7 +689,7 @@ export function filterNavigationByPermissionsAndRole(
    * Pass `null` (or omit) to keep legacy behaviour: show everything that
    * passes permission/role checks.
    */
-  currentModule?: "GRC" | "TPRM" | "INTERNAL_AUDIT" | null
+  currentModule?: "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE" | null
 ): NavItem[] {
   const primaryRole = getPrimaryRole(userRoles);
 

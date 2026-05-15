@@ -39,6 +39,7 @@ const userSelect = {
       isGrcAdded: true,
       isTprmAdded: true,
       isInternalAuditEnabled: true,
+      isTechnicalEvidenceEnabled: true,
       isQpostComplianceEnabled: true,
     },
   },
@@ -103,7 +104,7 @@ async function buildAuthUser(dbUser: {
   departmentId: string | null;
   department: { id: string; name: string } | null;
   customerAccountId: string | null;
-  customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isInternalAuditEnabled: boolean; isQpostComplianceEnabled: boolean } | null;
+  customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isInternalAuditEnabled: boolean; isTechnicalEvidenceEnabled: boolean; isQpostComplianceEnabled: boolean } | null;
   auditHeadId: string | null;
   userRoles: { moduleCode: string | null; role: { id: string; name: string } }[];
 }, extraRoles?: string[]) {
@@ -115,9 +116,9 @@ async function buildAuthUser(dbUser: {
   // Phase 5b.1: distinct module codes the user holds at least one role in.
   // Drives the workspace picker (subscription ∩ has-role). System roles
   // (moduleCode=null) are excluded — they don't anchor to any module.
-  const validModules = new Set<"GRC" | "TPRM" | "INTERNAL_AUDIT">();
+  const validModules = new Set<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE">();
   for (const ur of dbUser.userRoles) {
-    if (ur.moduleCode === "GRC" || ur.moduleCode === "TPRM" || ur.moduleCode === "INTERNAL_AUDIT") {
+    if (ur.moduleCode === "GRC" || ur.moduleCode === "TPRM" || ur.moduleCode === "INTERNAL_AUDIT" || ur.moduleCode === "TECHNICAL_EVIDENCE") {
       validModules.add(ur.moduleCode);
     }
   }
@@ -129,6 +130,7 @@ async function buildAuthUser(dbUser: {
   let isGrcAdded = dbUser.customerAccount?.isGrcAdded ?? false;
   let isTprmAdded = dbUser.customerAccount?.isTprmAdded ?? false;
   let isInternalAuditEnabled = dbUser.customerAccount?.isInternalAuditEnabled ?? false;
+  let isTechnicalEvidenceEnabled = dbUser.customerAccount?.isTechnicalEvidenceEnabled ?? false;
   let subscriptionStatus: SubscriptionStatus | null = null;
   let subscriptionType: SubscriptionType | null = null;
 
@@ -138,6 +140,7 @@ async function buildAuthUser(dbUser: {
       isGrcAdded = snap.isGrcAdded;
       isTprmAdded = snap.isTprmAdded;
       isInternalAuditEnabled = snap.isInternalAuditEnabled;
+      isTechnicalEvidenceEnabled = snap.isTechnicalEvidenceEnabled;
       subscriptionStatus = snap.subscriptionStatus;
       subscriptionType = snap.subscriptionType;
     } catch (e) {
@@ -161,6 +164,7 @@ async function buildAuthUser(dbUser: {
     isGrcAdded,
     isTprmAdded,
     isInternalAuditEnabled,
+    isTechnicalEvidenceEnabled,
     isQpostComplianceEnabled: dbUser.customerAccount?.isQpostComplianceEnabled ?? false,
     subscriptionStatus,
     subscriptionType,
@@ -366,6 +370,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.isGrcAdded = user.isGrcAdded;
           token.isTprmAdded = user.isTprmAdded;
           token.isInternalAuditEnabled = user.isInternalAuditEnabled;
+          token.isTechnicalEvidenceEnabled = user.isTechnicalEvidenceEnabled;
           token.isQpostComplianceEnabled = user.isQpostComplianceEnabled;
           token.subscriptionStatus = user.subscriptionStatus ?? null;
           token.subscriptionType = user.subscriptionType ?? null;
@@ -407,6 +412,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               token.isGrcAdded = authUser.isGrcAdded;
               token.isTprmAdded = authUser.isTprmAdded;
               token.isInternalAuditEnabled = authUser.isInternalAuditEnabled;
+              token.isTechnicalEvidenceEnabled = authUser.isTechnicalEvidenceEnabled;
               token.isQpostComplianceEnabled = authUser.isQpostComplianceEnabled;
               token.subscriptionStatus = authUser.subscriptionStatus ?? null;
               token.subscriptionType = authUser.subscriptionType ?? null;
@@ -434,20 +440,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.isGrcAdded = (token.isGrcAdded as boolean) ?? false;
         session.user.isTprmAdded = (token.isTprmAdded as boolean) ?? false;
         session.user.isInternalAuditEnabled = (token.isInternalAuditEnabled as boolean) ?? session.user.isGrcAdded;
+        session.user.isTechnicalEvidenceEnabled = (token.isTechnicalEvidenceEnabled as boolean) ?? false;
         session.user.isQpostComplianceEnabled = (token.isQpostComplianceEnabled as boolean) ?? false;
         session.user.subscriptionStatus = (token.subscriptionStatus as SubscriptionStatus | null) ?? null;
         session.user.subscriptionType = (token.subscriptionType as SubscriptionType | null) ?? null;
         session.user.roles = (token.roles as string[]) || [];
-        session.user.roleModules = (token.roleModules as ("GRC" | "TPRM" | "INTERNAL_AUDIT")[]) || [];
+        session.user.roleModules = (token.roleModules as ("GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE")[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)
-        // Filter permissions based on module flags (isGrcAdded / isTprmAdded / isInternalAuditEnabled)
+        // Filter permissions based on module flags
         session.user.permissions = expandRolePermissions(
           session.user.roles,
           {
             isGrcAdded: session.user.isGrcAdded,
             isTprmAdded: session.user.isTprmAdded,
             isInternalAuditEnabled: session.user.isInternalAuditEnabled,
+            isTechnicalEvidenceEnabled: session.user.isTechnicalEvidenceEnabled,
             isQpostComplianceEnabled: session.user.isQpostComplianceEnabled,
           }
         );

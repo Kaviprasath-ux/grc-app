@@ -21,6 +21,7 @@ declare module "next-auth" {
       isGrcAdded: boolean;
       isTprmAdded: boolean;
       isInternalAuditEnabled: boolean;
+      isTechnicalEvidenceEnabled: boolean;
       isQpostComplianceEnabled: boolean;
       // Subscription snapshot — populated when SUBSCRIPTION_GATING_ENABLED=true.
       // Used by middleware to gate routes; null when gating disabled or no subscription.
@@ -30,7 +31,7 @@ declare module "next-auth" {
       // Phase 5b.1: distinct module codes the user holds at least one role in.
       // Excludes null (system roles). Used by ModuleContext to compute the
       // workspace picker's available cards (subscription ∩ has-role).
-      roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[];
+      roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE")[];
       permissions: UserPermission[];
     } & DefaultSession["user"];
   }
@@ -50,11 +51,12 @@ declare module "next-auth" {
     isGrcAdded: boolean;
     isTprmAdded: boolean;
     isInternalAuditEnabled: boolean;
+    isTechnicalEvidenceEnabled: boolean;
     isQpostComplianceEnabled: boolean;
     subscriptionStatus: SubscriptionStatus | null;
     subscriptionType: SubscriptionType | null;
     roles: string[];
-    roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[];
+    roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE")[];
     permissions: UserPermission[];
   }
 }
@@ -75,11 +77,12 @@ declare module "next-auth/jwt" {
     isGrcAdded: boolean;
     isTprmAdded: boolean;
     isInternalAuditEnabled: boolean;
+    isTechnicalEvidenceEnabled: boolean;
     isQpostComplianceEnabled: boolean;
     subscriptionStatus: SubscriptionStatus | null;
     subscriptionType: SubscriptionType | null;
     roles: string[];
-    roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT")[];
+    roleModules: ("GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE")[];
     permissions: UserPermission[];
   }
 }

@@ -776,6 +776,7 @@ interface ModuleFlags {
   isTprmAdded?: boolean;
   isQpostComplianceEnabled?: boolean;
   isInternalAuditEnabled?: boolean;
+  isTechnicalEvidenceEnabled?: boolean;
 }
 
 /**
@@ -790,6 +791,13 @@ function isTprmResource(resource: string): boolean {
  */
 function isInternalAuditResource(resource: string): boolean {
   return resource.startsWith('audit.');
+}
+
+/**
+ * Check if a resource belongs to the Technical Evidence module (4th platform).
+ */
+function isTechnicalEvidenceResource(resource: string): boolean {
+  return resource.startsWith('technical-evidence.');
 }
 
 /**
@@ -844,6 +852,7 @@ export function expandRolePermissions(
         if (!isSystemRole && moduleFlags) {
           if (!moduleFlags.isTprmAdded && isTprmResource(resource)) continue;
           if (!moduleFlags.isInternalAuditEnabled && isInternalAuditResource(resource)) continue;
+          if (!moduleFlags.isTechnicalEvidenceEnabled && isTechnicalEvidenceResource(resource)) continue;
           if (!moduleFlags.isGrcAdded && isGrcOnlyResource(resource)) continue;
 
           if (!moduleFlags.isQpostComplianceEnabled && resource.startsWith('qpost-compliance.')) continue;

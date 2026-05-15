@@ -32,6 +32,7 @@ CREATE TABLE "CustomerAccount" (
     "isGrcAdded" BOOLEAN NOT NULL DEFAULT true,
     "isTprmAdded" BOOLEAN NOT NULL DEFAULT false,
     "isInternalAuditEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "isTechnicalEvidenceEnabled" BOOLEAN NOT NULL DEFAULT false,
     "isQpostComplianceEnabled" BOOLEAN NOT NULL DEFAULT false,
     "emailNotificationsEnabled" BOOLEAN NOT NULL DEFAULT true,
     "theme" TEXT,
