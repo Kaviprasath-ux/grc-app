@@ -320,6 +320,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.*', actions: ['*'], scope: 'all' },
     { resource: 'compliance.*', actions: ['*'], scope: 'all' },
     { resource: 'qpost-compliance.*', actions: ['*'], scope: 'all' },
+    // Technical Evidence — its own platform, gated by customer's isTechnicalEvidenceEnabled flag.
+    { resource: 'technical-evidence.*', actions: ['*'], scope: 'all' },
     // Customer-side Subscription portal — view and act on own subscription
     { resource: 'subscription.customer-portal', actions: ['*'], scope: 'all' },
     // Asset Management - explicit resources (excluding asset.my-inventory)
