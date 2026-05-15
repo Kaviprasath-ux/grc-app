@@ -109,7 +109,7 @@ export default function SelectModulePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-muted p-4">
-      <div className="w-full max-w-3xl">
+      <div className={cn("w-full", visibleCards.length === 4 ? "max-w-6xl" : "max-w-3xl")}>
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900">
             {t("Select a workspace")}
@@ -143,6 +143,7 @@ export default function SelectModulePage() {
               visibleCards.length === 1 && "grid-cols-1 max-w-md mx-auto",
               visibleCards.length === 2 && "grid-cols-1 sm:grid-cols-2",
               visibleCards.length === 3 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+              visibleCards.length === 4 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
             )}
           >
             {visibleCards.map((card) => {

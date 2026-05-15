@@ -61,7 +61,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "compliance.integration-credentials", action: "view" }
+  { resource: "technical-evidence.integration-credentials", action: "view" }
 );
 
 // POST - Create a new integration credential
@@ -127,5 +127,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "compliance.integration-credentials", action: "create" }
+  { resource: "technical-evidence.integration-credentials", action: "create" }
 );

@@ -58,7 +58,7 @@ export default function PlatformCredentialPage({
   const { t } = useLanguage();
   const router = useRouter();
   const { canCreate, canEdit, canDelete, isLoading: permLoading } = usePermissions(
-    "compliance.integration-credentials"
+    "technical-evidence.integration-credentials"
   );
   const [existing, setExisting] = useState<ExistingCredential | null>(null);
   const [loading, setLoading] = useState(true);

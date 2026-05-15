@@ -46,7 +46,7 @@ export const GET = withAuth(
       return NextResponse.json({ error: "Failed to fetch control mappings" }, { status: 500 });
     }
   },
-  { resource: "compliance.technical-evidence", action: "view" }
+  { resource: "technical-evidence.dashboard", action: "view" }
 );
 
 // PATCH - Confirm or reject an AI suggestion
@@ -104,7 +104,7 @@ export const PATCH = withAuth(
       return NextResponse.json({ error: "Failed to update mapping" }, { status: 500 });
     }
   },
-  { resource: "compliance.technical-evidence", action: "edit" }
+  { resource: "technical-evidence.dashboard", action: "edit" }
 );
 
 // POST - Manually add a control mapping
@@ -155,5 +155,5 @@ export const POST = withAuth(
       return NextResponse.json({ error: "Failed to create mapping" }, { status: 500 });
     }
   },
-  { resource: "compliance.technical-evidence", action: "edit" }
+  { resource: "technical-evidence.dashboard", action: "edit" }
 );

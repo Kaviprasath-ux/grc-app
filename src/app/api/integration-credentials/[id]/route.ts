@@ -47,7 +47,7 @@ export const GET = withAuth(
       return NextResponse.json({ error: "Failed to fetch credential" }, { status: 500 });
     }
   },
-  { resource: "compliance.integration-credentials", action: "view" }
+  { resource: "technical-evidence.integration-credentials", action: "view" }
 );
 
 // PATCH - Update credential
@@ -98,7 +98,7 @@ export const PATCH = withAuth(
       return NextResponse.json({ error: "Failed to update credential" }, { status: 500 });
     }
   },
-  { resource: "compliance.integration-credentials", action: "edit" }
+  { resource: "technical-evidence.integration-credentials", action: "edit" }
 );
 
 // DELETE - Remove credential
@@ -124,5 +124,5 @@ export const DELETE = withAuth(
       return NextResponse.json({ error: "Failed to delete credential" }, { status: 500 });
     }
   },
-  { resource: "compliance.integration-credentials", action: "delete" }
+  { resource: "technical-evidence.integration-credentials", action: "delete" }
 );

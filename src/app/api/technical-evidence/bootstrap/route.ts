@@ -88,5 +88,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "compliance.technical-evidence", action: "create" }
+  { resource: "technical-evidence.dashboard", action: "create" }
 );

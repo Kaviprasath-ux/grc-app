@@ -43,5 +43,5 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "compliance.technical-evidence", action: "view" }
+  { resource: "technical-evidence.dashboard", action: "view" }
 );

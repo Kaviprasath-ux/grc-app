@@ -38,5 +38,5 @@ export const POST = withAuth(
       return NextResponse.json({ error: message }, { status: 500 });
     }
   },
-  { resource: "compliance.technical-evidence", action: "create" }
+  { resource: "technical-evidence.dashboard", action: "create" }
 );

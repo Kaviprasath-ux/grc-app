@@ -53,5 +53,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "compliance.integration-credentials", action: "edit" }
+  { resource: "technical-evidence.integration-credentials", action: "edit" }
 );

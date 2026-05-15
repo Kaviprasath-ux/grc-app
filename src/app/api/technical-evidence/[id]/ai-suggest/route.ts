@@ -202,7 +202,7 @@ Respond ONLY with the JSON array, no other text.`;
       );
     }
   },
-  { resource: "compliance.technical-evidence", action: "edit" }
+  { resource: "technical-evidence.dashboard", action: "edit" }
 );
 
 /** Map data source types to relevant compliance keywords */

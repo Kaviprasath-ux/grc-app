@@ -47,7 +47,7 @@ const CATEGORY_ICONS: Record<string, typeof ShieldCheck> = {
 
 export default function TechnicalEvidencePage() {
   const { t } = useLanguage();
-  const { canView, canCreate, isLoading: permLoading } = usePermissions("compliance.technical-evidence");
+  const { canView, canCreate, isLoading: permLoading } = usePermissions("technical-evidence.dashboard");
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>(PLATFORM_CATEGORIES[0]?.key || "azure_entra");

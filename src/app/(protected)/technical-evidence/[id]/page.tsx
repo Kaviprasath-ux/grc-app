@@ -41,7 +41,7 @@ export default function TechnicalEvidenceViewerPage({
   const { id } = use(params);
   const { t } = useLanguage();
   const { canView, canCreate, isLoading: permLoading } = usePermissions(
-    "compliance.technical-evidence"
+    "technical-evidence.dashboard"
   );
   const [records, setRecords] = useState<RecordData[]>([]);
   const [collection, setCollection] = useState<CollectionInfo | null>(null);

@@ -97,7 +97,7 @@ const platformCards: PlatformCard[] = [
 export default function TechnicalEvidenceSettingsPage() {
   const { t } = useLanguage();
   const router = useRouter();
-  const { canView, isLoading: permLoading } = usePermissions("compliance.integration-credentials");
+  const { canView, isLoading: permLoading } = usePermissions("technical-evidence.integration-credentials");
   const [credentials, setCredentials] = useState<CredentialSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
