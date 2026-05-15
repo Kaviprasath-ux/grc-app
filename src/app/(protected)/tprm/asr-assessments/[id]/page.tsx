@@ -1454,76 +1454,97 @@ export default function ASRAssessmentDetailPage() {
               )}
             </CardHeader>
             <CardContent className="space-y-4">
-              {selectedQ ? (
-                <>
-                  {/* Status badge + Confidence */}
-                  <div className="flex items-center justify-between">
-                    <StatusBadge status={selectedResp?.assessorStatus || selectedResp?.poStatus} />
-                    {selectedResp?.poScore != null && (
-                      <div className="text-right">
-                        <span className="text-xs text-muted-foreground">{t("Confidence level of AI")}</span>
-                        <div className="flex items-center gap-0.5 mt-1 justify-end">
-                          {[0.2, 0.4, 0.6, 0.8, 1.0].map((threshold, i) => (
-                            <div
-                              key={i}
-                              className={`w-1.5 rounded-sm ${(selectedResp?.poScore ?? 0) >= threshold ? "bg-primary" : "bg-muted"}`}
-                              style={{ height: `${12 + i * 4}px` }}
-                            />
-                          ))}
+              {selectedQ ? (() => {
+                const vendorAnswer = (selectedResp?.response || "").toString().toLowerCase().replace(/[\s_-]/g, "");
+                const aiNotApplicable = vendorAnswer === "yes" || vendorAnswer === "na" || vendorAnswer === "notapplicable";
+                const hasAssessorOverride = Boolean(
+                  selectedResp?.assessorStatus ||
+                  selectedResp?.assessorIssue ||
+                  selectedResp?.assessorRisk ||
+                  selectedResp?.assessorRecommendation ||
+                  selectedResp?.assessorSeverity ||
+                  selectedResp?.assessorComment
+                );
+
+                if (aiNotApplicable && !hasAssessorOverride) {
+                  return (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      {t("AI review is not required when the vendor answered Yes or N/A.")}
+                    </p>
+                  );
+                }
+
+                return (
+                  <>
+                    {/* Status badge + Confidence */}
+                    <div className="flex items-center justify-between">
+                      <StatusBadge status={selectedResp?.assessorStatus || selectedResp?.poStatus} />
+                      {selectedResp?.poScore != null && (
+                        <div className="text-right">
+                          <span className="text-xs text-muted-foreground">{t("Confidence level of AI")}</span>
+                          <div className="flex items-center gap-0.5 mt-1 justify-end">
+                            {[0.2, 0.4, 0.6, 0.8, 1.0].map((threshold, i) => (
+                              <div
+                                key={i}
+                                className={`w-1.5 rounded-sm ${(selectedResp?.poScore ?? 0) >= threshold ? "bg-primary" : "bg-muted"}`}
+                                style={{ height: `${12 + i * 4}px` }}
+                              />
+                            ))}
+                          </div>
                         </div>
+                      )}
+                    </div>
+
+                    {/* VerifAI Summary */}
+                    <div>
+                      <h4 className="text-sm font-semibold mb-1">{t("VerifAI Summary")}</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {selectedResp?.poStatus?.toLowerCase() === "failed"
+                          ? t("AI evaluation could not be completed for this question. Please re-evaluate.")
+                          : selectedResp?.poAnswer || "—"}
+                      </p>
+                    </div>
+
+                    {/* Issue */}
+                    {(selectedResp?.assessorIssue || selectedResp?.poIssue) && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-1">{t("Issue")}</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorIssue || selectedResp?.poIssue}</p>
                       </div>
                     )}
-                  </div>
 
-                  {/* VerifAI Summary */}
-                  <div>
-                    <h4 className="text-sm font-semibold mb-1">{t("VerifAI Summary")}</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {selectedResp?.poStatus?.toLowerCase() === "failed"
-                        ? t("AI evaluation could not be completed for this question. Please re-evaluate.")
-                        : selectedResp?.poAnswer || "—"}
-                    </p>
-                  </div>
+                    {/* Risk */}
+                    {(selectedResp?.assessorRisk || selectedResp?.poRisk) && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-1">{t("Risk")}</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorRisk || selectedResp?.poRisk}</p>
+                      </div>
+                    )}
 
-                  {/* Issue */}
-                  {(selectedResp?.assessorIssue || selectedResp?.poIssue) && (
+                    {/* Recommendation */}
+                    {(selectedResp?.assessorRecommendation || selectedResp?.poRecommendation) && (
+                      <div>
+                        <h4 className="text-sm font-semibold mb-1">{t("Recommendation")}</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorRecommendation || selectedResp?.poRecommendation}</p>
+                      </div>
+                    )}
+
+                    {/* Severity */}
                     <div>
-                      <h4 className="text-sm font-semibold mb-1">{t("Issue")}</h4>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorIssue || selectedResp?.poIssue}</p>
+                      <h4 className="text-sm font-semibold mb-1">{t("Severity")}</h4>
+                      <SeverityBadge severity={selectedResp?.assessorSeverity || selectedResp?.poSeverity} />
                     </div>
-                  )}
 
-                  {/* Risk */}
-                  {(selectedResp?.assessorRisk || selectedResp?.poRisk) && (
-                    <div>
-                      <h4 className="text-sm font-semibold mb-1">{t("Risk")}</h4>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorRisk || selectedResp?.poRisk}</p>
-                    </div>
-                  )}
-
-                  {/* Recommendation */}
-                  {(selectedResp?.assessorRecommendation || selectedResp?.poRecommendation) && (
-                    <div>
-                      <h4 className="text-sm font-semibold mb-1">{t("Recommendation")}</h4>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp?.assessorRecommendation || selectedResp?.poRecommendation}</p>
-                    </div>
-                  )}
-
-                  {/* Severity */}
-                  <div>
-                    <h4 className="text-sm font-semibold mb-1">{t("Severity")}</h4>
-                    <SeverityBadge severity={selectedResp?.assessorSeverity || selectedResp?.poSeverity} />
-                  </div>
-
-                  {/* Assessor Comment (if overridden) */}
-                  {selectedResp?.assessorComment && (
-                    <div className="border-t pt-3">
-                      <h4 className="text-sm font-semibold mb-1">{isApprover ? t("Approver Comment") : t("Assessor Comment")}</h4>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp.assessorComment}</p>
-                    </div>
-                  )}
-                </>
-              ) : (
+                    {/* Assessor Comment (if overridden) */}
+                    {selectedResp?.assessorComment && (
+                      <div className="border-t pt-3">
+                        <h4 className="text-sm font-semibold mb-1">{isApprover ? t("Approver Comment") : t("Assessor Comment")}</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedResp.assessorComment}</p>
+                      </div>
+                    )}
+                  </>
+                );
+              })() : (
                 <p className="text-sm text-muted-foreground text-center py-6">{t("Select a question to view AI review")}</p>
               )}
             </CardContent>
@@ -1537,7 +1558,7 @@ export default function ASRAssessmentDetailPage() {
       <Dialog open={overrideOpen} onOpenChange={setOverrideOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t("Override AI Evaluation")}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
             <div>
               <span className="text-sm font-medium">{t("Question")}: </span>
               <span className="text-sm">{selectedQ?.questionText}</span>
