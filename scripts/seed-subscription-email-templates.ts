@@ -331,6 +331,24 @@ const TEMPLATES: TemplateSpec[] = [
     bodyText: "Hi {recipientName}, {customerName}'s subscription has been cancelled. 2-year contract complete, no further charges. Modules: {moduleList}.",
     placeholders: ["recipientName", "customerName", "moduleList"],
   },
+  {
+    code: "SUBSCRIPTION_CANCELLED",
+    name: "Subscription cancelled (admin notification)",
+    description: "Sent to admins when a user cancels their subscription.",
+    subject: "Subscription cancelled by {cancelledBy}",
+    bodyHtml: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #3A2D28;">
+        <h2 style="color: #A57865;">Subscription Cancelled</h2>
+        <p>Hi {recipientName},</p>
+        <p><strong>{cancelledBy}</strong> has cancelled the <strong>{customerName}</strong> subscription.</p>
+        <p><strong>Modules:</strong> {moduleList}</p>
+        <p><strong>Access until:</strong> {accessUntil}</p>
+        <p>Auto-renew has been turned off. No further charges will be made.</p>
+        <p><a href="{portalLink}" style="display:inline-block; background:#A57865; color:white; padding:10px 20px; text-decoration:none; border-radius:4px;">View Subscription</a></p>
+      </div>`,
+    bodyText: "Hi {recipientName}, {cancelledBy} cancelled {customerName}'s subscription. Modules: {moduleList}. Access until: {accessUntil}. No further charges. View: {portalLink}",
+    placeholders: ["recipientName", "customerName", "cancelledBy", "moduleList", "accessUntil", "portalLink"],
+  },
 ];
 
 export async function seedSubscriptionEmailTemplates(client: PrismaClient = prisma) {
