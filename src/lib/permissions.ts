@@ -774,8 +774,9 @@ function resourceMatches(pattern: string, resource: string): boolean {
  * and GRC/organization resources are excluded if isGrcAdded=false.
  * GRCAdministrator and TPRMAdmin roles ignore these flags (system-level roles).
  *
- * Three-platform model: audit.* gates on isInternalAuditEnabled, organization/
- * compliance/asset/risk.* gate on isGrcAdded, tprm.* gates on isTprmAdded.
+ * Four-platform model: audit.* gates on isInternalAuditEnabled, organization/
+ * compliance/asset/risk.* gate on isGrcAdded, tprm.* gates on isTprmAdded,
+ * technical-evidence.* gates on isTechnicalEvidenceEnabled.
  */
 interface ModuleFlags {
   isGrcAdded?: boolean;
@@ -809,8 +810,9 @@ function isTechnicalEvidenceResource(resource: string): boolean {
 /**
  * GRC-only resources (excluding audit.*, which is gated separately via
  * isInternalAuditEnabled, AND excluding organization.*, which is now
- * cross-cutting per the BA spec for the three-platform model — TPRM-only
- * and IA-only customers also need access to Organization).
+ * cross-cutting per the BA spec for the four-platform model — TPRM-only,
+ * IA-only, and TECHNICAL_EVIDENCE-only customers also need access to
+ * Organization).
  */
 function isGrcOnlyResource(resource: string): boolean {
   return (
@@ -854,7 +856,7 @@ export function expandRolePermissions(
 
       for (const resource of resources) {
         // Apply module flag filtering for non-system roles.
-        // Three-platform model: each module gated by its own flag.
+        // Four-platform model: each module gated by its own flag.
         if (!isSystemRole && moduleFlags) {
           if (!moduleFlags.isTprmAdded && isTprmResource(resource)) continue;
           if (!moduleFlags.isInternalAuditEnabled && isInternalAuditResource(resource)) continue;

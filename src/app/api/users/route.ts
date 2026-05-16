@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
 
     // Use transaction to ensure user creation, role assignment, and subscription
     // update are atomic. Role assignment runs through assignRoleByName which
-    // enforces the three-platform rules (subscription gating + one role per module).
+    // enforces the platform rules (subscription gating + one role per module — 4 platforms).
     const user = await prisma.$transaction(async (tx) => {
       // Create the user (without UserRole — that comes next so we can validate).
       const newUser = await tx.user.create({

@@ -1,6 +1,6 @@
 /**
  * Phase 3 validators — block role assignments that violate the
- * three-platform model.
+ * platform model (GRC / TPRM / Internal Audit / Technical Evidence).
  *
  * Two rules enforced here:
  *   1. assertRoleAllowedForCustomer — the role must belong to a module the

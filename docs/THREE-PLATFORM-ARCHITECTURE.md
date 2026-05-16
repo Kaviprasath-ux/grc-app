@@ -1,14 +1,16 @@
-# Three‑Platform Architecture — Implementation Documentation
+# Four‑Platform Architecture — Implementation Documentation
 
-**Project:** GRC AI — separating GRC, TPRM, and Internal Audit into independent platforms with shared identity
-**Status:** Phases 1‑10 complete, code in working tree (not yet committed/deployed)
-**Last updated:** 2026-05-13
+**Project:** GRC AI — independent platforms with shared identity: **GRC**, **TPRM**, **Internal Audit**, and **Technical Evidence**
+**Status:** Phases 1‑11 complete and deployed
+**Last updated:** 2026-05-16
+
+> **Filename note**: this doc was created during the original three-platform migration. Technical Evidence was added as the 4th platform on 2026-05-15. Filename retained for stable external references; content reflects current four-platform model.
 
 ---
 
 ## 1. Executive summary
 
-The application now treats **GRC**, **TPRM**, and **Internal Audit** as three independent platforms (workspaces) under a single login. A customer subscribes to any combination of the three; a user holds at most one role per platform but can hold roles across platforms.
+The application now treats **GRC**, **TPRM**, **Internal Audit**, and **Technical Evidence** as four independent platforms (workspaces) under a single login. A customer subscribes to any combination of the four; a user holds at most one role per platform but can hold roles across platforms.
 
 Headline features delivered:
 
@@ -25,14 +27,20 @@ Headline features delivered:
 
 ---
 
-## 2. The three platforms
+## 2. The four platforms
 
 | Platform | URL prefix (current) | Subscription flag | Default home |
 |---|---|---|---|
 | **GRC** | `/dashboard`, `/organization/*`, `/compliance/*`, `/qpost-compliance/*`, `/asset-management/*`, `/risks/*` | `isGrcAdded` | `/dashboard` |
 | **Internal Audit** | `/internal-audit/*` | `isInternalAuditEnabled` | `/internal-audit/dashboard` |
 | **TPRM** | `/tprm/*` | `isTprmAdded` | `/tprm/program-monitor` (role‑dependent) |
+| **Technical Evidence** | `/technical-evidence/*` | `isTechnicalEvidenceEnabled` | `/technical-evidence/dashboard` |
 | **Super‑admin** (system) | `/grc/customer-accounts`, `/grc/customers`, `/subscription/*`, `/grc/email-*` | n/a — `GRCAdministrator` role only | `/grc` |
+
+**Technical Evidence specifics** (4th platform, added 2026-05-15):
+- Customer can subscribe to Technical Evidence alone or alongside any combination of the other 3
+- Its sidebar is intentionally stripped down: only **Organization → Profile + Subscription & Billing** and **Technical Evidence → Dashboard + Credential Vault**
+- The actual evidence-collection pages (was previously nested under `/compliance/technical-evidence/*`) now live under `/technical-evidence/*` and are no longer gated by GRC subscription
 
 > **URL restructure (P5b.2)** to `/grc/*`, `/ia/*`, `/grc-admin/*` was deferred. Module‑identification today happens via `getModuleFromPath()` in `src/lib/url-module-map.ts`, which knows the current legacy prefix layout.
 
@@ -49,7 +57,7 @@ model UserRole {
   id         String   @id @default(cuid())
   userId     String
   roleId     String
-  moduleCode String?   // "GRC" | "TPRM" | "INTERNAL_AUDIT" | NULL (system role)
+  moduleCode String?   // "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE" | NULL (system role)
   user       User     @relation(...)
   role       Role     @relation(...)
   createdAt  DateTime @default(now())
@@ -77,19 +85,20 @@ model User {
 - **Before**: usernames and emails were unique *per customer* (`@@unique([customerAccountId, userName])`). That allowed two customers to each have an "aman", and login picked one at random.
 - **After**: usernames and emails are globally unique. Login is deterministic. Cross‑customer attempts to create a duplicate are rejected with a neutral *"This username/email is already in use"* message that does **not** leak the other tenant's data.
 
-### 3.3 Customer flags (already existed, now wired)
+### 3.3 Customer flags (one per platform)
 
 ```prisma
 model CustomerAccount {
-  isGrcAdded             Boolean @default(true)
-  isTprmAdded            Boolean @default(false)
-  isInternalAuditEnabled Boolean @default(false)
-  isQpostComplianceEnabled Boolean @default(false)
+  isGrcAdded                 Boolean @default(true)
+  isTprmAdded                Boolean @default(false)
+  isInternalAuditEnabled     Boolean @default(false)
+  isTechnicalEvidenceEnabled Boolean @default(false)   // added 2026-05-15
+  isQpostComplianceEnabled   Boolean @default(false)
   ...
 }
 ```
 
-These columns existed before Phase 1; the work integrated `isInternalAuditEnabled` into the gating logic alongside the others.
+The first three columns existed before Phase 1; Phase 1 wired `isInternalAuditEnabled` into gating alongside the others. `isTechnicalEvidenceEnabled` was added as part of the Technical Evidence platform migration (Phase 11) — grandfathered to `true` for all existing GRC customers via `scripts/prod-backfill-technical-evidence.ts`.
 
 ### 3.4 Subscription provisioning
 
@@ -120,7 +129,7 @@ Single source of truth: `src/lib/role-module-map.ts`.
 |---|---|---|
 | `GRCAdministrator` | `system` | Super‑admin. `moduleCode=null` on UserRole. Bypasses picker. |
 | `TPRMAdmin` | `system` | Legacy TPRM super‑admin. Still active. |
-| `CustomerAdministrator` | `["GRC", "TPRM", "INTERNAL_AUDIT"]` | Multi‑module. One row per active customer module. |
+| `CustomerAdministrator` | `["GRC", "TPRM", "INTERNAL_AUDIT", "TECHNICAL_EVIDENCE"]` | Multi‑module. One row per active customer module. |
 | `Reviewer` | `["GRC"]` | |
 | `Contributor` | `["GRC"]` | UI‑hidden in Phase 4. |
 | `DepartmentReviewer` | `["GRC"]` | |
@@ -139,6 +148,8 @@ Single source of truth: `src/lib/role-module-map.ts`.
 | `FactoryAdmin` | `["TPRM"]` | |
 | `FactoryAssessor` | `["TPRM"]` | |
 | `InternalITTeam` | `["TPRM"]` | |
+
+> **Technical Evidence has no module-specific roles** as of 2026-05-16. Only `CustomerAdministrator` can be assigned with `moduleCode="TECHNICAL_EVIDENCE"`. Module-specific TE roles (e.g. a "TechnicalEvidenceUser") can be added later if needed.
 
 Helper functions in `role-module-map.ts`:
 - `getModulesForRole(roleName)` → `ModuleCode[] | "system"`, throws on unknown
@@ -199,6 +210,7 @@ otherwise:
 | TPRM | AccountManager / TPRMSME | `/tprm/am-assessments` |
 | TPRM | FactoryAdmin / FactoryAssessor | `/tprm/asr-assessment-factory` |
 | TPRM | InternalITTeam | `/tprm/it-issues` |
+| TECHNICAL_EVIDENCE | Anyone | `/technical-evidence/dashboard` |
 | GRC | Anyone | `/dashboard` |
 
 ### 6.2 Workspace picker
@@ -401,12 +413,12 @@ Header (`src/components/layout/header.tsx`) displays the role **for the current 
 - **Customer admin onboards "alice"** → Customer admin (one UserRole row, GRC) created via `/api/grc/customer-accounts/onboard`
 - **alice logs in** → only one module → directly redirected to `/dashboard` → sidebar shows GRC sections only → no "Switch workspace" button
 
-### Scenario B — Multi-module customer admin (GRC + TPRM + IA)
+### Scenario B — Multi-module customer admin (all 4 platforms)
 
-- **Customer**: `globex` with all three modules
-- **Customer admin "globex.admin"** is created with three UserRole rows: `CustomerAdministrator/GRC`, `CustomerAdministrator/TPRM`, `CustomerAdministrator/INTERNAL_AUDIT`
-- **globex.admin logs in** → 3 modules available → `/select-module` shows 3 cards
-- Picks TPRM → cookie set → `/tprm/program-monitor` → TPRM sidebar only
+- **Customer**: `globex` with all four modules enabled
+- **Customer admin "globex.admin"** is created with four UserRole rows: `CustomerAdministrator/GRC`, `CustomerAdministrator/TPRM`, `CustomerAdministrator/INTERNAL_AUDIT`, `CustomerAdministrator/TECHNICAL_EVIDENCE`
+- **globex.admin logs in** → 4 modules available → `/select-module` shows 4 cards in a row (grid auto-widens to `max-w-6xl` at this count)
+- Picks Technical Evidence → cookie set → `/technical-evidence/dashboard` → TE sidebar only (Organization + Technical Evidence sections)
 - "Switch workspace" button visible → click → back to `/select-module`
 
 ### Scenario C — Aman case (cross-module module-specific role)
@@ -419,6 +431,15 @@ Header (`src/components/layout/header.tsx`) displays the role **for the current 
 - **aman logs in** → 2 modules available → `/select-module` → 2 cards
 - Picks GRC → lands on `/dashboard`, header shows **"Department Reviewer"**
 - Switches to TPRM → lands on `/tprm/bo-dashboard`, header shows **"Business Owner"**
+
+### Scenario D' — Technical Evidence-only customer (added 2026-05-15)
+
+- **Customer**: `tevidence-only`, only `isTechnicalEvidenceEnabled=true` (GRC/TPRM/IA all `false`)
+- **Customer admin** with role `CustomerAdministrator/TECHNICAL_EVIDENCE`
+- Logs in → 1 module → directly to `/technical-evidence/dashboard` (no picker)
+- Sidebar shows only **Organization** (Profile + Subscription & Billing) and **Technical Evidence** (Dashboard + Credential Vault) — no Compliance, Risk, Assets, IA, or TPRM
+- If they manually type `/compliance/framework` → layout gate redirects to `/subscription-required?module=GRC`
+- Brand label in header reads "Verifai Technical Evidence"
 
 ### Scenario D — IA-only customer
 
@@ -532,6 +553,7 @@ src/
 | P8 | Cross-module backend (check-existing, assign-module-role, includeModules) | 3 endpoints + scoped PUT |
 | P9 | Cross-module frontend (tabs, dialogs, smart Add User) | 3 reusable components + 2 page integrations |
 | P10 | Globally unique userName + email | Schema constraint + helper + UI tri-state |
+| P11 | **Technical Evidence as 4th independent platform** (2026-05-15) | Schema column + grandfather backfill + page move (`/compliance/technical-evidence/*` → `/technical-evidence/*`) + permission rename (`compliance.technical-evidence` → `technical-evidence.*`) + 4th picker card + standalone workspace with stripped Organization (Profile + Sub & Billing only) + pricing + Razorpay plans + customer-create toggle + public signup |
 
 ---
 
@@ -582,7 +604,7 @@ src/
 
 | Term | Meaning |
 |---|---|
-| **Module / Platform** | One of `GRC`, `TPRM`, `INTERNAL_AUDIT`. Three independent products under one login. |
+| **Module / Platform** | One of `GRC`, `TPRM`, `INTERNAL_AUDIT`, `TECHNICAL_EVIDENCE`. Four independent products under one login. |
 | **Workspace** | Synonym for module from the user's perspective ("I'm in the TPRM workspace"). |
 | **moduleCode** | Column on `UserRole` tagging which platform the role applies to. `null` = system-wide. |
 | **roleModules** | Distinct set of moduleCodes a user holds at least one role in. On `session.user`. |

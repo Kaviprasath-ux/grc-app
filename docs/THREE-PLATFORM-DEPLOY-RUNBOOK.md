@@ -1,8 +1,10 @@
-# Three-Platform Migration — Production Deploy Runbook
+# Four-Platform Migration — Production Deploy Runbook
 
-**Use this runbook when deploying the three-platform changes (commit `c4b1ea23` and onwards) to a fresh environment** (Prod, additional UAT cluster, dev mirror, etc.). The local UAT deploy of 2026-05-13 used these exact steps.
+**Use this runbook when deploying the platform-separation changes to a fresh environment** (Prod, additional UAT cluster, dev mirror, etc.). The UAT deploys of 2026-05-13 (initial 3-platform) and 2026-05-16 (Technical Evidence added) used these exact steps.
 
-> **Read `docs/THREE-PLATFORM-ARCHITECTURE.md` first** for what the migration does. This runbook is the "how to apply it" — not the "what". 30-40 minutes of focused work.
+> **Filename note**: originally written for the 3-platform migration. Updated 2026-05-16 to cover the addition of Technical Evidence as the 4th platform. Filename retained for stable external references.
+
+> **Read `docs/THREE-PLATFORM-ARCHITECTURE.md` first** for what the migration does. This runbook is the "how to apply it" — not the "what". 30-40 minutes of focused work for the initial 3-platform migration; ~10-15 minutes additional if also applying Technical Evidence in the same window.
 
 ---
 
@@ -36,15 +38,22 @@ git status                 # working tree should be clean
 git pull                   # pull the deploy branch (e.g. GRC-MultiTenant)
 ```
 
-You need these scripts present locally (created during the UAT migration, committed to the repo):
+You need these scripts present locally (created during the UAT migrations, committed to the repo):
+
+**For the initial 3-platform migration:**
 - `scripts/prod-audit-dupes.ts`
 - `scripts/prod-backfill-module-code.ts`
 - `scripts/prod-provision-subscriptions.ts`
 
+**For Technical Evidence (the 4th platform):**
+- `scripts/prod-backfill-technical-evidence.ts`
+- `scripts/seed-module-plan-pricing.ts` (also seeds 2 new TECHNICAL_EVIDENCE pricing rows)
+- `scripts/seed-razorpay-plans.ts` (also seeds 3 new TECHNICAL_EVIDENCE plan rows)
+
 Verify:
 ```powershell
-Test-Path scripts/prod-audit-dupes.ts, scripts/prod-backfill-module-code.ts, scripts/prod-provision-subscriptions.ts
-# All three should print: True
+Test-Path scripts/prod-audit-dupes.ts, scripts/prod-backfill-module-code.ts, scripts/prod-provision-subscriptions.ts, scripts/prod-backfill-technical-evidence.ts, scripts/seed-module-plan-pricing.ts, scripts/seed-razorpay-plans.ts
+# All six should print: True
 ```
 
 ### 1.3 Add your IP to DO Trusted Sources
@@ -290,6 +299,69 @@ If any customers show `✗ ... failed: ...` → paste the error, investigate. Us
 
 ---
 
+## 4b. Technical Evidence migration (4th platform, added 2026-05-15)
+
+Run this block **after** the main 4 steps above complete cleanly. If the environment is already on the 3-platform code and you're only adding Technical Evidence, you can start here — but the `prisma db push` in 4b.1 is still required because the column is new.
+
+### 4b.1 — Push the schema (adds `isTechnicalEvidenceEnabled` column)
+
+```powershell
+npx prisma db push
+```
+
+Expected output:
+```
+🚀  Your database is now in sync with your Prisma schema. Done in N.Ns
+```
+
+The new column is `NOT NULL DEFAULT false`, so Postgres adds it without locking the table and no `--accept-data-loss` flag is needed.
+
+### 4b.2 — Grandfather existing GRC customers
+
+```powershell
+npx tsx scripts/prod-backfill-technical-evidence.ts
+```
+
+Expected output:
+```
+[TE-backfill] Starting Technical Evidence grandfather backfill...
+[TE-backfill] Flipped isTechnicalEvidenceEnabled on N customer(s).
+[TE-backfill] Inserted M TECHNICAL_EVIDENCE CustomerAdministrator row(s).
+[TE-backfill] Done.
+```
+
+- **N** = customers where `isGrcAdded = true` had their `isTechnicalEvidenceEnabled` flipped to `true`
+- **M** = CustomerAdministrator users that now have a new UserRole row tagged with `moduleCode='TECHNICAL_EVIDENCE'`
+- **M can be < N** if some customers have no CustomerAdministrator user with a GRC moduleCode row (legacy data — fine, those customers' admins just won't see the TE card until manually granted)
+
+Without this, existing customers cannot see/access Technical Evidence even with the schema column applied.
+
+### 4b.3 — Seed Technical Evidence pricing
+
+```powershell
+npx tsx scripts/seed-module-plan-pricing.ts
+```
+
+Adds 2 new `ModulePlanPricing` rows: `TECHNICAL_EVIDENCE × BASE` (₹10,000/yr) and `TECHNICAL_EVIDENCE × GENERAL` (₹1,000/mo, ₹10,000/yr). Idempotent — also re-asserts the 6 existing rows for the original 3 platforms back to default values, so **don't run this if you've manually customised pricing for GRC/TPRM/IA in production**.
+
+### 4b.4 — Seed Technical Evidence Razorpay plans
+
+```powershell
+$env:PAYMENT_STUB="true"             # for UAT — uses fake plan IDs
+# OR for Prod with real Razorpay:
+# $env:PAYMENT_STUB="false"
+# $env:RAZORPAY_KEY_ID="..."
+# $env:RAZORPAY_KEY_SECRET="..."
+
+npx tsx scripts/seed-razorpay-plans.ts
+```
+
+Adds 3 new `RazorpayPlan` rows for `TECHNICAL_EVIDENCE × {BASE, GENERAL} × {MONTHLY, YEARLY}`. Existing GRC/TPRM/IA rows are skipped. In stub mode, plan IDs are placeholders like `STUB-PLAN-TECHNICAL_EVIDENCE-...`; in real mode, plans are created in Razorpay and their real IDs stored.
+
+Without this, the public signup page (`/signup/v2`) will fail to create a mandate when a customer selects Technical Evidence as an add-on.
+
+---
+
 ## 5. Smoke tests (browser, ~10 minutes)
 
 Open the app URL in **incognito mode** (so you don't have stale cookies from before the deploy).
@@ -304,7 +376,8 @@ Login as a `GRCAdministrator` (e.g. superadmin).
 ### 5.2 Multi-module customer admin
 Login as a `CustomerAdministrator` whose customer has 2+ modules.
 - ✅ Lands on `/select-module` workspace picker
-- ✅ Sees cards for each subscribed module
+- ✅ Sees cards for each subscribed module (up to 4: GRC / Internal Audit / TPRM / Technical Evidence)
+- ✅ Cards laid out 4-across when all 4 are present (grid uses `lg:grid-cols-4` + wider `max-w-6xl`)
 - ✅ Click a card → cookie set → lands on that module's home
 - ✅ Sidebar shows only that module's nav (no cross-module leakage)
 - ✅ "Switch workspace" button visible at top of sidebar
@@ -321,9 +394,30 @@ Login as e.g. an `Auditor` (IA only) on a customer with multiple modules.
 - ✅ Sees only IA sidebar items
 
 ### 5.5 Layout subscription gate
-Login as a GRC-only customer admin. Manually paste a non-subscribed URL:
+Login as a GRC-only customer admin (no TPRM/IA/TE). Manually paste a non-subscribed URL:
 - ✅ `/tprm/program-monitor` → redirects to `/subscription-required?module=TPRM`
 - ✅ `/internal-audit/dashboard` → redirects to `/subscription-required?module=INTERNAL_AUDIT`
+- ✅ `/technical-evidence/dashboard` → redirects to `/subscription-required?module=TECHNICAL_EVIDENCE`
+
+### 5.5b Technical Evidence workspace
+Login as a customer admin whose customer has Technical Evidence (grandfathered or newly enabled):
+- ✅ Picker shows the Technical Evidence card (4th card, Database icon, amber accent)
+- ✅ Click TE card → lands on `/technical-evidence/dashboard`
+- ✅ Brand label in header reads "Verifai Technical Evidence"
+- ✅ Sidebar shows **Organization** (collapsed: Profile + Subscription & Billing) and **Technical Evidence** (Dashboard + Credential Vault) — NO Compliance, Risk, Asset, or IA items
+- ✅ Click `Credential Vault` → loads `/technical-evidence/settings` with 6 platform connector cards
+- ✅ Click `Organization → Profile` → loads `/technical-evidence/organization/profile` with **only** Company Info + Departments tabs (no Services / Regulations / Org Chart)
+
+### 5.5c Customer create — Technical Evidence toggle
+Login as `GRCAdministrator` → `/grc/customer-accounts` → click **Add Customer**:
+- ✅ Modal shows 4 enable-toggles: Is GRC Added, Is TPRM Added, Is Internal Audit Enabled, **Is Technical Evidence Enabled** (in that order)
+- ✅ Toggle TE = Yes, fill the form, save → new customer created with `isTechnicalEvidenceEnabled=true` in DB
+- ✅ Edit an existing customer → same 4 toggles appear in Edit modal
+
+### 5.5d Public signup — Technical Evidence as 4th purchasable
+Open `/signup/v2` in incognito:
+- ✅ Step 2 of the wizard shows 4 module options including Technical Evidence (Database icon)
+- ✅ Selecting TE adds it to the cart with the correct price (₹1k/mo or ₹10k/yr)
 
 ### 5.6 Header role display
 Login as a user with roles in 2 modules.
@@ -442,9 +536,9 @@ Some DO PG clusters only expose the pool URL externally. In that case:
 
 ---
 
-## 9. Cheat sheet (the 5 commands)
+## 9. Cheat sheet (the commands)
 
-After the pre-flight, the migration is just five commands:
+After the pre-flight, the full migration to the 4-platform model is:
 
 ```powershell
 # 1. Set the connection
@@ -453,23 +547,33 @@ $env:DATABASE_URL = "postgresql://doadmin:<PASS>@<host>.m.db.ondigitalocean.com:
 # 2. Backup (optional but recommended)
 pg_dump $env:DATABASE_URL --format=custom --no-owner --no-acl --file=backup-$(Get-Date -Format yyyy-MM-dd).dump
 
-# 3-7. Migration
-npx tsx scripts/prod-audit-dupes.ts                # READ-ONLY — verifies no dupes
-npx prisma db push --accept-data-loss              # Applies schema (~5s)
-npx tsx scripts/prod-backfill-module-code.ts       # Tags UserRole.moduleCode
-npx tsx scripts/prod-provision-subscriptions.ts    # Ensures Subscription rows
+# 3-6. Original 3-platform migration (skip if already applied on this env)
+npx tsx scripts/prod-audit-dupes.ts                  # READ-ONLY — verifies no dupes
+npx prisma db push --accept-data-loss                # Applies schema (~5s)
+npx tsx scripts/prod-backfill-module-code.ts         # Tags UserRole.moduleCode
+npx tsx scripts/prod-provision-subscriptions.ts      # Ensures Subscription rows
 
-# 8. Smoke test in browser (incognito)
+# 7-10. Technical Evidence 4th-platform migration
+npx prisma db push                                   # Adds isTechnicalEvidenceEnabled column
+npx tsx scripts/prod-backfill-technical-evidence.ts  # Grandfathers existing GRC customers
+npx tsx scripts/seed-module-plan-pricing.ts          # Adds TE pricing rows
+$env:PAYMENT_STUB="true"; npx tsx scripts/seed-razorpay-plans.ts   # Adds TE Razorpay plans (stub)
+
+# 11. Smoke test in browser (incognito)
 ```
 
-Total wall-clock time including waits: ~30 minutes.
+Total wall-clock time including waits: ~30 minutes for the 3-platform block, +10-15 minutes if also applying Technical Evidence in the same window.
 
 ---
 
 ## 10. Reference
 
 - Architecture overview: `docs/THREE-PLATFORM-ARCHITECTURE.md`
-- Code commit: `c4b1ea23` (Three-Platform Architecture P1-P10)
-- Affected DB tables: `User`, `UserRole`, `Subscription`, `ModuleSubscription`, `CustomerAccount`
-- Affected env vars: none (legacy `SUBSCRIPTION_GATING_ENABLED` and `MULTI_MODULE_PICKER_ENABLED` removed in P7)
-- Migration scripts: `scripts/prod-audit-dupes.ts`, `scripts/prod-backfill-module-code.ts`, `scripts/prod-provision-subscriptions.ts`
+- Code commits:
+  - `c4b1ea23` (Three-Platform Architecture P1-P10) — original 3-platform migration
+  - `b82254db`, `73531af2`, `ac87de6d`, `c24602a0`, `3e573af4` (P11 — Technical Evidence added 2026-05-15)
+- Affected DB tables: `User`, `UserRole`, `Subscription`, `ModuleSubscription`, `CustomerAccount`, `ModulePlanPricing`, `RazorpayPlan`
+- Affected env vars: none for 3-platform; `PAYMENT_STUB` / `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` consulted by `seed-razorpay-plans.ts`
+- Migration scripts:
+  - 3-platform: `scripts/prod-audit-dupes.ts`, `scripts/prod-backfill-module-code.ts`, `scripts/prod-provision-subscriptions.ts`
+  - 4-platform (Technical Evidence): `scripts/prod-backfill-technical-evidence.ts`, `scripts/seed-module-plan-pricing.ts`, `scripts/seed-razorpay-plans.ts`
