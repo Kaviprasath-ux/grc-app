@@ -438,17 +438,11 @@ export default function CustomerSubscriptionPage() {
             <CardContent className="p-4">
               {anyQueued ? (
                 <p className="text-sm text-stone-700">
-                  {t("Cancellation will be processed on")} <strong>{queuedRunsOn}</strong>{" "}
-                  {t("(end of your 2-year contract). Your subscription remains active until then.")}
-                </p>
-              ) : allLocked ? (
-                <p className="text-sm text-stone-700">
-                  {t("Your 2-year contract is active. You can queue a cancellation now and it will take effect on")}{" "}
-                  <strong>{queuedRunsOn}</strong>.
+                  {t("Cancellation scheduled for")} <strong>{queuedRunsOn}</strong>.
                 </p>
               ) : (
                 <p className="text-sm text-stone-700">
-                  {t("Cancelling stops auto-renew and prevents future invoices. You keep full access until each module's cycle ends. This is reversible — contact your administrator to re-enable.")}
+                  {t("Stops auto-renew. Access continues until your current cycle ends.")}
                 </p>
               )}
               <Button
@@ -478,7 +472,7 @@ export default function CustomerSubscriptionPage() {
               {t("Cancel your subscription?")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t("All active modules will be cancelled. You keep full access until each module's cycle ends. Auto-renew will be turned off and no further invoices will be generated. To re-enable, contact your administrator.")}
+              {t("Stops auto-renew. Access continues until your current cycle ends.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
