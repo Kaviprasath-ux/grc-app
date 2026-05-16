@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Pencil, Trash2, Search, Upload, Download, Home, ChevronRight, ChevronLeft, Eye, Users as UsersIcon } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { DataGrid } from "@/components/shared";
 import { AllUsersTab } from "@/components/shared/AllUsersTab";
 import { UserExistsConfirmDialog } from "@/components/shared/UserExistsConfirmDialog";
@@ -97,19 +98,17 @@ interface User {
   lastLogin?: string;
 }
 
-// RBAC roles mapped by function
-// Note: For Audit function, roles are filtered based on who is creating the user
-// Note: Contributor role is hidden/disabled - not available for selection
+// RBAC roles mapped by function.
+// Note: Contributor role is hidden/disabled — not available for selection.
+// Phase 11: CustomerAdministrator creates ALL Internal Audit roles directly
+// (AuditHead/Auditor/Auditee). The previous "CustomerAdmin can only create
+// AuditHead, then AuditHead creates Auditor/Auditee" two-step flow was
+// retired — AuditHead now has no user-creation capability at all.
 const rolesByFunction: Record<string, string[]> = {
   Business: ["DepartmentReviewer", "DepartmentContributor"],
   Security: ["Reviewer"],
   Audit: ["AuditHead", "Auditor", "Auditee"],
 };
-
-// CustomerAdmin can only create AuditHead when selecting Audit function
-const customerAdminAuditRoles = ["AuditHead"];
-// AuditHead can only create Auditor and Auditee when selecting Audit function
-const auditHeadAuditRoles = ["Auditor", "Auditee"];
 
 // All assignable roles for filtering (excludes GRCAdministrator)
 // Note: Contributor role is hidden/disabled - not available for filtering
@@ -204,11 +203,36 @@ export default function UsersPage() {
   const currentUserDepartmentId = session?.user?.departmentId;
 
   // Phase 4: function dropdown filtered by subscribed modules.
-  const allowedFunctions = getAllowedFunctions({
+  // Phase 11: when this page is re-exported under /internal-audit/organization/users
+  // (or other workspace-scoped re-exports), restrict the Function dropdown
+  // further to the workspace's own roles even if the customer is also subscribed
+  // to other modules. Mirrors the URL-aware filter already used by the Profile
+  // page (organization/profile/page.tsx:147).
+  const pathname = usePathname();
+  const isInternalAuditScope = pathname?.startsWith("/internal-audit/") ?? false;
+  // Which platform is this page rendering as? Drives the moduleCode filter
+  // on /api/users, the Account Overview department filter (Option A), and
+  // the AllUsersTab "current module" badge.
+  const currentModule: ModuleCode = isInternalAuditScope ? "INTERNAL_AUDIT" : "GRC";
+  const baseFunctions = getAllowedFunctions({
     isGRCAdmin: userRoles.includes("GRCAdministrator"),
     isGrcAdded: session?.user?.isGrcAdded ?? false,
     isInternalAuditEnabled: session?.user?.isInternalAuditEnabled ?? false,
   });
+  const allowedFunctions = isInternalAuditScope
+    ? baseFunctions.filter((f) => f.value === "Audit")
+    : baseFunctions;
+
+  // Number of customer-subscribed platforms (GRC, TPRM, IA — Technical
+  // Evidence is excluded from user-management scope per product). The
+  // All Users tab is only shown when the customer has more than one
+  // platform, because a single-platform customer has no "other modules"
+  // to assign users into.
+  const subscribedPlatformCount =
+    (session?.user?.isGrcAdded ? 1 : 0) +
+    (session?.user?.isTprmAdded ? 1 : 0) +
+    (session?.user?.isInternalAuditEnabled ? 1 : 0);
+  const showAllUsersTab = subscribedPlatformCount > 1;
 
   // Dialog states
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -294,17 +318,34 @@ export default function UsersPage() {
     reportingManagerId: "",
   });
 
-  // Fetch data on mount
+  // Phase 11: in IA scope, Function is auto-locked to "Audit". Force the form
+  // into that state whenever the Add User dialog opens or the URL changes,
+  // so the (disabled) Function dropdown shows Audit and the Role dropdown
+  // immediately offers AuditHead/Auditor/Auditee.
+  useEffect(() => {
+    if (isInternalAuditScope && isAddUserOpen && userForm.function !== "Audit") {
+      setUserForm((prev) => ({ ...prev, function: "Audit", role: "" }));
+      fetchReportingManagers("Audit");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInternalAuditScope, isAddUserOpen]);
+
+  // Fetch data on mount, and whenever the platform scope changes (e.g.
+  // re-export of this page under /internal-audit/organization/users).
   useEffect(() => {
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentModule]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
+      // /api/users is scoped to currentModule so we only get users that
+      // hold a role in this platform — the User Management and Account
+      // Overview tabs both render this same list.
       const [deptRes, userRes, desigRes] = await Promise.all([
         fetch("/api/departments"),
-        fetch("/api/users"),
+        fetch(`/api/users?moduleCode=${currentModule}`),
         fetch("/api/organization-settings/designation"),
       ]);
 
@@ -312,7 +353,8 @@ export default function UsersPage() {
       if (desigRes.ok) setDesignations(await desigRes.json());
       if (userRes.ok) {
         const allUsers = await userRes.json();
-        // Hide CustomerAdministrator from the users list
+        // Hide CustomerAdministrator from the users list (it is provisioned
+        // via super-admin onboarding and not assignable from this page).
         setUsers(allUsers.filter((u: User) => u.role !== "CustomerAdministrator"));
       }
 
@@ -846,7 +888,11 @@ export default function UsersPage() {
     }
   };
 
-  // Group users by department for Account Overview
+  // Group users by department for Account Overview.
+  // Option A: a department is shown on the platform's user page only when
+  // it has at least one user holding a role in that platform. `users` is
+  // already scoped to currentModule via /api/users?moduleCode=…, so this
+  // collapses departments that have zero users in the current platform.
   const usersByDepartment = translatedDepartments
     .filter((dept) =>
       dept.name.toLowerCase().includes(departmentSearchTerm.toLowerCase())
@@ -854,7 +900,8 @@ export default function UsersPage() {
     .map((dept) => ({
       ...dept,
       users: translatedUsers.filter((user) => user.departmentId === dept.id),
-    }));
+    }))
+    .filter((dept) => dept.users.length > 0);
 
   // User columns for User Management grid
   const userColumns: ColumnDef<User>[] = [
@@ -1083,7 +1130,9 @@ export default function UsersPage() {
         <TabsList className={`w-full sm:w-auto inline-flex ${isRTL ? "flex-row-reverse" : ""}`}>
           <TabsTrigger value="account-overview" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("Account Overview")}</TabsTrigger>
           <TabsTrigger value="user-management" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("User Management")}</TabsTrigger>
-          <TabsTrigger value="all-users" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("All Users")}</TabsTrigger>
+          {showAllUsersTab && (
+            <TabsTrigger value="all-users" className="flex-1 sm:flex-none text-xs sm:text-sm">{t("All Users")}</TabsTrigger>
+          )}
         </TabsList>
         </div>
 
@@ -1311,10 +1360,15 @@ export default function UsersPage() {
           </div>
         </TabsContent>
 
-        {/* All Users Tab — cross-module view with Assign Role action */}
-        <TabsContent value="all-users" className="mt-4 sm:mt-6">
-          <AllUsersTab currentModule="GRC" />
-        </TabsContent>
+        {/* All Users Tab — cross-module view with Assign Role action.
+            Only rendered when the customer has more than one platform
+            subscribed (showAllUsersTab); the currentModule scopes the
+            Assign-Role dialog to roles of this platform. */}
+        {showAllUsersTab && (
+          <TabsContent value="all-users" className="mt-4 sm:mt-6">
+            <AllUsersTab currentModule={currentModule} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Cross-module Add User confirm + assign flow */}
@@ -1510,7 +1564,7 @@ export default function UsersPage() {
             <div className="space-y-3 sm:space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Organization & Role")}</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {/* Function - full width */}
+                {/* Function - full width. In IA scope this is locked to "Audit". */}
                 <div className="sm:col-span-2">
                   <Label htmlFor="function" className="text-sm font-medium text-slate-700">{t("Function")} *</Label>
                   <Select
@@ -1520,8 +1574,9 @@ export default function UsersPage() {
                       fetchReportingManagers(value);
                       if (userFormErrors.function) setUserFormErrors((prev) => { const { function: _, ...rest } = prev; return rest; });
                     }}
+                    disabled={isInternalAuditScope}
                   >
-                    <SelectTrigger className={`mt-1.5 w-full bg-white ${userFormErrors.function ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${userFormErrors.function ? "border-red-500 focus-visible:ring-red-500" : ""} ${isInternalAuditScope ? "cursor-not-allowed opacity-70" : ""}`}>
                       <SelectValue placeholder={t("Select function")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
@@ -1550,20 +1605,11 @@ export default function UsersPage() {
                               <SelectValue placeholder={userForm.function ? t("Select role") : t("Select function first")} />
                             </SelectTrigger>
                             <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                              {userForm.function && (
-                                // For Audit function, CustomerAdmin can only assign AuditHead role
-                                userForm.function === "Audit" && userRoles.includes("CustomerAdministrator") && !userRoles.includes("GRCAdministrator")
-                                  ? customerAdminAuditRoles.map((role) => (
-                                      <SelectItem key={role} value={role}>
-                                        {role}
-                                      </SelectItem>
-                                    ))
-                                  : rolesByFunction[userForm.function]?.map((role) => (
-                                      <SelectItem key={role} value={role}>
-                                        {role}
-                                      </SelectItem>
-                                    ))
-                              )}
+                              {userForm.function && rolesByFunction[userForm.function]?.map((role) => (
+                                <SelectItem key={role} value={role}>
+                                  {role}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1892,7 +1938,7 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              {/* Function */}
+              {/* Function — locked to "Audit" in IA scope */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label htmlFor="editFunction" className="sm:text-end">{t("Function")}</Label>
                 <Select
@@ -1901,8 +1947,9 @@ export default function UsersPage() {
                     setEditingUser({ ...editingUser, function: value, role: "", reportingManagerId: "" });
                     fetchReportingManagers(value);
                   }}
+                  disabled={isInternalAuditScope}
                 >
-                  <SelectTrigger className="w-full bg-white">
+                  <SelectTrigger className={`w-full bg-white ${isInternalAuditScope ? "cursor-not-allowed opacity-70" : ""}`}>
                     <SelectValue placeholder={t("Select function")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
@@ -1933,19 +1980,11 @@ export default function UsersPage() {
                             <SelectValue placeholder={editingUser.function ? t("Select role") : t("Select function first")} />
                           </SelectTrigger>
                           <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                            {editingUser.function && (
-                              editingUser.function === "Audit" && userRoles.includes("CustomerAdministrator") && !userRoles.includes("GRCAdministrator")
-                                ? customerAdminAuditRoles.map((role) => (
-                                    <SelectItem key={role} value={role}>
-                                      {role}
-                                    </SelectItem>
-                                  ))
-                                : rolesByFunction[editingUser.function]?.map((role) => (
-                                    <SelectItem key={role} value={role}>
-                                      {role}
-                                    </SelectItem>
-                                  ))
-                            )}
+                            {editingUser.function && rolesByFunction[editingUser.function]?.map((role) => (
+                              <SelectItem key={role} value={role}>
+                                {role}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

@@ -8,9 +8,6 @@ import {
   Clock,
   AlertTriangle,
   FileType,
-  Users,
-  Building2,
-  GitBranch,
   Home,
   ChevronRight,
 } from "lucide-react";
@@ -60,24 +57,15 @@ export default function InternalAuditSettingsPage() {
       icon: FileType,
       href: "/internal-audit/settings/audit-types",
     },
-    {
-      name: t("User Management"),
-      description: t("Manage audit team members and roles"),
-      icon: Users,
-      href: "/internal-audit/settings/user-management",
-    },
-    {
-      name: t("Department"),
-      description: t("Configure departments for audits"),
-      icon: Building2,
-      href: "/internal-audit/settings/departments",
-    },
-    {
-      name: t("Process"),
-      description: t("Manage business processes"),
-      icon: GitBranch,
-      href: "/internal-audit/settings/process",
-    },
+    // Phase 11 — entry-points removed from this settings grid:
+    //   - "User Management" → audit user creation is now exclusively the
+    //     CustomerAdministrator's job, via Organization > Users.
+    //   - "Department" → duplicate of Organization > Profile > Departments.
+    //   - "Process" → placeholder pending a new process flow (will be re-added
+    //     once the new flow ships).
+    // Underlying route files at /internal-audit/settings/{user-management,
+    // departments,process}/* are kept intact as defensive re-exports in case
+    // any URL is bookmarked — but no entry-point on this page links to them.
   ];
 
   return (
