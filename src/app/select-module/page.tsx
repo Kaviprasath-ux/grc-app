@@ -15,8 +15,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { Shield, ClipboardCheck, ShieldCheck, Database, ArrowRight } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { Shield, ClipboardCheck, ShieldCheck, Database, ArrowRight, LogOut } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { Card } from "@/components/ui/card";
@@ -107,8 +107,27 @@ export default function SelectModulePage() {
 
   const visibleCards = MODULE_CARDS.filter((c) => availableModules.includes(c.code));
 
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.replace("/login");
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-muted p-4">
+    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-muted p-4">
+      {/* Logout — top-right corner. Useful when the user landed here by mistake
+          (no available modules, or wants to switch accounts without picking a workspace). */}
+      <div className="absolute top-4 ltr:right-4 rtl:left-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="hidden sm:inline">{t("Log out")}</span>
+        </Button>
+      </div>
+
       <div className={cn("w-full", visibleCards.length === 4 ? "max-w-6xl" : "max-w-3xl")}>
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900">
@@ -131,7 +150,7 @@ export default function SelectModulePage() {
             <Button
               variant="outline"
               className="mt-6"
-              onClick={() => router.push("/login")}
+              onClick={handleLogout}
             >
               {t("Back to login")}
             </Button>

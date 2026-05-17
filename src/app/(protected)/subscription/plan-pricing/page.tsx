@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Home, ChevronRight, Save, Shield, Users, Search, Building2, ClipboardCheck, Sparkles, Calendar } from "lucide-react";
+import { Home, ChevronRight, Save, Shield, Users, Search, Building2, ClipboardCheck, Database, Sparkles, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 type PlanType = "BASE" | "GENERAL";
 
 interface PricingRow {
@@ -38,12 +38,13 @@ interface PricingRow {
 }
 
 const MODULE_META: Record<ModuleCode, { label: string; icon: React.ReactNode; description: string }> = {
-  GRC:            { label: "GRC",            icon: <Shield className="h-5 w-5" />,         description: "Governance, Risk & Compliance" },
-  TPRM:           { label: "TPRM",           icon: <Building2 className="h-5 w-5" />,      description: "Third-Party Risk Management" },
-  INTERNAL_AUDIT: { label: "Internal Audit", icon: <ClipboardCheck className="h-5 w-5" />, description: "Audit planning, fieldwork & reporting" },
+  GRC:                { label: "GRC",                icon: <Shield className="h-5 w-5" />,         description: "Governance, Risk & Compliance" },
+  TPRM:               { label: "TPRM",               icon: <Building2 className="h-5 w-5" />,      description: "Third-Party Risk Management" },
+  INTERNAL_AUDIT:     { label: "Internal Audit",     icon: <ClipboardCheck className="h-5 w-5" />, description: "Audit planning, fieldwork & reporting" },
+  TECHNICAL_EVIDENCE: { label: "Technical Evidence", icon: <Database className="h-5 w-5" />,       description: "Automated control evidence collection" },
 };
 
-const MODULE_ORDER: ModuleCode[] = ["GRC", "TPRM", "INTERNAL_AUDIT"];
+const MODULE_ORDER: ModuleCode[] = ["GRC", "TPRM", "INTERNAL_AUDIT", "TECHNICAL_EVIDENCE"];
 
 const PLAN_META: Record<PlanType, { label: string; subtitle: string; icon: React.ReactNode; badge: string }> = {
   BASE:    { label: "Base Plans",    subtitle: "Year-1 promotional plans (yearly billing only)",                  icon: <Sparkles className="h-5 w-5" />, badge: "bg-emerald-100 text-emerald-800 border-emerald-300" },

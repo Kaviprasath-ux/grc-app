@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  CheckCircle2,
   Loader2,
   Eye,
   EyeOff,
@@ -20,12 +21,14 @@ import {
   CreditCard,
   Calendar,
   Zap,
+  PartyPopper,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
@@ -128,17 +131,9 @@ function isWorkEmail(email: string): boolean {
 // LocalStorage key for form persistence
 const SIGNUP_STORAGE_KEY = "verifai_signup_v2_form";
 
-interface SavedFormState {
-  step: 1 | 2 | 3;
-  organizationName: string;
-  adminFirstName: string;
-  adminLastName: string;
-  adminEmail: string;
-  // Note: password is NOT saved for security
-  selectedModules: ModuleCode[];
-  contractAccepted: boolean;
-  autopayAccepted: boolean;
-}
+// SavedFormState interface removed in Phase 11 — signup is no longer persisted.
+// The SIGNUP_STORAGE_KEY constant above is retained only for the on-mount
+// cleanup that wipes any stale data from the previous persistence model.
 
 export default function SignupV2Page() {
   const router = useRouter();
@@ -148,6 +143,10 @@ export default function SignupV2Page() {
   const [error, setError] = useState<string | null>(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [formLoaded, setFormLoaded] = useState(false);
+  // Phase 11: success dialog shown after a confirmed payment + auto-login.
+  // Clicking the button routes through the root page.tsx which handles the
+  // multi-module-aware destination (single-module home OR /select-module picker).
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Step 1: details
   const [organizationName, setOrganizationName] = useState("");
@@ -172,50 +171,23 @@ export default function SignupV2Page() {
   const [pricing, setPricing] = useState<PlanRow[]>([]);
   const [loadingPricing, setLoadingPricing] = useState(true);
 
-  // Load saved form state from localStorage on mount
+  // Phase 11: signup page never pre-fills from prior attempts. Every visit is
+  // a fresh form. Defensive cleanup on mount wipes any data left over from the
+  // previous localStorage persistence model (which auto-restored fields and
+  // caused stale data + step-jumping bugs).
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(SIGNUP_STORAGE_KEY);
-      if (saved) {
-        const data: SavedFormState = JSON.parse(saved);
-        if (data.step) setStep(data.step);
-        if (data.organizationName) setOrganizationName(data.organizationName);
-        if (data.adminFirstName) setAdminFirstName(data.adminFirstName);
-        if (data.adminLastName) setAdminLastName(data.adminLastName);
-        if (data.adminEmail) setAdminEmail(data.adminEmail);
-        if (data.selectedModules?.length) {
-          setSelectedModules(new Set(data.selectedModules));
-        }
-        if (data.contractAccepted) setContractAccepted(data.contractAccepted);
-        if (data.autopayAccepted) setAutopayAccepted(data.autopayAccepted);
-      }
+      localStorage.removeItem(SIGNUP_STORAGE_KEY);
     } catch {
-      // Ignore parse errors
+      // Ignore storage errors
     }
     setFormLoaded(true);
   }, []);
 
-  // Save form state to localStorage on changes (except password)
-  useEffect(() => {
-    if (!formLoaded) return; // Don't save until we've loaded
-    try {
-      const data: SavedFormState = {
-        step,
-        organizationName,
-        adminFirstName,
-        adminLastName,
-        adminEmail,
-        selectedModules: Array.from(selectedModules),
-        contractAccepted,
-        autopayAccepted,
-      };
-      localStorage.setItem(SIGNUP_STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      // Ignore storage errors
-    }
-  }, [formLoaded, step, organizationName, adminFirstName, adminLastName, adminEmail, selectedModules, contractAccepted, autopayAccepted]);
+  // No save effect — we intentionally do not persist form state.
 
-  // Clear saved form after successful signup
+  // No-op kept for compatibility with success/error paths that still call it.
+  // Safe to remove later once those callers are audited.
   const clearSavedForm = useCallback(() => {
     try {
       localStorage.removeItem(SIGNUP_STORAGE_KEY);
@@ -305,7 +277,8 @@ export default function SignupV2Page() {
           return;
         }
 
-        router.push("/dashboard");
+        setSubmitting(false);
+        setShowSuccessModal(true);
       } catch (e) {
         setError((e as Error).message);
         setSubmitting(false);
@@ -365,7 +338,8 @@ export default function SignupV2Page() {
           router.push("/login");
           return;
         }
-        router.push("/dashboard");
+        setSubmitting(false);
+        setShowSuccessModal(true);
         return;
       }
 
@@ -883,6 +857,56 @@ export default function SignupV2Page() {
           </Card>
         </div>
       </div>
+
+      {/* Phase 11 — Post-payment success modal. Replaces the previous
+          hard-coded redirect to /dashboard (which broke for TPRM/IA/TE-only
+          customers because they don't have GRC subscription, so the layout
+          gate bounced them to /subscription-required).
+          Now: button click pushes to "/", which uses the canonical root-page
+          routing logic (single-module home, or /select-module picker). */}
+      <Dialog
+        open={showSuccessModal}
+        // Block accidental dismiss by clicking outside / pressing Escape —
+        // the only way out is the primary button below, which guarantees
+        // the user lands on a valid page.
+        onOpenChange={(open) => {
+          if (!open) return;
+          setShowSuccessModal(open);
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="sm:max-w-md text-center"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-100 rounded-full blur-xl opacity-60" />
+              <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-full p-4">
+                <CheckCircle2 className="h-10 w-10" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <DialogTitle className="text-2xl font-bold text-stone-900 flex items-center justify-center gap-2">
+                <PartyPopper className="h-6 w-6 text-amber-500" />
+                {t("Welcome to Verifai!")}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-stone-600 max-w-sm">
+                {t("Your subscription is active and your account is ready. Click below to get started.")}
+              </DialogDescription>
+            </div>
+            <Button
+              size="lg"
+              className="w-full mt-2"
+              onClick={() => router.push("/")}
+            >
+              {t("Get Started")}
+              <ArrowRight className="h-4 w-4 ltr:ml-2 rtl:mr-2" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

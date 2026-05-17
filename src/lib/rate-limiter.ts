@@ -42,10 +42,27 @@ export interface RateLimitResult {
  * @param key - Unique identifier (e.g., IP address, email)
  * @param config - Rate limit configuration
  * @returns Rate limit result
+ *
+ * Dev-mode bypass: in non-production NODE_ENV, rate limiting is skipped so
+ * that repeated testing (signup, login retries during local dev / UAT smoke
+ * tests) isn't blocked by the production-strength caps. The bypass can be
+ * forced off by setting RATE_LIMIT_FORCE=true (useful if you want to test the
+ * rate-limit response shape locally).
  */
+const RATE_LIMIT_BYPASS_IN_DEV =
+  process.env.NODE_ENV !== "production" && process.env.RATE_LIMIT_FORCE !== "true";
+
 export function checkRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
   const now = Date.now();
   const windowMs = config.windowSecs * 1000;
+
+  if (RATE_LIMIT_BYPASS_IN_DEV) {
+    return {
+      success: true,
+      remaining: config.maxRequests,
+      resetAt: now + windowMs,
+    };
+  }
 
   const entry = store.get(key);
 

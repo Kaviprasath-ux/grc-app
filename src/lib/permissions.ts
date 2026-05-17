@@ -61,6 +61,7 @@ export const RESOURCES = {
   'compliance.controls': '/compliance/control',
   'compliance.governance': '/compliance/governance',
   'compliance.evidence': '/compliance/evidence',
+  'technical-evidence.account-overview': '/technical-evidence/account-overview',
   'technical-evidence.dashboard': '/technical-evidence/dashboard',
   'technical-evidence.integration-credentials': '/technical-evidence/settings',
   'technical-evidence.organization-profile': '/technical-evidence/organization/profile',
@@ -103,6 +104,7 @@ export const RESOURCES = {
   'risk.reports': '/risk-management/reports',
 
   // Internal Audit Module
+  'audit.account-overview': '/internal-audit/account-overview',
   'audit.dashboard': '/internal-audit/dashboard',
   'audit.auditables': '/internal-audit/audit-universe',
   'audit.risk-identification': '/internal-audit/risk-identification',
@@ -302,15 +304,21 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.controls', actions: ['*'], scope: 'all' },
     { resource: 'compliance.governance', actions: ['*'], scope: 'all' },
     { resource: 'compliance.evidence', actions: ['*'], scope: 'all' },
-    { resource: 'technical-evidence.dashboard', actions: ['*'], scope: 'all' },
-    { resource: 'technical-evidence.integration-credentials', actions: ['*'], scope: 'all' },
+    // Technical Evidence — superadmin sees the cross-tenant account overview only.
+    // Customer-facing Dashboard + Credential Vault are intentionally OMITTED:
+    // those are per-customer workflow pages, not admin views.
+    { resource: 'technical-evidence.account-overview', actions: ['*'], scope: 'all' },
     { resource: 'compliance.domain', actions: ['*'], scope: 'all' },
     // TPRM module - GRCAdministrator only has access to admin-level pages
     { resource: 'tprm.account-overview', actions: ['*'], scope: 'all' },
     { resource: 'tprm.vendor-management', actions: ['view', 'delete'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['*'], scope: 'all' },
     { resource: 'tprm.task-queue', actions: ['*'], scope: 'all' },
-    // NOTE: GRCAdministrator does NOT have access to: Configuration, Master Data, Organization, Asset Management, Risk Management, Internal Audit
+    // Internal Audit module - GRCAdministrator only sees the customer overview
+    // (tenant list filtered by isInternalAuditEnabled). They do NOT see the
+    // customer-side audit workflow pages — those stay scoped to AuditHead etc.
+    { resource: 'audit.account-overview', actions: ['*'], scope: 'all' },
+    // NOTE: GRCAdministrator does NOT have access to: Configuration, Master Data, Organization, Asset Management, Risk Management, Internal Audit workflow pages
   ],
 
   // Customer Administrator - Full access to organization and all other modules (except audit)

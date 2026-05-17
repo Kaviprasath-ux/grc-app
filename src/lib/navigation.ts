@@ -213,12 +213,15 @@ export const navigation: NavItem[] = [
   // ==================== End Technical Evidence > Organization Section ====================
 
   // ==================== Technical Evidence Section ====================
+  // Note: No parent permission — visibility determined by children's permissions.
+  // GRCAdministrator sees: Customer Accounts (superadmin tenant overview)
+  // CustomerAdministrator sees: Dashboard, Credential Vault (per-customer workflow)
   {
     name: "Technical Evidence",
     module: "TECHNICAL_EVIDENCE",
     icon: Database,
-    permission: "technical-evidence.dashboard:view",
     children: [
+      { name: "Customer Accounts", href: "/technical-evidence/account-overview", icon: LayoutDashboard, permission: "technical-evidence.account-overview:view" },
       { name: "Dashboard", href: "/technical-evidence/dashboard", icon: LayoutDashboard, permission: "technical-evidence.dashboard:view" },
       { name: "Credential Vault", href: "/technical-evidence/settings", icon: Key, permission: "technical-evidence.integration-credentials:view" },
     ],
@@ -302,6 +305,7 @@ export const navigation: NavItem[] = [
 
   // ==================== Internal Audit Section ====================
   // Note: No parent permission — visibility determined by children's permissions.
+  // GRCAdministrator sees: Customer Accounts (superadmin tenant overview)
   // CustomerAdministrator sees: Audit Settings, Risk Register
   // Auditees see: Fieldwork, Report, CAPA Tracking
   {
@@ -309,6 +313,7 @@ export const navigation: NavItem[] = [
     module: "INTERNAL_AUDIT",
     icon: ClipboardCheck,
     children: [
+      { name: "Customer Accounts", href: "/internal-audit/account-overview", icon: LayoutDashboard, permission: "audit.account-overview:view" },
       { name: "Dashboard", href: "/internal-audit/dashboard", icon: LayoutDashboard, permission: "audit.dashboard:view" },
       { name: "Audit Universe", href: "/internal-audit/audit-universe", icon: Network, permission: "audit.auditables:view" },
       { name: "Risk Identification", href: "/internal-audit/risk-identification", icon: Brain, permission: "audit.risk-identification:view" },

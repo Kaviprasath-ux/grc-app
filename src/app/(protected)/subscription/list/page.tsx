@@ -18,7 +18,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 type SubscriptionStatus = "TRIAL" | "ACTIVE" | "EXPIRING_SOON" | "EXPIRED" | "GRACE_PERIOD" | "SUSPENDED" | "CANCELLED";
 type SubscriptionType = "PAID" | "TRIAL" | "COMPLIMENTARY";
-type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 type PlanTier = "BASIC" | "MEDIUM" | "PRO";
 type BillingCycle = "MONTHLY" | "YEARLY";
 
@@ -211,6 +211,7 @@ export default function AllSubscriptionsPage() {
               <SelectItem value="GRC">GRC</SelectItem>
               <SelectItem value="TPRM">TPRM</SelectItem>
               <SelectItem value="INTERNAL_AUDIT">Internal Audit</SelectItem>
+              <SelectItem value="TECHNICAL_EVIDENCE">Technical Evidence</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
@@ -261,7 +262,7 @@ export default function AllSubscriptionsPage() {
                               className={m.cancelledAt ? "opacity-50 line-through" : ""}
                               title={`${m.tier} · ${m.billingCycle} · ₹${formatINR(m.unitPrice)} · ends ${formatDate(m.cycleEnd)}`}
                             >
-                              {m.moduleCode === "INTERNAL_AUDIT" ? "IA" : m.moduleCode} · {m.tier[0]}
+                              {m.moduleCode === "INTERNAL_AUDIT" ? "IA" : m.moduleCode === "TECHNICAL_EVIDENCE" ? "TE" : m.moduleCode} · {m.tier[0]}
                             </Badge>
                           ))
                         )}

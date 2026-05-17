@@ -27,7 +27,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 type SubscriptionStatus = "TRIAL" | "ACTIVE" | "EXPIRING_SOON" | "EXPIRED" | "GRACE_PERIOD" | "SUSPENDED" | "CANCELLED";
 type SubscriptionType = "PAID" | "TRIAL" | "COMPLIMENTARY";
-type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 type PlanTier = "BASIC" | "MEDIUM" | "PRO";
 
 interface ModuleDetail {
@@ -336,7 +336,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
               <tbody>
                 {sub.modules.map((m) => (
                   <tr key={m.id} className="border-b border-stone-100">
-                    <td className="px-4 py-3 font-medium">{m.moduleCode === "INTERNAL_AUDIT" ? "Internal Audit" : m.moduleCode}</td>
+                    <td className="px-4 py-3 font-medium">{m.moduleCode === "INTERNAL_AUDIT" ? "Internal Audit" : m.moduleCode === "TECHNICAL_EVIDENCE" ? "Technical Evidence" : m.moduleCode}</td>
                     <td className="px-4 py-3">
                       <Badge variant="outline">{m.tier}</Badge>
                       {m.previousTier && <span className="text-xs text-stone-500 ltr:ml-2 rtl:mr-2">(was {m.previousTier})</span>}
