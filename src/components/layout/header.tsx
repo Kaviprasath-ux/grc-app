@@ -277,8 +277,26 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
         >
           {logoUrl ? (
             <img src={logoUrl} alt={session?.user?.customerAccountName || "Logo"} className="h-10 max-w-[180px] object-contain" />
+          ) : currentModule === "GRC" || currentModule === "TPRM" || currentModule === "INTERNAL_AUDIT" ? (
+            <img
+              src={
+                currentModule === "GRC" ? "/logo-grc.png"
+                : currentModule === "TPRM" ? "/logo-tprm.png"
+                : "/logo-internal-audit.png"
+              }
+              alt={
+                currentModule === "GRC" ? "Glimmora GRC"
+                : currentModule === "TPRM" ? "Glimmora TPRM"
+                : "Glimmora Internal Audit"
+              }
+              className="h-10 w-auto max-w-[180px] object-contain"
+            />
           ) : (
-            <img src="/logo.png" alt="Glimmora VerifAI" className="h-8 w-auto max-w-[180px] object-contain" />
+            // Technical Evidence + default fallback — no dedicated wordmark
+            // image, show short brand text instead.
+            <span className="text-sm font-semibold text-slate-800 tracking-tight whitespace-nowrap">
+              {currentModule === "TECHNICAL_EVIDENCE" ? t("Verifai Technical Evidence") : t("Verifai")}
+            </span>
           )}
         </Link>
 

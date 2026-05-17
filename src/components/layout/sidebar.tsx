@@ -257,19 +257,25 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
   const moduleScopePending =
     !isSystemUser && availableModules.length > 0 && currentModule === null;
 
-  // Brand label next to the logo — driven by the current workspace.
-  // Per BA spec: "Verifai GRC" / "Verifai TPRM" / "Verifai Internal Audit",
-  // and plain "Verifai" when there's no current module (super admin, picker
-  // page, or loading state).
-  const brandLabel = currentModule === "GRC"
-    ? t("Verifai GRC")
-    : currentModule === "TPRM"
-      ? t("Verifai TPRM")
-      : currentModule === "INTERNAL_AUDIT"
-        ? t("Verifai Internal Audit")
-        : currentModule === "TECHNICAL_EVIDENCE"
-          ? t("Verifai Technical Evidence")
-          : t("Verifai");
+  // Platform logo / label — three of the four platforms ship a dedicated
+  // Glimmora-suffixed wordmark image (GRC / TPRM / Internal Audit). Technical
+  // Evidence has no dedicated wordmark, so the sidebar shows plain text instead.
+  const hasPlatformLogo =
+    currentModule === "GRC" || currentModule === "TPRM" || currentModule === "INTERNAL_AUDIT";
+  const platformLogoSrc =
+    currentModule === "GRC" ? "/logo-grc.png"
+    : currentModule === "TPRM" ? "/logo-tprm.png"
+    : currentModule === "INTERNAL_AUDIT" ? "/logo-internal-audit.png"
+    : "/logo.png";
+  const platformLogoAlt =
+    currentModule === "GRC" ? "Glimmora GRC"
+    : currentModule === "TPRM" ? "Glimmora TPRM"
+    : currentModule === "INTERNAL_AUDIT" ? "Glimmora Internal Audit"
+    : "Glimmora VerifAI";
+  // Text-only fallback label (used when no image-wordmark is available).
+  const platformTextLabel =
+    currentModule === "TECHNICAL_EVIDENCE" ? t("Verifai Technical Evidence")
+    : t("Verifai");
 
   return (
     <aside
@@ -278,10 +284,11 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
         collapsed ? "w-[72px]" : "w-[260px]"
       )}
     >
-      {/* Logo area */}
+      {/* Logo area — taller container (h-20) so the wordmark + subtitle inside
+          each platform logo reads clearly. */}
       <div
         className={cn(
-          "relative flex h-16 items-center border-b border-slate-200",
+          "relative flex h-20 items-center border-b border-slate-200",
           collapsed ? "justify-center px-2" : "gap-3 px-5"
         )}
       >
@@ -305,32 +312,38 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
             // Collapsed sidebar: show only the G icon, cropped from the wide
             // Glimmora wordmark via CSS background trick. backgroundSize zooms
             // in so the G fills the box; backgroundPosition aligns to the left
-            // edge where the G sits in the source image.
-            // TODO: when a dedicated /logo-icon.png is exported from the design
-            // source, swap this <div> for a clean <img src="/logo-icon.png">.
+            // edge where the G sits in the source image. The image swaps per
+            // workspace; for TE we use the default /logo.png since TE has no
+            // dedicated wordmark. The 220% zoom (was 240%) gives the G a touch
+            // more breathing room inside the 36×36 box.
+            // TODO: swap for a dedicated <img src="/logo-icon.png"> when exported.
             <div
               role="img"
-              aria-label="Glimmora VerifAI"
+              aria-label={platformLogoAlt}
               className="h-9 w-9 shrink-0 bg-no-repeat"
               style={{
-                backgroundImage: "url(/logo.png)",
-                backgroundSize: "auto 240%",
+                backgroundImage: `url(${hasPlatformLogo ? platformLogoSrc : "/logo.png"})`,
+                backgroundSize: "auto 220%",
                 backgroundPosition: "8% 50%",
               }}
             />
+          ) : hasPlatformLogo ? (
+            // Expanded sidebar with a dedicated wordmark image — render at h-16
+            // so the platform subtitle inside the logo (e.g. "Internal Audit")
+            // is clearly readable.
+            <img src={platformLogoSrc} alt={platformLogoAlt} className="h-16 w-auto max-w-[230px] object-contain shrink-0" />
           ) : (
-            <img src="/logo.png" alt="Glimmora VerifAI" className="h-7 w-auto max-w-[140px] object-contain shrink-0" />
-          )}
-          {!collapsed && (
+            // Expanded sidebar, no dedicated wordmark (TE or default fallback) —
+            // show a plain text label instead of an unrelated logo.
             <span className="text-base font-semibold text-slate-800 tracking-tight whitespace-nowrap">
-              {brandLabel}
+              {platformTextLabel}
             </span>
           )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <ScrollArea className={collapsed ? "h-[calc(100vh-64px)] pt-2" : "h-[calc(100vh-120px)] pt-2"}>
+      <ScrollArea className={collapsed ? "h-[calc(100vh-80px)] pt-2" : "h-[calc(100vh-136px)] pt-2"}>
         <nav className="pb-4">
           {/* Switch workspace — multi-module users only */}
           {canSwitchWorkspace && (
@@ -386,7 +399,7 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
       {!collapsed && (
         <div className="absolute bottom-0 inset-x-0 p-4 border-t border-slate-200 bg-white">
           <div className="flex items-center justify-between text-[10px] text-slate-400">
-            <span>© 2025 {session?.user?.customerAccountName || brandLabel}</span>
+            <span>© 2025 {session?.user?.customerAccountName || "Glimmora"}</span>
             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{t("v2.0")}</span>
           </div>
         </div>

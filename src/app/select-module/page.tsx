@@ -16,7 +16,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Shield, ClipboardCheck, ShieldCheck, Database, ArrowRight, LogOut } from "lucide-react";
+import { ArrowRight, LogOut, Database } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { Card } from "@/components/ui/card";
@@ -26,40 +26,37 @@ import { cn } from "@/lib/utils";
 
 interface ModuleCard {
   code: ModuleCode;
-  title: string;
   description: string;
-  icon: typeof Shield;
-  accent: string; // tailwind classes for the icon tile
+  logoSrc: string;   // /public path to the per-platform Glimmora wordmark
+  logoAlt: string;
 }
 
 const MODULE_CARDS: ModuleCard[] = [
   {
     code: "GRC",
-    title: "GRC",
     description: "Governance, Risk, Compliance, and Asset Management",
-    icon: Shield,
-    accent: "bg-blue-50 text-blue-600",
+    logoSrc: "/logo-grc.png",
+    logoAlt: "Glimmora GRC",
   },
   {
     code: "INTERNAL_AUDIT",
-    title: "Internal Audit",
     description: "Audit universe, planning, fieldwork, CAPA tracking",
-    icon: ClipboardCheck,
-    accent: "bg-emerald-50 text-emerald-600",
+    logoSrc: "/logo-internal-audit.png",
+    logoAlt: "Glimmora Internal Audit",
   },
   {
     code: "TPRM",
-    title: "TPRM",
     description: "Third-Party Risk Management — vendor assessments and monitoring",
-    icon: ShieldCheck,
-    accent: "bg-purple-50 text-purple-600",
+    logoSrc: "/logo-tprm.png",
+    logoAlt: "Glimmora TPRM",
   },
   {
+    // Technical Evidence keeps the Glimmora VerifAI wordmark — per BA decision,
+    // no dedicated TE-suffixed logo was produced.
     code: "TECHNICAL_EVIDENCE",
-    title: "Technical Evidence",
     description: "Automated control evidence collection from cloud and on-prem systems",
-    icon: Database,
-    accent: "bg-amber-50 text-amber-600",
+    logoSrc: "/logo.png",
+    logoAlt: "Glimmora VerifAI — Technical Evidence",
   },
 ];
 
@@ -129,6 +126,18 @@ export default function SelectModulePage() {
       </div>
 
       <div className={cn("w-full", visibleCards.length === 4 ? "max-w-6xl" : "max-w-3xl")}>
+        {/* Glimmora VerifAI brand banner — the unifying mark above the
+            workspace cards. Each card below shows its own platform-specific
+            Glimmora wordmark (Glimmora GRC / TPRM / Internal Audit), while
+            Technical Evidence keeps this same Verifai mark. */}
+        <div className="flex justify-center mb-4">
+          <img
+            src="/logo.png"
+            alt="Glimmora VerifAI"
+            className="h-20 w-auto max-w-[300px] object-contain"
+          />
+        </div>
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900">
             {t("Select a workspace")}
@@ -166,22 +175,39 @@ export default function SelectModulePage() {
             )}
           >
             {visibleCards.map((card) => {
-              const Icon = card.icon;
+              // Technical Evidence has no dedicated wordmark logo — render an
+              // icon + title text card instead of the image-only card design.
+              const isTextCard = card.code === "TECHNICAL_EVIDENCE";
               return (
                 <button
                   key={card.code}
                   onClick={() => handleSelect(card.code)}
                   className="text-left group"
                 >
-                  <Card className="p-6 h-full hover:shadow-lg transition-shadow border-slate-200 group-hover:border-primary/40">
-                    <div className={cn("inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4", card.accent)}>
-                      <Icon className="h-6 w-6" />
+                  <Card className="p-6 h-full hover:shadow-lg transition-shadow border-slate-200 group-hover:border-primary/40 flex flex-col gap-3">
+                    {isTextCard ? (
+                      <>
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-amber-50 text-amber-600 mx-auto">
+                          <Database className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-slate-900 text-center">
+                          {t("Verifai Technical Evidence")}
+                        </h3>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-16">
+                        <img
+                          src={card.logoSrc}
+                          alt={card.logoAlt}
+                          className="h-full w-auto max-w-full object-contain"
+                        />
+                      </div>
+                    )}
+                    <p className="text-sm text-slate-500 text-center">{t(card.description)}</p>
+                    <div className="flex items-center justify-end gap-1 text-xs text-slate-400 mt-auto pt-2 border-t border-slate-100">
+                      <span>{t("Open workspace")}</span>
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-slate-900">{t(card.title)}</h3>
-                      <ArrowRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1" />
-                    </div>
-                    <p className="mt-2 text-sm text-slate-500">{t(card.description)}</p>
                   </Card>
                 </button>
               );
