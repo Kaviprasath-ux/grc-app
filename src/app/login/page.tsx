@@ -206,9 +206,9 @@ function LoginContent() {
         <CardHeader className="text-center space-y-2 pb-6">
           <div className="flex justify-center mb-4">
             <img
-              src="/logo 3.png"
-              alt="GRC Platform"
-              className="h-12 w-12 object-contain"
+              src="/logo.png"
+              alt="Glimmora VerifAI"
+              className="h-24 w-auto max-w-[340px] object-contain"
             />
           </div>
           <h1 className="text-2xl font-semibold text-foreground">

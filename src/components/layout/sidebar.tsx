@@ -301,8 +301,25 @@ export function Sidebar({ collapsed = false, onToggleCollapse, onNavigate }: Sid
               alt={session?.user?.customerAccountName || "Logo"}
               className={collapsed ? "h-9 w-9 rounded object-cover shrink-0" : "h-9 w-9 rounded object-cover shrink-0"}
             />
+          ) : collapsed ? (
+            // Collapsed sidebar: show only the G icon, cropped from the wide
+            // Glimmora wordmark via CSS background trick. backgroundSize zooms
+            // in so the G fills the box; backgroundPosition aligns to the left
+            // edge where the G sits in the source image.
+            // TODO: when a dedicated /logo-icon.png is exported from the design
+            // source, swap this <div> for a clean <img src="/logo-icon.png">.
+            <div
+              role="img"
+              aria-label="Glimmora VerifAI"
+              className="h-9 w-9 shrink-0 bg-no-repeat"
+              style={{
+                backgroundImage: "url(/logo.png)",
+                backgroundSize: "auto 240%",
+                backgroundPosition: "8% 50%",
+              }}
+            />
           ) : (
-            <img src="/logo 3.png" alt="Platform" className="h-6 w-6 object-contain shrink-0" />
+            <img src="/logo.png" alt="Glimmora VerifAI" className="h-7 w-auto max-w-[140px] object-contain shrink-0" />
           )}
           {!collapsed && (
             <span className="text-base font-semibold text-slate-800 tracking-tight whitespace-nowrap">

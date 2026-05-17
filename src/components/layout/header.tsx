@@ -278,7 +278,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
           {logoUrl ? (
             <img src={logoUrl} alt={session?.user?.customerAccountName || "Logo"} className="h-10 max-w-[180px] object-contain" />
           ) : (
-            <img src="/logo 3.png" alt="GRC Platform" className="h-8 w-8 object-contain" />
+            <img src="/logo.png" alt="Glimmora VerifAI" className="h-8 w-auto max-w-[180px] object-contain" />
           )}
         </Link>
 
