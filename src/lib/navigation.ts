@@ -381,7 +381,6 @@ export const navigation: NavItem[] = [
       { name: "Issue Register", href: "/tprm/asr-issue-register", icon: AlertTriangle, permission: "tprm.asr-issue-register:view" },
       { name: "Assessment Factory", href: "/tprm/asr-assessment-factory", icon: Factory, permission: "tprm.asr-assessment-factory:view" },
       { name: "Assessment History", href: "/tprm/asr-factory-reports", icon: FileBarChart, permission: "tprm.asr-factory-reports:view" },
-      { name: "Reports", href: "/tprm/reports", icon: FileBarChart, permission: "tprm.reports:view" },
       { name: "Template", href: "/tprm/asr-template", icon: FileText, permission: "tprm.asr-template:view" },
       { name: "Support", href: "/tprm/asr-support", icon: HelpCircle, permission: "tprm.asr-support:view" },
       // ---- Internal IT Team menu items ----
