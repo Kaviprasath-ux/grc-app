@@ -736,7 +736,7 @@ export default function AsrFollowUpsPage() {
                 </Button>
                 <Button onClick={() => handleRemediationAction("unsatisfied", t("Unsatisfied"))} disabled={actionLoading} variant="destructive">
                   {actionLoading && showUnsatisfiedComment && <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />}
-                  {showUnsatisfiedComment ? t("Send Back to AM") : t("Unsatisfied")}
+                  {showUnsatisfiedComment ? t("Send Back to Vendor") : t("Unsatisfied")}
                 </Button>
                 <Button onClick={() => handleRemediationAction("send-to-business", t("Send to Business"))} disabled={actionLoading} variant="secondary">
                   {t("Send to Business")}

@@ -15,10 +15,18 @@ export const GET = withAuthOnly(
         return NextResponse.json({ error: 'remediationId is required' }, { status: 400 });
       }
 
-      // Verify remediation belongs to this tenant
+      // Verify remediation belongs to this tenant. Pull amComment/responseDate
+      // too so we can backfill it as a synthetic comment for historical data
+      // that pre-dates the AM-comment-thread mirror.
       const remediation = await prisma.tPRMIssueRemediation.findFirst({
         where: { id: remediationId, customerAccountId },
-        select: { id: true },
+        select: {
+          id: true,
+          amComment: true,
+          amResponse: true,
+          responseDate: true,
+          assessment: { select: { vendor: { select: { accountManagerEmail: true } } } },
+        },
       });
 
       if (!remediation) {
@@ -32,6 +40,32 @@ export const GET = withAuthOnly(
         },
         orderBy: { createdAt: 'asc' },
       });
+
+      // Backfill: if no thread comments exist yet but the AM has submitted a
+      // response with a comment, surface that comment as a synthetic first
+      // entry. New submissions go through the mirror in /am-follow-ups PATCH,
+      // so this only kicks in for legacy remediations and one-off shapes.
+      const amText = (remediation.amComment || remediation.amResponse || '').trim();
+      if (comments.length === 0 && amText) {
+        // Best-effort: find the AM user by the vendor's accountManagerEmail
+        const amEmail = remediation.assessment?.vendor?.accountManagerEmail?.split(';')[0]?.trim();
+        const amUser = amEmail
+          ? await prisma.user.findFirst({
+              where: { customerAccountId, email: { equals: amEmail, mode: 'insensitive' } },
+              select: { id: true, fullName: true },
+            })
+          : null;
+        return NextResponse.json({
+          data: [{
+            id: `synthetic-${remediation.id}`,
+            userId: amUser?.id || '',
+            userRole: 'Account Manager',
+            message: amText,
+            createdAt: (remediation.responseDate || new Date()).toISOString(),
+            user: { fullName: amUser?.fullName || 'Account Manager' },
+          }],
+        });
+      }
 
       return NextResponse.json({ data: comments });
     } catch (error) {

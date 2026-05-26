@@ -124,6 +124,31 @@ export const PATCH = withAuth(
         },
       });
 
+      // Mirror the AM's comment into the threaded comment store so the assessor
+      // can see it in the Remediation Comments panel on asr-follow-ups. The
+      // panel only renders TPRMRemediationComment rows; without this mirror,
+      // the AM's amComment field is invisible to the assessor.
+      const commentText = (amComment && amComment.trim()) || (amResponse && amResponse.trim()) || '';
+      if (commentText) {
+        try {
+          const created = await prisma.tPRMRemediationComment.create({
+            data: {
+              remediationId: id,
+              userId: session.id,
+              userRole: 'Account Manager',
+              message: commentText,
+            },
+          });
+          if (customerAccountId) {
+            void translateRecord(customerAccountId, 'TPRMRemediationComment', created.id, { message: created.message });
+          }
+        } catch (commentErr) {
+          // Don't block the submission if the mirror fails — the scalar
+          // amComment field is still the source of truth on the remediation.
+          console.error('[AM Remediation PATCH] Failed to mirror comment to thread:', commentErr);
+        }
+      }
+
       // Fire-and-forget translation
       if (customerAccountId) {
         void translateRecord(customerAccountId, 'TPRMIssueRemediation', updated.id, {
