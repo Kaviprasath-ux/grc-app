@@ -124,7 +124,26 @@ export const POST = withAuth(
       return NextResponse.json(clarification);
     } catch (error) {
       console.error(`[ASR] POST /asr-assessments/clarification — FAILED user=${session.email}`, error);
-      return NextResponse.json({ error: 'Failed to create clarification' }, { status: 500 });
+      // Surface specific Prisma errors so the UI can show a meaningful message
+      // instead of a generic "Failed to request clarification".
+      const err = error as { code?: string; message?: string; meta?: { field_name?: string; target?: string[] } };
+      if (err?.code === 'P2003') {
+        const field = err.meta?.field_name || err.meta?.target?.join(', ') || 'related record';
+        return NextResponse.json(
+          { error: `Failed to create clarification: ${field} does not exist or is invalid.` },
+          { status: 400 }
+        );
+      }
+      if (err?.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'A clarification for this question already exists.' },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json(
+        { error: err?.message ? `Failed to create clarification: ${err.message}` : 'Failed to create clarification' },
+        { status: 500 }
+      );
     }
   },
   { resource: 'tprm.asr-assessments', action: 'edit' }

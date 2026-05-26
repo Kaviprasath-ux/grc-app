@@ -587,7 +587,12 @@ export default function ASRAssessmentDetailPage() {
           rejectComment: clarificationText.trim(),
         }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({} as { error?: string }));
+        const serverMsg = errBody?.error || `HTTP ${res.status}`;
+        console.error("[Clarification] Submit failed:", res.status, errBody);
+        throw new Error(serverMsg);
+      }
       const newClr = await res.json();
       setClarifications(prev => [newClr, ...prev]);
       setClarificationText("");
@@ -607,8 +612,9 @@ export default function ASRAssessmentDetailPage() {
           },
         ],
       } : prev);
-    } catch {
-      toast({ title: t("Error"), description: t("Failed to request clarification"), variant: "destructive" });
+    } catch (err) {
+      const detail = err instanceof Error && err.message ? err.message : t("Failed to request clarification");
+      toast({ title: t("Error"), description: detail, variant: "destructive" });
     } finally {
       setClarificationSaving(false);
     }
