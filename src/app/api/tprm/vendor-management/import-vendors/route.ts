@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import { checkVendorLimit } from "@/lib/tprm-subscription";
+import { validateAccountManagerEmails } from "@/lib/tprm-account-manager";
 
 const FIXED_COL_COUNT = 7; // Vendor Name through Vendor URL
 
@@ -148,6 +149,17 @@ export const POST = withAuth(
         const serviceCategory = String(row[4] || "").trim();
         const serviceDescription = String(row[5] || "").trim();
         const vendorUrl = String(row[6] || "").trim();
+
+        // Skip the row if the AM email collides with an existing TPRM staff
+        // user. Same rule as the single-vendor onboarding API.
+        if (amEmail) {
+          const amCheck = await validateAccountManagerEmails(customerAccountId, amEmail);
+          if (!amCheck.ok) {
+            results.errors.push(`Row ${i + 1} "${vendorName}": ${amCheck.message}`);
+            results.skipped++;
+            continue;
+          }
+        }
 
         // Calculate VRR and collect onboarding answers
         let vrrScore = 0;

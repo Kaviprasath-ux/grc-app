@@ -4,6 +4,7 @@ import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth"
 import { notificationService } from "@/lib/notification-service";
 import { translateRecord } from "@/lib/translation-service";
 import { checkVendorLimit } from "@/lib/tprm-subscription";
+import { validateAccountManagerEmails } from "@/lib/tprm-account-manager";
 
 // GET all vendors with search and pagination
 export const GET = withAuth(
@@ -145,6 +146,14 @@ export const POST = withAuth(
           configIncomplete: true,
           missing: missingConfig,
         }, { status: 422 });
+      }
+
+      // Reject onboarding if the Account Manager email belongs to an existing
+      // TPRM staff user (Approver / Assessor / Auditor / BO / RM / Internal IT).
+      // Only true Account Managers can be reused across multiple vendors.
+      const amCheck = await validateAccountManagerEmails(customerAccountId, body.accountManagerEmail);
+      if (!amCheck.ok) {
+        return NextResponse.json({ error: amCheck.message, conflict: amCheck.conflict }, { status: 409 });
       }
 
       // Generate vendor code - reuse existing code for same vendor name, or create new

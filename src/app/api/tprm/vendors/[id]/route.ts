@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { notificationService } from "@/lib/notification-service";
 import { translateRecord, deleteRecordTranslations } from "@/lib/translation-service";
+import { validateAccountManagerEmails } from "@/lib/tprm-account-manager";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -59,6 +60,16 @@ export const PATCH = withAuth<RouteContext>(
 
       if (!existing) {
         return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+      }
+
+      // If the AM email is being changed, ensure the new email doesn't belong
+      // to a TPRM staff user (Approver / Assessor / Auditor / BO / RM / IT).
+      if (body.accountManagerEmail !== undefined && body.accountManagerEmail !== existing.accountManagerEmail) {
+        const customerAccountIdForCheck = getCustomerAccountId(session);
+        const amCheck = await validateAccountManagerEmails(customerAccountIdForCheck, body.accountManagerEmail);
+        if (!amCheck.ok) {
+          return NextResponse.json({ error: amCheck.message, conflict: amCheck.conflict }, { status: 409 });
+        }
       }
 
       const vendor = await prisma.tPRMVendor.update({
