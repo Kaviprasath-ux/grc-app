@@ -28,6 +28,11 @@ export const POST = withAuth<RouteContext>(
         return NextResponse.json({ error: "No file provided" }, { status: 400 });
       }
 
+      // Attaching a contract activates an Inactive vendor regardless of which
+      // UI path triggered the upload (inventory page, contracts page, etc.).
+      // Centralizing the transition here prevents callers from forgetting it.
+      const shouldActivate = vendor.status === "Inactive";
+
       // Create upload directory
       const uploadDir = path.join(process.cwd(), "uploads", "tprm-contracts");
       await mkdir(uploadDir, { recursive: true });
@@ -55,12 +60,13 @@ export const POST = withAuth<RouteContext>(
 
       const customerAccountId = getCustomerAccountId(session);
 
-      // Update vendor with contract document info
+      // Update vendor with contract document info (and activate if Inactive)
       const updated = await prisma.tPRMVendor.update({
         where: { id },
         data: {
           contractDocumentName: originalName,
           contractDocumentPath: filePath,
+          ...(shouldActivate ? { status: "Active" } : {}),
         },
       });
 

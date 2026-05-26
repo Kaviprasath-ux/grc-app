@@ -55,7 +55,7 @@ export const POST = withAuth<RouteContext>(
 
       const vendor = await prisma.tPRMVendor.findFirst({
         where: { id, ...tenantFilter },
-        select: { id: true },
+        select: { id: true, status: true },
       });
       if (!vendor) {
         return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
@@ -81,11 +81,18 @@ export const POST = withAuth<RouteContext>(
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);
 
-      // If docType is "contract", also update the vendor's contract fields
+      // If docType is "contract", also update the vendor's contract fields and
+      // activate the vendor if currently Inactive. Centralizing the activation
+      // rule here ensures any caller (inventory page, contracts page, etc.)
+      // gets consistent status behavior on contract upload.
       if (docType === "contract") {
         await prisma.tPRMVendor.update({
           where: { id },
-          data: { contractDocumentName: file.name, contractDocumentPath: filePath },
+          data: {
+            contractDocumentName: file.name,
+            contractDocumentPath: filePath,
+            ...(vendor.status === "Inactive" ? { status: "Active" } : {}),
+          },
         });
       }
 
