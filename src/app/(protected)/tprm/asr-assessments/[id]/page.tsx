@@ -1574,9 +1574,9 @@ export default function ASRAssessmentDetailPage() {
 
       {/* Override AI Dialog */}
       <Dialog open={overrideOpen} onOpenChange={setOverrideOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader><DialogTitle>{t("Override AI Evaluation")}</DialogTitle></DialogHeader>
-          <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+          <div className="space-y-4 flex-1 overflow-y-auto pr-1 min-h-0">
             <div>
               <span className="text-sm font-medium">{t("Question")}: </span>
               <span className="text-sm">{selectedQ?.questionText}</span>
@@ -1642,9 +1642,9 @@ export default function ASRAssessmentDetailPage() {
 
       {/* Clarification Dialog */}
       <Dialog open={clarificationOpen} onOpenChange={setClarificationOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader><DialogTitle>{t("Clarification")} — Q{selectedFlat?.questionNo}</DialogTitle></DialogHeader>
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
             {/* Existing clarifications */}
             {translatedClarifications.length > 0 && (
               <div className="space-y-2">
@@ -1691,9 +1691,9 @@ export default function ASRAssessmentDetailPage() {
 
       {/* Internal Comments Dialog */}
       <Dialog open={commentsOpen} onOpenChange={setCommentsOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader><DialogTitle>{t("Internal Comments")}</DialogTitle></DialogHeader>
-          <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+          <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
             {translatedComments.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">{t("No comments yet")}</p>
             )}
@@ -1731,7 +1731,7 @@ export default function ASRAssessmentDetailPage() {
 
       {/* Activity Logs Dialog */}
       <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {logsScope === "question" && selectedFlat
@@ -1739,7 +1739,7 @@ export default function ASRAssessmentDetailPage() {
                 : t("Activity Logs")}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-2 flex-1 overflow-y-auto min-h-0">
             {(() => {
               const questionAllowedPrefixes = ["Clarification", "Assessor overrode", "Comment"];
               const logs = logsScope === "question" && selectedFlat
