@@ -538,10 +538,21 @@ export const POST = withAuth(
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : String(err);
           console.error("❌ [SCAN] Background scan failed:", errMsg, err);
-          // Mark placeholder as error and store error message
+          // Translate known OpenAI errors to user-friendly text so the toast doesn't
+          // leak raw provider URLs / status codes / billing pages to end users.
+          const isQuota = /429|exceeded your current quota|insufficient_quota|rate limit/i.test(errMsg);
+          const isAuth = /401|invalid_api_key|incorrect api key/i.test(errMsg);
+          const isNetwork = /timeout|ECONN|fetch failed|ENOTFOUND/i.test(errMsg);
+          const friendly = isQuota
+            ? "AI scan service is temporarily unavailable (provider quota reached). Please try again later or contact your administrator."
+            : isAuth
+            ? "AI scan service is misconfigured. Please contact your administrator."
+            : isNetwork
+            ? "AI scan service is unreachable. Please try again in a few minutes."
+            : "Scan failed unexpectedly. Please try again, and if the problem persists contact your administrator.";
           await prisma.tPRMMonitoringAssessment.update({
             where: { id: placeholder.id },
-            data: { status: "error", isLatest: false, overallSummary: `Scan error: ${errMsg}` },
+            data: { status: "error", isLatest: false, overallSummary: `Scan error: ${friendly}` },
           }).catch(() => {});
         }
       })();
