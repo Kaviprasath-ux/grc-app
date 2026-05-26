@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { ensureComplimentarySubscription, type ModuleCode } from "../src/lib/customer-complimentary";
 
 const prisma = new PrismaClient();
 
@@ -255,7 +256,7 @@ async function main() {
       console.log(`  Account exists (id=${ca.id})`);
     }
 
-    // ─── 3. Subscription Plan ──────────────────────────────────────────────
+    // ─── 3. Subscription Plan (legacy table — drives in-app limits) ────────
     const existingPlan = await prisma.subscriptionPlan.findFirst({
       where: { customerAccountId: ca.id, moduleCode: "TPRM" },
     });
@@ -278,6 +279,15 @@ async function main() {
       });
       console.log(`  Subscription plan created`);
     }
+
+    // ─── 3b. Subscription + ModuleSubscription (module access gate) ────────
+    // Required by getAccessSnapshot() — without this the layout gate sends
+    // every login to /subscription-required even though the legacy
+    // SubscriptionPlan row above exists. Idempotent: skips already-active rows.
+    const enabledModules: ModuleCode[] = ["TPRM"];
+    if (acc.isGrcAdded) enabledModules.push("GRC");
+    const subResult = await ensureComplimentarySubscription(ca.id, enabledModules);
+    console.log(`  Module access ensured: [${subResult.ensured.join(", ") || "all already active"}]`);
 
     // ─── 4. Users ──────────────────────────────────────────────────────────
     const userIdByUserName: Record<string, string> = {};
