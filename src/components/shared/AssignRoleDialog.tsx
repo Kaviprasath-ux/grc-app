@@ -37,8 +37,25 @@ import {
 import { getRolesForModule, type ModuleCode } from "@/lib/role-module-map";
 
 // Roles we never offer in the picker even if they're in the module map.
-// Contributor was hidden in Phase 4 UI; TPRMCustomerAdmin was removed in P7.
-const HIDDEN_ROLES = new Set<string>(["Contributor", "TPRMCustomerAdmin"]);
+//   Contributor          — hidden in Phase 4 UI (replaced by Dept variants)
+//   TPRMCustomerAdmin    — removed in P7
+//   CustomerAdministrator — provisioned only via super-admin onboarding;
+//                          never assignable from inside a platform's user page.
+const HIDDEN_ROLES = new Set<string>([
+  "Contributor",
+  "TPRMCustomerAdmin",
+  "CustomerAdministrator",
+]);
+
+// TPRM has additional vendor-onboarded / external roles that must not be
+// assignable from the TPRM user page (they are provisioned through the
+// vendor onboarding flow, factory admin flow, etc.).
+const TPRM_HIDDEN_ROLES = new Set<string>([
+  "AccountManager",
+  "TPRMSME",
+  "FactoryAdmin",
+  "FactoryAssessor",
+]);
 
 interface AssignRoleDialogProps {
   open: boolean;
@@ -88,7 +105,12 @@ export function AssignRoleDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const availableRoles = useMemo(
-    () => getRolesForModule(moduleCode).filter((r) => !HIDDEN_ROLES.has(r)),
+    () =>
+      getRolesForModule(moduleCode).filter((r) => {
+        if (HIDDEN_ROLES.has(r)) return false;
+        if (moduleCode === "TPRM" && TPRM_HIDDEN_ROLES.has(r)) return false;
+        return true;
+      }),
     [moduleCode],
   );
 

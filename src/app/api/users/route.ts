@@ -15,6 +15,10 @@ import type { RoleName } from '@/lib/permissions';
 // Query params:
 //   role           - filter to users holding a specific role name
 //   departmentId   - filter to a department
+//   moduleCode     - filter to users holding at least one role in the given
+//                    module (GRC | TPRM | INTERNAL_AUDIT). Used by the
+//                    per-module "User Management" and "Account Overview" tabs
+//                    to hide users that belong only to other platforms.
 //   includeModules - when "true", each user includes a roleModules: ModuleCode[]
 //                    array (distinct UserRole.moduleCode values, null excluded).
 //                    Used by the "All Users" tab to render module badges.
@@ -24,6 +28,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
     const departmentId = searchParams.get("departmentId");
+    const moduleCode = searchParams.get("moduleCode");
     const includeModules = searchParams.get("includeModules") === "true";
 
     // Build where clause for role filtering and multi-tenant isolation
@@ -34,6 +39,17 @@ export async function GET(request: NextRequest) {
           role: {
             name: role,
           },
+        },
+      };
+    }
+
+    // Filter by module — only users with a UserRole row tagged to this platform.
+    if (moduleCode === "GRC" || moduleCode === "TPRM" || moduleCode === "INTERNAL_AUDIT") {
+      where.userRoles = {
+        ...(where.userRoles ?? {}),
+        some: {
+          ...(where.userRoles?.some ?? {}),
+          moduleCode,
         },
       };
     }

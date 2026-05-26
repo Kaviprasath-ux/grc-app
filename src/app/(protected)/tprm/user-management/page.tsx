@@ -148,6 +148,15 @@ export default function UserManagementPage() {
   const { data: session } = useSession();
   const { canCreate, canEdit, canDelete } = usePermissions("tprm.user-management");
 
+  // All Users tab is only shown when the customer has more than one platform
+  // (GRC, TPRM, Internal Audit) subscribed. Technical Evidence is intentionally
+  // excluded from the user-management scope.
+  const subscribedPlatformCount =
+    (session?.user?.isGrcAdded ? 1 : 0) +
+    (session?.user?.isTprmAdded ? 1 : 0) +
+    (session?.user?.isInternalAuditEnabled ? 1 : 0);
+  const showAllUsersTab = subscribedPlatformCount > 1;
+
   const [users, setUsers] = useState<TPRMUser[]>([]);
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
   const [loading, setLoading] = useState(true);
@@ -893,7 +902,9 @@ export default function UserManagementPage() {
       <Tabs defaultValue="module-users">
         <TabsList>
           <TabsTrigger value="module-users">{t("TPRM Users")}</TabsTrigger>
-          <TabsTrigger value="all-users">{t("All Users")}</TabsTrigger>
+          {showAllUsersTab && (
+            <TabsTrigger value="all-users">{t("All Users")}</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="module-users" className="mt-4 sm:mt-6">
@@ -911,9 +922,11 @@ export default function UserManagementPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="all-users" className="mt-4 sm:mt-6">
-          <AllUsersTab currentModule="TPRM" />
-        </TabsContent>
+        {showAllUsersTab && (
+          <TabsContent value="all-users" className="mt-4 sm:mt-6">
+            <AllUsersTab currentModule="TPRM" />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Create User Dialog — matches Organization Users layout */}
