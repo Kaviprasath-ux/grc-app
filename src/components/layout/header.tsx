@@ -50,6 +50,46 @@ import { useToast } from "@/hooks/use-toast";
 
 const dateFnsLocales: Record<string, typeof enUS> = { en: enUS, ar, lv };
 
+/**
+ * Rewrite a stored notification link so its TPRM role-prefix matches the
+ * user that's clicking it. Notifications written by helpers that pre-date
+ * the role-aware split (or that picked the wrong prefix for the recipient)
+ * end up with links like `/tprm/am-assessments/<id>` even when the
+ * recipient is the Assessor — clicking sends them to a page they have no
+ * permission for. We keep the entity id + path tail and just swap the
+ * prefix to the one the recipient can actually view.
+ *
+ * Only TPRM `am-*` and `asr-*` assessment-style prefixes are remapped here
+ * because those are the ones that share pages 1:1 across roles. Other
+ * paths (`/tprm/bo-*`, `/tprm/rm-*`, generic list pages) are returned
+ * unchanged — swapping them blindly would risk 404s.
+ */
+function rewriteTprmNotificationLink(link: string, roles: string[]): string {
+  const match = link.match(/^\/tprm\/(am|asr)-assessments\/([^?#]+)(.*)$/);
+  if (!match) return link;
+  const [, currentPrefix, idAndTail, query] = match;
+
+  const isAM = roles.includes("AccountManager");
+  const isReviewer =
+    roles.includes("TPRMAssessor") ||
+    roles.includes("TPRMApprover") ||
+    roles.includes("TPRMAuditor");
+
+  // Multi-role users: prefer the prefix that already matches a role they hold.
+  if (currentPrefix === "am" && isAM) return link;
+  if (currentPrefix === "asr" && isReviewer) return link;
+
+  if (currentPrefix === "am" && !isAM && isReviewer) {
+    return `/tprm/asr-assessments/${idAndTail}${query}`;
+  }
+  if (currentPrefix === "asr" && !isReviewer && isAM) {
+    return `/tprm/am-assessments/${idAndTail}${query}`;
+  }
+
+  // No applicable TPRM role on this user (e.g. customer admin) — leave link as-is.
+  return link;
+}
+
 interface HeaderProps {
   onMenuClick?: () => void;
   sidebarCollapsed?: boolean;
@@ -224,9 +264,15 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
     if (!notification.isRead) {
       await markAsRead(notification.id);
     }
-    // Navigate to the linked page
+    // Navigate to the linked page. Notification links are stored with the
+    // role-prefix that was correct for the original recipient (e.g. an AM
+    // gets `/tprm/am-assessments/<id>`, an Assessor gets `/tprm/asr-...`).
+    // For historical notifications and any helper that picked the wrong
+    // prefix, rewrite the prefix to the one this user actually has access
+    // to before navigating — otherwise they hit a 403 or empty page.
     if (notification.link) {
-      router.push(notification.link);
+      const roles = (session?.user?.roles as string[] | undefined) ?? [];
+      router.push(rewriteTprmNotificationLink(notification.link, roles));
     }
   };
 
