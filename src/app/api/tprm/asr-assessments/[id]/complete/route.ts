@@ -298,28 +298,39 @@ export const POST = withAuth(
         },
       });
 
-      // Notify the initiator/account manager about completion or return
-      if (assessment.initiatedById) {
-        if (action === 'complete') {
-          void notificationService.notifyTPRMAssessmentCompleted({
-            customerAccountId,
-            actorId: session.id,
-            recipientId: assessment.initiatedById,
-            assessmentId: id,
-            assessmentCode: assessment.assessmentCode,
-            vendorName: assessment.vendorId, // Will be resolved below
-          });
-        } else if (action === 'return' || action === 'return_to_assessor') {
-          void notificationService.notifyTPRMAssessmentReturned({
-            customerAccountId,
-            actorId: session.id,
-            recipientId: assessment.initiatedById,
-            assessmentId: id,
-            assessmentCode: assessment.assessmentCode,
-            vendorName: assessment.vendorId,
-            comment: comment || undefined,
-          });
-        }
+      // Notify the appropriate recipient based on action:
+      //   complete            -> initiator/AM (assessor finished review)
+      //   return              -> initiator/AM (assessor sent it back for fixes)
+      //   return_to_assessor  -> assessor (approver sent it back to assessor)
+      if (action === 'complete' && assessment.initiatedById) {
+        void notificationService.notifyTPRMAssessmentCompleted({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: assessment.initiatedById,
+          assessmentId: id,
+          assessmentCode: assessment.assessmentCode,
+          vendorName: assessment.vendorId, // Will be resolved below
+        });
+      } else if (action === 'return' && assessment.initiatedById) {
+        void notificationService.notifyTPRMAssessmentReturned({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: assessment.initiatedById,
+          assessmentId: id,
+          assessmentCode: assessment.assessmentCode,
+          vendorName: assessment.vendorId,
+          comment: comment || undefined,
+        });
+      } else if (action === 'return_to_assessor' && assessment.assessorId) {
+        void notificationService.notifyTPRMAssessmentReturnedToAssessor({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: assessment.assessorId,
+          assessmentId: id,
+          assessmentCode: assessment.assessmentCode,
+          vendorName: assessment.vendorId,
+          comment: comment || undefined,
+        });
       }
 
       // Also look up vendor name & AM to send more useful notifications

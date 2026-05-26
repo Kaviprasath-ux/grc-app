@@ -1331,6 +1331,38 @@ class NotificationService {
   }
 
   /**
+   * Notify when an assessment is returned to the assessor by the approver.
+   * Notifies the assessor with an assessor-side link.
+   */
+  async notifyTPRMAssessmentReturnedToAssessor(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    comment?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_RETURNED,
+      title: 'Assessment returned to you',
+      message: params.comment
+        ? `Assessment ${params.assessmentCode} for vendor ${params.vendorName} has been returned by the approver: ${params.comment}`
+        : `Assessment ${params.assessmentCode} for vendor ${params.vendorName} has been returned by the approver. Please review comments.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName, reason: params.comment },
+    });
+  }
+
+  /**
    * Notify when a clarification is requested on an assessment.
    * Notifies the account manager/vendor.
    */
