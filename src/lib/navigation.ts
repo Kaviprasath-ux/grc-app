@@ -167,33 +167,6 @@ export const navigation: NavItem[] = [
   },
   // ==================== End Internal Audit > Organization Section ====================
 
-  // ==================== TPRM > Organization Section ====================
-  // BA feedback: TPRM customers also need an Organization area, with a few
-  // tweaks vs IA:
-  //   - Dashboard link points at the existing TPRM Program Monitor (TPRM has
-  //     its own dashboard pages; we don't build a separate org dashboard)
-  //   - No Context tab (not needed for TPRM)
-  //   - Users links to the existing /tprm/user-management (TPRM-specific UI)
-  //   - Vendor Management surfaced inside Organization too
-  //   - Profile / Settings / Reports use the same URL-aware re-exports
-  //     as IA (Company Info + Departments, trimmed settings, trimmed reports)
-  {
-    name: "Organization",
-    module: "TPRM",
-    icon: Building2,
-    permission: "organization.profile:view",
-    children: [
-      { name: "Dashboard", href: "/tprm/program-monitor", icon: LayoutDashboard, permission: "tprm.program-monitor:view" },
-      { name: "Profile", href: "/tprm/organization/profile", icon: User, permission: "organization.profile:view" },
-      { name: "Users", href: "/tprm/user-management", icon: Users, permission: "tprm.user-management:view" },
-      { name: "Vendor Management", href: "/tprm/vendor-management", icon: Building2, permission: "tprm.vendor-management:view" },
-      { name: "Reports", href: "/tprm/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
-      { name: "Organization Settings", href: "/tprm/organization/settings", icon: Settings, permission: "organization.settings:view" },
-      { name: "Subscription & Billing", href: "/settings/subscription", icon: CreditCard, permission: "subscription.customer-portal:view" },
-    ],
-  },
-  // ==================== End TPRM > Organization Section ====================
-
   // ==================== Technical Evidence > Organization Section ====================
   // 4th independent platform. Sidebar shows ONLY:
   //   - Organization > Profile + Subscription & Billing
@@ -387,8 +360,11 @@ export const navigation: NavItem[] = [
       { name: "Issue Management", href: "/tprm/it-issues", icon: AlertTriangle, permission: "tprm.it-issues:view" },
       // ---- Factory Admin / Factory Assessor menu items ----
       { name: "User Management", href: "/tprm/factory-user-management", icon: Users, permission: "tprm.factory-user-management:view" },
-      // Subscription & Billing for TPRM lives inside the TPRM > Organization
-      // section above (see TPRM > Organization Section).
+      // ---- Cross-role TPRM customer-admin items ----
+      // Subscription & Billing surfaced here directly (used to live inside a
+      // now-removed TPRM > Organization group). Permission-gated so only
+      // customer admins see it.
+      { name: "Subscription & Billing", href: "/settings/subscription", icon: CreditCard, permission: "subscription.customer-portal:view" },
     ],
   },
   // ==================== End TPRM Section ====================
