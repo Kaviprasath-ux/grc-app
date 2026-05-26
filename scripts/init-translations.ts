@@ -4740,6 +4740,7 @@ const translations: [string, string, string][] = [
   ['No answered questions found', 'لم يتم العثور على أسئلة مُجابة', 'Nav atrastu atbildētu jautājumu'],
   ['No questions match the selected filters', 'لا توجد أسئلة تطابق المرشحات المحددة', 'Nav jautājumu, kas atbilst atlasītajiem filtriem'],
   ['No issues found', 'لم يتم العثور على مشكلات', 'Nav atrastu problēmu'],
+  ['No domains with questions are available for this assessment.', 'لا توجد مجالات تحتوي على أسئلة متاحة لهذا التقييم.', 'Šim novērtējumam nav pieejamu domēnu ar jautājumiem.'],
   ['Mandatory Attachments', 'المرفقات الإلزامية', 'Obligātie pielikumi'],
   ['Number of Questions', 'عدد الأسئلة', 'Jautājumu skaits'],
   ['RESPONSE', 'الاستجابة', 'ATBILDE'],

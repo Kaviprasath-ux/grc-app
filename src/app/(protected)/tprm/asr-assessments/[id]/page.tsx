@@ -1150,32 +1150,44 @@ export default function ASRAssessmentDetailPage() {
           </>
         )}
 
-        {summaryTab === "domain" && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                {translatedDomains.map(domain => {
-                  const domainResps = flatQuestions.filter(fq => fq.domainId === domain.id);
-                  const total = domainResps.length;
-                  const unsat = domainResps.filter(fq => {
-                    const r = responses[fq.question.id];
-                    return r && (r.assessorStatus || r.poStatus || '').toLowerCase() === "unsatisfactory";
-                  }).length;
-                  const pct = total > 0 ? Math.round((unsat / total) * 100) : 0;
-                  return (
-                    <div key={domain.id} className="flex items-center gap-3">
-                      <span className="w-48 text-sm truncate" title={domain.name}>{domain.name}</span>
-                      <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
-                        <div className="h-full bg-red-400 rounded" style={{ width: `${pct}%` }} />
+        {summaryTab === "domain" && (() => {
+          const domainsWithQuestions = translatedDomains
+            .map(domain => {
+              const domainResps = flatQuestions.filter(fq => fq.domainId === domain.id);
+              const total = domainResps.length;
+              const unsat = domainResps.filter(fq => {
+                const r = responses[fq.question.id];
+                return r && (r.assessorStatus || r.poStatus || '').toLowerCase() === "unsatisfactory";
+              }).length;
+              const pct = total > 0 ? Math.round((unsat / total) * 100) : 0;
+              return { domain, total, pct };
+            })
+            .filter(d => d.total > 0);
+
+          return (
+            <Card>
+              <CardContent className="pt-6">
+                {domainsWithQuestions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    {t("No domains with questions are available for this assessment.")}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {domainsWithQuestions.map(({ domain, pct }) => (
+                      <div key={domain.id} className="flex items-center gap-3">
+                        <span className="w-48 text-sm truncate" title={domain.name}>{domain.name}</span>
+                        <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
+                          <div className="h-full bg-red-400 rounded" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-sm font-medium w-12 text-right">{pct}%</span>
                       </div>
-                      <span className="text-sm font-medium w-12 text-right">{pct}%</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* VerifAI Summary — Collapsible */}
         <Collapsible open={verifaiOpen} onOpenChange={setVerifaiOpen}>
