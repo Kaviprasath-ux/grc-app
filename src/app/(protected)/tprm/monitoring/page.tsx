@@ -141,6 +141,8 @@ export default function MonitoringPage() {
   const [showScanDialog, setShowScanDialog] = useState(false);
   const [activeScans, setActiveScans] = useState<{ jobId: string; vendorName: string; vendorURL: string; status: string }[]>([]);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [vendorToDelete, setVendorToDelete] = useState<TPRMMonitoringVendor | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMMonitoringVendor' });
 
@@ -269,6 +271,26 @@ export default function MonitoringPage() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteVendor = async () => {
+    if (!vendorToDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/tprm/monitoring/${vendorToDelete.id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast({ title: t("Success"), description: `${vendorToDelete.vendorName} ${t("removed from monitoring")}` });
+        setVendorToDelete(null);
+        loadData();
+      } else {
+        const err = await res.json().catch(() => ({} as { error?: string }));
+        toast({ title: t("Error"), description: err.error || t("Failed to delete"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Network error"), variant: "destructive" });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -506,7 +528,7 @@ export default function MonitoringPage() {
                                 size="sm"
                                 variant="ghost"
                                 className="h-8 w-8 text-slate-400 hover:text-red-600"
-                                onClick={(e) => { e.stopPropagation(); toast({ title: t("Info"), description: t("Delete functionality coming soon") }); }}
+                                onClick={(e) => { e.stopPropagation(); setVendorToDelete(v); }}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
@@ -552,6 +574,25 @@ export default function MonitoringPage() {
             <Button size="sm" onClick={handleAnalyze} disabled={submitting}>
               {submitting && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
               {submitting ? t("Submitting...") : t("Start Scan")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <Dialog open={!!vendorToDelete} onOpenChange={(open) => { if (!open) setVendorToDelete(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Remove vendor from monitoring?")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("This will permanently delete the monitoring record and all related scan data for")} <span className="font-medium text-foreground">{vendorToDelete?.vendorName}</span>. {t("This action cannot be undone.")}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVendorToDelete(null)} disabled={deleting}>{t("Cancel")}</Button>
+            <Button variant="destructive" onClick={handleDeleteVendor} disabled={deleting}>
+              {deleting && <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />}
+              {t("Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
