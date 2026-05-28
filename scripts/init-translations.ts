@@ -63,6 +63,7 @@ const translations: [string, string, string][] = [
   ['Optional', 'اختياري', 'Neobligāts'],
   ['View', 'عرض', 'Skatīt'],
   ['Download', 'تحميل', 'Lejupielādēt'],
+  ['Open in new tab', 'فتح في علامة تبويب جديدة', 'Atvērt jaunā cilnē'],
   ['Upload', 'رفع', 'Augšupielādēt'],
   ['Select', 'اختيار', 'Izvēlēties'],
   ['Clear', 'مسح', 'Notīrīt'],

@@ -29,6 +29,7 @@ import {
   Home, ArrowLeft, Send, Save, Flag, Upload, Download, MessageSquare,
   Loader2, FileText, AlertCircle, CheckCircle2, Filter, ChevronDown,
   ChevronRight, Bot, RefreshCw, XCircle, ShieldCheck, ShieldAlert, ShieldOff, UserPlus,
+  ExternalLink,
 } from "lucide-react";
 
 interface Question {
@@ -966,14 +967,48 @@ export default function AMResponseQuestionnairePage() {
                     ) : null}
                   </div>
 
-                  {/* Artifact upload */}
-                  <div className="flex items-center gap-3">
-                    {resp?.artifactUrl ? (
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="h-4 w-4 text-blue-500" />
-                        <span className="text-blue-600">{resp.artifactName || t("Uploaded")}</span>
-                      </div>
-                    ) : null}
+                  {/* Artifact upload — filename is a clickable link (opens in
+                      a new tab) and a dedicated download button is offered so
+                      read-only viewers (SMEs, approvers, auditors) can pull
+                      the artifact even when the Replace control is hidden. */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {resp?.artifactUrl ? (() => {
+                      const url = resp.artifactUrl.startsWith("/uploads/")
+                        ? `/api${resp.artifactUrl}`
+                        : resp.artifactUrl;
+                      const name = resp.artifactName || t("Uploaded");
+                      return (
+                        <div className="flex items-center gap-2 text-sm">
+                          <FileText className="h-4 w-4 text-blue-500" />
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                            title={t("Open in new tab")}
+                          >
+                            {name}
+                          </a>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                            title={t("View")}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                          <a
+                            href={url}
+                            download={name}
+                            className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                            title={t("Download")}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                        </div>
+                      );
+                    })() : null}
                     {!isReadOnly && (
                       <Label className="cursor-pointer">
                         <Input
