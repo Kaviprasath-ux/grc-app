@@ -106,20 +106,24 @@ async function main() {
     },
   });
 
-  // Assign GRCAdministrator role to superadmin
-  await prisma.userRole.upsert({
+  // Assign GRCAdministrator role to superadmin (system-wide, moduleCode = null).
+  // Prisma upsert() can't accept null in a compound unique, so we use findFirst + create.
+  const existingSuperadminRole = await prisma.userRole.findFirst({
     where: {
-      userId_roleId: {
-        userId: superadminUser.id,
-        roleId: createdRoles["GRCAdministrator"],
-      },
-    },
-    update: {},
-    create: {
       userId: superadminUser.id,
       roleId: createdRoles["GRCAdministrator"],
+      moduleCode: null,
     },
   });
+  if (!existingSuperadminRole) {
+    await prisma.userRole.create({
+      data: {
+        userId: superadminUser.id,
+        roleId: createdRoles["GRCAdministrator"],
+        moduleCode: null,
+      },
+    });
+  }
   console.log("✅ Superadmin user created (superadmin / 1)");
 
   // ==================== SEED EMAIL TEMPLATES ====================
