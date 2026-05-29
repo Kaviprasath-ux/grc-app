@@ -795,7 +795,7 @@ def build_presentation(prs: Presentation):
 # ============================================================
 
 def main():
-    out_dir = Path(__file__).resolve().parents[1] / "docs" / "platform-docs"
+    out_dir = Path(__file__).resolve().parents[1] / "docs" / "platform-docs" / "TechnicalEvidence"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # USP
