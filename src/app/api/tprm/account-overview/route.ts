@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/api-auth";
 import bcrypt from "bcryptjs";
 import { translateRecord } from "@/lib/translation-service";
+import { ensureComplimentarySubscription, type ModuleCode } from "@/lib/customer-complimentary";
 
 // Helper: generate the next available customer account code
 async function generateNextAccountCode(): Promise<string> {
@@ -568,7 +569,14 @@ export const POST = withAuth(
           true, isGrcAdded === true, customerAccount.id
         );
 
-        // 2. Create the User linked to the new account
+        // 2. Create the User linked to the new account.
+        // Tag the UserRole with moduleCode so the user's session.roleModules
+        // picks up the right workspace(s). Without this, the layout gate
+        // computes available = subscription ∩ has-role as empty and the
+        // user is redirected to /subscription-required on first login.
+        // All three tabs (customers / factory / superadmin) live in the
+        // TPRM workspace, so TPRM is always tagged; GRC is added when the
+        // new account is dual-module.
         const user = await tx.user.create({
           data: {
             userId: `USR-${Date.now()}-${userName.substring(0, 4).toUpperCase()}`,
@@ -586,13 +594,19 @@ export const POST = withAuth(
             language: language || "en-US",
             timezone: timeZone || "Asia/Qatar",
             userRoles: {
-              create: { roleId: roleRecord.id },
+              create: { roleId: roleRecord.id, moduleCode: "TPRM" },
             },
           },
           include: {
             userRoles: { include: { role: true } },
           },
         });
+        if (isGrcAdded === true) {
+          // Dual-module customer admin: also let them into the GRC workspace.
+          await tx.userRole.create({
+            data: { userId: user.id, roleId: roleRecord.id, moduleCode: "GRC" },
+          });
+        }
 
         // 3. Create SubscriptionPlans if provided
         const createdPlans = [];
@@ -621,6 +635,20 @@ export const POST = withAuth(
 
         return { customerAccount, user, createdPlans };
       });
+
+      // Provision Subscription + ModuleSubscription rows for the new account
+      // so getAccessSnapshot() returns the right module flags on first login.
+      // Without this, the user lands on /subscription-required even though the
+      // legacy SubscriptionPlan row exists. Idempotent — skips already-active
+      // module rows. Failure here shouldn't block account creation, so the
+      // error is logged and swallowed.
+      const enabledModules: ModuleCode[] = ["TPRM"];
+      if (isGrcAdded === true) enabledModules.push("GRC");
+      try {
+        await ensureComplimentarySubscription(result.customerAccount.id, enabledModules);
+      } catch (subErr) {
+        console.error("[Account-overview POST] Failed to provision subscription:", subErr);
+      }
 
       // Remove password from response
       const { password: _, ...safeUser } = result.user;
