@@ -116,6 +116,7 @@ export const RESOURCES = {
   'audit.documents': '/internal-audit/document-library',
   'audit.settings': '/internal-audit/settings',
   'audit.risk-universe': '/internal-audit/risk-universe',
+  'audit.process': '/internal-audit/organization/process',
 
   // TPRM Internal IT Team resources
   'tprm.it-issues': '/tprm/it-issues',
@@ -347,6 +348,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'audit.process', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     // CustomerAdmin can manage audit settings (types, categories, etc.) but NOT access User Management
     { resource: 'audit.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     // TPRM module — gated by moduleCode="TPRM" assignment + customer's isTprmAdded flag
@@ -369,6 +371,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
+    { resource: 'audit.process', actions: ['*'], scope: 'all' },
     { resource: 'audit.planning', actions: ['*'], scope: 'all' },
     { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
@@ -385,6 +388,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
+    { resource: 'audit.process', actions: ['view'], scope: 'all' },
     { resource: 'audit.planning', actions: ['view'], scope: 'all' },
     { resource: 'audit.fieldwork', actions: ['view'], scope: 'all' },
     { resource: 'audit.reports', actions: ['view'], scope: 'all' },
@@ -400,6 +404,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
+    { resource: 'audit.process', actions: ['*'], scope: 'all' },
     { resource: 'audit.planning', actions: ['*'], scope: 'all' },
     { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },

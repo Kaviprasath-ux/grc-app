@@ -18,7 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 type PlanTier = "BASIC" | "MEDIUM" | "PRO";
 type PlanType = "BASE" | "GENERAL" | "COMPLIMENTARY" | null;
 type BillingCycle = "MONTHLY" | "YEARLY";
@@ -81,10 +81,15 @@ interface SubscriptionData {
 }
 
 const MODULE_META: Record<ModuleCode, { label: string; icon: string }> = {
-  GRC:            { label: "GRC",            icon: "🛡️" },
-  TPRM:           { label: "TPRM",           icon: "👥" },
-  INTERNAL_AUDIT: { label: "Internal Audit", icon: "🔍" },
+  GRC:                { label: "GRC",                icon: "🛡️" },
+  TPRM:               { label: "TPRM",               icon: "👥" },
+  INTERNAL_AUDIT:     { label: "Internal Audit",     icon: "🔍" },
+  TECHNICAL_EVIDENCE: { label: "Technical Evidence", icon: "🧾" },
 };
+
+function getModuleMeta(code: string): { label: string; icon: string } {
+  return MODULE_META[code as ModuleCode] ?? { label: code || "Unknown Module", icon: "📦" };
+}
 
 const STATUS_BADGE: Record<SubscriptionStatus, string> = {
   ACTIVE:        "bg-green-100 text-green-800 border-green-300",
@@ -494,7 +499,7 @@ export default function CustomerSubscriptionPage() {
 }
 
 function ModuleCard({ m, isComp, t }: { m: ModuleData; isComp: boolean; t: (s: string) => string }) {
-  const meta = MODULE_META[m.moduleCode];
+  const meta = getModuleMeta(m.moduleCode);
   const cancelled = !!m.cancelledAt;
 
   // Legacy SubscriptionPlan stores 999_999 as the "unlimited" sentinel for

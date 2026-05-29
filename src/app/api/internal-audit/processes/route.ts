@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getCustomerAccountId, getAuditHeadId, resolveAuditHeadIdForCreate } from '@/lib/api-auth';
+import {
+  withAuth,
+  getCustomerAccountId,
+  getAuditHeadId,
+  resolveAuditHeadIdForCreate,
+} from '@/lib/api-auth';
+import { translateRecord } from '@/lib/translation-service';
 
-// GET /api/internal-audit/processes - Get all internal audit processes for the audit head
+// GET /api/internal-audit/processes - list IA processes (tenant + audit-head scoped)
 export const GET = withAuth(
   async (req, context, session) => {
     try {
@@ -14,7 +20,26 @@ export const GET = withAuth(
           ...(customerAccountId ? { customerAccountId } : {}),
           ...(auditHeadId ? { auditHeadId } : {}),
         },
-        orderBy: { name: 'asc' },
+        include: {
+          department: { select: { id: true, name: true } },
+          attachments: {
+            select: {
+              id: true,
+              fileName: true,
+              fileType: true,
+              fileSize: true,
+              uploadedAt: true,
+            },
+          },
+          linkedRisks: {
+            include: {
+              risk: {
+                select: { id: true, riskId: true, riskName: true },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
       });
 
       return NextResponse.json(processes);
@@ -26,17 +51,27 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: 'audit.settings', action: 'view' }
+  { resource: 'audit.process', action: 'view' }
 );
 
-// POST /api/internal-audit/processes - Create a new internal audit process
+// POST /api/internal-audit/processes - create a new IA process
 export const POST = withAuth(
   async (req, context, session) => {
     try {
       const body = await req.json();
-      const { name, description } = body;
+      const {
+        name,
+        description,
+        departmentId,
+        riskIds,
+      }: {
+        name?: string;
+        description?: string | null;
+        departmentId?: string | null;
+        riskIds?: string[];
+      } = body;
 
-      if (!name) {
+      if (!name || !name.trim()) {
         return NextResponse.json(
           { error: 'Process name is required' },
           { status: 400 }
@@ -46,10 +81,10 @@ export const POST = withAuth(
       const customerAccountId = getCustomerAccountId(session);
       const auditHeadId = await resolveAuditHeadIdForCreate(session);
 
-      // Check if process with same name exists for this audit head
       const existing = await prisma.internalAuditProcess.findFirst({
         where: {
-          name,
+          name: name.trim(),
+          ...(customerAccountId ? { customerAccountId } : {}),
           ...(auditHeadId ? { auditHeadId } : {}),
         },
       });
@@ -61,16 +96,55 @@ export const POST = withAuth(
         );
       }
 
-      const process = await prisma.internalAuditProcess.create({
+      // Auto-generate processCode (IAP001, IAP002, ...)
+      const last = await prisma.internalAuditProcess.findFirst({
+        where: {
+          ...(customerAccountId ? { customerAccountId } : {}),
+          processCode: { not: null },
+        },
+        orderBy: { processCode: 'desc' },
+        select: { processCode: true },
+      });
+      let nextNum = 1;
+      if (last?.processCode) {
+        const m = last.processCode.match(/IAP(\d+)/);
+        if (m) nextNum = parseInt(m[1], 10) + 1;
+      }
+      const processCode = `IAP${String(nextNum).padStart(3, '0')}`;
+
+      const cleanRiskIds = Array.isArray(riskIds)
+        ? Array.from(new Set(riskIds.filter((id): id is string => typeof id === 'string' && id.length > 0)))
+        : [];
+
+      const created = await prisma.internalAuditProcess.create({
         data: {
-          name,
-          description: description || null,
+          processCode,
+          name: name.trim(),
+          description: description?.toString().trim() || null,
+          departmentId: departmentId || null,
           customerAccountId: customerAccountId || null,
           auditHeadId: auditHeadId || null,
+          linkedRisks: cleanRiskIds.length
+            ? {
+                create: cleanRiskIds.map((riskId) => ({ riskId })),
+              }
+            : undefined,
+        },
+        include: {
+          department: { select: { id: true, name: true } },
+          attachments: true,
+          linkedRisks: { include: { risk: { select: { id: true, riskId: true, riskName: true } } } },
         },
       });
 
-      return NextResponse.json(process, { status: 201 });
+      if (customerAccountId) {
+        void translateRecord(customerAccountId, 'InternalAuditProcess', created.id, {
+          name: created.name,
+          description: created.description || '',
+        });
+      }
+
+      return NextResponse.json(created, { status: 201 });
     } catch (error) {
       console.error('Error creating internal audit process:', error);
       return NextResponse.json(
@@ -79,5 +153,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: 'audit.settings', action: 'create' }
+  { resource: 'audit.process', action: 'create' }
 );

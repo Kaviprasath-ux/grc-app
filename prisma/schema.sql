@@ -2099,12 +2099,41 @@ CREATE TABLE "InternalAuditProcess" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
     "auditHeadId" TEXT,
+    "processCode" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
+    "departmentId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "InternalAuditProcess_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InternalAuditProcessAttachment" (
+    "id" TEXT NOT NULL,
+    "processId" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "filePath" TEXT,
+    "fileData" BYTEA,
+    "uploadedBy" TEXT,
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "InternalAuditProcessAttachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InternalAuditProcessRisk" (
+    "id" TEXT NOT NULL,
+    "processId" TEXT NOT NULL,
+    "riskId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "InternalAuditProcessRisk_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -4699,7 +4728,25 @@ CREATE INDEX "InternalAuditProcess_customerAccountId_idx" ON "InternalAuditProce
 CREATE INDEX "InternalAuditProcess_auditHeadId_idx" ON "InternalAuditProcess"("auditHeadId");
 
 -- CreateIndex
+CREATE INDEX "InternalAuditProcess_departmentId_idx" ON "InternalAuditProcess"("departmentId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "InternalAuditProcess_customerAccountId_auditHeadId_name_key" ON "InternalAuditProcess"("customerAccountId", "auditHeadId", "name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "InternalAuditProcess_customerAccountId_processCode_key" ON "InternalAuditProcess"("customerAccountId", "processCode");
+
+-- CreateIndex
+CREATE INDEX "InternalAuditProcessAttachment_processId_idx" ON "InternalAuditProcessAttachment"("processId");
+
+-- CreateIndex
+CREATE INDEX "InternalAuditProcessRisk_processId_idx" ON "InternalAuditProcessRisk"("processId");
+
+-- CreateIndex
+CREATE INDEX "InternalAuditProcessRisk_riskId_idx" ON "InternalAuditProcessRisk"("riskId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "InternalAuditProcessRisk_processId_riskId_key" ON "InternalAuditProcessRisk"("processId", "riskId");
 
 -- CreateIndex
 CREATE INDEX "InternalAuditRisk_customerAccountId_idx" ON "InternalAuditRisk"("customerAccountId");
@@ -5927,6 +5974,18 @@ ALTER TABLE "InternalAuditProcess" ADD CONSTRAINT "InternalAuditProcess_customer
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditProcess" ADD CONSTRAINT "InternalAuditProcess_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditProcess" ADD CONSTRAINT "InternalAuditProcess_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditProcessAttachment" ADD CONSTRAINT "InternalAuditProcessAttachment_processId_fkey" FOREIGN KEY ("processId") REFERENCES "InternalAuditProcess"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditProcessRisk" ADD CONSTRAINT "InternalAuditProcessRisk_processId_fkey" FOREIGN KEY ("processId") REFERENCES "InternalAuditProcess"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditProcessRisk" ADD CONSTRAINT "InternalAuditProcessRisk_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "InternalAuditRisk"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditRisk" ADD CONSTRAINT "InternalAuditRisk_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
