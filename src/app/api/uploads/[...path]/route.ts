@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile, stat } from 'fs/promises';
 import path from 'path';
 import { getUploadBaseDir } from '@/lib/file-upload';
+import { isSpacesEnabled, presignGet, urlPathToKey } from '@/lib/storage-driver';
 
 interface RouteContext {
   params: Promise<{ path: string[] }>;
 }
 
-// Content type mapping
+// Content type mapping for the local-disk fallback. Spaces sets the
+// Content-Type at upload time so the presigned-redirect branch doesn't
+// need this table.
 const contentTypes: Record<string, string> = {
   '.pdf': 'application/pdf',
   '.doc': 'application/msword',
@@ -22,7 +25,18 @@ const contentTypes: Record<string, string> = {
   '.csv': 'text/csv',
 };
 
-// GET /api/uploads/[...path] - Serve uploaded files
+// GET /api/uploads/[...path] — Serve uploaded files.
+//
+// Two backends, chosen per-request from env:
+//   1. Spaces driver (SPACES_* env vars set): generate a short-lived
+//      presigned GET URL for the same object key and 302 the browser to
+//      it. Bytes come straight from DO Spaces / its CDN.
+//   2. Local disk fallback (no Spaces env): read from getUploadBaseDir()
+//      and stream the bytes. Historical behaviour, used in dev.
+//
+// DB rows store relative paths like `/uploads/artifacts/foo.png`
+// regardless of backend, so toggling Spaces on / off requires no data
+// migration.
 export async function GET(req: NextRequest, context: RouteContext) {
   try {
     const { path: pathSegments } = await context.params;
@@ -31,8 +45,24 @@ export async function GET(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'File path required' }, { status: 400 });
     }
 
-    // Construct the file path (uses /tmp/uploads on Vercel)
     const relativePath = pathSegments.join('/');
+
+    // ── Backend A: Spaces presigned redirect ────────────────────────────────
+    if (isSpacesEnabled()) {
+      const key = urlPathToKey(`/uploads/${relativePath}`);
+      const signedUrl = await presignGet(key);
+      if (signedUrl) {
+        // 302 so the browser follows but doesn't cache the signed URL.
+        // The underlying object's Cache-Control handles byte-level caching.
+        return NextResponse.redirect(signedUrl, 302);
+      }
+      // Spaces was enabled but presign returned null — extremely unusual
+      // (would mean env vars went away mid-request). Fall through to disk
+      // rather than 500 so a misconfiguration isn't a hard outage.
+      console.warn('[uploads] Spaces enabled but presign returned null — falling back to disk');
+    }
+
+    // ── Backend B: Local disk ───────────────────────────────────────────────
     const uploadsDir = getUploadBaseDir();
     const filePath = path.join(uploadsDir, relativePath);
 
@@ -42,29 +72,21 @@ export async function GET(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid file path' }, { status: 403 });
     }
 
-    // Check if file exists
     try {
       await stat(filePath);
     } catch {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
-    // Read the file
     const fileBuffer = await readFile(filePath);
 
-    // Determine content type
     const ext = path.extname(filePath).toLowerCase();
     const contentType = contentTypes[ext] || 'application/octet-stream';
-
-    // Get filename for Content-Disposition header
     const fileName = path.basename(filePath);
 
-    // Determine if file should be downloaded or displayed inline
-    // Images and PDFs can be displayed inline, others should be downloaded
     const inlineTypes = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.txt'];
     const disposition = inlineTypes.includes(ext) ? 'inline' : 'attachment';
 
-    // Return the file
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,

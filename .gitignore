@@ -96,8 +96,9 @@ prisma/migrate-settings-to-audit-heads.ts
 # Debug API routes
 src/app/api/debug-session/
 
-# Uploads
-uploads/
+# Uploads (root-level only — leading slash anchors to repo root so the
+# pattern doesn't also swallow src/app/api/uploads/.../route.ts).
+/uploads/
 
 .env*.local
 inline-validation-changes.patch
