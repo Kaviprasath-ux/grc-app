@@ -61,11 +61,8 @@ export default function InternalAuditSettingsPage() {
     //   - "User Management" → audit user creation is now exclusively the
     //     CustomerAdministrator's job, via Organization > Users.
     //   - "Department" → duplicate of Organization > Profile > Departments.
-    //   - "Process" → placeholder pending a new process flow (will be re-added
-    //     once the new flow ships).
-    // Underlying route files at /internal-audit/settings/{user-management,
-    // departments,process}/* are kept intact as defensive re-exports in case
-    // any URL is bookmarked — but no entry-point on this page links to them.
+    //   - "Process" → the IA process flow now lives under Internal Audit >
+    //     Organization > Process (separate model from GRC processes).
   ];
 
   return (

@@ -670,6 +670,7 @@ model Department {
   requirementExceptions      RequirementException[]
   kpis                       KPI[]
   internalAuditRisks         InternalAuditRisk[]         @relation("InternalAuditDepartment")
+  internalAuditProcesses     InternalAuditProcess[]      @relation("InternalAuditProcessDepartment")
   auditableEntities          AuditableEntity[]
   auditEngagements           AuditEngagement[]
   internalAuditFindings      InternalAuditFinding[]
@@ -2998,45 +2999,85 @@ model UserDocumentType {
 
 // Internal Audit Process (for audit head specific process settings)
 model InternalAuditProcess {
-  id                String           @id @default(cuid())
+  id                String                           @id @default(cuid())
   // Multi-tenant: Link to customer account
   customerAccountId String?
-  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  customerAccount   CustomerAccount?                 @relation(fields: [customerAccountId], references: [id])
   // Audit Head isolation: each Audit Head has their own settings
   auditHeadId       String?
-  auditHead         User?            @relation("AuditHeadProcesses", fields: [auditHeadId], references: [id])
+  auditHead         User?                            @relation("AuditHeadProcesses", fields: [auditHeadId], references: [id])
+  processCode       String? // Auto-generated reference ID (IAP001, IAP002, ...)
   name              String
   description       String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  departmentId      String?
+  department        Department?                      @relation("InternalAuditProcessDepartment", fields: [departmentId], references: [id])
+  createdAt         DateTime                         @default(now())
+  updatedAt         DateTime                         @updatedAt
+  // Relations
+  attachments       InternalAuditProcessAttachment[]
+  linkedRisks       InternalAuditProcessRisk[]
 
   @@unique([customerAccountId, auditHeadId, name])
+  @@unique([customerAccountId, processCode])
   @@index([customerAccountId])
   @@index([auditHeadId])
+  @@index([departmentId])
+}
+
+// Internal Audit Process Attachment (uploaded documents)
+model InternalAuditProcessAttachment {
+  id         String               @id @default(cuid())
+  processId  String
+  process    InternalAuditProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileType   String?
+  fileSize   Int?
+  filePath   String?
+  fileData   Bytes? // Store file binary for serverless (Vercel/DO) compatibility (encrypted at rest)
+  uploadedBy String?
+  uploadedAt DateTime             @default(now())
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  @@index([processId])
+}
+
+// Internal Audit Process ↔ Risk link (explicit join table)
+model InternalAuditProcessRisk {
+  id        String               @id @default(cuid())
+  processId String
+  process   InternalAuditProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  riskId    String
+  risk      InternalAuditRisk    @relation("InternalAuditRiskProcessLinks", fields: [riskId], references: [id], onDelete: Cascade)
+  createdAt DateTime             @default(now())
+
+  @@unique([processId, riskId])
+  @@index([processId])
+  @@index([riskId])
 }
 
 // ==================== INTERNAL AUDIT RISK REGISTER ====================
 
 // Internal Audit Risk (separate from general Risk for the Internal Audit module)
 model InternalAuditRisk {
-  id                   String           @id @default(cuid())
+  id                   String                     @id @default(cuid())
   // Multi-tenant: Link to customer account
   customerAccountId    String
-  customerAccount      CustomerAccount  @relation(fields: [customerAccountId], references: [id])
+  customerAccount      CustomerAccount            @relation(fields: [customerAccountId], references: [id])
   // Audit Head isolation
   auditHeadId          String?
-  auditHead            User?            @relation("AuditHeadRisks", fields: [auditHeadId], references: [id])
+  auditHead            User?                      @relation("AuditHeadRisks", fields: [auditHeadId], references: [id])
   riskId               String // Auto-generated RID001, RID002, etc.
   riskName             String
   departmentId         String?
-  department           Department?      @relation("InternalAuditDepartment", fields: [departmentId], references: [id])
+  department           Department?                @relation("InternalAuditDepartment", fields: [departmentId], references: [id])
   sectionProcess       String?
   subProcess           String?
   activity             String?
   categoryId           String?
-  category             AuditCategory?   @relation(fields: [categoryId], references: [id])
+  category             AuditCategory?             @relation(fields: [categoryId], references: [id])
   auditTypeId          String?
-  auditType            AuditType?       @relation(fields: [auditTypeId], references: [id])
+  auditType            AuditType?                 @relation(fields: [auditTypeId], references: [id])
   riskDescription      String?
   // Inherent Risk Scoring
   inherentLikelihood   Int?
@@ -3051,16 +3092,18 @@ model InternalAuditRisk {
   residualScore        Int? // Calculated
   riskLevel            String? // Low, Medium, High, Extreme - based on scoring ranges
   // Audit Information
-  creationDate         DateTime         @default(now())
+  creationDate         DateTime                   @default(now())
   auditComment         String?
-  status               String           @default("Open") // Open, Closed, Under Review
+  status               String                     @default("Open") // Open, Closed, Under Review
   evidenceFilePath     String?
   evidenceFileName     String?
   // Engagement link
   engagementId         String?
-  engagement           AuditEngagement? @relation(fields: [engagementId], references: [id])
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
+  engagement           AuditEngagement?           @relation(fields: [engagementId], references: [id])
+  // Process links (IA Process Repository)
+  processLinks         InternalAuditProcessRisk[] @relation("InternalAuditRiskProcessLinks")
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
 
   @@unique([customerAccountId, riskId])
   @@index([customerAccountId])

@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { RazorpayOptions, RazorpayResponse, RazorpayInstance } from "@/types/razorpay";
 
-type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 type PlanTier = "BASIC" | "MEDIUM" | "PRO";
 type BillingCycle = "MONTHLY" | "YEARLY";
 
@@ -47,10 +47,15 @@ interface Quote {
 }
 
 const MODULE_META: Record<ModuleCode, { label: string; icon: string; description: string }> = {
-  GRC:            { label: "GRC",            icon: "🛡️", description: "Governance, Risk & Compliance" },
-  TPRM:           { label: "TPRM",           icon: "👥", description: "Third-Party Risk Management" },
-  INTERNAL_AUDIT: { label: "Internal Audit", icon: "🔍", description: "Audit planning, fieldwork & reporting" },
+  GRC:                { label: "GRC",                icon: "🛡️", description: "Governance, Risk & Compliance" },
+  TPRM:               { label: "TPRM",               icon: "👥", description: "Third-Party Risk Management" },
+  INTERNAL_AUDIT:     { label: "Internal Audit",     icon: "🔍", description: "Audit planning, fieldwork & reporting" },
+  TECHNICAL_EVIDENCE: { label: "Technical Evidence", icon: "🧾", description: "Technical evidence collection & vault" },
 };
+
+function getModuleMeta(code: string): { label: string; icon: string; description: string } {
+  return MODULE_META[code as ModuleCode] ?? { label: code || "Unknown Module", icon: "📦", description: "" };
+}
 
 const ALL_MODULES: ModuleCode[] = ["GRC", "TPRM", "INTERNAL_AUDIT"];
 const TIER_BADGE: Record<PlanTier, string> = {
@@ -400,7 +405,7 @@ export default function RenewPage() {
             </CardHeader>
             <CardContent className="p-0">
               {selections.map((s, idx) => {
-                const meta = MODULE_META[s.moduleCode];
+                const meta = getModuleMeta(s.moduleCode);
                 return (
                   <div
                     key={s.moduleCode}

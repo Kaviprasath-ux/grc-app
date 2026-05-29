@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Check, Loader2, Sparkles, AlertCircle,
-  Shield, Building2, ClipboardCheck, Home, ChevronRight,
+  Shield, Building2, ClipboardCheck, FileCheck, Package, Home, ChevronRight,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 type BillingCycle = "MONTHLY" | "YEARLY";
 
 interface PlanRow {
@@ -33,10 +33,15 @@ interface PlanRow {
 }
 
 const MODULE_META: Record<ModuleCode, { label: string; icon: React.ReactNode; description: string }> = {
-  GRC:            { label: "GRC",            icon: <Shield className="h-5 w-5" />,         description: "Governance, Risk & Compliance" },
-  TPRM:           { label: "TPRM",           icon: <Building2 className="h-5 w-5" />,      description: "Third-Party Risk Management" },
-  INTERNAL_AUDIT: { label: "Internal Audit", icon: <ClipboardCheck className="h-5 w-5" />, description: "Audit planning, fieldwork & reporting" },
+  GRC:                { label: "GRC",                icon: <Shield className="h-5 w-5" />,         description: "Governance, Risk & Compliance" },
+  TPRM:               { label: "TPRM",               icon: <Building2 className="h-5 w-5" />,      description: "Third-Party Risk Management" },
+  INTERNAL_AUDIT:     { label: "Internal Audit",     icon: <ClipboardCheck className="h-5 w-5" />, description: "Audit planning, fieldwork & reporting" },
+  TECHNICAL_EVIDENCE: { label: "Technical Evidence", icon: <FileCheck className="h-5 w-5" />,      description: "Technical evidence collection & vault" },
 };
+
+function getModuleMeta(code: string): { label: string; icon: React.ReactNode; description: string } {
+  return MODULE_META[code as ModuleCode] ?? { label: code || "Unknown Module", icon: <Package className="h-5 w-5" />, description: "" };
+}
 
 function formatINR(n: number): string {
   return n.toLocaleString("en-IN");
@@ -164,10 +169,10 @@ export default function SubscribePage() {
                     onChange={() => toggleModule(code)}
                     className="h-4 w-4"
                   />
-                  <div className="text-stone-700">{MODULE_META[code].icon}</div>
+                  <div className="text-stone-700">{getModuleMeta(code).icon}</div>
                   <div className="flex-1">
-                    <div className="font-medium text-sm">{MODULE_META[code].label}</div>
-                    <div className="text-xs text-stone-600">{t(MODULE_META[code].description)}</div>
+                    <div className="font-medium text-sm">{getModuleMeta(code).label}</div>
+                    <div className="text-xs text-stone-600">{t(getModuleMeta(code).description)}</div>
                   </div>
                 </label>
               ))}

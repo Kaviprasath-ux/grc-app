@@ -158,7 +158,7 @@ export const navigation: NavItem[] = [
     permission: "organization.profile:view",
     children: [
       { name: "Profile", href: "/internal-audit/organization/profile", icon: User, permission: "organization.profile:view" },
-      { name: "Context", href: "/internal-audit/organization/context", icon: Briefcase, permission: "organization.context:view" },
+      { name: "Process", href: "/internal-audit/organization/process", icon: GitBranch, permission: "audit.process:view" },
       { name: "Users", href: "/internal-audit/organization/users", icon: Users, permission: "organization.users:view" },
       { name: "Reports", href: "/internal-audit/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
       { name: "Organization Settings", href: "/internal-audit/organization/settings", icon: Settings, permission: "organization.settings:view" },

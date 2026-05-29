@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { RazorpayOptions, RazorpayResponse, RazorpayInstance } from "@/types/razorpay";
 
-type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT";
+type ModuleCode = "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE";
 type PlanTier = "BASIC" | "MEDIUM" | "PRO";
 type BillingCycle = "MONTHLY" | "YEARLY";
 
@@ -59,10 +59,15 @@ interface UpgradeQuote {
 }
 
 const MODULE_META: Record<ModuleCode, { label: string; icon: string }> = {
-  GRC:            { label: "GRC",            icon: "🛡️" },
-  TPRM:           { label: "TPRM",           icon: "👥" },
-  INTERNAL_AUDIT: { label: "Internal Audit", icon: "🔍" },
+  GRC:                { label: "GRC",                icon: "🛡️" },
+  TPRM:               { label: "TPRM",               icon: "👥" },
+  INTERNAL_AUDIT:     { label: "Internal Audit",     icon: "🔍" },
+  TECHNICAL_EVIDENCE: { label: "Technical Evidence", icon: "🧾" },
 };
+
+function getModuleMeta(code: string): { label: string; icon: string } {
+  return MODULE_META[code as ModuleCode] ?? { label: code || "Unknown Module", icon: "📦" };
+}
 const TIER_BADGE: Record<PlanTier, string> = {
   BASIC:  "bg-stone-100 text-stone-700 border-stone-300",
   MEDIUM: "bg-blue-100 text-blue-800 border-blue-300",
@@ -369,7 +374,7 @@ export default function UpgradePage() {
         {/* LEFT: per-module upgrade picker */}
         <div className="lg:col-span-2 space-y-4">
           {selections.map((s) => {
-            const meta = MODULE_META[s.moduleCode];
+            const meta = getModuleMeta(s.moduleCode);
             const mod = activeModules.find((m) => m.moduleCode === s.moduleCode);
             const currentRank = TIER_RANK[s.currentTier];
             return (
