@@ -52,41 +52,77 @@ const dateFnsLocales: Record<string, typeof enUS> = { en: enUS, ar, lv };
 
 /**
  * Rewrite a stored notification link so its TPRM role-prefix matches the
- * user that's clicking it. Notifications written by helpers that pre-date
- * the role-aware split (or that picked the wrong prefix for the recipient)
- * end up with links like `/tprm/am-assessments/<id>` even when the
- * recipient is the Assessor — clicking sends them to a page they have no
- * permission for. We keep the entity id + path tail and just swap the
- * prefix to the one the recipient can actually view.
+ * page the user actually has permission to view.
  *
- * Only TPRM `am-*` and `asr-*` assessment-style prefixes are remapped here
- * because those are the ones that share pages 1:1 across roles. Other
- * paths (`/tprm/bo-*`, `/tprm/rm-*`, generic list pages) are returned
- * unchanged — swapping them blindly would risk 404s.
+ * Background: notification helpers in src/lib/notification-service.ts store
+ * a hardcoded role-prefixed URL (e.g. `/tprm/asr-assessments/<id>`). When
+ * the clicking user holds a different role than the helper assumed — for
+ * example a Relationship Manager receiving an "Assessment approved"
+ * notification whose stored link is the assessor-side URL — clicking
+ * routes them to a page they can't view, producing an "Assessment not
+ * found" dead-end.
+ *
+ * The rewrite below handles `/tprm/(am|asr|bo|rm)-assessments/<id>` and
+ * picks the right destination for the user's strongest available role.
+ *
+ * Role priority for the assessment page (best access first):
+ *   Reviewer (Assessor / Approver / Auditor) → /tprm/asr-assessments/<id>
+ *   AccountManager                            → /tprm/am-assessments/<id>
+ *   RelationshipManager                       → /tprm/rm-assessments
+ *   BusinessOwner                             → /tprm/bo-assessments
+ *
+ * RM and BO have list-only pages (no per-assessment detail), so the
+ * `<id>` segment is dropped for those — the user lands on the list where
+ * they can locate the assessment in question manually. This is the
+ * least-bad fallback for "no detail page exists for this role" and
+ * matches the sidebar's Assessments entry for those roles.
+ *
+ * Multi-role users keep the existing prefix when it already matches one
+ * of their roles. Users with none of the four prefixes (e.g. plain
+ * CustomerAdministrator with no TPRM-specific role) get the link
+ * unchanged — they typically have global tprm.* permissions and the
+ * page renders fine.
  */
 function rewriteTprmNotificationLink(link: string, roles: string[]): string {
-  const match = link.match(/^\/tprm\/(am|asr)-assessments\/([^?#]+)(.*)$/);
+  const match = link.match(/^\/tprm\/(am|asr|bo|rm)-assessments\/([^?#]+)(.*)$/);
   if (!match) return link;
   const [, currentPrefix, idAndTail, query] = match;
 
-  const isAM = roles.includes("AccountManager");
   const isReviewer =
     roles.includes("TPRMAssessor") ||
     roles.includes("TPRMApprover") ||
     roles.includes("TPRMAuditor");
+  const isAM = roles.includes("AccountManager");
+  const isRM = roles.includes("RelationshipManager");
+  const isBO = roles.includes("BusinessOwner");
 
-  // Multi-role users: prefer the prefix that already matches a role they hold.
-  if (currentPrefix === "am" && isAM) return link;
+  // Multi-role users: if the link's prefix already matches a role they hold,
+  // keep the link verbatim — they have the strongest possible access already.
   if (currentPrefix === "asr" && isReviewer) return link;
+  if (currentPrefix === "am" && isAM) return link;
+  if (currentPrefix === "rm" && isRM) return link;
+  if (currentPrefix === "bo" && isBO) return link;
 
-  if (currentPrefix === "am" && !isAM && isReviewer) {
+  // Otherwise pick the best destination for the strongest role the user has.
+  // Reviewer roles win because their detail page carries the most context.
+  if (isReviewer) {
     return `/tprm/asr-assessments/${idAndTail}${query}`;
   }
-  if (currentPrefix === "asr" && !isReviewer && isAM) {
+  if (isAM) {
     return `/tprm/am-assessments/${idAndTail}${query}`;
   }
+  // RM and BO: no per-assessment detail page exists. Drop the id segment
+  // and send the user to their assessment list rather than a 404.
+  if (isRM) {
+    return `/tprm/rm-assessments`;
+  }
+  if (isBO) {
+    return `/tprm/bo-assessments`;
+  }
 
-  // No applicable TPRM role on this user (e.g. customer admin) — leave link as-is.
+  // No TPRM-specific role we recognise (e.g. plain CustomerAdministrator).
+  // Leave the link as the helper wrote it — those users typically have
+  // global tprm.* access and the page will render normally.
   return link;
 }
 
