@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Home, ChevronRight, Search, Plus, Minus, Download, MoreHorizontal,
   Eye, Pencil, Trash2, Building2, Loader2, ChevronLeft, X, Check, Info, Play, AlertTriangle,
@@ -294,6 +295,7 @@ export default function BOInventoryPage() {
   const [serviceCategory, setServiceCategory] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
   const [vendorUrl, setVendorUrl] = useState("");
+  const [performMonitoring, setPerformMonitoring] = useState(false);
   const [vendorPassword, setVendorPassword] = useState("");
   const [vendorConfirmPassword, setVendorConfirmPassword] = useState("");
   const [managers, setManagers] = useState<AccountManager[]>([{ ...emptyManager }]);
@@ -497,6 +499,7 @@ export default function BOInventoryPage() {
     setSelectedEngagementId("");
     setEngagementSearchText("");
     setShowEngagementSuggestions(false);
+    setPerformMonitoring(false);
   };
 
   const validateForm = () => {
@@ -626,6 +629,15 @@ export default function BOInventoryPage() {
           body: JSON.stringify({ vrr: vrrLabel }),
         });
         triggerTranslation('TPRMVendor', created.id, { name: vendorName.trim(), serviceCategory: serviceCategory || undefined });
+        // When "Perform Monitoring" is on, register this vendor in the monitoring
+        // module so it appears on the monitoring page (Vendor URL is required above).
+        if (performMonitoring && vendorUrl.trim()) {
+          void fetch("/api/tprm/monitoring/scan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ vendorName: vendorName.trim(), vendorURL: vendorUrl.trim() }),
+          });
+        }
         setCreatedVendorName(vendorName.trim());
         setCreatedVendorId(created.id);
         setShowCreateDialog(false);
@@ -979,6 +991,16 @@ export default function BOInventoryPage() {
           <Input value={vendorUrl} onChange={(e) => setVendorUrl(e.target.value)} placeholder={t("e.g. https://vendor-website.com")} />
           {formErrors.vendorUrl && <p className="text-xs text-red-500">{formErrors.vendorUrl}</p>}
         </div>
+
+        {/* Perform Monitoring (create only) — registers the vendor in the monitoring module */}
+        {showCreateDialog && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-3">
+              <Switch checked={performMonitoring} onCheckedChange={setPerformMonitoring} />
+              <Label className="font-normal">{t("Perform Monitoring")}</Label>
+            </div>
+          </div>
+        )}
 
         {/* Engagement selector — shown only when existing vendor is selected */}
         {isExistingVendor && existingEngagements.length > 0 && (

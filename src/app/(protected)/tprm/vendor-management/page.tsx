@@ -550,13 +550,19 @@ export default function VendorManagementPage() {
         serviceDescription: form.serviceDescription.trim() || '',
         businessJustification: form.businessJustification.trim() || '',
       });
-      // Trigger monitoring assessment for new vendors if toggle is on and vendor URL is provided
-      if (!editItem && performMonitoring && form.vendorUrl.trim()) {
-        void fetch("/api/tprm/monitoring/scan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vendorName: form.name.trim(), vendorUrl: form.vendorUrl.trim() }),
-        });
+      // When "Perform Monitoring" is on, register this new vendor in the monitoring
+      // module so it appears on the monitoring page. Monitoring needs a domain to
+      // scan, so a Vendor URL is required.
+      if (!editItem && performMonitoring) {
+        if (form.vendorUrl.trim()) {
+          void fetch("/api/tprm/monitoring/scan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ vendorName: form.name.trim(), vendorURL: form.vendorUrl.trim() }),
+          });
+        } else {
+          toast({ title: t("Monitoring skipped"), description: t("Add a Vendor URL to perform monitoring for this vendor."), variant: "destructive" });
+        }
       }
       toast({ title: t("Success"), description: editItem ? t("Vendor updated") : t("Vendor created") });
       setDialogOpen(false);
@@ -1006,7 +1012,7 @@ export default function VendorManagementPage() {
                 <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Monitoring")}</h4>
                 <div className="flex items-center gap-3">
                   <Switch checked={performMonitoring} onCheckedChange={setPerformMonitoring} />
-                  <Label className="text-sm font-normal">{t("Perform Monitoring Assessment")}</Label>
+                  <Label className="text-sm font-normal">{t("Perform Monitoring")}</Label>
                 </div>
               </div>
             )}

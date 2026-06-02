@@ -99,7 +99,7 @@ export const POST = withAuth(
         try {
           const vendor = await prisma.tPRMVendor.findUnique({
             where: { id: body.vendorId },
-            select: { accountManagerName: true, accountManagerEmail: true },
+            select: { accountManagerName: true, accountManagerEmail: true, password: true },
           });
 
           if (vendor?.accountManagerName && vendor?.accountManagerEmail) {
@@ -131,7 +131,10 @@ export const POST = withAuth(
                   userName = `${userName}_am_${Date.now()}`;
                 }
 
-                const hashedPassword = await bcrypt.hash("1", 10);
+                // Use the password the BO/RM entered for this vendor's account
+                // manager during onboarding (TPRMVendor.password). Fall back to "1"
+                // only if no password was provided.
+                const hashedPassword = await bcrypt.hash(vendor.password || "1", 10);
                 const nameParts = amName.trim().split(/\s+/);
 
                 accountManager = await prisma.user.create({
