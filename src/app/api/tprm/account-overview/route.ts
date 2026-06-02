@@ -512,6 +512,18 @@ export const POST = withAuth(
         );
       }
 
+      // Customer (CustomerAdministrator) accounts are now created exclusively
+      // through the central Customer Accounts page (/grc/customer-accounts),
+      // which provisions the module subscription correctly. The TPRM customers
+      // tab is view/edit/delete only. Factory & Superadmin accounts are still
+      // created here.
+      if (tab === "customers") {
+        return NextResponse.json(
+          { error: "Customer accounts are created from the central Customer Accounts page." },
+          { status: 400 }
+        );
+      }
+
       // Determine role name based on tab
       // CustomerAdministrator is the unified admin role for both GRC and TPRM;
       // module visibility is controlled by isGrcAdded/isTprmAdded flags on CustomerAccount

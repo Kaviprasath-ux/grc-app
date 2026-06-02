@@ -81,6 +81,21 @@ export interface NavItem {
 }
 
 export const navigation: NavItem[] = [
+  // ==================== Customer Accounts (Independent — superadmin onboarding) ====================
+  // Single source of truth for creating/onboarding customers across ALL platforms
+  // (GRC, TPRM, Internal Audit, Technical Evidence). Independent top-level menu —
+  // NOT nested under any module. Module-specific "Customer Accounts" pages
+  // (TPRM / Internal Audit) are view/edit/delete only; creation happens ONLY here.
+  // Placed above the GRC section so superadmin onboarding is the first item.
+  {
+    name: "Customer Accounts",
+    module: "SYSTEM",
+    href: "/grc/customer-accounts",
+    icon: UserPlus,
+    permission: "grc.customer-accounts:view",
+  },
+  // ==================== End Customer Accounts Section ====================
+
   // ==================== GRC Module Section (GRCAdministrator) ====================
   {
     name: "GRC",
@@ -92,12 +107,6 @@ export const navigation: NavItem[] = [
         name: "GRC Administration",
         href: "/grc",
         icon: LayoutDashboard,
-        permission: "grc.customer-accounts:view",
-      },
-      {
-        name: "Customer Accounts",
-        href: "/grc/customer-accounts",
-        icon: UserPlus,
         permission: "grc.customer-accounts:view",
       },
       {

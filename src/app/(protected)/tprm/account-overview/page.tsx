@@ -1268,7 +1268,6 @@ function CustomerAccountsTab() {
   const { t } = useLanguage();
   const [data, setData] = useState<CustomerAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editUserId, setEditUserId] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -1402,20 +1401,11 @@ function CustomerAccountsTab() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:rtl:flex-row-reverse items-start sm:items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-slate-700">{t("Customer Accounts")}</h3>
-        <Button onClick={() => setCreateOpen(true)} size="sm" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-          {t("Create New Customer")}
-        </Button>
+        <p className="text-xs text-slate-500 ltr:text-right rtl:text-left">
+          {t("New customers are onboarded from the Customer Accounts page.")}
+        </p>
       </div>
       <DataGrid columns={columns} data={translatedData} searchPlaceholder={t("Search customers...")} searchColumn="companyName" />
-      <CreateAccountDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        tab="customers"
-        title={t("Create New Customer Account")}
-        showIsGrcAdded={true}
-        onSuccess={fetchData}
-      />
       <EditAccountDialog
         open={editOpen}
         onOpenChange={setEditOpen}

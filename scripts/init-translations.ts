@@ -127,6 +127,7 @@ const translations: [string, string, string][] = [
   ['Dashboard', 'لوحة التحكم', 'Vadības panelis'],
   ['Dashboard Overview', 'نظرة عامة على لوحة التحكم', 'Vadības paneļa pārskats'],
   ['Customer Accounts', 'حسابات العملاء', 'Klientu konti'],
+  ['New customers are onboarded from the Customer Accounts page.', 'يتم تسجيل العملاء الجدد من صفحة حسابات العملاء.', 'Jaunie klienti tiek reģistrēti no Klientu kontu lapas.'],
   ['Customer', 'العميل', 'Klients'],
   ['GRC', 'الحوكمة والمخاطر والامتثال', 'GRC'],
   ['Format', 'التنسيق', 'Formāts'],
