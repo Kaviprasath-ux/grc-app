@@ -22,6 +22,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // GRC admin landing page — counts and recent list must be scoped to accounts
+    // with GRC access only (isGrcAdded). TPRM-only / IA-only / TE-only accounts
+    // are managed from the cross-platform /api/grc/customer-accounts list.
     const [
       customerAccountsCount,
       customersCount,
@@ -29,12 +32,13 @@ export async function GET(req: NextRequest) {
       frameworksCount,
       recentCustomers,
     ] = await Promise.all([
-      prisma.customerAccount.count(),
+      prisma.customerAccount.count({ where: { isGrcAdded: true } }),
       prisma.user.count({
         where: {
           userRoles: {
             some: { role: { name: "CustomerAdministrator" } },
           },
+          customerAccount: { isGrcAdded: true },
         },
       }),
       prisma.emailTemplate.count(),
@@ -44,6 +48,7 @@ export async function GET(req: NextRequest) {
           userRoles: {
             some: { role: { name: "CustomerAdministrator" } },
           },
+          customerAccount: { isGrcAdded: true },
         },
         select: {
           id: true,

@@ -73,31 +73,27 @@ export async function GET(req: NextRequest) {
       .map((u) => u.customerAccountId)
       .filter((id): id is string => !!id);
 
-    let accountFlagsMap = new Map<string, { code: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>();
+    let accountFlagsMap = new Map<string, { code: string; isGrcAdded: boolean; isTprmAdded: boolean; isInternalAuditEnabled: boolean; isTechnicalEvidenceEnabled: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>();
     if (accountIds.length > 0) {
       try {
         const flags = await prisma.$queryRawUnsafe<
-          Array<{ id: string; code: string; isGrcAdded: boolean; isTprmAdded: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>
+          Array<{ id: string; code: string; isGrcAdded: boolean; isTprmAdded: boolean; isInternalAuditEnabled: boolean; isTechnicalEvidenceEnabled: boolean; isQpostComplianceEnabled: boolean; logoUrl: string | null }>
         >(
-          `SELECT id, code, "isGrcAdded", "isTprmAdded", "isQpostComplianceEnabled", "logoUrl" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
+          `SELECT id, code, "isGrcAdded", "isTprmAdded", "isInternalAuditEnabled", "isTechnicalEvidenceEnabled", "isQpostComplianceEnabled", "logoUrl" FROM "CustomerAccount" WHERE id IN (${accountIds.map((_, i) => `$${i + 1}`).join(",")})`,
           ...accountIds
         );
-        accountFlagsMap = new Map(flags.map((f) => [f.id, { code: f.code, isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded, isQpostComplianceEnabled: f.isQpostComplianceEnabled, logoUrl: f.logoUrl }]));
+        accountFlagsMap = new Map(flags.map((f) => [f.id, { code: f.code, isGrcAdded: f.isGrcAdded, isTprmAdded: f.isTprmAdded, isInternalAuditEnabled: f.isInternalAuditEnabled, isTechnicalEvidenceEnabled: f.isTechnicalEvidenceEnabled, isQpostComplianceEnabled: f.isQpostComplianceEnabled, logoUrl: f.logoUrl }]));
       } catch {
         // If raw query fails (e.g., columns don't exist yet), default to false
       }
     }
 
-    // Filter to only include accounts with GRC access
-    const grcAccountIds = new Set(
-      Array.from(accountFlagsMap.entries())
-        .filter(([, f]) => f.isGrcAdded)
-        .map(([id]) => id)
-    );
-
-    // Transform the data to match the expected format
+    // This page is the single source of truth for ALL customer accounts across
+    // every platform (GRC, TPRM, Internal Audit, Technical Evidence, QPost).
+    // Show every onboarded account regardless of which module(s) it has —
+    // do NOT filter by isGrcAdded (previously hid TPRM-only / IA-only accounts).
     const formattedAccounts = customerAccounts
-      .filter((user) => user.customerAccountId && grcAccountIds.has(user.customerAccountId))
+      .filter((user) => user.customerAccountId)
       .map((user, index) => {
       const flags = user.customerAccountId ? accountFlagsMap.get(user.customerAccountId) : null;
       return {
@@ -117,6 +113,8 @@ export async function GET(req: NextRequest) {
         timeZone: user.timezone || "Asia/Qatar",
         isTprmAdded: flags?.isTprmAdded || false,
         isGrcAdded: flags?.isGrcAdded || false,
+        isInternalAuditEnabled: flags?.isInternalAuditEnabled || false,
+        isTechnicalEvidenceEnabled: flags?.isTechnicalEvidenceEnabled || false,
         isQpostComplianceEnabled: flags?.isQpostComplianceEnabled || false,
       };
     });

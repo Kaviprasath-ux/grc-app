@@ -20,7 +20,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden - GRCAdministrator role required" }, { status: 403 });
     }
 
-    // Get all users with CustomerAdministrator role
+    // Get all users with CustomerAdministrator role whose account has GRC access.
+    // This is the GRC-section Customers list, so it must exclude TPRM-only /
+    // Internal-Audit-only / Technical-Evidence-only accounts. The single source
+    // of truth for ALL accounts (any module) is /api/grc/customer-accounts.
     const customers = await prisma.user.findMany({
       where: {
         userRoles: {
@@ -29,6 +32,9 @@ export async function GET(req: NextRequest) {
               name: "CustomerAdministrator",
             },
           },
+        },
+        customerAccount: {
+          isGrcAdded: true,
         },
       },
       select: {
