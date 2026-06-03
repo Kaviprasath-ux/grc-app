@@ -41,6 +41,25 @@ const nextConfig: NextConfig = {
   // observed a clean report log for a few days we can flip to enforcement.
   async headers() {
     return [
+      // Auth entry points must never be cached at the shared/CDN layer.
+      // Next prerenders the "use client" /login page and stamps it with a
+      // 1-year `s-maxage`, relying on `Vary: rsc` to separate the HTML
+      // document from the RSC/Flight payload. Cloudflare (in front of the DO
+      // app) ignores `Vary: rsc`, so a prefetch can poison the cache with the
+      // Flight variant and serve it as the document — the browser then renders
+      // the raw RSC stream as text. Forcing no-store keeps these off the CDN.
+      {
+        source: "/login",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        ],
+      },
+      {
+        source: "/",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [
