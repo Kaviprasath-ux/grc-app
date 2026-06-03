@@ -1,0 +1,323 @@
+{
+  "vendor_name": "linkedin",
+  "vendor_url": "https://www.linkedin.com",
+  "vendor_domain": "www.linkedin.com",
+  "overall_summary": "LinkedIn has a strong security posture, backed by comprehensive data protection measures and a proactive approach to identifying vulnerabilities through bug bounty programs. However, past breaches like the 2012 incident expose historical weaknesses. Despite improvements, there remain areas for enhancement such as refining email security configurations and addressing missing security headers.",
+  "overall_score": 73,
+  "securityPostureScore": 77,
+  "threatExposureScore": 65,
+  "security_posture_summary": "LinkedIn maintains robust security measures across network security, email configurations, and external attack surfaces. The company has implemented strict Content Security Policies, SSL/TLS configurations, and participates actively in bug bounty programs.",
+  "threat_exposure_summary": "Historically, LinkedIn has experienced significant data breaches, though they have taken steps to address vulnerabilities and enhance security measures. Their proactive approach via public bug bounty programs indicates an ongoing commitment to improving security.",
+  "compliance_and_legal": {
+    "privacy_policy_url": "https://www.linkedin.com/legal/privacy-policy",
+    "dpa_url": "https://www.linkedin.com/legal/data-processing-agreement",
+    "laws": [
+      "GDPR",
+      "CCPA"
+    ],
+    "certifications": [
+      "ISO 27001",
+      "SOC 2"
+    ]
+  },
+  "recommendations": [
+    "Regularly update and patch vulnerable plugins and applications to mitigate exposure to known vulnerabilities.",
+    "Enhance email security configurations by refining SPF settings from 'soft fail' to 'hard fail'.",
+    "Address missing security headers such as Referrer-Policy and X-XSS-Protection to further mitigate vulnerabilities.",
+    "Ensure continuous testing and validation of DNS configurations and email authentication protocols.",
+    "Expand security training programs focused on preventing social engineering attacks targeting employees.",
+    "Increase monitoring and integration of external threat intelligence feeds to quickly adapt to emerging threats.",
+    "Review and enhance cryptographic standards for password storage to prevent potential breaches.",
+    "Implement additional logging and monitoring for potential unauthorized access or data exfiltration attempts.",
+    "Assess current endpoint protection measures to ensure comprehensive coverage against advanced threats.",
+    "Maintain strong data redundancy strategies and incident response plans to minimize impact during breaches."
+  ],
+  "kpi_details": [
+    {
+      "kpi_name": "Network Security",
+      "kpi_type": "security_posture",
+      "summary": "LinkedIn employs advanced network security measures, including robust attack surface management solutions that enable the identification and management of vulnerabilities in network infrastructures.",
+      "key_findings": [
+        "Advanced External Attack Surface Management solutions identified.",
+        "Continuous monitoring of external attack surfaces is implemented."
+      ],
+      "sources": [
+        "https://www.linkedin.com/products/riskprofilerio-riskprofiler-external-attack-surface-intelligence/"
+      ],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Continue to enhance network visibility and control measures to stay ahead of potential network threats."
+    },
+    {
+      "kpi_name": "DNS Health",
+      "kpi_type": "security_posture",
+      "summary": "LinkedIn has implemented robust DNS configurations, including strong policies for email authentication that help prevent spoofing and phishing attempts.",
+      "key_findings": [
+        "DMARC policy with 'p=reject' is in place.",
+        "SPF and DKIM records are correctly configured."
+      ],
+      "sources": [
+        "https://www.dmarctrust.com/domains/linkedin.com",
+        "https://engineering.linkedin.com/email/dmarc-new-tool-detect-genuine-emails"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Enhance DNS security by improving SPF policies to prevent unauthorized email sending."
+    },
+    {
+      "kpi_name": "Patching Cadence",
+      "kpi_type": "security_posture",
+      "summary": "There is no specific information on the patching cadence for LinkedIn's systems, though their engagement in bug bounty programs suggests a proactive approach to finding and fixing vulnerabilities.",
+      "key_findings": [
+        "Active bug bounty participation shows a focus on patching discovered vulnerabilities."
+      ],
+      "sources": [
+        "https://www.linkedin.com/blog/engineering/security/expanding-our-bug-bounty-program"
+      ],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Maintain regular patch cycles, prioritizing critical vulnerabilities identified through bounty program discoveries."
+    },
+    {
+      "kpi_name": "Endpoint Security",
+      "kpi_type": "security_posture",
+      "summary": "Specific details on LinkedIn's endpoint security measures are limited, indicating a potential gap in available public information.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Enhance transparency and reporting of endpoint security strategies and measures to provide more confidence in endpoint protection."
+    },
+    {
+      "kpi_name": "IP Reputation",
+      "kpi_type": "security_posture",
+      "summary": "LinkedIn appears to maintain a positive IP reputation given the company's stringent email and domain verification practices.",
+      "key_findings": [
+        "Utilizes reverse DNS entries on email sending IPs.",
+        "DMARC and SPF policies are robust."
+      ],
+      "sources": [
+        "https://www.linkedin.com/help/linkedin/answer/a704821/linkedin-postmaster-information?lang=en"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Continue improving email and domain verification protocols to maintain strong IP reputation."
+    },
+    {
+      "kpi_name": "Application Security",
+      "kpi_type": "security_posture",
+      "summary": "LinkedIn has engaged in extensive measures to improve application security, particularly through bug bounty programs and external security assessments.",
+      "key_findings": [
+        "Public bug bounty program offers rewards for identifying application vulnerabilities."
+      ],
+      "sources": [
+        "https://www.linkedin.com/blog/engineering/security/expanding-our-bug-bounty-program",
+        "https://security.linkedin.com/content/security/global/en_us/index/vulnerability-disclosure"
+      ],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2025-12402",
+          "severity": "medium",
+          "affected_component": "LinkedIn Resume Plugin",
+          "description": "CSRF to Stored XSS vulnerability in LinkedIn Resume Plugin.",
+          "source": "https://securityvulnerability.io/vulnerability/CVE-2025-12402"
+        }
+      ],
+      "recommendation": "Continue leveraging bug bounty insights to strengthen application security, focusing on areas such as XSS and CSRF vulnerabilities."
+    },
+    {
+      "kpi_name": "Cubit Score",
+      "kpi_type": "security_posture",
+      "summary": "There is no specific information available on LinkedIn's Cubit Score, a metric not fully disclosed in the gathered intelligence.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Consider participating in publicly recognized security scoring platforms to provide a more comprehensive view of LinkedIn's security posture."
+    },
+    {
+      "kpi_name": "Email Security",
+      "kpi_type": "security_posture",
+      "summary": "LinkedIn employs TLS for secure email transmissions and implements DMARC with a 'reject' policy, indicating strong email authentication measures.",
+      "key_findings": [
+        "TLS and DMARC are used for email security.",
+        "SPF records are in place but with a soft fail policy."
+      ],
+      "sources": [
+        "https://www.linkedin.com/help/linkedin/answer/a704821/linkedin-postmaster-information?lang=en",
+        "https://www.dmarctrust.com/domains/linkedin.com"
+      ],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Strengthen SPF policies from soft fail to hard fail to further enhance email security and prevent spoofing."
+    },
+    {
+      "kpi_name": "SSL/TLS Configuration",
+      "kpi_type": "security_posture",
+      "summary": "LinkedIn has implemented a strict TLS configuration with long max-age for HSTS, ensuring strong encryption standards.",
+      "key_findings": [
+        "Strict-Transport-Security is present with max-age of 31536000."
+      ],
+      "sources": [
+        "Live HTTP Security Header Scan"
+      ],
+      "security_score": 90,
+      "risk_score": 10,
+      "vulnerabilities": [],
+      "recommendation": "Regularly review SSL/TLS configurations to adapt to any emerging cryptographic weaknesses."
+    },
+    {
+      "kpi_name": "Privacy",
+      "kpi_type": "security_posture",
+      "summary": "LinkedIn provides comprehensive and up-to-date privacy policies, adhering to global standards such as GDPR and CCPA.",
+      "key_findings": [
+        "Privacy policy is publicly available and GDPR compliant."
+      ],
+      "sources": [
+        "https://www.linkedin.com/legal/privacy-policy"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Continue to update privacy policies in line with evolving regulatory requirements and best practices."
+    },
+    {
+      "kpi_name": "Known Breach",
+      "kpi_type": "threat_exposure",
+      "summary": "The significant 2012 breach where 117 million passwords were exposed highlights historical security challenges. However, LinkedIn has since implemented stronger measures to prevent similar incidents.",
+      "key_findings": [
+        "2012 breach exposed 117 million passwords.",
+        "Significant measures have been taken post-breach."
+      ],
+      "sources": [
+        "https://phys.org/news/2016-05-linkedin-hack-exposed-117m-user.pdf"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Ensure continuous review and improvement of security measures to prevent recurrence of similar breaches."
+    },
+    {
+      "kpi_name": "Hacker Chatter",
+      "kpi_type": "threat_exposure",
+      "summary": "There is no specific information available regarding ongoing hacker chatter or discussions on underground forums explicitly targeting LinkedIn.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Continue monitoring deep and dark web sources for any emerging threats or chatter targeting LinkedIn."
+    },
+    {
+      "kpi_name": "Information Leak",
+      "kpi_type": "threat_exposure",
+      "summary": "LinkedIn actively engages in measures to protect against information leaks, although past breaches indicate that vulnerabilities existed which have been addressed.",
+      "key_findings": [
+        "Historical leak of user data in 2012."
+      ],
+      "sources": [
+        "https://phys.org/news/2016-05-linkedin-hack-exposed-117m-user.pdf"
+      ],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Enhance detection capabilities for sensitive data leaks across internal and public channels."
+    },
+    {
+      "kpi_name": "Social Engineering",
+      "kpi_type": "threat_exposure",
+      "summary": "No specific incidents of social engineering directly affecting LinkedIn were discovered, though precautionary measures are assumed to be in place.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Conduct regular staff training and simulations to prepare against potential social engineering attacks."
+    }
+  ],
+  "http_security_headers": {
+    "http_security_headers": [
+      {
+        "name": "Content-Security-Policy",
+        "present": true,
+        "value": "default-src 'none'; connect-src 'self' *.licdn.com *.linkedin.com cdn.linkedin.oribi.io dpm.demdex.net/id lnkd.demdex.net blob: accounts.google.com/gsi/ linkedin.sc.omtrdc.net/b/ss/ v.clarity.ms/collect *.microsoft.com *.adnxs.com *.tealiumiq.com login.microsoftonline.com bat.bing.com lnkd.tt.omtrdc.net/rest/v1/delivery www.google.com google.com adservice.google.com pagead2.googlesyndication.com td.doubleclick.net www.googletagmanager.com www.googleadservices.com ad.doubleclick.net googleads.g.doubleclick.net; script-src 'report-sample' 'sha256-th47JTnh6tX15SUn/I+GGmsOSXpa7dh5Skner77gxlY=' 'sha256-SSoodjUD3LGm2FfFCVHGqEb8D4UM3OOigidT2UKDcYg=' 'sha256-cKTgdnmO6+hXd85a9wKg1effVfVzenUAtUCyOKY9bQE=' 'sha256-DwtT8+ZZKpxH9pqZNAmJ3GdbLAh5SsYaXR3omTXPCns=' 'sha256-sV9jZa797T0QWBzcU/CNd4tpBhTnh+TFdLnfjlitl28=' 'sha256-aa/Q8CRBDSqTQbCIyioPhZaz+G+dbPyu7BzsjInEmiU=' 'sha256-THuVhwbXPeTR0HszASqMOnIyxqEgvGyBwSPBKBF/iMc=' 'sha256-zTIusdVJJeXz9+iox2a+pdDglzbpRpFVRzEwvW4AONk=' 'sha256-iC8MPqNLw0FDnsBf4DlSkFLNTwhkI85aouiAEB819ic=' 'sha256-2EqrEvcPzl8c6/TSGVvaVMEe7lg700MAz/te4/3kTYY=' 'sha256-y5uW69VItKj51mcc7UD9qfptDVUqicZL+bItEpvVNDw=' 'sha256-DatsFGoJ8gFkzzxo47Ou76WZ+3QBPOQHtBu9p9b3DhA=' 'sha256-k95cyM8gFgPziZe5VQ2IvJvBUVyd5zFt2CokIUwqdHE=' 'sha256-PyCXNcEkzRWqbiNr087fizmiBBrq9O6GGD8eV3P09Ik=' 'sha256-RFqsjmAF1N5LnfpaHFvPqFlVkeIS/DtTAFor+JjJJVc=' 'sha256-2SQ55Erm3CPCb+k03EpNxU9bdV3XL9TnVTriDs7INZ4=' 'sha256-S/KSPe186K/1B0JEjbIXcCdpB97krdzX05S+dHnQjUs=' 'sha256-9pXOIwF4N0gPltLd3AI69lkCjSC2H/Eb3sc5zdmUyYU=' 'sha256-jou6v/Nleyzoc+LXktAv1Fp8M807dVVxy7E/yzVljHc=' 'sha256-6E4e/3dSvj/8JZT2S2yR91mspqM6MyOpKl5lrhHsZa8=' 'sha256-JfJ82reKxtqugVbfRGw/O/1x1Lm1I09rHueXSwvbRws=' 'sha256-BbV1i75oYRtLtfDWs7tnA8QLF5EOO1dVHKL0prVd/fQ=' 'sha256-3woF8BZ54TeXM+czaH3aXoaJsVpiamuAKFsXDykAR/Q=' 'sha256-vIfNcKb8ixJg1cfJIoNNYjWcm0lezj1/XpUNFiZyVsU=' 'sha256-cLsHUHFgT/VGX04cZrJ9xgm4HbzTR7ptutkxK+7BlMk=' 'sha256-BwU8jMnQYUhjOpsDVABpfddV/DlP1ZYrFcTumYw7x54=' 'sha256-wz6ika9i3WU3bpUPdhYDZeO/NrDQniDyiscN0LWnyaY=' 'sha256-3RIGhhApBii1KY+aW1xk7kFyoQY8vSVE5DfT7E9SJUc=' static.licdn.com static-exp1.licdn.com static-exp2.licdn.com static-exp3.licdn.com platform.linkedin.com platform-akam.linkedin.com platform-ecst.linkedin.com platform-azur.linkedin.com snap.licdn.com www.google.com/recaptcha/enterprise.js www.gstatic.com/recaptcha/releases/ www.googletagmanager.com/gtag/js www.googletagmanager.com/gtag/destination googleads.g.doubleclick.net/pagead/viewthroughconversion/ merchantpool1.linkedin.com/mdt.js; img-src data: blob: * 'self' *.licdn.com android-webview-video-poster:; font-src data: * 'self' *.licdn.com; style-src 'self' 'unsafe-inline' static.licdn.com static-exp1.licdn.com static-exp2.licdn.com static-exp3.licdn.com; media-src 'self' *.licdn.com *.lynda.com; worker-src 'self' blob: static.licdn.com static-exp1.licdn.com static-exp2.licdn.com static-exp3.licdn.com; frame-src 'self' www.youtube.com/embed/ www.youtube-nocookie.com/embed/ lnkd.demdex.net smartlock.google.com accounts.google.com player.vimeo.com *.linkedin.com www.slideshare.net *.megaphone.fm *.omny.fm *.sounder.fm msit.powerbi.com app.powerbi.com linkedin.github.io *.licdn.com *.adnxs.com acdn.adnxs-simple.com radar.cedexis.com edge-auth.microsoft.com flo.uri.sh play.vidyard.com www.google.com/recaptcha/ aat-acr-web-prod.azurewebsites.net *.fls.doubleclick.net www.googletagmanager.com td.doubleclick.net li.protechts.net *.xlgmedia.com *.px-cloud.net merchantpool1.linkedin.com; frame-ancestors 'self' *.www.linkedin.com:*; manifest-src 'self'; report-uri https://www.linkedin.com/security/csp?f=gg",
+        "description": "Restricts what content the browser can load to prevent XSS.",
+        "recommendation": "Use a strict CSP such as default-src 'self'; object-src 'none'."
+      },
+      {
+        "name": "Strict-Transport-Security",
+        "present": true,
+        "value": "max-age=31536000",
+        "description": "Forces HTTPS to protect against protocol downgrade attacks.",
+        "recommendation": "Set HSTS max-age >= 31536000 with includeSubDomains and preload."
+      },
+      {
+        "name": "X-Content-Type-Options",
+        "present": true,
+        "value": "nosniff",
+        "description": "Prevents MIME type sniffing.",
+        "recommendation": "Always set to 'nosniff' to avoid content-type attacks."
+      },
+      {
+        "name": "X-Frame-Options",
+        "present": true,
+        "value": "sameorigin",
+        "description": "Prevents clickjacking attacks.",
+        "recommendation": "Use SAMEORIGIN or DENY unless framing is required."
+      },
+      {
+        "name": "Referrer-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls how much referrer information is leaked.",
+        "recommendation": "Use strict-origin-when-cross-origin or stricter."
+      },
+      {
+        "name": "Permissions-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls access to browser features (camera, mic, geolocation).",
+        "recommendation": "Add a restrictive Permissions-Policy to disable unused features."
+      },
+      {
+        "name": "X-XSS-Protection",
+        "present": false,
+        "value": "Not Present",
+        "description": "Legacy XSS filter hint for older browsers.",
+        "recommendation": "Set to \"1; mode=block\" or rely on CSP instead."
+      },
+      {
+        "name": "Cross-Origin-Opener-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Isolates browsing context to prevent cross-origin attacks.",
+        "recommendation": "Set to same-origin for sensitive pages."
+      },
+      {
+        "name": "Cross-Origin-Resource-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls which origins can load the resource.",
+        "recommendation": "Set to same-origin or cross-origin as needed."
+      },
+      {
+        "name": "Cross-Origin-Embedder-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents loading cross-origin resources without explicit permission.",
+        "recommendation": "Set to require-corp for full cross-origin isolation."
+      }
+    ],
+    "platform": null,
+    "error": null
+  }
+}

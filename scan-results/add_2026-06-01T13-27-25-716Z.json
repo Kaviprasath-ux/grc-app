@@ -1,0 +1,302 @@
+{
+  "vendor_name": "add",
+  "vendor_url": "https://ww.linkedin.com",
+  "vendor_domain": "ww.linkedin.com",
+  "overall_summary": "Add Systems has been involved in multiple cybersecurity incidents, including data breaches affecting sensitive employee information. The vendor shows significant gaps in web application security and HTTP configurations lacking standard security headers. Their threat exposure is heightened due to previous breaches and vulnerabilities such as cross-site scripting. Improvements in network monitoring and vulnerability patching are critical.",
+  "overall_score": 62,
+  "securityPostureScore": 61,
+  "threatExposureScore": 66,
+  "security_posture_summary": "Add Systems displays a moderate security posture with several vulnerabilities unaddressed, particularly in web application security and lack of basic security headers. The organization needs to enforce robust security controls across their web properties.",
+  "threat_exposure_summary": "Add Systems faces a substantial threat exposure primarily due to previous data breaches, which have compromised sensitive information. Increased vigilance against further information leaks and social engineering attacks is necessary.",
+  "compliance_and_legal": {
+    "privacy_policy_url": null,
+    "dpa_url": null,
+    "laws": [
+      "U.S. state data breach notification laws"
+    ],
+    "certifications": []
+  },
+  "recommendations": [
+    "Implement strict Content-Security-Policy and other missing security headers to protect against web-based attacks.",
+    "Enhance email security measures by regularly updating SPF, DKIM, and DMARC policies to prevent unauthorized access.",
+    "Conduct regular security training for employees to recognize and avoid social engineering attempts.",
+    "Deploy endpoint monitoring tools to detect and respond to unauthorized access quickly.",
+    "Engage in regular third-party security audits to identify and patch vulnerabilities.",
+    "Improve patching cadence to address known vulnerabilities like those in FortiWeb promptly.",
+    "Increase transparency and communication with stakeholders regarding incident responses and data protection measures.",
+    "Implement a comprehensive data backup and recovery protocol to mitigate damage from potential data breaches.",
+    "Consider a bug bounty program to identify vulnerabilities before malicious actors exploit them."
+  ],
+  "kpi_details": [
+    {
+      "kpi_name": "Network Security",
+      "kpi_type": "security_posture",
+      "summary": "No specific information was found regarding the network security practices of Add Systems from the gathered intelligence, leading to an unclear assessment of their network defenses.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Regularly perform network penetration tests to identify potential vulnerabilities."
+    },
+    {
+      "kpi_name": "DNS Health",
+      "kpi_type": "security_posture",
+      "summary": "There is no mention of DNS health issues in the intelligence, leaving the DNS configuration and health unverified.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Conduct DNS monitoring regularly to ensure no misconfigurations or unauthorized changes."
+    },
+    {
+      "kpi_name": "Patching Cadence",
+      "kpi_type": "security_posture",
+      "summary": "The presence of vulnerabilities like CVE-2025-64446 suggests that patching practices may not be sufficiently prompt or comprehensive.",
+      "key_findings": [
+        "CVE-2025-64446 is actively exploited.",
+        "Delay in fixing web application vulnerabilities could lead to exposures."
+      ],
+      "sources": [
+        "https://www.techradar.com/pro/security/fortinet-customers-told-to-update-immediately-following-major-security-issue-heres-what-we-know"
+      ],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2025-64446",
+          "severity": "high",
+          "affected_component": "FortiWeb",
+          "description": "Allows attackers to execute admin commands due to a path traversal flaw.",
+          "source": "https://www.techradar.com/pro/security/fortinet-customers-told-to-update-immediately-following-major-security-issue-heres-what-we-know"
+        }
+      ],
+      "recommendation": "Adopt an aggressive patch management strategy to address vulnerabilities as soon as updates are available."
+    },
+    {
+      "kpi_name": "Endpoint Security",
+      "kpi_type": "security_posture",
+      "summary": "No specific endpoint security issues were highlighted, however, previous breaches suggest possible gaps in endpoint defenses.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Implement endpoint detection and response solutions to enhance visibility and protection."
+    },
+    {
+      "kpi_name": "IP Reputation",
+      "kpi_type": "security_posture",
+      "summary": "There is insufficient data about IP reputation issues or threats specific to the vendor's infrastructure.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Regularly assess IP reputation using threat intelligence services."
+    },
+    {
+      "kpi_name": "Application Security",
+      "kpi_type": "security_posture",
+      "summary": "Vulnerabilities such as CVE-2025-24966 indicate gaps in application security, with potential risks of compromised integrity and user data breaches.",
+      "key_findings": [
+        "CVE-2025-24966 allows HTML Injection in web applications."
+      ],
+      "sources": [
+        "https://cvefeed.io/vuln/detail/CVE-2025-24966"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2025-24966",
+          "severity": "medium",
+          "affected_component": "reNgine",
+          "description": "Allows attackers to inject arbitrary HTML code through the Add Target functionality.",
+          "source": "https://cvefeed.io/vuln/detail/CVE-2025-24966"
+        }
+      ],
+      "recommendation": "Improve input validation and output sanitization across all web applications."
+    },
+    {
+      "kpi_name": "Cubit Score",
+      "kpi_type": "security_posture",
+      "summary": "Information regarding the overall Cubit Score or security rating is not available, limiting a holistic view of security.",
+      "security_score": 70,
+      "risk_score": 30,
+      "key_findings": [],
+      "sources": [],
+      "vulnerabilities": []
+    },
+    {
+      "kpi_name": "Email Security",
+      "kpi_type": "security_posture",
+      "summary": "LinkedIn's implementation of TLS, SPF, and DMARC with a 'reject' policy ensures robust email security, preventing spoofing and phishing.",
+      "key_findings": [
+        "Uses TLS for secure email transmission.",
+        "Reverse DNS entries employed to stop spoofing.",
+        "DMARC policy set to 'reject'."
+      ],
+      "sources": [
+        "https://www.linkedin.com/help/linkedin/answer/a704821/linkedin-postmaster-information?lang=en"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Regularly review and update email authentication policies to remain effective against emerging threats."
+    },
+    {
+      "kpi_name": "SSL/TLS Configuration",
+      "kpi_type": "security_posture",
+      "summary": "No direct mentions of SSL/TLS configuration weaknesses were found.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Conduct periodic SSL/TLS audits to ensure strong cryptographic settings."
+    },
+    {
+      "kpi_name": "Privacy",
+      "kpi_type": "security_posture",
+      "summary": "There is no direct mention of privacy policy adherence or GDPR compliance in the gathered intelligence.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Develop and publish a comprehensive privacy policy to ensure compliance with data protection laws."
+    },
+    {
+      "kpi_name": "Known Breach",
+      "kpi_type": "threat_exposure",
+      "summary": "Add Systems experienced breaches leading to potential exposure of employee data, discovered during network disruptions.",
+      "key_findings": [
+        "Sensitive employee data potentially accessed in breaches.",
+        "Network disruptions occurred in March and May 2024."
+      ],
+      "sources": [
+        "https://cybermaterial.com/add-systems-reports-dual-data-breach-events/"
+      ],
+      "security_score": 50,
+      "risk_score": 50,
+      "vulnerabilities": [],
+      "recommendation": "Strengthen incident response plans and conduct regular security assessments to limit breach impacts."
+    },
+    {
+      "kpi_name": "Hacker Chatter",
+      "kpi_type": "threat_exposure",
+      "summary": "Although no explicit hacker chatter targeting Add Systems was found, their history of breaches makes them a target for further cybercriminal interest.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 70,
+      "risk_score": 30,
+      "vulnerabilities": [],
+      "recommendation": "Monitor dark web and cyber threat forums for illicit conversations about the organization."
+    },
+    {
+      "kpi_name": "Information Leak",
+      "kpi_type": "threat_exposure",
+      "summary": "Previous breaches have resulted in significant exposure of personal data of employees, posing risks of identity theft.",
+      "key_findings": [
+        "Exposure of Social Security numbers, bank information.",
+        "Potential data leaks during network breaches."
+      ],
+      "sources": [
+        "https://www.board-cybersecurity.com/incidents/tracker/add-systems-cybersecurity-incident-867f0003"
+      ],
+      "security_score": 55,
+      "risk_score": 45,
+      "vulnerabilities": [],
+      "recommendation": "Implement robust data encryption and access controls to safeguard against data leaks."
+    },
+    {
+      "kpi_name": "Social Engineering",
+      "kpi_type": "threat_exposure",
+      "summary": "Social engineering tactics, such as phishing, are likely threats due to the expanse of breaches and unconfirmed unauthorized access incidents.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Invest in comprehensive employee training programs to detect and mitigate social engineering tactics."
+    }
+  ],
+  "http_security_headers": {
+    "http_security_headers": [
+      {
+        "name": "Content-Security-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Restricts what content the browser can load to prevent XSS.",
+        "recommendation": "Use a strict CSP such as default-src 'self'; object-src 'none'."
+      },
+      {
+        "name": "Strict-Transport-Security",
+        "present": false,
+        "value": "Not Present",
+        "description": "Forces HTTPS to protect against protocol downgrade attacks.",
+        "recommendation": "Set HSTS max-age >= 31536000 with includeSubDomains and preload."
+      },
+      {
+        "name": "X-Content-Type-Options",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents MIME type sniffing.",
+        "recommendation": "Always set to 'nosniff' to avoid content-type attacks."
+      },
+      {
+        "name": "X-Frame-Options",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents clickjacking attacks.",
+        "recommendation": "Use SAMEORIGIN or DENY unless framing is required."
+      },
+      {
+        "name": "Referrer-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls how much referrer information is leaked.",
+        "recommendation": "Use strict-origin-when-cross-origin or stricter."
+      },
+      {
+        "name": "Permissions-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls access to browser features (camera, mic, geolocation).",
+        "recommendation": "Add a restrictive Permissions-Policy to disable unused features."
+      },
+      {
+        "name": "X-XSS-Protection",
+        "present": false,
+        "value": "Not Present",
+        "description": "Legacy XSS filter hint for older browsers.",
+        "recommendation": "Set to \"1; mode=block\" or rely on CSP instead."
+      },
+      {
+        "name": "Cross-Origin-Opener-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Isolates browsing context to prevent cross-origin attacks.",
+        "recommendation": "Set to same-origin for sensitive pages."
+      },
+      {
+        "name": "Cross-Origin-Resource-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls which origins can load the resource.",
+        "recommendation": "Set to same-origin or cross-origin as needed."
+      },
+      {
+        "name": "Cross-Origin-Embedder-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents loading cross-origin resources without explicit permission.",
+        "recommendation": "Set to require-corp for full cross-origin isolation."
+      }
+    ],
+    "platform": null,
+    "error": null
+  }
+}

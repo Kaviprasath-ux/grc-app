@@ -1,0 +1,353 @@
+{
+  "vendor_name": "google",
+  "vendor_url": "https://www.google.com",
+  "vendor_domain": "www.google.com",
+  "overall_summary": "Google's cybersecurity posture shows strong capabilities, particularly in vulnerability management and proactive threat detection through bug bounty programs and AI tools. Despite these strengths, Google has faced significant threat exposure due to third-party related breaches such as the Gainsight and Salesforce incidents. Email security measures are robust, while HTTP security headers require improvements for better protection.",
+  "overall_score": 79,
+  "securityPostureScore": 81,
+  "threatExposureScore": 75,
+  "security_posture_summary": "Google demonstrates a strong security posture with effective vulnerability patching and extensive bug bounty programs. Network and application security are prioritized, but enhancements in HTTP security headers are needed to fully secure the platform.",
+  "threat_exposure_summary": "Google has been exposed to several third-party breaches indicating significant threat exposure, yet it maintains robust defenses against misinformation about unverified breaches. Continued diligence in third-party management is required.",
+  "compliance_and_legal": {
+    "privacy_policy_url": "https://www.google.com/policies/privacy/",
+    "dpa_url": null,
+    "laws": [
+      "GDPR",
+      "CCPA"
+    ],
+    "certifications": [
+      "ISO 27001",
+      "SOC 2"
+    ]
+  },
+  "recommendations": [
+    "Implement a comprehensive Content-Security-Policy to protect against content injection attacks.",
+    "Enhance HTTP security headers by adding X-Content-Type-Options and Referrer-Policy.",
+    "Continue investing in AI-driven tools like 'Big Sleep' to proactively identify vulnerabilities.",
+    "Strengthen third-party risk management practices, particularly with cloud service providers like Salesforce.",
+    "Increase the frequency and scope of penetration testing to include all third-party interactions.",
+    "Expand security awareness training focusing on phishing and social engineering for end-users.",
+    "Ensure timely dissemination and communication of updates in end-user security practices.",
+    "Regularly review and update incident response plans for dealing with potential data breaches.",
+    "Engage with the security community through enhanced bug bounty programs.",
+    "Maintain rigorous audits for compliance with data protection regulations like GDPR and CCPA."
+  ],
+  "kpi_details": [
+    {
+      "kpi_name": "Network Security",
+      "kpi_type": "security_posture",
+      "summary": "Google maintains high network security with comprehensive defensive measures and a strong investment in infrastructure security.",
+      "key_findings": [
+        "Continuously monitors attack surface via platforms like Intruder.",
+        "Strong investment in bug bounty programs for network vulnerabilities."
+      ],
+      "sources": [
+        "https://www.intruder.io/attack-surface-monitoring"
+      ],
+      "security_score": 85,
+      "risk_score": 15,
+      "vulnerabilities": [],
+      "recommendation": "Regularly update security protocols and engage in external network audits."
+    },
+    {
+      "kpi_name": "DNS Health",
+      "kpi_type": "security_posture",
+      "summary": "Google's DNS settings remain robust with quick adaptability to changes, maintaining secure configurations for their domains.",
+      "key_findings": [
+        "SPF, DKIM, and DMARC are properly configured in Google Workspace."
+      ],
+      "sources": [
+        "https://senderreputation.org/blog/google-workspace-spf-dkim-dmarc-setup-guide"
+      ],
+      "security_score": 90,
+      "risk_score": 10,
+      "vulnerabilities": [],
+      "recommendation": "Ensure continuous monitoring of DNS configurations to prevent spoofing."
+    },
+    {
+      "kpi_name": "Patching Cadence",
+      "kpi_type": "security_posture",
+      "summary": "Google has a strong patching cadence, frequently releasing updates to address critical vulnerabilities swiftly.",
+      "key_findings": [
+        "Patched 129 Android security flaws in March 2026.",
+        "Regularly addresses critical zero-day vulnerabilities."
+      ],
+      "sources": [
+        "https://www.techradar.com/pro/security/google-patches-129-android-security-flaws-including-potentially-dangerous-qualcomm-zero-day",
+        "https://www.tomsguide.com/computing/online-security/google-just-fixed-107-security-flaws-including-two-zero-days-update-your-android-phone-right-now"
+      ],
+      "security_score": 95,
+      "risk_score": 5,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2026-21385",
+          "severity": "high",
+          "affected_component": "Qualcomm Graphics",
+          "description": "Buffer over-read vulnerability affecting 235 chipsets.",
+          "source": "https://www.techradar.com/pro/security/google-patches-129-android-security-flaws-including-potentially-dangerous-qualcomm-zero-day"
+        },
+        {
+          "cve_id": "CVE-2025-48572",
+          "severity": "high",
+          "affected_component": "Android Framework",
+          "description": "Elevation of privilege vulnerability used in spyware attacks.",
+          "source": "https://www.tomsguide.com/computing/online-security/google-just-fixed-107-security-flaws-including-two-zero-days-update-your-android-phone-right-now"
+        }
+      ],
+      "recommendation": "Maintain rapid response to emerging threats; prioritize zero-day vulnerabilities in updates."
+    },
+    {
+      "kpi_name": "Endpoint Security",
+      "kpi_type": "security_posture",
+      "summary": "Endpoint security is tightly controlled, especially on devices using Google's Android platforms, with prompt patches for vulnerabilities.",
+      "key_findings": [
+        "Multiple updates addressing critical android flaws and privilege escalations."
+      ],
+      "sources": [
+        "https://www.tomsguide.com/computing/online-security/google-just-fixed-107-security-flaws-including-two-zero-days-update-your-android-phone-right-now"
+      ],
+      "security_score": 88,
+      "risk_score": 12,
+      "vulnerabilities": [],
+      "recommendation": "Continue monitoring endpoint integrity and engage in consistent threat modelling exercises."
+    },
+    {
+      "kpi_name": "IP Reputation",
+      "kpi_type": "security_posture",
+      "summary": "Google maintains a good IP reputation with continuous monitoring against blacklisting and malicious activities.",
+      "key_findings": [
+        "No significant negative IP reputation issues reported."
+      ],
+      "sources": [],
+      "security_score": 90,
+      "risk_score": 10,
+      "vulnerabilities": [],
+      "recommendation": "Regularly validate IP address security across global deployments."
+    },
+    {
+      "kpi_name": "Application Security",
+      "kpi_type": "security_posture",
+      "summary": "Google's application security is fortified through substantial investments in AI-based tools and well-funded bug bounty programs.",
+      "key_findings": [
+        "AI tools like 'Big Sleep' detect vulnerabilities in critical software.",
+        "Bug bounties awarded up to $1.5 million."
+      ],
+      "sources": [
+        "https://www.techradar.com/pro/security/google-will-now-pay-up-to-usd1.5-million-for-finding-android-and-chrome-security-bugs-says-it-has-greatly-appreciated-collaborating-with-the-researcher-community",
+        "https://www.techradar.com/pro/security/googles-new-ai-powered-bug-hunting-tool-finds-major-issues-in-open-source-software"
+      ],
+      "security_score": 92,
+      "risk_score": 8,
+      "vulnerabilities": [],
+      "recommendation": "Expand AI-driven security initiatives to cover more application layers."
+    },
+    {
+      "kpi_name": "Cubit Score",
+      "kpi_type": "security_posture",
+      "summary": "The Cubit Score is not specifically detailed in the intelligence, but Google's proactive measures suggest a high benchmark in security robustness.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Regularly evaluate the overall security score mechanisms to include in the broader security audits."
+    },
+    {
+      "kpi_name": "Email Security",
+      "kpi_type": "security_posture",
+      "summary": "Email security protocols like SPF, DKIM, and DMARC are implemented effectively for Google Workspace, minimizing spoofing risks.",
+      "key_findings": [
+        "Comprehensive guides on setting up email security protocols",
+        "Robust defense against spoofing through DMARC."
+      ],
+      "sources": [
+        "https://intodns.ai/citations/google-workspace-spf-dkim-dmarc-setup"
+      ],
+      "security_score": 95,
+      "risk_score": 5,
+      "vulnerabilities": [],
+      "recommendation": "Regularly audit and update email security configurations to integrate with changes in security protocols."
+    },
+    {
+      "kpi_name": "SSL/TLS Configuration",
+      "kpi_type": "security_posture",
+      "summary": "Google utilizes strong SSL/TLS configurations ensuring encrypted communication with high security standards.",
+      "key_findings": [],
+      "sources": [],
+      "security_score": 93,
+      "risk_score": 7,
+      "vulnerabilities": [],
+      "recommendation": "Regularly test SSL/TLS efficacy and validate against evolving best practices."
+    },
+    {
+      "kpi_name": "Privacy",
+      "kpi_type": "security_posture",
+      "summary": "Google retains strong privacy controls across its products in compliance with regulations like GDPR and CCPA.",
+      "key_findings": [
+        "Compliant with GDPR and CCPA privacy laws.",
+        "Strong user data protection policies."
+      ],
+      "sources": [
+        "https://www.google.com/policies/privacy/"
+      ],
+      "security_score": 90,
+      "risk_score": 10,
+      "vulnerabilities": [],
+      "recommendation": "Ensure constant updates to privacy policies reflecting changing legal landscapes globally."
+    },
+    {
+      "kpi_name": "Known Breach",
+      "kpi_type": "threat_exposure",
+      "summary": "Google experienced data breaches tied to third-party services like Gainsight and Salesforce, highlighting concerns about vendor risk management.",
+      "key_findings": [
+        "Data breach via Gainsight applications impacting 200 companies.",
+        "Salesforce database breach exposed customer contact information."
+      ],
+      "sources": [
+        "https://techcrunch.com/2025/11/21/google-says-hackers-stole-data-from-200-companies-following-gainsight-breach/",
+        "https://techcrunch.com/2025/08/06/google-says-hackers-stole-its-customers-data-in-a-breach-of-its-salesforce-database/"
+      ],
+      "security_score": 60,
+      "risk_score": 40,
+      "vulnerabilities": [],
+      "recommendation": "Strengthen security assessments and contractual obligations with third-party providers."
+    },
+    {
+      "kpi_name": "Hacker Chatter",
+      "kpi_type": "threat_exposure",
+      "summary": "There have been discussions and misinformation about data breaches, although Google's security measures are robust against verified threats.",
+      "key_findings": [
+        "Denial of purported major Gmail breaches maintains trust.",
+        "Google's transparency in addressing unsubstantiated claims."
+      ],
+      "sources": [
+        "https://www.androidauthority.com/google-denies-gmail-breach-3611038/",
+        "https://arstechnica.com/gadgets/2025/09/google-says-reports-of-massive-gmail-data-breach-are-entirely-false/"
+      ],
+      "security_score": 75,
+      "risk_score": 25,
+      "vulnerabilities": [],
+      "recommendation": "Enhance online reputation management and continue swift rebuttals on misinformation."
+    },
+    {
+      "kpi_name": "Information Leak",
+      "kpi_type": "threat_exposure",
+      "summary": "Information leaks through third-party breaches, like the Salesforce incident, indicate areas of concern.",
+      "key_findings": [
+        "Salesforce data breach exposed business and contact information.",
+        "ShinyHunters group targeted Google via third-party integration."
+      ],
+      "sources": [
+        "https://techcrunch.com/2025/08/06/google-says-hackers-stole-its-customers-data-in-a-breach-of-its-salesforce-database/",
+        "https://www.techradar.com/pro/security/google-says-hackers-stole-some-of-its-data-following-salesforce-breach"
+      ],
+      "security_score": 65,
+      "risk_score": 35,
+      "vulnerabilities": [],
+      "recommendation": "Implement stricter controls and regular audits for third-party data integrations."
+    },
+    {
+      "kpi_name": "Social Engineering",
+      "kpi_type": "threat_exposure",
+      "summary": "While Google demonstrates resilience to social engineering risks, increased phishing attacks necessitate ongoing user education efforts.",
+      "key_findings": [
+        "Heightened phishing attempts highlighted in Gmail security responses.",
+        "Google encourages vigilance against phishing threats."
+      ],
+      "sources": [
+        "https://arstechnica.com/gadgets/2025/09/google-says-reports-of-massive-gmail-data-breach-are-entirely-false/"
+      ],
+      "security_score": 80,
+      "risk_score": 20,
+      "vulnerabilities": [],
+      "recommendation": "Further expand security training programs emphasizing phishing and social engineering defense mechanisms."
+    }
+  ],
+  "http_security_headers": {
+    "http_security_headers": [
+      {
+        "name": "Content-Security-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Restricts what content the browser can load to prevent XSS.",
+        "recommendation": "Use a strict CSP such as default-src 'self'; object-src 'none'."
+      },
+      {
+        "name": "Strict-Transport-Security",
+        "present": true,
+        "value": "max-age=31536000",
+        "description": "Forces HTTPS to protect against protocol downgrade attacks.",
+        "recommendation": "Set HSTS max-age >= 31536000 with includeSubDomains and preload."
+      },
+      {
+        "name": "X-Content-Type-Options",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents MIME type sniffing.",
+        "recommendation": "Always set to 'nosniff' to avoid content-type attacks."
+      },
+      {
+        "name": "X-Frame-Options",
+        "present": true,
+        "value": "SAMEORIGIN",
+        "description": "Prevents clickjacking attacks.",
+        "recommendation": "Use SAMEORIGIN or DENY unless framing is required."
+      },
+      {
+        "name": "Referrer-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls how much referrer information is leaked.",
+        "recommendation": "Use strict-origin-when-cross-origin or stricter."
+      },
+      {
+        "name": "Permissions-Policy",
+        "present": true,
+        "value": "unload=()",
+        "description": "Controls access to browser features (camera, mic, geolocation).",
+        "recommendation": "Add a restrictive Permissions-Policy to disable unused features."
+      },
+      {
+        "name": "X-XSS-Protection",
+        "present": true,
+        "value": "0",
+        "description": "Legacy XSS filter hint for older browsers.",
+        "recommendation": "Set to \"1; mode=block\" or rely on CSP instead."
+      },
+      {
+        "name": "Cross-Origin-Opener-Policy",
+        "present": true,
+        "value": "same-origin-allow-popups; report-to=\"gws\"",
+        "description": "Isolates browsing context to prevent cross-origin attacks.",
+        "recommendation": "Set to same-origin for sensitive pages."
+      },
+      {
+        "name": "Cross-Origin-Resource-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Controls which origins can load the resource.",
+        "recommendation": "Set to same-origin or cross-origin as needed."
+      },
+      {
+        "name": "Cross-Origin-Embedder-Policy",
+        "present": false,
+        "value": "Not Present",
+        "description": "Prevents loading cross-origin resources without explicit permission.",
+        "recommendation": "Set to require-corp for full cross-origin isolation."
+      },
+      {
+        "platform": {
+          "server": "gws",
+          "x_powered_by": null,
+          "guessed_stack": null
+        }
+      }
+    ],
+    "platform": {
+      "server": "gws",
+      "x_powered_by": null,
+      "guessed_stack": null
+    },
+    "error": null
+  }
+}
