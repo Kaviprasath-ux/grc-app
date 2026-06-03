@@ -109,3 +109,8 @@ inline-validation-changes.patch
 # Python
 __pycache__/
 *.pyc
+
+# Database backups / dumps (contain production data — never commit)
+/backups/
+*.dump
+*.sql.gz
