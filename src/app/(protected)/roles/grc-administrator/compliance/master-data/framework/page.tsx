@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home, FileText } from "lucide-react";
 import Link from "next/link";
-import { isValidName } from "@/lib/validations";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
 interface Framework {
@@ -194,8 +193,6 @@ export default function FrameworkMasterDataPage() {
     const errors: Record<string, string> = {};
     if (!formData.name?.trim()) {
       errors.name = t("Please enter name");
-    } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!formData.type) {
       errors.type = t("Please Select Framework Type");

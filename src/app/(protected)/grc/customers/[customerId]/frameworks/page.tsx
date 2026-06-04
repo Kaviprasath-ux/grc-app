@@ -302,8 +302,6 @@ export default function CustomerFrameworkOverviewPage() {
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) {
       newErrors.name = t("Framework name is required");
-    } else if (!isValidName(formData.name.trim())) {
-      newErrors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!formData.code.trim()) {
       // code is optional, no error

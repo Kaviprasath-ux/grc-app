@@ -41,7 +41,6 @@ import { Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, Search, Chevro
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
-import { isValidName } from "@/lib/validations";
 
 interface Framework {
   id: string;
@@ -196,8 +195,6 @@ export default function FrameworkMasterDataPage() {
     const errors: Record<string, string> = {};
     if (!formData.name?.trim()) {
       errors.name = t("Please enter name");
-    } else if (!isValidName(formData.name.trim())) {
-      errors.name = t("Only letters, spaces, and hyphens are allowed");
     }
     if (!formData.type) {
       errors.type = t("Please Select Framework Type");
