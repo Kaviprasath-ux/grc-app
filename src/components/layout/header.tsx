@@ -458,6 +458,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
               variant="ghost"
               size="sm"
               className="hidden md:flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-3"
+              title={t("Language")}
             >
               <Globe className="h-4 w-4" />
               <span className="text-sm font-medium">{locale.toUpperCase()}</span>
@@ -505,6 +506,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
               variant="ghost"
               size="icon"
               className="relative text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+              title={t("Notifications")}
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
