@@ -114,3 +114,6 @@ __pycache__/
 /backups/
 *.dump
 *.sql.gz
+
+# Security scan output (generated artifacts)
+/scan-results/
