@@ -44,8 +44,15 @@ export const GET = withAuth(
       // Load questionnaire questions for this assessment's template
       let questions: unknown[] = [];
       if (assessment.questionnaireTemplate) {
-        const template = await prisma.tPRMQuestionnaireTemplate.findFirst({
-          where: { customerAccountId, templateName: assessment.questionnaireTemplate },
+        // questionnaireTemplate may hold several comma-separated template names
+        // (the initiation UI joins multi-selected templates with ", "), so match
+        // every one of them and aggregate their questions, de-duplicated by id.
+        const templateNames = assessment.questionnaireTemplate
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
+        const templates = await prisma.tPRMQuestionnaireTemplate.findMany({
+          where: { customerAccountId, templateName: { in: templateNames } },
           include: {
             masterQuestionLinks: {
               include: {
@@ -61,8 +68,15 @@ export const GET = withAuth(
           },
         });
 
-        if (template) {
-          questions = template.masterQuestionLinks.map(link => ({
+        const seenQuestionIds = new Set<string>();
+        questions = templates
+          .flatMap(t => t.masterQuestionLinks)
+          .filter(link => {
+            if (seenQuestionIds.has(link.question.id)) return false;
+            seenQuestionIds.add(link.question.id);
+            return true;
+          })
+          .map(link => ({
             id: link.question.id,
             questionText: link.question.questionText,
             domainId: link.question.domainId,
@@ -87,7 +101,6 @@ export const GET = withAuth(
               sortOrder: c.sortOrder,
             })),
           }));
-        }
       }
 
       // Load domains for this customer

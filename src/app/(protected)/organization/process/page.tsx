@@ -509,7 +509,7 @@ export default function ProcessPage() {
       const [processRes, deptRes, userRes, biaRes, freqRes, locRes, implRes, assetsRes, biaCatRes, biaRatingsRes, biaScoringConfigRes, biaScoringRangesRes] = await Promise.all([
         fetch("/api/processes"),
         fetch("/api/departments"),
-        fetch("/api/users"),
+        fetch("/api/users?moduleCode=GRC"),
         fetch("/api/process-bia"),
         fetch("/api/organization-settings/process-frequency"),
         fetch("/api/organization-settings/location"),

@@ -155,7 +155,7 @@ export default function EditProcessPage() {
       const [processRes, deptRes, userRes, freqRes, locRes, implRes] = await Promise.all([
         fetch(`/api/processes/${processId}`),
         fetch("/api/departments"),
-        fetch("/api/users"),
+        fetch("/api/users?moduleCode=GRC"),
         fetch("/api/organization-settings/process-frequency"),
         fetch("/api/organization-settings/location"),
         fetch("/api/organization-settings/nature-of-implementation"),

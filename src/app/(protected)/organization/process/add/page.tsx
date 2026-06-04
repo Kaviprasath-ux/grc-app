@@ -101,7 +101,7 @@ export default function AddProcessPage() {
       try {
         const [deptRes, userRes, freqRes, locRes, implRes] = await Promise.all([
           fetch("/api/departments"),
-          fetch("/api/users"),
+          fetch("/api/users?moduleCode=GRC"),
           fetch("/api/organization-settings/process-frequency"),
           fetch("/api/organization-settings/location"),
           fetch("/api/organization-settings/nature-of-implementation"),
