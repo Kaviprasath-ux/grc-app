@@ -10,11 +10,11 @@
     "i18n:init": "npx tsx scripts/init-translations.ts",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
-    "db:seed-bts": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-customer-bts.ts",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:seed-bts": "npx tsx prisma/seed-customer-bts.ts",
     "db:seed-artifacts": "npx tsx prisma/seed-artifacts.ts",
     "db:reset": "npx prisma migrate reset --force",
-    "db:migrate-audit-head": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/migrate-audit-head-data.ts",
+    "db:migrate-audit-head": "npx tsx prisma/migrate-audit-head-data.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
@@ -24,7 +24,7 @@
     "encrypt:rotate-key": "npx tsx scripts/rotate-master-key.ts"
   },
   "prisma": {
-    "seed": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1056.0",

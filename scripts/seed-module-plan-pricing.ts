@@ -130,8 +130,7 @@ const SEEDS: Seed[] = [
 
 async function run() {
   console.log("Seeding/Updating ModulePlanPricing (8 rows)...\n");
-  let created = 0;
-  let updated = 0;
+  let count = 0;
 
   for (const s of SEEDS) {
     const result = await prisma.modulePlanPricing.upsert({
@@ -169,18 +168,12 @@ async function run() {
       },
     });
 
-    // Check if it was created or updated by comparing timestamps
-    const isNew = new Date(result.createdAt).getTime() === new Date(result.updatedAt).getTime();
-    if (isNew) {
-      created++;
-      console.log(`  + ${s.moduleCode} ${s.planType} - CREATED - ₹${s.yearlyPrice}/yr`);
-    } else {
-      updated++;
-      console.log(`  ✓ ${s.moduleCode} ${s.planType} - UPDATED - ₹${s.yearlyPrice}/yr (₹${s.monthlyPrice ?? 'N/A'}/mo)`);
-    }
+    // Upsert succeeded
+    count++;
+    console.log(`  ✓ ${s.moduleCode} ${s.planType} - ₹${s.yearlyPrice}/yr (₹${s.monthlyPrice ?? 'N/A'}/mo)`);
   }
 
-  console.log(`\nDone. ${created} created, ${updated} updated.`);
+  console.log(`\nDone. ${count} rows upserted.`);
   await prisma.$disconnect();
 }
 
