@@ -167,10 +167,16 @@ export default function GovernanceMasterDataPage() {
   const { data: translatedUsers } = useTranslatedData(users, { modelName: 'User' });
   const { data: translatedControls } = useTranslatedData(controls, { modelName: 'Control' });
 
-  // Get users filtered by selected department
-  const filteredUsers = formData.departmentId
-    ? translatedUsers.filter((u) => u.departmentId === formData.departmentId)
-    : translatedUsers;
+  // Get users filtered by selected department and role
+  const filteredUsers = (() => {
+    if (!formData.departmentId) return [];
+    return translatedUsers.filter((u) => {
+      if (u.departmentId !== formData.departmentId) return false;
+      return u.userRoles?.some((ur) =>
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+      );
+    });
+  })();
 
   // Get filtered controls for Step 2
   const filteredControls = translatedControls.filter((c) => {
@@ -882,22 +888,32 @@ export default function GovernanceMasterDataPage() {
                     {t("Assignee")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
-                    value={formData.assigneeId || "none"}
+                    value={formData.assigneeId || ""}
                     onValueChange={(value) => {
-                      setFormData({ ...formData, assigneeId: value === "none" ? "" : value });
+                      setFormData({ ...formData, assigneeId: value });
                       if (policyErrors.assigneeId) setPolicyErrors((prev) => { const { assigneeId, ...rest } = prev; return rest; });
                     }}
+                    disabled={!formData.departmentId}
                   >
                     <SelectTrigger className={`mt-1.5 w-full bg-white ${policyErrors.assigneeId ? "border-red-500 focus:ring-red-500" : ""}`}>
-                      <SelectValue placeholder={t("Select assignee")} />
+                      <SelectValue placeholder={
+                        !formData.departmentId
+                          ? t("Select department first")
+                          : t("Select assignee")
+                      } />
                     </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="none">{t("Select assignee")}</SelectItem>
-                      {filteredUsers.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.fullName}
-                        </SelectItem>
-                      ))}
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.fullName}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                          {t("No department reviewers found")}
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                   {policyErrors.assigneeId && (

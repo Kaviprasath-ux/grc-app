@@ -405,14 +405,24 @@ export default function GRCAdminGovernancePage() {
 
   // Filter users for Assignee dropdown based on selected department
   const getFilteredUsers = () => {
-    if (!newPolicy.departmentId) return translatedUsers;
-    return translatedUsers.filter((u) => u.departmentId === newPolicy.departmentId);
+    if (!newPolicy.departmentId) return [];
+    return translatedUsers.filter((u) => {
+      if (u.departmentId !== newPolicy.departmentId) return false;
+      return u.userRoles?.some((ur) =>
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+      );
+    });
   };
 
   // Filter users for Edit Assignee dropdown
   const getFilteredEditUsers = () => {
-    if (!editData.departmentId) return translatedUsers;
-    return translatedUsers.filter((u) => u.departmentId === editData.departmentId);
+    if (!editData.departmentId) return [];
+    return translatedUsers.filter((u) => {
+      if (u.departmentId !== editData.departmentId) return false;
+      return u.userRoles?.some((ur) =>
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+      );
+    });
   };
 
   const openEditDialog = (policy: Policy) => {
@@ -836,7 +846,7 @@ export default function GRCAdminGovernancePage() {
                         ))
                       ) : (
                         <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                          {t("No users found")}
+                          {t("No department reviewers found")}
                         </div>
                       )}
                     </SelectContent>
@@ -1243,7 +1253,7 @@ export default function GRCAdminGovernancePage() {
                       ))
                     ) : (
                       <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                        {t("No users found")}
+                        {t("No department reviewers found")}
                       </div>
                     )}
                   </SelectContent>
