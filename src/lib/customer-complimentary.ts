@@ -38,7 +38,7 @@ export async function ensureComplimentarySubscription(
   enabledModules: ModuleCode[],
 ): Promise<{ subscriptionId: string; ensured: ModuleCode[] }> {
   const now = new Date();
-  const farFuture = addYears(now, 10);
+  const farFuture = addYears(now, 1);
 
   // 1. Envelope: create or upgrade-to-COMPLIMENTARY
   let sub = await prisma.subscription.findUnique({
