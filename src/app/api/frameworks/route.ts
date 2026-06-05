@@ -247,40 +247,51 @@ export const POST = withAuth(
       // Check subscription plan limits before creating framework (skip for GRC Admins)
       let activePlan = null;
       if (!isGRCAdmin) {
-        const now = new Date();
-        activePlan = await prisma.subscriptionPlan.findFirst({
-          where: {
-            customerAccountId,
-            status: "Active",
-            expiryDate: { gte: now },
-          },
+        // V2: ModuleSubscription with unlimited frameworks (null or >= 999_999) bypasses V1 check
+        const v2Module = await prisma.moduleSubscription.findFirst({
+          where: { subscription: { customerAccountId }, moduleCode: "GRC" },
+          select: { frameworkLimit: true },
         });
+        const hasUnlimitedFrameworks =
+          v2Module !== null &&
+          (v2Module.frameworkLimit === null || v2Module.frameworkLimit >= 999_999);
 
-        if (!activePlan) {
-          // Auto-create a subscription plan if none exists
-          console.log(`[Frameworks API] No active subscription plan found for customerAccountId: ${customerAccountId}. Auto-creating one.`);
-          activePlan = await prisma.subscriptionPlan.create({
-            data: {
+        if (!hasUnlimitedFrameworks) {
+          const now = new Date();
+          activePlan = await prisma.subscriptionPlan.findFirst({
+            where: {
               customerAccountId,
-              startDate: new Date(),
-              expiryDate: new Date("2030-12-31"),
-              maxFrameworksAllowed: 100,
-              maxAccountsAllowed: 50,
-              assessmentLimit: 100,
-              vendorLimit: 100,
-              frameworksUsed: 0,
-              accountsUsed: 0,
               status: "Active",
+              expiryDate: { gte: now },
             },
           });
-          console.log(`[Frameworks API] Auto-created subscription plan: ${activePlan.id}`);
-        }
 
-        if (activePlan.frameworksUsed >= activePlan.maxFrameworksAllowed) {
-          return NextResponse.json(
-            { error: `Maximum frameworks limit reached. Your plan allows ${activePlan.maxFrameworksAllowed} frameworks.` },
-            { status: 403 }
-          );
+          if (!activePlan) {
+            // Auto-create a subscription plan if none exists
+            console.log(`[Frameworks API] No active subscription plan found for customerAccountId: ${customerAccountId}. Auto-creating one.`);
+            activePlan = await prisma.subscriptionPlan.create({
+              data: {
+                customerAccountId,
+                startDate: new Date(),
+                expiryDate: new Date("2030-12-31"),
+                maxFrameworksAllowed: 100,
+                maxAccountsAllowed: 50,
+                assessmentLimit: 100,
+                vendorLimit: 100,
+                frameworksUsed: 0,
+                accountsUsed: 0,
+                status: "Active",
+              },
+            });
+            console.log(`[Frameworks API] Auto-created subscription plan: ${activePlan.id}`);
+          }
+
+          if (activePlan.frameworksUsed >= activePlan.maxFrameworksAllowed) {
+            return NextResponse.json(
+              { error: `Maximum frameworks limit reached. Your plan allows ${activePlan.maxFrameworksAllowed} frameworks.` },
+              { status: 403 }
+            );
+          }
         }
       }
 
