@@ -674,7 +674,6 @@ model Department {
   auditableEntities          AuditableEntity[]
   auditEngagements           AuditEngagement[]
   internalAuditFindings      InternalAuditFinding[]
-  tprmVendors                TPRMVendor[]                @relation("TPRMVendorDepartment")
   // QPost Compliance relations
   qpostPolicies              QPostPolicy[]
   qpostEvidences             QPostEvidence[]
@@ -716,6 +715,11 @@ model User {
   lastLogin                    DateTime? // Last login timestamp
   departmentId                 String?
   department                   Department?                   @relation(fields: [departmentId], references: [id])
+  // TPRM-specific department (separate from the GRC Department list). BO/RM
+  // TPRM users are tagged here so their department picks never leak into the
+  // GRC organization Department dropdowns.
+  tprmDepartmentId             String?
+  tprmDepartment               TPRMDepartment?               @relation("TPRMUserDepartment", fields: [tprmDepartmentId], references: [id])
   // Audit Head assignment - links auditee to their audit head
   auditHeadId                  String?
   auditHead                    User?                         @relation("AuditHeadAuditees", fields: [auditHeadId], references: [id])
@@ -3843,7 +3847,7 @@ model TPRMVendor {
   accountManagerEmail      String?
   serviceCategory          String? // e.g., "IT Services", "Cloud Infrastructure"
   departmentId             String?
-  department               Department?                   @relation("TPRMVendorDepartment", fields: [departmentId], references: [id])
+  department               TPRMDepartment?               @relation("TPRMVendorDepartment", fields: [departmentId], references: [id])
   status                   String                        @default("Onboarding") // Onboarding, Onboarded, Offboarding, Offboarded
   engagementId             String? // External engagement identifier
   vrr                      String? // Vendor Risk Rating: Critical, High, Moderate, Low, Nominal
@@ -4123,6 +4127,8 @@ model TPRMDepartment {
   isActive          Boolean         @default(true)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+  users             User[]          @relation("TPRMUserDepartment")
+  vendors           TPRMVendor[]    @relation("TPRMVendorDepartment")
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])

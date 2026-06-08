@@ -90,6 +90,7 @@ interface User {
   fullName: string;
   departmentId?: string;
   customerCode?: string;
+  userRoles?: Array<{ role?: { name?: string | null } | null }>;
 }
 
 interface Framework {
@@ -409,7 +410,7 @@ export default function GRCAdminGovernancePage() {
     return translatedUsers.filter((u) => {
       if (u.departmentId !== newPolicy.departmentId) return false;
       return u.userRoles?.some((ur) =>
-        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name ?? "")
       );
     });
   };
@@ -420,7 +421,7 @@ export default function GRCAdminGovernancePage() {
     return translatedUsers.filter((u) => {
       if (u.departmentId !== editData.departmentId) return false;
       return u.userRoles?.some((ur) =>
-        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name ?? "")
       );
     });
   };

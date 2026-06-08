@@ -450,6 +450,7 @@ CREATE TABLE "User" (
     "logoUrl" TEXT,
     "lastLogin" TIMESTAMP(3),
     "departmentId" TEXT,
+    "tprmDepartmentId" TEXT,
     "auditHeadId" TEXT,
     "reportingManagerId" TEXT,
     "createdById" TEXT,
@@ -5340,6 +5341,9 @@ ALTER TABLE "User" ADD CONSTRAINT "User_customerAccountId_fkey" FOREIGN KEY ("cu
 ALTER TABLE "User" ADD CONSTRAINT "User_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_tprmDepartmentId_fkey" FOREIGN KEY ("tprmDepartmentId") REFERENCES "TPRMDepartment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -6150,7 +6154,7 @@ ALTER TABLE "NotificationPreference" ADD CONSTRAINT "NotificationPreference_user
 ALTER TABLE "TPRMVendor" ADD CONSTRAINT "TPRMVendor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TPRMVendor" ADD CONSTRAINT "TPRMVendor_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "TPRMVendor" ADD CONSTRAINT "TPRMVendor_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "TPRMDepartment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TPRMVendorDocument" ADD CONSTRAINT "TPRMVendorDocument_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;

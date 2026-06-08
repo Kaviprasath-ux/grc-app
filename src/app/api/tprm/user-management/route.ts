@@ -66,8 +66,8 @@ export const GET = withAuth(
             isActive: true,
             tprmRole: true,
             tprmFunctionCategory: true,
-            departmentId: true,
-            department: { select: { id: true, name: true } },
+            tprmDepartmentId: true,
+            tprmDepartment: { select: { id: true, name: true } },
             customerAccount: {
               select: { name: true },
             },
@@ -80,8 +80,16 @@ export const GET = withAuth(
         prisma.user.count({ where }),
       ]);
 
+      // Expose the TPRM department under the `department`/`departmentId` keys
+      // the frontend already consumes.
+      const usersOut = users.map(({ tprmDepartment, tprmDepartmentId, ...u }) => ({
+        ...u,
+        departmentId: tprmDepartmentId,
+        department: tprmDepartment,
+      }));
+
       return NextResponse.json({
-        users,
+        users: usersOut,
         total,
         page,
         limit,
@@ -125,11 +133,11 @@ export const POST = withAuth(
         );
       }
 
-      // Business Owner and Relationship Manager must be tagged to a Department
+      // Business Owner and Relationship Manager must be tagged to a department
       // so vendor inventory can show the correct owning department.
       // The UI picks from the TPRM Configurations department list and sends
-      // the name; we resolve (or create) a matching Department row so the
-      // User.departmentId FK stays valid without duplicating entity state.
+      // the name; we resolve (or create) a matching TPRMDepartment row and
+      // store its id on User.tprmDepartmentId — never on the GRC Department.
       const DEPT_REQUIRED = new Set(['Business Owner', 'Relationship Manager']);
       const resolvedDepartmentId = await resolveDepartmentId(
         customerAccountId,
@@ -184,7 +192,7 @@ export const POST = withAuth(
           password: hashedPassword,
           tprmRole: tprmRole,
           tprmFunctionCategory: tprmFunctionCategory || 'TPRM Team',
-          departmentId: resolvedDepartmentId,
+          tprmDepartmentId: resolvedDepartmentId,
           isActive: isActive !== false,
         },
         select: {
@@ -195,8 +203,8 @@ export const POST = withAuth(
           isActive: true,
           tprmRole: true,
           tprmFunctionCategory: true,
-          departmentId: true,
-          department: { select: { id: true, name: true } },
+          tprmDepartmentId: true,
+          tprmDepartment: { select: { id: true, name: true } },
           createdAt: true,
         },
       });
@@ -270,7 +278,14 @@ export const POST = withAuth(
         }
       }
 
-      return NextResponse.json(user, { status: 201 });
+      // Expose the TPRM department under the `department`/`departmentId` keys
+      // the frontend already consumes, so the UI is agnostic to the underlying
+      // TPRMDepartment table.
+      const { tprmDepartment, tprmDepartmentId, ...restUser } = user;
+      return NextResponse.json(
+        { ...restUser, departmentId: tprmDepartmentId, department: tprmDepartment },
+        { status: 201 }
+      );
     } catch (error) {
       console.error('User Management POST error:', error);
       return NextResponse.json(
@@ -331,8 +346,8 @@ export const PATCH = withAuth(
       }
 
       // Department handling for Business Owner / Relationship Manager.
-      // Same name-based resolution used on POST: find-or-create a Department
-      // row matching the picked name, then store its id on User.departmentId.
+      // Same name-based resolution used on POST: find-or-create a TPRMDepartment
+      // row matching the picked name, then store its id on User.tprmDepartmentId.
       const DEPT_REQUIRED_EDIT = new Set(['Business Owner', 'Relationship Manager']);
       const effectiveRole = (tprmRole !== undefined ? tprmRole : existingUser.tprmRole) as string | null;
       if (effectiveRole && DEPT_REQUIRED_EDIT.has(effectiveRole)) {
@@ -348,10 +363,10 @@ export const PATCH = withAuth(
             { status: 400 }
           );
         }
-        updateData.departmentId = resolvedId;
+        updateData.tprmDepartmentId = resolvedId;
       } else if (departmentName !== undefined) {
         // Role not BO/RM: clear any stale department reference
-        updateData.departmentId = null;
+        updateData.tprmDepartmentId = null;
       }
 
       const updatedUser = await prisma.user.update({
@@ -365,8 +380,8 @@ export const PATCH = withAuth(
           isActive: true,
           tprmRole: true,
           tprmFunctionCategory: true,
-          departmentId: true,
-          department: { select: { id: true, name: true } },
+          tprmDepartmentId: true,
+          tprmDepartment: { select: { id: true, name: true } },
           createdAt: true,
         },
       });
@@ -417,7 +432,12 @@ export const PATCH = withAuth(
         }
       }
 
-      return NextResponse.json(updatedUser);
+      const { tprmDepartment, tprmDepartmentId, ...restUpdated } = updatedUser;
+      return NextResponse.json({
+        ...restUpdated,
+        departmentId: tprmDepartmentId,
+        department: tprmDepartment,
+      });
     } catch (error) {
       console.error('User Management PATCH error:', error);
       return NextResponse.json(
@@ -476,8 +496,10 @@ export const DELETE = withAuth(
 
 /**
  * Resolve a department NAME (as picked in the UI) to the id of a row in the
- * Department table. Find-or-create so that the User.departmentId FK is always
- * valid — even when the list the UI shows comes from TPRMDepartment.
+ * TPRMDepartment table. The UI lists names from TPRM → Configurations →
+ * Departments, so we find-or-create the matching TPRMDepartment row and store
+ * its id on User.tprmDepartmentId. This deliberately never touches the GRC
+ * Department table, so TPRM department picks stay out of the GRC dropdowns.
  *
  * Returns null when the role doesn't require a department or when no name
  * was provided.
@@ -493,7 +515,7 @@ async function resolveDepartmentId(
   const trimmed = name.trim();
   if (!trimmed) return null;
 
-  const existing = await prisma.department.findFirst({
+  const existing = await prisma.tPRMDepartment.findFirst({
     where: {
       customerAccountId,
       name: { equals: trimmed, mode: 'insensitive' },
@@ -502,7 +524,7 @@ async function resolveDepartmentId(
   });
   if (existing) return existing.id;
 
-  const created = await prisma.department.create({
+  const created = await prisma.tPRMDepartment.create({
     data: { customerAccountId, name: trimmed },
     select: { id: true },
   });

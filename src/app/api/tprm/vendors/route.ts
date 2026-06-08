@@ -205,14 +205,21 @@ export const POST = withAuth(
 
       // When a Business Owner or Relationship Manager onboards a vendor, the
       // vendor inherits the onboarder's department — the vendor belongs to
-      // the same line of business that the BO/RM represents. For other roles
+      // the same line of business that the BO/RM represents. The department is
+      // a TPRMDepartment (TPRMVendor.departmentId is an FK to TPRMDepartment),
+      // so we read the onboarder's tprmDepartmentId. For other roles
       // (e.g. CustomerAdmin onboarding on behalf of someone) we honour
-      // whatever the form supplied.
+      // whatever TPRMDepartment id the form supplied.
       const onboarderRoles: string[] = Array.isArray(session?.roles) ? (session.roles as string[]) : [];
       const onboarderIsBoOrRm = onboarderRoles.some((r) => r === 'BusinessOwner' || r === 'RelationshipManager');
-      const effectiveDepartmentId = onboarderIsBoOrRm && session.departmentId
-        ? session.departmentId
-        : (body.departmentId ?? null);
+      let effectiveDepartmentId: string | null = body.departmentId ?? null;
+      if (onboarderIsBoOrRm) {
+        const onboarder = await prisma.user.findUnique({
+          where: { id: session.id },
+          select: { tprmDepartmentId: true },
+        });
+        if (onboarder?.tprmDepartmentId) effectiveDepartmentId = onboarder.tprmDepartmentId;
+      }
 
       const vendor = await prisma.tPRMVendor.create({
         data: {

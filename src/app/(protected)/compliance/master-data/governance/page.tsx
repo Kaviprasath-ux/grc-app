@@ -54,6 +54,7 @@ interface User {
   id: string;
   fullName: string;
   departmentId: string | null;
+  userRoles?: Array<{ role?: { name?: string | null } | null }>;
 }
 
 interface Framework {
@@ -173,7 +174,7 @@ export default function GovernanceMasterDataPage() {
     return translatedUsers.filter((u) => {
       if (u.departmentId !== formData.departmentId) return false;
       return u.userRoles?.some((ur) =>
-        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name ?? "")
       );
     });
   })();
