@@ -105,10 +105,12 @@ export async function assertOneRolePerModule(
   userId: string,
   moduleCode: ModuleCode | null,
   excludeUserRoleId?: string,
+  db?: typeof prisma,
 ): Promise<void> {
   if (moduleCode === null) return;
 
-  const existing = await prisma.userRole.findFirst({
+  const client = db ?? prisma;
+  const existing = await client.userRole.findFirst({
     where: {
       userId,
       moduleCode,
@@ -210,7 +212,7 @@ export async function assignRoleByName(opts: {
   const created: { moduleCode: ModuleCode }[] = [];
   for (const moduleCode of targets) {
     await assertRoleAllowedForCustomer(roleName, moduleCode, customerAccountId);
-    await assertOneRolePerModule(userId, moduleCode);
+    await assertOneRolePerModule(userId, moduleCode, undefined, db);
 
     const existing = await db.userRole.findFirst({
       where: { userId, roleId, moduleCode },
