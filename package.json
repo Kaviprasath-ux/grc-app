@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "prisma db push && prisma generate && next dev",
-    "build": "npm run i18n:generate && prisma generate && NODE_OPTIONS='--max-old-space-size=8192' next build",
+    "build": "npm run i18n:generate && prisma generate && cross-env NODE_OPTIONS=--max-old-space-size=8192 next build",
     "postinstall": "prisma generate",
     "i18n:generate": "npx tsx scripts/generate-translations.ts",
     "i18n:init": "npx tsx scripts/init-translations.ts",
@@ -93,6 +93,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "better-sqlite3": "^12.6.2",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "prisma": "^5.22.0",
