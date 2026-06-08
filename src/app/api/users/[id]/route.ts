@@ -37,7 +37,7 @@ export const PUT = withAuth(
       // Verify the user belongs to the same customer account
       const existingUser = await prisma.user.findUnique({
         where: { id },
-        select: { customerAccountId: true, email: true },
+        select: { customerAccountId: true, email: true, role: true },
       });
 
       if (!existingUser) {
@@ -66,7 +66,7 @@ export const PUT = withAuth(
       // module(s) the new role belongs to. A user can hold roles in multiple
       // modules (Phase 5b.1) — editing his GRC role should never wipe his
       // TPRM or IA role.
-      if (role && existingUser.customerAccountId) {
+      if (role && role !== existingUser.role && existingUser.customerAccountId) {
         let roleRecord = await prisma.role.findFirst({ where: { name: role } });
         if (!roleRecord) {
           roleRecord = await prisma.role.create({

@@ -144,8 +144,8 @@ export default function OrganizationReportsPage() {
           const usersRolesRes = await fetch("/api/users?moduleCode=GRC");
           if (usersRolesRes.ok) {
             const users = await usersRolesRes.json();
-            data = (users.data || users).map((user: { userRoles?: { role: { name: string } }[]; fullName: string }) => ({
-              Role: user.userRoles?.[0]?.role?.name || "",
+            data = (users.data || users).map((user: { userRoles?: { role: { name: string }; moduleCode?: string | null }[]; fullName: string }) => ({
+              Role: user.userRoles?.find(ur => ur.moduleCode === "GRC")?.role?.name || "",
               User: user.fullName,
             }));
           }
