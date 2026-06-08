@@ -141,7 +141,7 @@ export default function OrganizationReportsPage() {
           break;
 
         case "users-by-roles":
-          const usersRolesRes = await fetch("/api/users");
+          const usersRolesRes = await fetch("/api/users?moduleCode=GRC");
           if (usersRolesRes.ok) {
             const users = await usersRolesRes.json();
             data = (users.data || users).map((user: { userRoles?: { role: { name: string } }[]; fullName: string }) => ({
