@@ -166,6 +166,8 @@ model CustomerAccount {
   qpostExceptions               QPostException[]
   qpostKpis                     QPostKPI[]
   qpostGovernanceVaultDocuments QPostGovernanceVaultDocument[]
+  // Compliance audit logs
+  auditLogs                     AuditLog[]
   // Chatbot relations
   chatbotAuditLogs              ChatbotAuditLog[]
   // Technical Evidence Integration relations
@@ -3568,14 +3570,18 @@ model GovernanceTemplate {
 // ==================== AUDIT LOGS ====================
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  changeType String // CREATE, UPDATE, DELETE
-  entityType String // e.g., Control, User, Risk
-  entityId   String
-  userId     String?
-  userName   String?
-  changes    String? // JSON string of old/new values
-  createdAt  DateTime @default(now())
+  id                String           @id @default(cuid())
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  changeType        String // CREATE, UPDATE, DELETE
+  entityType        String // e.g., Control, User, Risk
+  entityId          String
+  userId            String?
+  userName          String?
+  changes           String? // JSON string of old/new values
+  createdAt         DateTime         @default(now())
+
+  @@index([customerAccountId])
 }
 
 // ==================== AI INFRASTRUCTURE ====================

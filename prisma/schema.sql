@@ -2528,6 +2528,7 @@ CREATE TABLE "GovernanceTemplate" (
 -- CreateTable
 CREATE TABLE "AuditLog" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "changeType" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
     "entityId" TEXT NOT NULL,
@@ -4810,6 +4811,9 @@ CREATE INDEX "DocumentLibraryIngestJob_documentId_idx" ON "DocumentLibraryIngest
 CREATE INDEX "DocumentLibraryIngestJob_runpodJobId_idx" ON "DocumentLibraryIngestJob"("runpodJobId");
 
 -- CreateIndex
+CREATE INDEX "AuditLog_customerAccountId_idx" ON "AuditLog"("customerAccountId");
+
+-- CreateIndex
 CREATE INDEX "AIOperation_userId_idx" ON "AIOperation"("userId");
 
 -- CreateIndex
@@ -6110,6 +6114,9 @@ ALTER TABLE "GovernanceTemplate" ADD CONSTRAINT "GovernanceTemplate_customerAcco
 
 -- AddForeignKey
 ALTER TABLE "GovernanceTemplate" ADD CONSTRAINT "GovernanceTemplate_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AIOperation" ADD CONSTRAINT "AIOperation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

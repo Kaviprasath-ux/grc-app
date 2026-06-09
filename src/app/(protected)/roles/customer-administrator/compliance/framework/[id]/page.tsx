@@ -866,6 +866,17 @@ export default function CustomerAdminFrameworkDetailPage({
   const [gapOwnerUserId, setGapOwnerUserId] = useState("");
 
   // Audit Logs state
+  interface AuditLogEntry {
+    id: string;
+    changeType: string;
+    entityType: string;
+    entityId: string;
+    userName?: string;
+    changes?: string;
+    createdAt: string;
+  }
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [auditLogsLoading, setAuditLogsLoading] = useState(false);
   const [auditLogSearch, setAuditLogSearch] = useState("");
   const [auditLogActionFilter, setAuditLogActionFilter] = useState("all");
   const [auditLogPage, setAuditLogPage] = useState(1);
@@ -944,6 +955,33 @@ export default function CustomerAdminFrameworkDetailPage({
       }
     } catch (error) {
       console.error("Error fetching control domains:", error);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    setAuditLogsLoading(true);
+    try {
+      const res = await fetch(`/api/audit-logs?limit=1000&offset=0`);
+      if (res.ok) {
+        const data = await res.json();
+        setAuditLogs(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+    } finally {
+      setAuditLogsLoading(false);
+    }
+  };
+
+  const writeAuditLog = async (changeType: string, entityType: string, entityId: string, changes?: string) => {
+    try {
+      await fetch("/api/audit-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ changeType, entityType, entityId, changes }),
+      });
+    } catch {
+      // Audit log failures are non-blocking
     }
   };
 
@@ -1112,6 +1150,7 @@ export default function CustomerAdminFrameworkDetailPage({
           name: updateRequirement.name,
           description: updateRequirement.description,
         });
+        void writeAuditLog("Updated", "Requirement", updateRequirement.id, updateRequirement.name);
         setIsUpdateRequirementOpen(false);
         setUpdateRequirement({
           id: "",
@@ -1193,11 +1232,11 @@ export default function CustomerAdminFrameworkDetailPage({
 
     const headers = ["User", "Action", "Target", "Details", "Date & Time"];
     const rows = filteredAuditLogs.map((log) => [
-      log.user,
-      log.action,
-      log.target,
-      log.detail,
-      formatAuditDate(log.timestamp),
+      log.userName || "-",
+      log.changeType,
+      log.entityType,
+      parseAuditChanges(log.changes),
+      formatAuditDate(log.createdAt),
     ]);
 
     const wsData = [headers, ...rows];
@@ -1295,6 +1334,7 @@ export default function CustomerAdminFrameworkDetailPage({
       );
 
       if (response.ok) {
+        void writeAuditLog("Linked", `Control → Requirement`, selectedRequirement.id, JSON.stringify(selectedControlIds));
         setIsLinkControlsOpen(false);
         setSelectedControlIds([]);
         fetchFramework();
@@ -1312,6 +1352,7 @@ export default function CustomerAdminFrameworkDetailPage({
       );
 
       if (response.ok) {
+        void writeAuditLog("Unlinked", `Control from Requirement`, requirementId, controlId);
         fetchFramework();
       }
     } catch (error) {
@@ -1351,6 +1392,7 @@ export default function CustomerAdminFrameworkDetailPage({
           name: newException.name.trim(),
           description: newException.description.trim(),
         });
+        void writeAuditLog("Created", "Exception", exData.id, newException.name.trim());
         setIsAddExceptionOpen(false);
         setExcErrors({});
         setNewException({
@@ -1377,6 +1419,7 @@ export default function CustomerAdminFrameworkDetailPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [field]: value }),
       });
+      void writeAuditLog("Updated", `Requirement ${field}`, requirementId, JSON.stringify(value));
       fetchFramework();
     } catch (error) {
       console.error("Error updating SOA:", error);
@@ -1481,6 +1524,13 @@ export default function CustomerAdminFrameworkDetailPage({
   useEffect(() => {
     if (activeTab === "gap-assessment" && gapDeptUsers.length === 0) {
       fetchGapDeptUsers();
+    }
+  }, [activeTab]);
+
+  // Load audit logs when tab is activated
+  useEffect(() => {
+    if (activeTab === "audit-logs" && auditLogs.length === 0) {
+      fetchAuditLogs();
     }
   }, [activeTab]);
 
@@ -1732,34 +1782,13 @@ export default function CustomerAdminFrameworkDetailPage({
     });
   };
 
-  // Audit Logs - dummy data
-  const dummyAuditLogs = [
-    { id: "1", user: "BTS Customer Admin", action: "Updated", target: "Requirement 4.2 - Applicability", detail: "Changed from 'No' to 'Yes'", timestamp: "2026-02-09T14:32:00Z", category: "SOA" },
-    { id: "2", user: "BTS Customer Admin", action: "Updated", target: "Requirement 6.1 - Implementation Status", detail: "Changed from 'No' to 'Ongoing'", timestamp: "2026-02-09T14:28:00Z", category: "SOA" },
-    { id: "3", user: "Abhishek Kumar", action: "Linked", target: "Control AC-001 to Requirement 5.1", detail: "Access Control Policy linked", timestamp: "2026-02-09T13:45:00Z", category: "Control" },
-    { id: "4", user: "BTS Customer Admin", action: "Created", target: "Exception EXC-003", detail: "New exception for Requirement 7.4", timestamp: "2026-02-09T11:20:00Z", category: "Exception" },
-    { id: "5", user: "Abhishek Kumar", action: "Updated", target: "Requirement 9.1 - Compliance Status", detail: "Changed from 'Non Compliant' to 'Partial Compliant'", timestamp: "2026-02-08T16:55:00Z", category: "SOA" },
-    { id: "6", user: "BTS Customer Admin", action: "Created", target: "Requirement 10.2", detail: "Nonconformity and corrective action added", timestamp: "2026-02-08T15:30:00Z", category: "Requirement" },
-    { id: "7", user: "Abhishek Kumar", action: "Unlinked", target: "Control SC-005 from Requirement 8.2", detail: "Security Configuration removed", timestamp: "2026-02-08T14:10:00Z", category: "Control" },
-    { id: "8", user: "BTS Customer Admin", action: "Updated", target: "Requirement 7.5.2 - Justification", detail: "Added justification text", timestamp: "2026-02-08T11:45:00Z", category: "SOA" },
-    { id: "9", user: "Abhishek Kumar", action: "Approved", target: "Exception EXC-001", detail: "Exception approved for Requirement 4.1", timestamp: "2026-02-07T17:20:00Z", category: "Exception" },
-    { id: "10", user: "BTS Customer Admin", action: "Updated", target: "Framework Status", detail: "Changed from 'Draft' to 'Active'", timestamp: "2026-02-07T15:00:00Z", category: "Framework" },
-    { id: "11", user: "Abhishek Kumar", action: "Linked", target: "Control RM-003 to Requirement 6.1.2", detail: "Risk Management control linked", timestamp: "2026-02-07T13:30:00Z", category: "Control" },
-    { id: "12", user: "BTS Customer Admin", action: "Created", target: "Requirement 6.3", detail: "Planning of changes added", timestamp: "2026-02-07T10:15:00Z", category: "Requirement" },
-    { id: "13", user: "Abhishek Kumar", action: "Updated", target: "Requirement 5.3 - Implementation Status", detail: "Changed from 'Yes' to 'No'", timestamp: "2026-02-06T16:40:00Z", category: "SOA" },
-    { id: "14", user: "BTS Customer Admin", action: "Deleted", target: "Exception EXC-002", detail: "Expired exception removed", timestamp: "2026-02-06T14:25:00Z", category: "Exception" },
-    { id: "15", user: "Abhishek Kumar", action: "Created", target: "Exception EXC-002", detail: "Temporary exception for Requirement 5.3", timestamp: "2026-02-06T11:00:00Z", category: "Exception" },
-    { id: "16", user: "BTS Customer Admin", action: "Updated", target: "Requirement 8.1 - Applicability", detail: "Changed from 'No' to 'Yes'", timestamp: "2026-02-05T15:50:00Z", category: "SOA" },
-    { id: "17", user: "Abhishek Kumar", action: "Linked", target: "Control IA-002 to Requirement 9.2", detail: "Internal Audit control linked", timestamp: "2026-02-05T13:20:00Z", category: "Control" },
-    { id: "18", user: "BTS Customer Admin", action: "Updated", target: "Framework Description", detail: "Updated framework scope description", timestamp: "2026-02-05T10:45:00Z", category: "Framework" },
-  ];
-
-  const filteredAuditLogs = dummyAuditLogs.filter(log => {
+  const filteredAuditLogs = auditLogs.filter(log => {
+    const changes = log.changes || "";
     const matchesSearch = !auditLogSearch ||
-      log.user.toLowerCase().includes(auditLogSearch.toLowerCase()) ||
-      log.target.toLowerCase().includes(auditLogSearch.toLowerCase()) ||
-      log.detail.toLowerCase().includes(auditLogSearch.toLowerCase());
-    const matchesAction = auditLogActionFilter === "all" || log.action === auditLogActionFilter;
+      (log.userName || "").toLowerCase().includes(auditLogSearch.toLowerCase()) ||
+      log.entityType.toLowerCase().includes(auditLogSearch.toLowerCase()) ||
+      changes.toLowerCase().includes(auditLogSearch.toLowerCase());
+    const matchesAction = auditLogActionFilter === "all" || log.changeType === auditLogActionFilter;
     return matchesSearch && matchesAction;
   });
 
@@ -1780,6 +1809,23 @@ export default function CustomerAdminFrameworkDetailPage({
     const ampm = hours >= 12 ? "PM" : "AM";
     const h = hours % 12 || 12;
     return `${day} ${month} ${year}, ${h}:${minutes} ${ampm}`;
+  };
+
+  const parseAuditChanges = (changes?: string) => {
+    if (!changes) return "-";
+    try {
+      const parsed = JSON.parse(changes);
+      if (typeof parsed === "string") return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.map((c: { attributeName?: string; oldValue?: string; newValue?: string }) =>
+          c.attributeName ? `${c.attributeName}: '${c.oldValue}' → '${c.newValue}'` : JSON.stringify(c)
+        ).join(", ");
+      }
+      if (typeof parsed === "object") return JSON.stringify(parsed);
+      return String(parsed);
+    } catch {
+      return changes;
+    }
   };
 
   const getActionBadge = (action: string) => {
@@ -2736,38 +2782,44 @@ export default function CustomerAdminFrameworkDetailPage({
 
             {/* Log rows */}
             <div className="divide-y divide-slate-100">
-              {paginatedAuditLogs.map((log) => (
+              {auditLogsLoading ? (
+                <div className="px-5 py-12 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-slate-400 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500">{t("Loading...")}</p>
+                </div>
+              ) : null}
+              {!auditLogsLoading && paginatedAuditLogs.map((log) => (
                 <div key={log.id} className="grid grid-cols-[180px_100px_1fr_1fr_170px] gap-4 px-3 sm:px-5 py-3.5 items-center hover:bg-slate-50/60 transition-colors min-w-[800px]">
                   {/* User */}
                   <div className="flex items-center gap-2.5">
                     <div className="h-7 w-7 rounded-full bg-primary-50 flex items-center justify-center shrink-0">
                       <User className="h-3.5 w-3.5 text-primary-600" />
                     </div>
-                    <span className="text-sm font-medium text-slate-800 truncate">{log.user}</span>
+                    <span className="text-sm font-medium text-slate-800 truncate">{log.userName || "-"}</span>
                   </div>
                   {/* Action badge */}
                   <div>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getActionBadge(log.action)}`}>
-                      {t(log.action)}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getActionBadge(log.changeType)}`}>
+                      {t(log.changeType)}
                     </span>
                   </div>
                   {/* Target */}
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center shrink-0 text-slate-400">
-                      {getCategoryIcon(log.category)}
+                      {getCategoryIcon(log.entityType)}
                     </div>
-                    <span className="text-sm text-slate-700 truncate">{log.target}</span>
+                    <span className="text-sm text-slate-700 truncate">{log.entityType}</span>
                   </div>
                   {/* Details */}
-                  <span className="text-sm text-slate-500 truncate">{log.detail}</span>
+                  <span className="text-sm text-slate-500 truncate" title={parseAuditChanges(log.changes)}>{parseAuditChanges(log.changes)}</span>
                   {/* Timestamp */}
                   <div className="flex items-center gap-1.5 text-sm text-slate-500">
                     <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                    <span>{formatAuditDate(log.timestamp)}</span>
+                    <span>{formatAuditDate(log.createdAt)}</span>
                   </div>
                 </div>
               ))}
-              {paginatedAuditLogs.length === 0 && (
+              {paginatedAuditLogs.length === 0 && !auditLogsLoading && (
                 <div className="px-5 py-12 text-center">
                   <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-3">
                     <Clock className="h-6 w-6 text-slate-400" />
