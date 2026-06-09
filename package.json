@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "prisma db push && prisma generate && next dev",
-    "build": "npm run i18n:generate && prisma generate && prisma db push --skip-generate --accept-data-loss && cross-env NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "build": "npm run i18n:generate && prisma generate && cross-env NODE_OPTIONS=--max-old-space-size=8192 next build",
     "postinstall": "prisma generate",
     "i18n:generate": "npx tsx scripts/generate-translations.ts",
     "i18n:init": "npx tsx scripts/init-translations.ts",
