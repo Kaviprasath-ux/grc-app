@@ -73,24 +73,6 @@ interface ControlDetail {
 const ITEMS_PER_PAGE = 20;
 const BATCH_SIZE = 5; // Concurrent API calls limit
 
-// TODO: Remove dummy data after preview approval
-const DUMMY_POLICIES: Policy[] = [
-  { id: "1", code: "POL-001", name: "Information Security Policy", version: "2.0", documentType: "Policy", status: "Published", department: { id: "1", name: "IT Security" }, assignee: { id: "1", fullName: "Sarah Ahmed" }, approver: { id: "2", fullName: "Mohammed Ali" } },
-  { id: "2", code: "POL-002", name: "Data Protection & Privacy Policy", version: "1.5", documentType: "Policy", status: "Approved", department: { id: "2", name: "Legal" }, assignee: { id: "3", fullName: "Fatima Hassan" }, approver: { id: "4", fullName: "Omar Khan" } },
-  { id: "3", code: "POL-003", name: "Acceptable Use Policy", version: "3.0", documentType: "Policy", status: "Draft", department: { id: "1", name: "IT Security" }, assignee: { id: "5", fullName: "Ahmad Rashid" }, approver: { id: "2", fullName: "Mohammed Ali" } },
-  { id: "4", code: "POL-004", name: "Access Control Policy", version: "1.0", documentType: "Policy", status: "Needs Review", department: { id: "3", name: "Operations" }, assignee: { id: "6", fullName: "Layla Ibrahim" }, approver: { id: "7", fullName: "Khalid Nasser" } },
-  { id: "5", code: "POL-005", name: "Business Continuity Policy", version: "2.1", documentType: "Policy", status: "Published", department: { id: "3", name: "Operations" }, assignee: { id: "8", fullName: "Nora Saeed" }, approver: { id: "7", fullName: "Khalid Nasser" } },
-  { id: "6", code: "POL-006", name: "Incident Response Policy", version: "1.0", documentType: "Policy", status: "Pending Approval", department: { id: "1", name: "IT Security" }, assignee: { id: "1", fullName: "Sarah Ahmed" }, approver: { id: "2", fullName: "Mohammed Ali" } },
-  { id: "7", code: "POL-007", name: "Risk Management Policy", version: "1.2", documentType: "Policy", status: "Not Uploaded", department: { id: "4", name: "Risk Management" }, assignee: { id: "9", fullName: "Yusuf Malik" }, approver: { id: "10", fullName: "Aisha Rahman" } },
-  { id: "10", code: "STD-001", name: "Password & Authentication Standard", version: "2.0", documentType: "Standard", status: "Published", department: { id: "1", name: "IT Security" }, assignee: { id: "1", fullName: "Sarah Ahmed" }, approver: { id: "2", fullName: "Mohammed Ali" } },
-  { id: "11", code: "STD-002", name: "Encryption Standard", version: "1.0", documentType: "Standard", status: "Approved", department: { id: "1", name: "IT Security" }, assignee: { id: "5", fullName: "Ahmad Rashid" }, approver: { id: "2", fullName: "Mohammed Ali" } },
-  { id: "12", code: "STD-003", name: "Network Security Standard", version: "1.5", documentType: "Standard", status: "Draft", department: { id: "5", name: "Network Ops" }, assignee: { id: "11", fullName: "Hassan Jamal" }, approver: { id: "7", fullName: "Khalid Nasser" } },
-  { id: "13", code: "STD-004", name: "Cloud Security Standard", version: "1.0", documentType: "Standard", status: "Pending Approval", department: { id: "1", name: "IT Security" }, assignee: { id: "3", fullName: "Fatima Hassan" }, approver: { id: "10", fullName: "Aisha Rahman" } },
-  { id: "20", code: "PRC-001", name: "Change Management Procedure", version: "3.0", documentType: "Procedure", status: "Published", department: { id: "3", name: "Operations" }, assignee: { id: "8", fullName: "Nora Saeed" }, approver: { id: "7", fullName: "Khalid Nasser" } },
-  { id: "21", code: "PRC-002", name: "Incident Handling Procedure", version: "2.0", documentType: "Procedure", status: "Approved", department: { id: "1", name: "IT Security" }, assignee: { id: "1", fullName: "Sarah Ahmed" }, approver: { id: "2", fullName: "Mohammed Ali" } },
-  { id: "22", code: "PRC-003", name: "Backup & Recovery Procedure", version: "1.0", documentType: "Procedure", status: "Needs Review", department: { id: "3", name: "Operations" }, assignee: { id: "6", fullName: "Layla Ibrahim" }, approver: { id: "7", fullName: "Khalid Nasser" } },
-  { id: "23", code: "PRC-004", name: "User Access Review Procedure", version: "1.5", documentType: "Procedure", status: "Published", department: { id: "1", name: "IT Security" }, assignee: { id: "5", fullName: "Ahmad Rashid" }, approver: { id: "2", fullName: "Mohammed Ali" } },
-];
 
 export default function PoliciesByFrameworkPage() {
   const router = useRouter();
@@ -151,8 +133,7 @@ export default function PoliciesByFrameworkPage() {
         const controlIds = Array.from(controlIdsSet);
 
         if (controlIds.length === 0) {
-          // TODO: Remove dummy data fallback after preview approval
-          setAllPolicies(DUMMY_POLICIES);
+          setAllPolicies([]);
           setLoading(false);
           return;
         }
@@ -198,8 +179,7 @@ export default function PoliciesByFrameworkPage() {
 
         // Convert map to array
         const uniquePolicies = Array.from(policiesMap.values());
-        // TODO: Remove dummy data fallback after preview approval
-        setAllPolicies(uniquePolicies.length > 0 ? uniquePolicies : DUMMY_POLICIES);
+        setAllPolicies(uniquePolicies);
 
       } catch (error) {
         console.error("Error fetching framework data:", error);
