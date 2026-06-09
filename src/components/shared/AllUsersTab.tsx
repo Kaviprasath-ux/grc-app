@@ -58,7 +58,7 @@ export function AllUsersTab({ currentModule }: AllUsersTabProps) {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/users?includeModules=true");
+      const res = await fetch(`/api/users?includeModules=true&moduleCode=${currentModule}`);
       if (res.ok) {
         const data: AllUsersTabUser[] = await res.json();
         setUsers(data);
@@ -66,7 +66,7 @@ export function AllUsersTab({ currentModule }: AllUsersTabProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentModule]);
 
   useEffect(() => {
     void fetchUsers();
