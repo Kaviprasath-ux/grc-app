@@ -31,47 +31,7 @@ interface Policy {
   approver?: { id: string; fullName: string };
 }
 
-interface PolicyControl {
-  id: string;
-  policyId: string;
-  controlId: string;
-  policy: Policy;
-}
-
-interface Control {
-  id: string;
-  controlCode: string;
-  name: string;
-  policyControls?: PolicyControl[];
-}
-
-interface RequirementControl {
-  id: string;
-  controlId: string;
-  control: Control;
-}
-
-interface Requirement {
-  id: string;
-  code: string;
-  name: string;
-  controls: RequirementControl[];
-}
-
-interface FrameworkData {
-  id: string;
-  name: string;
-  code?: string;
-  requirements: Requirement[];
-}
-
-interface ControlDetail {
-  id: string;
-  policyControls: PolicyControl[];
-}
-
 const ITEMS_PER_PAGE = 20;
-const BATCH_SIZE = 5; // Concurrent API calls limit
 
 
 export default function PoliciesByFrameworkPage() {
@@ -91,104 +51,33 @@ export default function PoliciesByFrameworkPage() {
   // Framework info
   const [framework, setFramework] = useState<{ id: string; name: string; status: string } | null>(null);
 
-  // Step 0, 1, 2, 3P, 4P: Fetch framework, extract controls, fetch control details, extract policies
   useEffect(() => {
     if (!frameworkId) {
       setLoading(false);
       return;
     }
 
-    const fetchFrameworkAndExtractPolicies = async () => {
+    const fetchPolicies = async () => {
       try {
         setLoading(true);
+        const res = await fetch(`/api/frameworks/${frameworkId}/policies`);
 
-        // Step 1: Fetch Framework with all Requirements and their linked Controls
-        // Using existing API: GET /api/frameworks/[id]
-        const frameworkResponse = await fetch(`/api/frameworks/${frameworkId}`);
-
-        if (!frameworkResponse.ok) {
-          console.error("Failed to fetch framework:", frameworkResponse.status);
-          setLoading(false);
+        if (!res.ok) {
+          console.error("Failed to fetch framework policies:", res.status);
           return;
         }
 
-        const frameworkData: FrameworkData = await frameworkResponse.json();
-        setFramework({ id: frameworkData.id, name: frameworkData.name, status: (frameworkData as { status?: string }).status || "Subscribed" });
-
-        // Step 2: Extract unique Control IDs from all Requirements
-        const controlIdsSet = new Set<string>();
-
-        if (frameworkData.requirements && Array.isArray(frameworkData.requirements)) {
-          for (const requirement of frameworkData.requirements) {
-            if (requirement.controls && Array.isArray(requirement.controls)) {
-              for (const reqControl of requirement.controls) {
-                if (reqControl.control && reqControl.control.id) {
-                  controlIdsSet.add(reqControl.control.id);
-                }
-              }
-            }
-          }
-        }
-
-        const controlIds = Array.from(controlIdsSet);
-
-        if (controlIds.length === 0) {
-          setAllPolicies([]);
-          setLoading(false);
-          return;
-        }
-
-        // Step 3P: Fetch control details to get linked policies
-        // Using existing API: GET /api/controls/[id] which returns policyControls[].policy
-        // Batch requests to avoid overwhelming the server
-        const policiesMap = new Map<string, Policy>();
-
-        for (let i = 0; i < controlIds.length; i += BATCH_SIZE) {
-          const batch = controlIds.slice(i, i + BATCH_SIZE);
-
-          const batchPromises = batch.map(async (controlId) => {
-            try {
-              const response = await fetch(`/api/controls/${controlId}`);
-              if (response.ok) {
-                const controlDetail: ControlDetail = await response.json();
-                return controlDetail;
-              }
-              return null;
-            } catch (error) {
-              console.error(`Error fetching control ${controlId}:`, error);
-              return null;
-            }
-          });
-
-          const batchResults = await Promise.all(batchPromises);
-
-          // Step 4P: Extract and de-duplicate policies
-          for (const controlDetail of batchResults) {
-            if (controlDetail && controlDetail.policyControls) {
-              for (const policyControl of controlDetail.policyControls) {
-                if (policyControl.policy && policyControl.policy.id) {
-                  // De-duplicate by policy ID
-                  if (!policiesMap.has(policyControl.policy.id)) {
-                    policiesMap.set(policyControl.policy.id, policyControl.policy);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // Convert map to array
-        const uniquePolicies = Array.from(policiesMap.values());
-        setAllPolicies(uniquePolicies);
-
+        const data: { policies: Policy[]; framework: { id: string; name: string; status: string } } = await res.json();
+        setFramework({ id: data.framework.id, name: data.framework.name, status: data.framework.status || "Subscribed" });
+        setAllPolicies(data.policies);
       } catch (error) {
-        console.error("Error fetching framework data:", error);
+        console.error("Error fetching framework policies:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFrameworkAndExtractPolicies();
+    fetchPolicies();
   }, [frameworkId]);
 
   // Filter by document type and search
