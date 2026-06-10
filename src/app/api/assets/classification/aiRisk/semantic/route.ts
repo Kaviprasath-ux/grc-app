@@ -49,12 +49,14 @@ export async function POST(req: NextRequest) {
         }
 
         const assetGroupName = classificationData.group.name ?? "";
+        const customerAccountId = session.user.customerAccountId as string | undefined;
+        const tenantFilter = customerAccountId ? { customerAccountId } : {};
 
         const [controls, risks, threats, vulnerabilities] = await Promise.all([
-            prisma.control.findMany({ select: { name: true, controlCode: true } }),
-            prisma.risk.findMany({ select: { name: true, riskId: true } }),
-            prisma.riskThreat.findMany({ select: { name: true, threatId: true } }),
-            prisma.riskVulnerability.findMany({ select: { name: true, vulnId: true } }),
+            prisma.control.findMany({ where: tenantFilter, select: { name: true, controlCode: true } }),
+            prisma.risk.findMany({ where: tenantFilter, select: { name: true, riskId: true } }),
+            prisma.riskThreat.findMany({ where: tenantFilter, select: { name: true, threatId: true } }),
+            prisma.riskVulnerability.findMany({ where: tenantFilter, select: { name: true, vulnId: true } }),
         ]);
 
         const existing_library = {

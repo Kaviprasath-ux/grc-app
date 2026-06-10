@@ -2,23 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 
-async function generateRiskId(customerAccountId: string): Promise<string> {
+async function getStartingRiskNum(customerAccountId: string): Promise<number> {
     const lastRisk = await prisma.risk.findFirst({
         where: { customerAccountId },
         orderBy: { createdAt: "desc" },
         select: { riskId: true },
     });
 
-    if (!lastRisk) return "RID001";
+    if (!lastRisk) return 1;
 
     const match = lastRisk.riskId.match(/RID(\d+)/);
-    if (match) {
-        const nextNum = parseInt(match[1], 10) + 1;
-        return `RID${String(nextNum).padStart(3, "0")}`;
-    }
+    if (match) return parseInt(match[1], 10) + 1;
 
     const count = await prisma.risk.count({ where: { customerAccountId } });
-    return `RID${String(count + 1).padStart(3, "0")}`;
+    return count + 1;
 }
 
 function mapRiskRating(inherent?: string): string {
@@ -55,21 +52,22 @@ export const POST = withAuth(
             const customerAccountId = getCustomerAccountId(session);
             const created: { id: string; riskId: string; name: string }[] = [];
 
+            // Fetch all existing risk names and the starting ID counter in one pass
+            const existingNames = new Set(
+                (await prisma.risk.findMany({ where: { customerAccountId }, select: { name: true } }))
+                    .map((r) => r.name)
+            );
+            let nextRiskNum = await getStartingRiskNum(customerAccountId);
+
             for (const r of risks) {
                 const name = r.Risk_name ?? r.name ?? "Unnamed Risk";
                 const description = r.Risk_description ?? r.description ?? null;
                 const riskRating = mapRiskRating(r.Inherent_risk_rating ?? r.risk_rating);
 
-                const existing = await prisma.risk.findFirst({
-                    where: {
-                        customerAccountId,
-                        name,
-                    },
-                });
+                if (existingNames.has(name)) continue;
 
-                if (existing) continue;
-
-                const riskId = await generateRiskId(customerAccountId);
+                const riskId = `RID${String(nextRiskNum).padStart(3, "0")}`;
+                nextRiskNum++;
 
                 const risk = await prisma.risk.create({
                     data: {
