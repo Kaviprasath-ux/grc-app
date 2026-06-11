@@ -1,0 +1,26 @@
+name: grc-app
+services:
+  - name: web
+    github:
+      repo: baarez-technology/grc-app
+      branch: main
+      deploy_on_push: true
+    build_command: npm run build
+    run_command: npx prisma db push --skip-generate --accept-data-loss && npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    http_port: 3000
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: NEXTAUTH_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: NEXTAUTH_URL
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production
