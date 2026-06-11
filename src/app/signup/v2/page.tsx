@@ -142,7 +142,6 @@ export default function SignupV2Page() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-  const [formLoaded, setFormLoaded] = useState(false);
   // Phase 11: success dialog shown after a confirmed payment + auto-login.
   // Clicking the button routes through the root page.tsx which handles the
   // multi-module-aware destination (single-module home OR /select-module picker).
@@ -181,7 +180,6 @@ export default function SignupV2Page() {
     } catch {
       // Ignore storage errors
     }
-    setFormLoaded(true);
   }, []);
 
   // No save effect — we intentionally do not persist form state.
@@ -198,10 +196,30 @@ export default function SignupV2Page() {
 
   useEffect(() => {
     fetch("/api/public/plan-pricing")
-      .then((r) => r.json())
+      .then(async (r) => {
+        // Check if response is OK before parsing
+        if (!r.ok) {
+          // Try to parse error message, but handle HTML responses gracefully
+          const text = await r.text();
+          if (text.startsWith("<!") || text.startsWith("<html")) {
+            throw new Error("Service temporarily unavailable. Please try again later.");
+          }
+          try {
+            const err = JSON.parse(text);
+            throw new Error(err.error || "Failed to load pricing");
+          } catch {
+            throw new Error("Failed to load pricing. Please refresh the page.");
+          }
+        }
+        return r.json();
+      })
       .then((j) => {
-        if (j.data) setPricing(j.data);
-        else setError(j.error || "Failed to load plans");
+        if (j.data && j.data.length > 0) {
+          setPricing(j.data);
+        } else {
+          // Empty pricing data - show user-friendly error
+          setError("Pricing information is currently unavailable. Please contact support or try again later.");
+        }
       })
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoadingPricing(false));
@@ -232,7 +250,8 @@ export default function SignupV2Page() {
   }
 
   function step2Valid(): boolean {
-    return selectedModules.size >= 1;
+    // Require at least 1 module AND pricing data must be loaded
+    return selectedModules.size >= 1 && pricing.length > 0;
   }
 
   function step3Valid(): boolean {
@@ -397,9 +416,6 @@ export default function SignupV2Page() {
   );
 
   // Year 1 pricing (BASE plan) - from database
-  const year1MonthlyPerModule = selectedBaseRows.length > 0
-    ? Math.round(selectedBaseRows[0].yearlyPrice / 12)
-    : 100; // Default ₹100/month if no data
   const year1Yearly = selectedBaseRows.reduce((s, r) => s + r.yearlyPrice, 0);
   const year1YearlyWithGst = Math.round(year1Yearly * 1.18);
 
@@ -628,6 +644,16 @@ export default function SignupV2Page() {
                         <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
                         {t("Loading...")}
                       </div>
+                    ) : pricing.length === 0 ? (
+                      <div className="p-6 text-center">
+                        <AlertCircle className="h-8 w-8 text-amber-500 mx-auto mb-3" />
+                        <p className="text-stone-700 font-medium mb-1">
+                          {t("Pricing information unavailable")}
+                        </p>
+                        <p className="text-sm text-stone-500">
+                          {t("Please contact support or try again later.")}
+                        </p>
+                      </div>
                     ) : (
                       <div className="divide-y divide-stone-200">
                         {/* Year 1 - Module-wise breakdown */}
@@ -835,7 +861,7 @@ export default function SignupV2Page() {
                     </Button>
                     <Button
                       onClick={initiatePayment}
-                      disabled={!step3Valid() || submitting || !razorpayLoaded}
+                      disabled={!step3Valid() || submitting || !razorpayLoaded || pricing.length === 0}
                       className="min-w-[180px] bg-emerald-600 hover:bg-emerald-700"
                     >
                       {submitting ? (
