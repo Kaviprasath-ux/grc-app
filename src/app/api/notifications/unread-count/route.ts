@@ -19,11 +19,19 @@ export const GET = withAuthOnly(async (req, context, session) => {
       return NextResponse.json({ count: 0 });
     }
 
+    // Scope the unread badge to the current workspace (legacy null-module rows
+    // always count). No module param → no filter (super-admin / undecided).
+    const moduleParam = new URL(req.url).searchParams.get('module');
+    const moduleFilter = moduleParam
+      ? { OR: [{ module: moduleParam }, { module: null }] }
+      : {};
+
     const count = await prisma.notification.count({
       where: {
         ...tenantFilter,
         userId: session.id,
         isRead: false,
+        ...moduleFilter,
       },
     });
 

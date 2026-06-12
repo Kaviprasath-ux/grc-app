@@ -17,6 +17,7 @@ export interface Notification {
   customerAccountId: string;
   userId: string;
   type: string;
+  module: string | null;
   title: string;
   message: string;
   relatedEntityType: string | null;
@@ -44,6 +45,12 @@ interface UseNotificationsOptions {
   pollingInterval?: number;
   /** Number of notifications per page */
   limit?: number;
+  /**
+   * Current workspace/platform to scope notifications to (GRC, TPRM, ...).
+   * When set, only notifications for this module (plus cross-cutting ones)
+   * are fetched/counted. null/undefined = no scoping (show all).
+   */
+  module?: string | null;
 }
 
 interface UseNotificationsReturn {
@@ -76,6 +83,7 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     autoFetch = true,
     pollingInterval = 60000, // Poll every 60 seconds by default
     limit = 20,
+    module = null,
   } = options;
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -94,6 +102,7 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
         page: String(page),
         limit: String(limit),
         ...(unreadOnly && { unreadOnly: 'true' }),
+        ...(module && { module }),
       });
 
       const response = await fetch(`/api/notifications?${params}`);
@@ -113,12 +122,15 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     } finally {
       setIsLoading(false);
     }
-  }, [limit]);
+  }, [limit, module]);
 
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const response = await fetch('/api/notifications/unread-count');
+      const countUrl = module
+        ? `/api/notifications/unread-count?module=${encodeURIComponent(module)}`
+        : '/api/notifications/unread-count';
+      const response = await fetch(countUrl);
 
       if (!response.ok) {
         // Silently fallback if notifications table doesn't exist yet
@@ -132,7 +144,7 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
       // Silently handle - notifications may not be set up yet
       setUnreadCount(0);
     }
-  }, []);
+  }, [module]);
 
   // Mark notification as read
   const markAsRead = useCallback(async (id: string) => {
@@ -162,7 +174,10 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
   // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await fetch('/api/notifications/read-all', {
+      const readAllUrl = module
+        ? `/api/notifications/read-all?module=${encodeURIComponent(module)}`
+        : '/api/notifications/read-all';
+      const response = await fetch(readAllUrl, {
         method: 'PATCH',
       });
 
@@ -178,7 +193,7 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to mark all as read');
     }
-  }, []);
+  }, [module]);
 
   // Delete notification
   const deleteNotification = useCallback(async (id: string) => {

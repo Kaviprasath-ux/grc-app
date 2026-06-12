@@ -16,6 +16,13 @@ export const GET = withAuthOnly(async (req, context, session) => {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '20');
     const unreadOnly = url.searchParams.get('unreadOnly') === 'true';
+    // Scope the inbox to the workspace the user is currently in. Legacy /
+    // cross-cutting rows (module = null) are always included so nothing is lost.
+    // When no module is passed (e.g. super-admin), no module filter is applied.
+    const moduleParam = url.searchParams.get('module');
+    const moduleFilter = moduleParam
+      ? { OR: [{ module: moduleParam }, { module: null }] }
+      : {};
     const skip = (page - 1) * limit;
 
     // Check if notification table exists
@@ -33,6 +40,7 @@ export const GET = withAuthOnly(async (req, context, session) => {
       ...tenantFilter,
       userId: session.id,
       ...(unreadOnly ? { isRead: false } : {}),
+      ...moduleFilter,
     };
 
     // Get notifications with pagination

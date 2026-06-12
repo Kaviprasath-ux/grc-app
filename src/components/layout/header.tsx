@@ -223,6 +223,8 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
     autoFetch: true,
     pollingInterval: 60000, // Poll every minute
     limit: 10,
+    // Scope the bell + unread badge to the workspace the user is currently in.
+    module: currentModule,
   });
 
   useEffect(() => {

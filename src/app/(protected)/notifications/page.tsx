@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow, format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useModule } from "@/contexts/ModuleContext";
 import { useNotifications, getNotificationStyle, Notification } from "@/hooks/useNotifications";
 
 // Helper function to get icon component based on notification type
@@ -35,6 +36,7 @@ function NotificationIcon({ type, className = "h-4 w-4" }: { type: string; class
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
+  const { currentModule } = useModule();
   const router = useRouter();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
@@ -53,6 +55,8 @@ export default function NotificationsPage() {
     autoFetch: true,
     pollingInterval: 30000,
     limit: 20,
+    // Scope the notifications list to the current workspace.
+    module: currentModule,
   });
 
   // Fetch notifications when filter changes

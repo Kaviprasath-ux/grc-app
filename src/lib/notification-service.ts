@@ -30,6 +30,15 @@
 import { prisma } from '@/lib/prisma';
 import { sendTemplatedEmail, getUserInfo, TemplatePlaceholders } from './email-service';
 import { getAppUrl } from '@/config/app-url';
+import { getModuleFromPath, getModuleHome, type ModuleCode } from '@/lib/url-module-map';
+
+/** Human-readable workspace names, used in per-module welcome notifications. */
+const MODULE_LABELS: Record<ModuleCode, string> = {
+  GRC: 'GRC',
+  TPRM: 'TPRM',
+  INTERNAL_AUDIT: 'Internal Audit',
+  TECHNICAL_EVIDENCE: 'Technical Evidence',
+};
 
 // Import constants from the client-safe constants file
 // This keeps all constants in one place and allows client code to import from there
@@ -73,6 +82,13 @@ export interface NotificationPayload {
   relatedEntityId?: string;
   /** Link to navigate when notification is clicked */
   link?: string;
+  /**
+   * Platform/module this notification belongs to. Scopes the in-app inbox per
+   * workspace. When omitted, it is auto-derived from `link` (e.g. a `/tprm/...`
+   * link → TPRM). Pass explicitly for link-less notifications (welcome,
+   * account-created) where the module can't be inferred from a URL.
+   */
+  module?: ModuleCode;
   /** Priority level */
   priority?: NotificationPriority;
   /** Additional metadata (JSON) */
@@ -84,6 +100,23 @@ export interface NotificationPayload {
 export interface BulkNotificationPayload extends Omit<NotificationPayload, 'recipientId'> {
   /** Array of recipient user IDs */
   recipientIds: string[];
+}
+
+/**
+ * Resolve the module a notification belongs to.
+ * Prefers an explicit `module`, otherwise derives it from the `link` URL
+ * prefix. Returns null when it can't be determined (link-less / cross-cutting),
+ * in which case the notification is shown in every workspace.
+ */
+function resolveModule(payload: { module?: ModuleCode; link?: string }): ModuleCode | null {
+  if (payload.module) return payload.module;
+  if (payload.link) {
+    const fromLink = getModuleFromPath(payload.link);
+    // getModuleFromPath can return "SYSTEM" — that's not a customer workspace,
+    // so treat it as undeterminable (null).
+    if (fromLink && fromLink !== 'SYSTEM') return fromLink;
+  }
+  return null;
 }
 
 // ==================== VALIDATION HELPERS ====================
@@ -185,11 +218,13 @@ class NotificationService {
       for (const channel of channels) {
         switch (channel) {
           case NOTIFICATION_CHANNELS.INBOX:
+            const bulkModule = resolveModule(payload);
             const result = await prisma.notification.createMany({
               data: validRecipients.map(recipientId => ({
                 customerAccountId: payload.customerAccountId,
                 userId: recipientId,
                 type: payload.event,
+                module: bulkModule,
                 title: payload.title,
                 message: payload.message,
                 relatedEntityType: payload.relatedEntityType,
@@ -230,6 +265,7 @@ class NotificationService {
         customerAccountId: payload.customerAccountId,
         userId: payload.recipientId,
         type: payload.event,
+        module: resolveModule(payload),
         title: payload.title,
         message: payload.message,
         relatedEntityType: payload.relatedEntityType,
@@ -943,19 +979,51 @@ class NotificationService {
     actorId: string;
     newUserId: string;
     userName: string;
+    /**
+     * Modules the new user has a role in. A separate welcome is created per
+     * module, each scoped to that workspace so it only appears once the user
+     * enters that platform. Falls back to a single generic welcome when
+     * omitted/empty (e.g. legacy callers).
+     */
+    modules?: ModuleCode[];
     channels?: NotificationChannel[];
   }) {
-    return this.send({
-      customerAccountId: params.customerAccountId,
-      actorId: params.actorId,
-      recipientId: params.newUserId,
-      event: NOTIFICATION_EVENTS.USER_CREATED,
-      title: 'Welcome to GRC Platform',
-      message: `Welcome ${params.userName}! Your account has been created successfully.`,
-      link: '/dashboard',
-      channels: params.channels,
-      metadata: { userName: params.userName },
-    });
+    const moduleList = (params.modules ?? []).filter(
+      (m, i, arr) => arr.indexOf(m) === i, // de-dupe
+    );
+
+    // No resolvable modules — keep the legacy single, workspace-agnostic welcome.
+    if (moduleList.length === 0) {
+      return this.send({
+        customerAccountId: params.customerAccountId,
+        actorId: params.actorId,
+        recipientId: params.newUserId,
+        event: NOTIFICATION_EVENTS.USER_CREATED,
+        title: 'Welcome',
+        message: `Welcome ${params.userName}! Your account has been created successfully.`,
+        link: '/dashboard',
+        channels: params.channels,
+        metadata: { userName: params.userName },
+      });
+    }
+
+    // One welcome per platform the user belongs to.
+    let last: Awaited<ReturnType<NotificationService['send']>> | undefined;
+    for (const m of moduleList) {
+      last = await this.send({
+        customerAccountId: params.customerAccountId,
+        actorId: params.actorId,
+        recipientId: params.newUserId,
+        event: NOTIFICATION_EVENTS.USER_CREATED,
+        title: `Welcome to ${MODULE_LABELS[m]}`,
+        message: `Welcome ${params.userName}! Your ${MODULE_LABELS[m]} account has been created successfully.`,
+        module: m,
+        link: getModuleHome(m),
+        channels: params.channels,
+        metadata: { userName: params.userName, module: m },
+      });
+    }
+    return last!;
   }
 
   /**
@@ -1046,6 +1114,7 @@ class NotificationService {
       event: NOTIFICATION_EVENTS.TPRM_ACCOUNT_CREATED,
       title: 'TPRM account created',
       message: `Your TPRM account has been created with role: ${params.tprmRole}.`,
+      module: 'TPRM',
       channels: params.channels,
       metadata: { userName: params.userName, tprmRole: params.tprmRole },
     });
@@ -1069,6 +1138,7 @@ class NotificationService {
       event: NOTIFICATION_EVENTS.TPRM_RM_ACCOUNT_CREATED,
       title: 'Relationship Manager account created',
       message: `A new Relationship Manager account has been created for ${params.rmName} (${params.rmEmail}).`,
+      module: 'TPRM',
       channels: params.channels,
       metadata: { rmName: params.rmName, rmEmail: params.rmEmail },
     });
