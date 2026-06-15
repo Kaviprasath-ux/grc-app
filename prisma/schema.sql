@@ -2659,6 +2659,7 @@ CREATE TABLE "Notification" (
     "customerAccountId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
+    "module" TEXT,
     "title" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "relatedEntityType" TEXT,
@@ -4860,6 +4861,9 @@ CREATE INDEX "PolicyAIReview_policyId_idx" ON "PolicyAIReview"("policyId");
 
 -- CreateIndex
 CREATE INDEX "Notification_userId_isRead_idx" ON "Notification"("userId", "isRead");
+
+-- CreateIndex
+CREATE INDEX "Notification_userId_module_isRead_idx" ON "Notification"("userId", "module", "isRead");
 
 -- CreateIndex
 CREATE INDEX "Notification_customerAccountId_idx" ON "Notification"("customerAccountId");

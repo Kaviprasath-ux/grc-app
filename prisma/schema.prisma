@@ -3741,6 +3741,10 @@ model Notification {
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Notification content
   type              String // e.g., EVIDENCE_DUE, RISK_ASSIGNED, AUDIT_FINDING, etc.
+  // Platform/module this notification belongs to. Used to scope the inbox per
+  // workspace for customers subscribed to more than one platform. Nullable:
+  // null = cross-cutting / undeterminable (legacy rows) and is shown everywhere.
+  module            String? // "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"
   title             String
   message           String          @db.Text
   // Optional link to related entity
@@ -3757,6 +3761,7 @@ model Notification {
   updatedAt         DateTime        @updatedAt
 
   @@index([userId, isRead])
+  @@index([userId, module, isRead])
   @@index([customerAccountId])
   @@index([createdAt])
 }

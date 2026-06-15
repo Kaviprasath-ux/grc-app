@@ -13,12 +13,20 @@ export const PATCH = withAuthOnly(async (req, context, session) => {
   try {
     const tenantFilter = getTenantFilter(session);
 
+    // "Mark all read" only affects the workspace the user is currently in
+    // (plus legacy null-module rows). No module param → mark everything.
+    const moduleParam = new URL(req.url).searchParams.get('module');
+    const moduleFilter = moduleParam
+      ? { OR: [{ module: moduleParam }, { module: null }] }
+      : {};
+
     // Update all unread notifications for this user
     const result = await prisma.notification.updateMany({
       where: {
         ...tenantFilter,
         userId: session.id,
         isRead: false,
+        ...moduleFilter,
       },
       data: {
         isRead: true,

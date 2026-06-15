@@ -318,6 +318,18 @@ export async function POST(request: NextRequest) {
     // Send welcome notification ONLY after transaction succeeds
     // This is outside the transaction to ensure DB operations completed successfully
     if (customerAccountId && createdById) {
+      // One welcome per platform the new user has a role in, so each appears
+      // only inside that workspace. Derive the modules from the assigned roles.
+      const userModules = Array.from(
+        new Set(
+          user.userRoles
+            .map((r) => r.moduleCode)
+            .filter(
+              (m): m is "GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE" =>
+                m === "GRC" || m === "TPRM" || m === "INTERNAL_AUDIT" || m === "TECHNICAL_EVIDENCE",
+            ),
+        ),
+      );
       // Don't await - send notification in background to avoid blocking response
       // If notification fails, user is still created successfully
       notificationService.notifyUserCreated({
@@ -325,6 +337,7 @@ export async function POST(request: NextRequest) {
         actorId: createdById,
         newUserId: user.id,
         userName: user.fullName,
+        modules: userModules,
         channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
       }).catch((err) => {
         console.error("Failed to send user creation notification:", err);
