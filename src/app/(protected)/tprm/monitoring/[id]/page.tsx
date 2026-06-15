@@ -1849,6 +1849,7 @@ export default function MonitoringDetailPage() {
                   >
                     <Checkbox
                       checked={selectedFindings.has(f.findingId)}
+                      onClick={(e) => e.stopPropagation()}
                       onCheckedChange={() => toggleFinding(f.findingId)}
                       className="mt-0.5"
                     />
