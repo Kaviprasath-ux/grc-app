@@ -64,6 +64,8 @@ model CustomerAccount {
   internalAuditCAPAs            InternalAuditCAPA[]
   auditReports                  AuditReport[]
   internalAuditDocuments        InternalAuditDocument[]
+  auditStrategicPlans           AuditStrategicPlan[]
+  auditOperationalPlans         AuditOperationalPlan[]
   governanceVaultDocuments      GovernanceVaultDocument[]
   subscriptionPlans             SubscriptionPlan[]
   // New subscription system (module-based)
@@ -776,6 +778,10 @@ model User {
   ownedAuditCAPAs              InternalAuditCAPA[]           @relation("AuditHeadCAPAs")
   ownedAuditReports            AuditReport[]                 @relation("AuditHeadReports")
   ownedAuditDocuments          InternalAuditDocument[]       @relation("AuditHeadDocuments")
+  ownedStrategicPlans          AuditStrategicPlan[]          @relation("AuditHeadStrategicPlans")
+  createdStrategicPlans        AuditStrategicPlan[]          @relation("StrategicPlanCreatedBy")
+  ownedOperationalPlans        AuditOperationalPlan[]        @relation("AuditHeadOperationalPlans")
+  createdOperationalPlans      AuditOperationalPlan[]        @relation("OperationalPlanCreatedBy")
   // Audit Head owned settings (each Audit Head has their own settings)
   ownedCategories              AuditCategory[]               @relation("AuditHeadCategories")
   ownedNatureOfControls        AuditNatureOfControl[]        @relation("AuditHeadNatureOfControls")
@@ -3544,6 +3550,123 @@ model DocumentLibraryIngestJob {
 
   @@index([documentId])
   @@index([runpodJobId])
+}
+
+// ==================== INTERNAL AUDIT - STRATEGIC PLAN ====================
+
+// Strategic Audit Plan - multi-year (3/4/5) risk-based audit strategy.
+// Created by the Head of Audit, approved via manual sign-off (signed copy upload).
+model AuditStrategicPlan {
+  id                String                   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount          @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId       String?
+  auditHead         User?                    @relation("AuditHeadStrategicPlans", fields: [auditHeadId], references: [id])
+  planCode          String // Auto-generated SAP001, SAP002, etc.
+  title             String
+  description       String?
+  durationYears     Int                      @default(3) // 3, 4, or 5
+  startYear         Int // first calendar year covered by the plan
+  status            String                   @default("Draft") // Draft, Pending Approval, Approved
+  generatedFromRisk Boolean                  @default(false)
+  // Creator (Head of Audit)
+  createdById       String?
+  createdBy         User?                    @relation("StrategicPlanCreatedBy", fields: [createdById], references: [id])
+  // Approval — manual sign-off (no Minister login). Uploading the signed copy marks the plan Approved.
+  approvedByName    String? // Name of the approving authority (e.g. Minister) typed at approval
+  approvedAt        DateTime?
+  signedCopyPath    String?
+  signedCopyName    String?
+  signedCopyData    Bytes? // Store signed-copy binary for serverless (Vercel) compatibility
+  items             AuditStrategicPlanItem[]
+  operationalPlans  AuditOperationalPlan[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@unique([customerAccountId, planCode])
+  @@index([customerAccountId])
+}
+
+// A single planned audit within a strategic plan year.
+// Source-record ids (department/entity/risk) are stored loosely (no FK) plus a denormalized title.
+model AuditStrategicPlanItem {
+  id                String             @id @default(cuid())
+  strategicPlanId   String
+  strategicPlan     AuditStrategicPlan @relation(fields: [strategicPlanId], references: [id], onDelete: Cascade)
+  year              Int // calendar year this audit is scheduled in
+  title             String
+  departmentId      String?
+  auditableEntityId String?
+  riskId            String?
+  auditType         String?
+  // Risk-based ranking snapshot captured at generation time
+  residualScore     Int?
+  riskLevel         String?
+  priorityRank      Int?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([strategicPlanId])
+}
+
+// ==================== INTERNAL AUDIT - OPERATIONAL (ANNUAL) PLAN ====================
+
+// Operational Audit Plan - one per year, derived from a Strategic Plan year.
+// The Head of Audit / Audit Manager can add or delete audits and upload approval documents.
+model AuditOperationalPlan {
+  id                String                     @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount            @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId       String?
+  auditHead         User?                      @relation("AuditHeadOperationalPlans", fields: [auditHeadId], references: [id])
+  // Parent strategic plan + the specific year this operational plan covers
+  strategicPlanId   String
+  strategicPlan     AuditStrategicPlan         @relation(fields: [strategicPlanId], references: [id], onDelete: Cascade)
+  year              Int
+  planCode          String // Auto-generated OAP001, OAP002, etc.
+  title             String
+  status            String                     @default("Draft") // Draft, Approved
+  // Approval document upload (annual plan sign-off)
+  approvalDocPath   String?
+  approvalDocName   String?
+  approvalDocData   Bytes? // Store approval-document binary for serverless compatibility
+  approvedAt        DateTime?
+  createdById       String?
+  createdBy         User?                      @relation("OperationalPlanCreatedBy", fields: [createdById], references: [id])
+  items             AuditOperationalPlanItem[]
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([strategicPlanId, year])
+  @@unique([customerAccountId, planCode])
+  @@index([customerAccountId])
+}
+
+// A single planned audit within an operational (annual) plan.
+model AuditOperationalPlanItem {
+  id                 String               @id @default(cuid())
+  operationalPlanId  String
+  operationalPlan    AuditOperationalPlan @relation(fields: [operationalPlanId], references: [id], onDelete: Cascade)
+  title              String
+  departmentId       String?
+  auditableEntityId  String?
+  riskId             String?
+  auditType          String?
+  plannedQuarter     String? // Q1, Q2, Q3, Q4
+  assignedAuditorId  String?
+  residualScore      Int?
+  riskLevel          String?
+  priorityRank       Int?
+  notes              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([operationalPlanId])
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================

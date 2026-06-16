@@ -2508,6 +2508,92 @@ CREATE TABLE "DocumentLibraryIngestJob" (
 );
 
 -- CreateTable
+CREATE TABLE "AuditStrategicPlan" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "auditHeadId" TEXT,
+    "planCode" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "durationYears" INTEGER NOT NULL DEFAULT 3,
+    "startYear" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'Draft',
+    "generatedFromRisk" BOOLEAN NOT NULL DEFAULT false,
+    "createdById" TEXT,
+    "approvedByName" TEXT,
+    "approvedAt" TIMESTAMP(3),
+    "signedCopyPath" TEXT,
+    "signedCopyName" TEXT,
+    "signedCopyData" BYTEA,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuditStrategicPlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AuditStrategicPlanItem" (
+    "id" TEXT NOT NULL,
+    "strategicPlanId" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "title" TEXT NOT NULL,
+    "departmentId" TEXT,
+    "auditableEntityId" TEXT,
+    "riskId" TEXT,
+    "auditType" TEXT,
+    "residualScore" INTEGER,
+    "riskLevel" TEXT,
+    "priorityRank" INTEGER,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuditStrategicPlanItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AuditOperationalPlan" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "auditHeadId" TEXT,
+    "strategicPlanId" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "planCode" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'Draft',
+    "approvalDocPath" TEXT,
+    "approvalDocName" TEXT,
+    "approvalDocData" BYTEA,
+    "approvedAt" TIMESTAMP(3),
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuditOperationalPlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AuditOperationalPlanItem" (
+    "id" TEXT NOT NULL,
+    "operationalPlanId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "departmentId" TEXT,
+    "auditableEntityId" TEXT,
+    "riskId" TEXT,
+    "auditType" TEXT,
+    "plannedQuarter" TEXT,
+    "assignedAuditorId" TEXT,
+    "residualScore" INTEGER,
+    "riskLevel" TEXT,
+    "priorityRank" INTEGER,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuditOperationalPlanItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "GovernanceTemplate" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -4812,6 +4898,27 @@ CREATE INDEX "DocumentLibraryIngestJob_documentId_idx" ON "DocumentLibraryIngest
 CREATE INDEX "DocumentLibraryIngestJob_runpodJobId_idx" ON "DocumentLibraryIngestJob"("runpodJobId");
 
 -- CreateIndex
+CREATE INDEX "AuditStrategicPlan_customerAccountId_idx" ON "AuditStrategicPlan"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditStrategicPlan_customerAccountId_planCode_key" ON "AuditStrategicPlan"("customerAccountId", "planCode");
+
+-- CreateIndex
+CREATE INDEX "AuditStrategicPlanItem_strategicPlanId_idx" ON "AuditStrategicPlanItem"("strategicPlanId");
+
+-- CreateIndex
+CREATE INDEX "AuditOperationalPlan_customerAccountId_idx" ON "AuditOperationalPlan"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditOperationalPlan_strategicPlanId_year_key" ON "AuditOperationalPlan"("strategicPlanId", "year");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditOperationalPlan_customerAccountId_planCode_key" ON "AuditOperationalPlan"("customerAccountId", "planCode");
+
+-- CreateIndex
+CREATE INDEX "AuditOperationalPlanItem_operationalPlanId_idx" ON "AuditOperationalPlanItem"("operationalPlanId");
+
+-- CreateIndex
 CREATE INDEX "AuditLog_customerAccountId_idx" ON "AuditLog"("customerAccountId");
 
 -- CreateIndex
@@ -6112,6 +6219,33 @@ ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_auditH
 
 -- AddForeignKey
 ALTER TABLE "DocumentLibraryIngestJob" ADD CONSTRAINT "DocumentLibraryIngestJob_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "InternalAuditDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditStrategicPlan" ADD CONSTRAINT "AuditStrategicPlan_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditStrategicPlan" ADD CONSTRAINT "AuditStrategicPlan_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditStrategicPlan" ADD CONSTRAINT "AuditStrategicPlan_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditStrategicPlanItem" ADD CONSTRAINT "AuditStrategicPlanItem_strategicPlanId_fkey" FOREIGN KEY ("strategicPlanId") REFERENCES "AuditStrategicPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditOperationalPlan" ADD CONSTRAINT "AuditOperationalPlan_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditOperationalPlan" ADD CONSTRAINT "AuditOperationalPlan_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditOperationalPlan" ADD CONSTRAINT "AuditOperationalPlan_strategicPlanId_fkey" FOREIGN KEY ("strategicPlanId") REFERENCES "AuditStrategicPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditOperationalPlan" ADD CONSTRAINT "AuditOperationalPlan_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditOperationalPlanItem" ADD CONSTRAINT "AuditOperationalPlanItem_operationalPlanId_fkey" FOREIGN KEY ("operationalPlanId") REFERENCES "AuditOperationalPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "GovernanceTemplate" ADD CONSTRAINT "GovernanceTemplate_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;

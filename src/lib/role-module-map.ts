@@ -36,6 +36,7 @@ export const ROLE_MODULES: Record<RoleName, ModuleCode[] | "system"> = {
 
   // ── Internal Audit platform roles ───────────────────────────────
   AuditHead: ["INTERNAL_AUDIT"],
+  AuditManager: ["INTERNAL_AUDIT"],
   Auditor: ["INTERNAL_AUDIT"],
   AuditUser: ["INTERNAL_AUDIT"],
   Auditee: ["INTERNAL_AUDIT"],

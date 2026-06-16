@@ -109,6 +109,8 @@ export const RESOURCES = {
   'audit.auditables': '/internal-audit/audit-universe',
   'audit.risk-identification': '/internal-audit/risk-identification',
   'audit.risk-register': '/internal-audit/risk-register',
+  'audit.strategic-plan': '/internal-audit/strategic-plan',
+  'audit.operational-plan': '/internal-audit/operational-plan',
   'audit.planning': '/internal-audit/audit-planning',
   'audit.fieldwork': '/internal-audit/fieldwork',
   'audit.reports': '/internal-audit/report',
@@ -196,6 +198,10 @@ export const ROLES = {
   AuditUser: {
     name: 'AuditUser',
     description: 'Basic audit module access',
+  },
+  AuditManager: {
+    name: 'AuditManager',
+    description: 'Full Internal Audit access except creating Strategic Plans (view-only); can edit Operational Plans',
   },
   Auditor: {
     name: 'Auditor',
@@ -372,6 +378,31 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.process', actions: ['*'], scope: 'all' },
+    // Strategic Plan: Head of Audit is the ONLY role that can create strategic plans
+    { resource: 'audit.strategic-plan', actions: ['*'], scope: 'all' },
+    { resource: 'audit.operational-plan', actions: ['*'], scope: 'all' },
+    { resource: 'audit.planning', actions: ['*'], scope: 'all' },
+    { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
+    { resource: 'audit.reports', actions: ['*'], scope: 'all' },
+    { resource: 'audit.capa', actions: ['*'], scope: 'all' },
+    { resource: 'audit.documents', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
+    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' },
+  ],
+
+  // Audit Manager - Same as Head of Audit, EXCEPT cannot create Strategic Plans (view-only).
+  // Can fully edit Operational Plans. Per MOF requirements.
+  AuditManager: [
+    { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
+    { resource: 'audit.process', actions: ['*'], scope: 'all' },
+    // Strategic Plan: VIEW ONLY (cannot create a new strategic audit plan)
+    { resource: 'audit.strategic-plan', actions: ['view'], scope: 'all' },
+    // Operational Plan: full edit access
+    { resource: 'audit.operational-plan', actions: ['*'], scope: 'all' },
     { resource: 'audit.planning', actions: ['*'], scope: 'all' },
     { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
@@ -405,6 +436,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.process', actions: ['*'], scope: 'all' },
+    // Plans: Auditor can VIEW strategic & operational plans (per MOF: view all plans, download MoM)
+    { resource: 'audit.strategic-plan', actions: ['view'], scope: 'all' },
+    { resource: 'audit.operational-plan', actions: ['view'], scope: 'all' },
     { resource: 'audit.planning', actions: ['*'], scope: 'all' },
     { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
