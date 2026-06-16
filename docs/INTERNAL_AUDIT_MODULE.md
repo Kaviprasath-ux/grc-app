@@ -41,7 +41,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 ### 2.2 Planning
 | Feature | Status | Notes |
 |---|---|---|
-| **Strategic Audit Plan** | ✅ | 3/4/5-year duration dropdown; **auto-generated from risk levels** (ordered by residual score, year-bucketed, priority-ranked); approval workflow **Draft → Pending Approval → Approved** (submit for approval, then signed-copy upload with approver name); withdraw back to Draft; **print** option; approved plans visually highlighted; **click a year → opens the Annual Plan** |
+| **Strategic Audit Plan** | ✅ | 3/4/5-year duration dropdown; **auto-generated from risk levels** (ordered by residual score, year-bucketed, priority-ranked); created by the Audit Director and **approved externally by the Minister** — uploading the signed copy (with approver name) marks the plan **Approved** (no in-app approval workflow); **print** option; approved plans visually highlighted; **click a year → opens the Annual Plan** |
 | **Operational (Annual) Plan** | ✅ | Year-wise from the strategic plan (one per year); **view all vs selected year**; add/delete audits; **upload approval document** |
 
 ### 2.3 Engagements
@@ -76,9 +76,13 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 | **Internationalization** | ✅ | All IA UI in English / Arabic / Latvian |
 
 ### 2.6 Known Gaps
-None outstanding against the MOF requirements. The previously open items —
-risk-register auto-sort by priority and the strategic-plan "Pending Approval"
-state — are now implemented (see sections 2.1 and 2.2).
+None outstanding against the MOF requirements.
+
+**Design note — strategic plan approval:** the Minister approves the plan
+**outside the system**, so there is intentionally **no in-app approval workflow**
+(no "submit for approval" / "pending approval" queue). The Audit Director creates
+the plan and records the Minister's approval by uploading the signed copy, which
+marks the plan Approved.
 
 ---
 
