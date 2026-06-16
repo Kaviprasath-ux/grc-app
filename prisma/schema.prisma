@@ -3210,6 +3210,8 @@ model AuditEngagement {
   aiWorkpapers        AiWorkpaper[]
   tasks               AuditEngagementTask[]
   comments            EngagementComment[]
+  // Operational plan item this engagement was auto-generated from (if any)
+  sourcePlanItems     AuditOperationalPlanItem[] @relation("PlanItemEngagement")
 
   @@unique([customerAccountId, auditId])
   @@index([customerAccountId])
@@ -3663,10 +3665,14 @@ model AuditOperationalPlanItem {
   riskLevel          String?
   priorityRank       Int?
   notes              String?
+  // Engagement auto-generated from this item on operational plan approval (idempotency + traceability)
+  engagementId       String?
+  engagement         AuditEngagement?     @relation("PlanItemEngagement", fields: [engagementId], references: [id], onDelete: SetNull)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
   @@index([operationalPlanId])
+  @@index([engagementId])
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================

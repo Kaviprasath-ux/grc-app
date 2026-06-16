@@ -247,7 +247,13 @@ function OperationalPlanContent() {
         body: fd,
       });
       if (!res.ok) throw new Error("Failed");
+      const data = await res.json().catch(() => ({}));
       toast.success(t("Approval document uploaded"));
+      if (data?.engagementsCreated > 0) {
+        toast.success(
+          `${data.engagementsCreated} ${t("audit engagement(s) generated from this plan")}`
+        );
+      }
       loadForStrategicPlan(selectedSpId);
     } catch {
       toast.error(t("Failed to upload approval document"));
