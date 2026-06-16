@@ -3198,6 +3198,9 @@ model AuditEngagement {
   priority            String                     @default("Medium") // Low, Medium, High
   year                Int                        @default(2026)
   quarter             String? // Q1, Q2, Q3, Q4
+  // Engagement lifecycle workflow (Phase 2): current step + per-step status map
+  currentStage        String                     @default("announcement")
+  stageProgress       Json? // { [stageKey]: "completed" | "in_progress" }
   // Timestamps
   createdAt           DateTime                   @default(now())
   updatedAt           DateTime                   @updatedAt

@@ -58,6 +58,7 @@ import {
   ChevronRight,
   X,
   Upload,
+  Workflow,
 } from "lucide-react";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -1613,6 +1614,16 @@ export default function AuditPlanningPage() {
                   <TableCell className="py-3 text-sm text-slate-700">{t(engagement.status)}</TableCell>
                   <TableCell className="py-3 pr-5">
                     <div className="flex items-center ltr:justify-end rtl:justify-start gap-0.5">
+                      <Link href={`/internal-audit/engagement/${engagement.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          title={t("Workflow")}
+                        >
+                          <Workflow className="h-4 w-4" />
+                        </Button>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="icon"
