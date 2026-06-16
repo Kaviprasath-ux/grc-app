@@ -12,7 +12,7 @@
  * `href(id)` builds the route for a reused step from the engagement id.
  */
 
-export type EngagementStageKind = "reuse" | "stub" | "meeting";
+export type EngagementStageKind = "reuse" | "stub" | "meeting" | "apm";
 
 export type MeetingType = "opening" | "discussion" | "closing";
 
@@ -40,7 +40,7 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     label: "Audit Planning Memorandum",
     description:
       "Define audit scope, objectives, methodology and timeline; attach detailed audit program documents.",
-    kind: "stub",
+    kind: "apm",
   },
   {
     key: "opening-meeting",
