@@ -3248,8 +3248,35 @@ model AuditEngagement {
   meetings            AuditEngagementMeeting[]   @relation("EngagementMeetings")
   // Audit Planning Memorandum (one per engagement)
   apm                 AuditEngagementAPM?        @relation("EngagementAPM")
+  // Formal audit announcement (one per engagement)
+  announcement        AuditEngagementAnnouncement? @relation("EngagementAnnouncement")
 
   @@unique([customerAccountId, auditId])
+  @@index([customerAccountId])
+}
+
+// Formal audit announcement / notification email (Phase 3).
+// One per engagement; the templated notification sent to management with the
+// preliminary information request (PBC) list.
+model AuditEngagementAnnouncement {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  engagementId      String          @unique
+  engagement        AuditEngagement @relation("EngagementAnnouncement", fields: [engagementId], references: [id], onDelete: Cascade)
+  recipientName     String?
+  recipientEmail    String?
+  subject           String?
+  body              String? // composed announcement email body
+  commenceDate      DateTime? // date the audit is scheduled to commence
+  status            String          @default("Draft") // Draft, Sent
+  sentAt            DateTime?
+  sentById          String?
+  sentByName        String?
+  createdById       String?
+  createdByName     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
   @@index([customerAccountId])
 }
 

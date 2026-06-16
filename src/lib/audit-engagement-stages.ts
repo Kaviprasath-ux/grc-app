@@ -12,7 +12,7 @@
  * `href(id)` builds the route for a reused step from the engagement id.
  */
 
-export type EngagementStageKind = "reuse" | "stub" | "meeting" | "apm";
+export type EngagementStageKind = "reuse" | "stub" | "meeting" | "apm" | "announcement";
 
 export type MeetingType = "opening" | "discussion" | "closing";
 
@@ -33,7 +33,7 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     label: "Announcement",
     description:
       "Send the formal audit announcement to management with the preliminary information request (PBC) list.",
-    kind: "stub",
+    kind: "announcement",
   },
   {
     key: "apm",

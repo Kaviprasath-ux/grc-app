@@ -19,6 +19,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import MeetingMinutes from "@/components/internal-audit/MeetingMinutes";
 import AuditPlanningMemorandum from "@/components/internal-audit/AuditPlanningMemorandum";
+import AuditAnnouncement from "@/components/internal-audit/AuditAnnouncement";
 import {
   ENGAGEMENT_STAGES,
   DEFAULT_ENGAGEMENT_STAGE,
@@ -239,6 +240,12 @@ export default function EngagementWorkflowPage({
         {stage.kind === "apm" && (
           <div className="mt-5">
             <AuditPlanningMemorandum engagementId={engagement.id} canEdit={canEdit} />
+          </div>
+        )}
+
+        {stage.kind === "announcement" && (
+          <div className="mt-5">
+            <AuditAnnouncement engagementId={engagement.id} canEdit={canEdit} />
           </div>
         )}
 
