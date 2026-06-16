@@ -101,6 +101,11 @@ export const GET = withAuth(
         if (auditHeadId) {
           whereClause.auditHeadId = auditHeadId;
         }
+      } else if (roleFilter === "AuditHead") {
+        // Return only users with AuditHead role (optionally filtered by department)
+        whereClause.userRoles = {
+          some: { role: { name: "AuditHead" } },
+        };
       } else {
         // Default: return all audit users
         whereClause.userRoles = {

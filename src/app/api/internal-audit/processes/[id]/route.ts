@@ -81,11 +81,13 @@ export const PATCH = withAuth(
       const {
         name,
         description,
+        processOwner,
         departmentId,
         riskIds,
       }: {
         name?: string;
         description?: string | null;
+        processOwner?: string | null;
         departmentId?: string | null;
         riskIds?: string[];
       } = body;
@@ -119,6 +121,8 @@ export const PATCH = withAuth(
       if (name !== undefined) data.name = name.trim();
       if (description !== undefined)
         data.description = description?.toString().trim() || null;
+      if (processOwner !== undefined)
+        data.processOwner = processOwner?.toString().trim() || null;
       if (departmentId !== undefined) data.departmentId = departmentId || null;
 
       const updated = await prisma.$transaction(async (tx) => {
