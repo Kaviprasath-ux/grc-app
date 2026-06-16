@@ -5407,5 +5407,10 @@
   "Open in Fieldwork": "فتح في العمل الميداني",
   "Share with auditee": "مشاركة مع الجهة الخاضعة للتدقيق",
   "Shared": "تمت المشاركة",
-  "Unshare": "إلغاء المشاركة"
+  "Unshare": "إلغاء المشاركة",
+  "Audit Program Overview": "نظرة عامة على برنامج التدقيق",
+  "Download Audit Program": "تنزيل برنامج التدقيق",
+  "Implementation Recommendation Document": "وثيقة توصيات التنفيذ",
+  "procedure": "إجراء",
+  "procedures": "إجراءات"
 }
