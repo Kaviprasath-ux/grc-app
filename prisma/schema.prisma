@@ -3244,8 +3244,35 @@ model AuditEngagement {
   comments            EngagementComment[]
   // Operational plan item this engagement was auto-generated from (if any)
   sourcePlanItems     AuditOperationalPlanItem[] @relation("PlanItemEngagement")
+  // Minutes of Meeting records (opening / findings discussion / closing)
+  meetings            AuditEngagementMeeting[]   @relation("EngagementMeetings")
 
   @@unique([customerAccountId, auditId])
+  @@index([customerAccountId])
+}
+
+// Minutes of Meeting (MoM) for an engagement's lifecycle meetings.
+// Shared across Opening, Findings Discussion, and Closing meeting steps (Phase 3).
+model AuditEngagementMeeting {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  engagementId      String
+  engagement        AuditEngagement @relation("EngagementMeetings", fields: [engagementId], references: [id], onDelete: Cascade)
+  meetingType       String // "opening" | "discussion" | "closing"
+  title             String?
+  meetingDate       DateTime?
+  location          String?
+  attendees         String? // free-text or comma-separated list of attendees
+  agenda            String?
+  minutes           String? // the Minutes of Meeting body
+  decisions         String? // agreed action plans / decisions
+  status            String          @default("Draft") // Draft, Finalized
+  createdById       String?
+  createdByName     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([engagementId])
   @@index([customerAccountId])
 }
 

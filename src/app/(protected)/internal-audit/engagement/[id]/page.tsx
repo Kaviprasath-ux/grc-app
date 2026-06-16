@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import MeetingMinutes from "@/components/internal-audit/MeetingMinutes";
 import {
   ENGAGEMENT_STAGES,
   DEFAULT_ENGAGEMENT_STAGE,
@@ -224,6 +225,16 @@ export default function EngagementWorkflowPage({
         <h2 className="text-lg font-semibold text-slate-900">{t(stage.label)}</h2>
         <p className="text-sm text-slate-600 mt-1 max-w-2xl">{t(stage.description)}</p>
 
+        {stage.kind === "meeting" && stage.meetingType && (
+          <div className="mt-5">
+            <MeetingMinutes
+              engagementId={engagement.id}
+              meetingType={stage.meetingType}
+              canEdit={canEdit}
+            />
+          </div>
+        )}
+
         <div className="mt-5 flex flex-wrap items-center gap-3">
           {stage.kind === "reuse" && stage.href ? (
             <Link href={stage.href(engagement.id)}>
@@ -232,11 +243,11 @@ export default function EngagementWorkflowPage({
                 {t("Open")} {t(stage.label)}
               </Button>
             </Link>
-          ) : (
+          ) : stage.kind === "stub" ? (
             <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
               {t("This step will be available in a future update.")}
             </div>
-          )}
+          ) : null}
 
           {canEdit && (
             <>

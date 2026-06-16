@@ -12,7 +12,9 @@
  * `href(id)` builds the route for a reused step from the engagement id.
  */
 
-export type EngagementStageKind = "reuse" | "stub";
+export type EngagementStageKind = "reuse" | "stub" | "meeting";
+
+export type MeetingType = "opening" | "discussion" | "closing";
 
 export interface EngagementStage {
   key: string;
@@ -21,6 +23,8 @@ export interface EngagementStage {
   kind: EngagementStageKind;
   /** Route to the existing page for "reuse" steps. */
   href?: (engagementId: string) => string;
+  /** Meeting type for "meeting" steps (renders the shared MoM component). */
+  meetingType?: MeetingType;
 }
 
 export const ENGAGEMENT_STAGES: EngagementStage[] = [
@@ -43,7 +47,8 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     label: "Opening Meeting",
     description:
       "Walk through objectives, scope, timeline and key contacts; capture the Minutes of Meeting.",
-    kind: "stub",
+    kind: "meeting",
+    meetingType: "opening",
   },
   {
     key: "audit-program",
@@ -74,7 +79,8 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     label: "Findings Discussion",
     description:
       "Validate facts, agree on action plans and finalize management responses; capture the Minutes of Meeting.",
-    kind: "stub",
+    kind: "meeting",
+    meetingType: "discussion",
   },
   {
     key: "report",
@@ -89,7 +95,8 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     label: "Closing Meeting",
     description:
       "Discuss final observations and action plans; capture the Minutes of Meeting.",
-    kind: "stub",
+    kind: "meeting",
+    meetingType: "closing",
   },
   {
     key: "follow-up",
