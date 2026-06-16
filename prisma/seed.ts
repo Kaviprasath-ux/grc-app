@@ -70,6 +70,11 @@ async function main() {
     { name: "TPRMAssessor", description: "Assessor role in TPRM", isSystem: true },
     { name: "TPRMApprover", description: "Approver role in TPRM", isSystem: true },
     { name: "TPRMAuditor", description: "Auditor role in TPRM", isSystem: true },
+    // Support Ticketing roles
+    { name: "SupportAgentL1", description: "Level 1 support agent — handles assigned tickets, escalates to L2", isSystem: true },
+    { name: "SupportSpecialistL2", description: "Level 2 functional/domain specialist", isSystem: true },
+    { name: "SupportEngineerL3", description: "Level 3 engineering support", isSystem: true },
+    { name: "SupportManager", description: "Support manager — full ticket access and routing settings", isSystem: true },
   ];
 
   const createdRoles: { [key: string]: string } = {};

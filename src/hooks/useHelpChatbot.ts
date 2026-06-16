@@ -43,6 +43,10 @@ export interface ChatMessage {
   executed?: boolean;
   /** Result of the confirmation action */
   confirmationResult?: "confirmed" | "cancelled";
+  /** Bot could not confidently answer — offer to create a support ticket */
+  escalationSuggested?: boolean;
+  /** Once a support ticket has been created from this message, its code */
+  escalatedTicketCode?: string;
   /** Timestamp */
   timestamp: number;
 }
@@ -68,6 +72,13 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
   const pathname = usePathname();
   const { data: session } = useSession();
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Stable id for the current chat session — attached to any ticket created
+  // from this conversation so support can trace it back.
+  const conversationIdRef = useRef<string>(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `conv-${Date.now()}-${Math.round(Math.random() * 1e9)}`
+  );
 
   // ─── Extract session flags ────────────────────────────────────────
 
@@ -200,6 +211,7 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
           isAgentUpdate: data.isAgentUpdate || false,
           pendingUpdateId: data.pendingUpdateId || undefined,
           executed: data.executed || false,
+          escalationSuggested: data.escalationSuggested || false,
           timestamp: Date.now(),
         };
 
@@ -280,6 +292,66 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
       setMessages((prev) => [...prev, botMsg]);
     }, 600);
   }, []);
+
+  /**
+   * Escalate the current conversation to a human support ticket. Called from
+   * the "Create support ticket" button shown on low-confidence bot replies.
+   */
+  const createTicketFromChat = useCallback(
+    async (messageId: string) => {
+      // Find the bot message and the preceding user question for context.
+      const idx = messages.findIndex((m) => m.id === messageId);
+      const botMsg = idx >= 0 ? messages[idx] : undefined;
+      const lastUser = [...messages.slice(0, idx)].reverse().find((m) => m.role === "user");
+      const subject = (lastUser?.content || botMsg?.content || "Support request").slice(0, 200);
+
+      const transcript = messages
+        .filter((m) => m.id !== "welcome")
+        .slice(-8)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      try {
+        const res = await fetch("/api/support/tickets/from-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subject,
+            description: lastUser?.content || null,
+            conversationId: conversationIdRef.current,
+            transcript,
+            reason: "low_confidence",
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to create ticket");
+        const data = await res.json();
+
+        // Mark the originating message as escalated (hides the button) and
+        // append a confirmation from the bot.
+        setMessages((prev) => [
+          ...prev.map((m) =>
+            m.id === messageId ? { ...m, escalatedTicketCode: data.ticketCode, escalationSuggested: false } : m
+          ),
+          {
+            id: `bot-${Date.now()}`,
+            role: "bot",
+            content: `I've created support ticket ${data.ticketCode} and routed it to our team. They'll follow up with you shortly.`,
+            timestamp: Date.now(),
+          },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `bot-${Date.now()}`,
+            role: "bot",
+            content: "Sorry — I couldn't create a support ticket just now. Please try again in a moment.",
+            timestamp: Date.now(),
+          },
+        ]);
+      }
+    },
+    [messages]
+  );
 
   /** Browse a module category. */
   const browseModule = useCallback((module: HelpModule) => {
@@ -384,6 +456,8 @@ export function useHelpChatbot({ isOpen, onOpenChange }: UseHelpChatbotOptions) 
     agentMode,
     setAgentMode,
     confirmUpdate,
+    // Support escalation
+    createTicketFromChat,
     // Alias
     helpModules: modulesWithCounts,
   };

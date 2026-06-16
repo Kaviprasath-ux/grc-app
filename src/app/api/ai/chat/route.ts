@@ -341,6 +341,9 @@ export const POST = withAuthOnly(
         sources: answer.sources,
         confidence: answer.confidence,
         intent,
+        // Suggest escalating to a human support ticket when the bot is not
+        // confident it answered (covers low-confidence + no-results paths).
+        escalationSuggested: answer.confidence === "low",
       });
     } catch (error) {
       console.error("[AI Chat] Error:", error);

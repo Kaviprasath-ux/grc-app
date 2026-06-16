@@ -407,6 +407,7 @@ function LoginContent() {
               </div>
               <button
                 type="button"
+                onClick={() => router.push("/forgot-password")}
                 className="text-sm text-primary hover:underline"
               >
                 {t("Forgot passcode?")}

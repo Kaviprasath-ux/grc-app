@@ -201,8 +201,9 @@ export async function searchKB(
   // 1. Embed the query
   const queryEmbedding = await generateEmbedding(query);
 
-  // 2. Fetch all KB articles
+  // 2. Fetch all published KB articles (authored articles can be unpublished)
   const articles = await prisma.chatbotKBArticle.findMany({
+    where: { isPublished: true },
     select: {
       articleKey: true,
       module: true,

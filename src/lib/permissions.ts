@@ -177,6 +177,13 @@ export const RESOURCES = {
   'tprm.asr-support': '/tprm/asr-support',
   'tprm.asr-factory-reports': '/tprm/asr-factory-reports',
   'tprm.factory-user-management': '/tprm/factory-user-management',
+
+  // Support Ticketing Module
+  'support.console': '/support/console',
+  'support.tickets': '/support/tickets',
+  'support.dashboard': '/support/dashboard',
+  'support.kb': '/support/kb',
+  'support.settings': '/support/settings',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -276,6 +283,23 @@ export const ROLES = {
     name: 'TPRMSME',
     description: 'Vendor-side Subject Matter Expert, responds to delegated assessment questions',
   },
+  // Support Ticketing roles (SOW tiered support: L1 -> L2 -> L3, plus manager)
+  SupportAgentL1: {
+    name: 'SupportAgentL1',
+    description: 'Level 1 support agent — handles and triages tickets assigned to them, escalates to L2',
+  },
+  SupportSpecialistL2: {
+    name: 'SupportSpecialistL2',
+    description: 'Level 2 functional/domain specialist — picks up escalations, full ticket access',
+  },
+  SupportEngineerL3: {
+    name: 'SupportEngineerL3',
+    description: 'Level 3 engineering support — resolves code/API/infra issues, full ticket access',
+  },
+  SupportManager: {
+    name: 'SupportManager',
+    description: 'Support manager — full ticket access, reassignment, and routing-rule settings',
+  },
 } as const;
 
 export type RoleName = keyof typeof ROLES;
@@ -368,6 +392,12 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.master-data', actions: ['*'], scope: 'all' },
     { resource: 'tprm.settings', actions: ['*'], scope: 'all' },
     { resource: 'tprm.support', actions: ['view'], scope: 'all' },
+    // Support Ticketing — customer admin manages the whole support function
+    { resource: 'support.console', actions: ['*'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['*'], scope: 'all' },
+    { resource: 'support.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'support.kb', actions: ['*'], scope: 'all' },
+    { resource: 'support.settings', actions: ['*'], scope: 'all' },
   ],
 
   // Audit Head - Full access to Internal Audit module EXCEPT Settings (view-only)
@@ -752,6 +782,35 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.am-follow-ups', actions: ['*'], scope: 'all' },
     { resource: 'tprm.am-support', actions: ['*'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['view'], scope: 'all' },
+  ],
+
+  // ===== Support Ticketing roles =====
+  // L1 — works their own queue: sees the console and tickets, can create/edit
+  // but only the ones assigned to / reported by them (scope 'own').
+  SupportAgentL1: [
+    { resource: 'support.console', actions: ['view'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['view', 'create', 'edit'], scope: 'own' },
+    { resource: 'support.dashboard', actions: ['view'], scope: 'all' },
+  ],
+  // L2 — full ticket access across the tenant (handles escalations).
+  SupportSpecialistL2: [
+    { resource: 'support.console', actions: ['view'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'support.dashboard', actions: ['view'], scope: 'all' },
+  ],
+  // L3 — full ticket access; engineering tier.
+  SupportEngineerL3: [
+    { resource: 'support.console', actions: ['view'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'support.dashboard', actions: ['view'], scope: 'all' },
+  ],
+  // Manager — everything, including KB authoring, routing-rule settings and deletes.
+  SupportManager: [
+    { resource: 'support.console', actions: ['*'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['*'], scope: 'all' },
+    { resource: 'support.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'support.kb', actions: ['*'], scope: 'all' },
+    { resource: 'support.settings', actions: ['*'], scope: 'all' },
   ],
 };
 
