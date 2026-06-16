@@ -295,39 +295,33 @@ function OperationalPlanContent() {
       </div>
 
       {/* Selectors */}
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="min-w-[280px]">
-          <Label>{t("Strategic Plan")}</Label>
-          <Select value={selectedSpId} onValueChange={setSelectedSpId}>
-            <SelectTrigger>
-              <SelectValue placeholder={t("Select a strategic plan")} />
+      <div className="flex items-center gap-3 w-full sm:w-auto sm:ltr:ml-auto sm:rtl:mr-auto justify-end">
+        <Select value={selectedSpId} onValueChange={setSelectedSpId}>
+          <SelectTrigger className="w-full sm:w-[220px] h-9 text-sm bg-slate-50 border-slate-200">
+            <SelectValue placeholder={t("Select a strategic plan")} />
+          </SelectTrigger>
+          <SelectContent className="bg-white" position="popper" sideOffset={4}>
+            {strategicPlans.map((sp) => (
+              <SelectItem key={sp.id} value={sp.id}>
+                {sp.planCode} — {sp.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedSp && (
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm bg-slate-50 border-slate-200">
+              <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              {strategicPlans.map((sp) => (
-                <SelectItem key={sp.id} value={sp.id}>
-                  {sp.planCode} — {sp.title}
+            <SelectContent className="bg-white" position="popper" sideOffset={4}>
+              <SelectItem value="all">{t("All Years")}</SelectItem>
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>
+                  {t("Year")} {y - selectedSp.startYear + 1} · {y}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-        {selectedSp && (
-          <div className="min-w-[180px]">
-            <Label>{t("View")}</Label>
-            <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("All Years")}</SelectItem>
-                {years.map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    {t("Year")} {y - selectedSp.startYear + 1} · {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         )}
       </div>
 
