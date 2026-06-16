@@ -284,10 +284,10 @@ export default function AuditSubCategoriesPage() {
             {t("Settings")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-          <span className="text-primary-700 font-medium">{t("Risk Sub-Categories")}</span>
+          <span className="text-primary-700 font-medium">{t("Sub-Categories")}</span>
         </nav>
 
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Sub-Categories")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Sub-Categories")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -322,12 +322,12 @@ export default function AuditSubCategoriesPage() {
           {t("Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{t("Risk Sub-Categories")}</span>
+        <span className="text-primary-700 font-medium">{t("Sub-Categories")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Sub-Categories")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Sub-Categories")}</h1>
         {canCreate && (
           <Button size="sm" onClick={openAddDialog}>
             <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
@@ -422,7 +422,7 @@ export default function AuditSubCategoriesPage() {
           <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {editItem ? t("Edit Risk Sub-Category") : t("Add Risk Sub-Category")}
+                {editItem ? t("Edit Sub-Category") : t("Add Sub-Category")}
               </DialogTitle>
             </DialogHeader>
           </div>
