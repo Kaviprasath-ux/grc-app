@@ -12,7 +12,13 @@
  * `href(id)` builds the route for a reused step from the engagement id.
  */
 
-export type EngagementStageKind = "reuse" | "stub" | "meeting" | "apm" | "announcement";
+export type EngagementStageKind =
+  | "reuse"
+  | "stub"
+  | "meeting"
+  | "apm"
+  | "announcement"
+  | "findings";
 
 export type MeetingType = "opening" | "discussion" | "closing";
 
@@ -71,7 +77,7 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     label: "Findings",
     description:
       "Record audit findings with criteria, condition, cause, effect and recommendations.",
-    kind: "reuse",
+    kind: "findings",
     href: (id) => `/internal-audit/fieldwork/${id}`,
   },
   {

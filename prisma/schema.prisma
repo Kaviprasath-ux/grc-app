@@ -3230,6 +3230,9 @@ model AuditEngagement {
   // Engagement lifecycle workflow (Phase 2): current step + per-step status map
   currentStage        String                     @default("announcement")
   stageProgress       Json? // { [stageKey]: "completed" | "in_progress" }
+  // Findings communication strategy (Phase 4): Continuous (shared individually)
+  // vs Aggregated (consolidated into the draft detailed report)
+  reportingMode       String                     @default("Aggregated") // Continuous, Aggregated
   // Timestamps
   createdAt           DateTime                   @default(now())
   updatedAt           DateTime                   @updatedAt
@@ -3563,6 +3566,8 @@ model InternalAuditFinding {
   closedDate          DateTime?
   // Status
   status              String              @default("Open") // Open, In Progress, Closed, Overdue, Under Review
+  // Continuous reporting (Phase 4): when this finding was shared with the auditee
+  sharedWithAuditeeAt DateTime?
   // AI Review fields
   aiReviewStatus      String? // "Satisfactory" | "Unsatisfactory" | null
   aiReviewDescription String? // AI-generated description

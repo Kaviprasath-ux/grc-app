@@ -207,6 +207,13 @@ export const PATCH = withAuth(
         updateData.currentStage = body.currentStage;
       }
 
+      if (body.reportingMode !== undefined) {
+        if (body.reportingMode !== 'Continuous' && body.reportingMode !== 'Aggregated') {
+          return NextResponse.json({ error: 'Invalid reporting mode' }, { status: 400 });
+        }
+        updateData.reportingMode = body.reportingMode;
+      }
+
       if (body.stageProgress !== undefined) {
         // Keep only recognized stage keys with allowed statuses
         const cleaned: Record<string, string> = {};

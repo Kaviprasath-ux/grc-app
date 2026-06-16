@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
 
 // Force Node.js runtime
 export const runtime = 'nodejs';
@@ -313,6 +313,28 @@ export const GET = withAuth(
       } else {
         addText('No observations recorded', 10, helveticaFont, rgb(0.5, 0.5, 0.5));
         addText('Total Findings: 0', 10, helveticaBold);
+      }
+
+      // Draft watermark: stamp every page unless the report is Final/Published.
+      // Final reports carry no watermark (per audit reporting requirements).
+      const isFinalReport = report.status === 'Final' || report.status === 'Published';
+      if (!isFinalReport) {
+        const watermarkText = 'DRAFT';
+        const watermarkSize = 120;
+        const textWidth = helveticaBold.widthOfTextAtSize(watermarkText, watermarkSize);
+        const cos45 = Math.cos(Math.PI / 4);
+        for (const p of pdfDoc.getPages()) {
+          const { width: pw, height: ph } = p.getSize();
+          p.drawText(watermarkText, {
+            x: pw / 2 - (textWidth / 2) * cos45,
+            y: ph / 2 - (textWidth / 2) * cos45,
+            size: watermarkSize,
+            font: helveticaBold,
+            color: rgb(0.85, 0.85, 0.85),
+            rotate: degrees(45),
+            opacity: 0.35,
+          });
+        }
       }
 
       // Serialize PDF
