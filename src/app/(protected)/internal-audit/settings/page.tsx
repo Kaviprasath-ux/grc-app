@@ -8,6 +8,7 @@ import {
   Clock,
   AlertTriangle,
   FileType,
+  Tag,
   Home,
   ChevronRight,
 } from "lucide-react";
@@ -56,6 +57,12 @@ export default function InternalAuditSettingsPage() {
       description: t("Define types of audits"),
       icon: FileType,
       href: "/internal-audit/settings/audit-types",
+    },
+    {
+      name: t("Risk Sub-Category"),
+      description: t("Manage risk sub-categories linked to audit categories"),
+      icon: Tag,
+      href: "/internal-audit/settings/sub-categories",
     },
     // Phase 11 — entry-points removed from this settings grid:
     //   - "User Management" → audit user creation is now exclusively the

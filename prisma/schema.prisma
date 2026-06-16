@@ -101,6 +101,7 @@ model CustomerAccount {
   riskRanges                    RiskRange[]
   riskScoreConfigs              RiskScoreConfig[]
   auditCategories               AuditCategory[]
+  auditSubCategories            AuditSubCategory[]
   auditNatureOfControls         AuditNatureOfControl[]
   auditRiskFactors              AuditRiskFactor[]
   auditProbabilities            AuditProbability[]
@@ -784,6 +785,7 @@ model User {
   createdOperationalPlans      AuditOperationalPlan[]        @relation("OperationalPlanCreatedBy")
   // Audit Head owned settings (each Audit Head has their own settings)
   ownedCategories              AuditCategory[]               @relation("AuditHeadCategories")
+  auditSubCategories           AuditSubCategory[]            @relation("AuditHeadSubCategories")
   ownedNatureOfControls        AuditNatureOfControl[]        @relation("AuditHeadNatureOfControls")
   ownedRiskFactors             AuditRiskFactor[]             @relation("AuditHeadRiskFactors")
   ownedProbabilities           AuditProbability[]            @relation("AuditHeadProbabilities")
@@ -2740,10 +2742,30 @@ model AuditCategory {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   internalAuditRisks InternalAuditRisk[]
+  subCategories      AuditSubCategory[]
 
   @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
+}
+
+model AuditSubCategory {
+  id                 String              @id @default(cuid())
+  customerAccountId  String?
+  customerAccount    CustomerAccount?    @relation(fields: [customerAccountId], references: [id])
+  auditHeadId        String?
+  auditHead          User?               @relation("AuditHeadSubCategories", fields: [auditHeadId], references: [id])
+  name               String
+  categoryId         String
+  category           AuditCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  internalAuditRisks InternalAuditRisk[]
+
+  @@unique([customerAccountId, auditHeadId, categoryId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+  @@index([categoryId])
 }
 
 // Nature of Controls (e.g., Preventive, Detective, Corrective)
@@ -3021,6 +3043,7 @@ model InternalAuditProcess {
   processCode       String? // Auto-generated reference ID (IAP001, IAP002, ...)
   name              String
   description       String?
+  processOwner      String?
   departmentId      String?
   department        Department?                      @relation("InternalAuditProcessDepartment", fields: [departmentId], references: [id])
   createdAt         DateTime                         @default(now())
@@ -3088,6 +3111,12 @@ model InternalAuditRisk {
   activity             String?
   categoryId           String?
   category             AuditCategory?             @relation(fields: [categoryId], references: [id])
+  subCategoryId        String?
+  subCategory          AuditSubCategory?          @relation(fields: [subCategoryId], references: [id])
+  riskDrivers          String?
+  riskConsequences     String?
+  relatedLawRegulation String?
+  controlsData         String?
   auditTypeId          String?
   auditType            AuditType?                 @relation(fields: [auditTypeId], references: [id])
   riskDescription      String?

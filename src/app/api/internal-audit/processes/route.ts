@@ -62,11 +62,13 @@ export const POST = withAuth(
       const {
         name,
         description,
+        processOwner,
         departmentId,
         riskIds,
       }: {
         name?: string;
         description?: string | null;
+        processOwner?: string | null;
         departmentId?: string | null;
         riskIds?: string[];
       } = body;
@@ -121,6 +123,7 @@ export const POST = withAuth(
           processCode,
           name: name.trim(),
           description: description?.toString().trim() || null,
+          processOwner: processOwner?.toString().trim() || null,
           departmentId: departmentId || null,
           customerAccountId: customerAccountId || null,
           auditHeadId: auditHeadId || null,

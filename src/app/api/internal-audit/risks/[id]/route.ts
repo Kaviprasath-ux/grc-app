@@ -20,6 +20,8 @@ export const GET = withAuth(
           department: true,
           category: true,
           auditType: true,
+          subCategory: true,
+          processLinks: { include: { process: { select: { id: true, name: true, processCode: true } } } },
         },
       });
 
@@ -142,7 +144,12 @@ export const PUT = withAuth(
           subProcess: body.subProcess !== undefined ? body.subProcess : existingRisk.subProcess,
           activity: body.activity !== undefined ? body.activity : existingRisk.activity,
           categoryId: body.categoryId !== undefined ? body.categoryId : existingRisk.categoryId,
+          subCategoryId: body.subCategoryId !== undefined ? body.subCategoryId : existingRisk.subCategoryId,
           auditTypeId: body.auditTypeId !== undefined ? body.auditTypeId : existingRisk.auditTypeId,
+          riskDrivers: body.riskDrivers !== undefined ? body.riskDrivers : existingRisk.riskDrivers,
+          riskConsequences: body.riskConsequences !== undefined ? body.riskConsequences : existingRisk.riskConsequences,
+          relatedLawRegulation: body.relatedLawRegulation !== undefined ? body.relatedLawRegulation : existingRisk.relatedLawRegulation,
+          controlsData: body.controlsData !== undefined ? body.controlsData : existingRisk.controlsData,
           riskDescription: body.riskDescription !== undefined ? body.riskDescription : existingRisk.riskDescription,
           inherentLikelihood: body.inherentLikelihood !== undefined ? parseInt(body.inherentLikelihood) : existingRisk.inherentLikelihood,
           inherentImpact: body.inherentImpact !== undefined ? parseInt(body.inherentImpact) : existingRisk.inherentImpact,
@@ -163,8 +170,28 @@ export const PUT = withAuth(
           department: true,
           category: true,
           auditType: true,
+          subCategory: true,
+          processLinks: { include: { process: { select: { id: true, name: true, processCode: true } } } },
         },
       });
+
+      // Handle process links update
+      if (body.processIds !== undefined && Array.isArray(body.processIds)) {
+        // Delete existing process links for this risk
+        await prisma.internalAuditProcessRisk.deleteMany({
+          where: { riskId: id },
+        });
+        // Create new process links
+        if (body.processIds.length > 0) {
+          await prisma.internalAuditProcessRisk.createMany({
+            data: body.processIds.map((processId: string) => ({
+              riskId: id,
+              processId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
 
       if (existingRisk.customerAccountId) void translateRecord(existingRisk.customerAccountId, 'InternalAuditRisk', risk.id, { riskName: risk.riskName, riskDescription: risk.riskDescription });
 

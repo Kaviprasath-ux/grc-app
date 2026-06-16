@@ -77,6 +77,7 @@ interface IAProcess {
   processCode: string | null;
   name: string;
   description: string | null;
+  processOwner: string | null;
   departmentId: string | null;
   department: Department | null;
   attachments: ProcessAttachment[];
@@ -91,9 +92,16 @@ interface IARisk {
   riskName: string;
 }
 
+interface AuditHeadUser {
+  id: string;
+  fullName: string;
+  departmentId: string | null;
+}
+
 const initialFormState = {
   name: "",
   description: "",
+  processOwner: "",
   departmentId: "",
   riskIds: [] as string[],
 };
@@ -113,6 +121,7 @@ export default function InternalAuditProcessPage() {
   const [processes, setProcesses] = useState<IAProcess[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [risks, setRisks] = useState<IARisk[]>([]);
+  const [auditHeadUsers, setAuditHeadUsers] = useState<AuditHeadUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -141,10 +150,11 @@ export default function InternalAuditProcessPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [processesRes, deptRes, riskRes] = await Promise.all([
+      const [processesRes, deptRes, riskRes, auditHeadRes] = await Promise.all([
         fetch("/api/internal-audit/processes"),
         fetch("/api/departments"),
         fetch("/api/internal-audit/risks"),
+        fetch("/api/internal-audit/users?role=AuditHead"),
       ]);
 
       if (processesRes.ok) {
@@ -166,6 +176,14 @@ export default function InternalAuditProcessPage() {
             riskName: r.riskName,
           }))
         );
+      }
+      if (auditHeadRes.ok) {
+        const raw = (await auditHeadRes.json()) as Array<{
+          id: string;
+          fullName: string;
+          departmentId: string | null;
+        }>;
+        setAuditHeadUsers(raw.map((u) => ({ id: u.id, fullName: u.fullName, departmentId: u.departmentId })));
       }
     } catch (err) {
       console.error("Failed to load IA processes", err);
@@ -204,6 +222,7 @@ export default function InternalAuditProcessPage() {
     [risks]
   );
 
+
   const openAddDialog = () => {
     setEditItem(null);
     setFormData({ ...initialFormState });
@@ -217,6 +236,7 @@ export default function InternalAuditProcessPage() {
     setFormData({
       name: proc.name,
       description: proc.description || "",
+      processOwner: proc.processOwner || "",
       departmentId: proc.departmentId || "",
       riskIds: proc.linkedRisks.map((l) => l.risk.id),
     });
@@ -244,6 +264,7 @@ export default function InternalAuditProcessPage() {
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
+        processOwner: formData.processOwner.trim() || null,
         departmentId: formData.departmentId || null,
         riskIds: formData.riskIds,
       };
@@ -435,6 +456,9 @@ export default function InternalAuditProcessPage() {
                   {t("Description")}
                 </th>
                 <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  {t("Process Owner")}
+                </th>
+                <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {t("Department")}
                 </th>
                 {(canEdit || canDelete) && (
@@ -447,7 +471,7 @@ export default function InternalAuditProcessPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-10">
+                  <td colSpan={6} className="text-center py-10">
                     <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
                     {t("Loading...")}
                   </td>
@@ -455,7 +479,7 @@ export default function InternalAuditProcessPage() {
               ) : filteredProcesses.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="text-center py-10 text-slate-500"
                   >
                     {t("No processes found")}
@@ -477,6 +501,9 @@ export default function InternalAuditProcessPage() {
                       <span className="truncate max-w-[280px] block">
                         {p.description || "-"}
                       </span>
+                    </td>
+                    <td className="text-start py-3.5 text-sm text-slate-600">
+                      {auditHeadUsers.find((u) => u.id === p.processOwner)?.fullName || "-"}
                     </td>
                     <td className="text-start py-3.5 text-sm text-slate-600">
                       {p.department?.name || "-"}
@@ -558,19 +585,24 @@ export default function InternalAuditProcessPage() {
               <div className="space-y-2">
                 <Label htmlFor="ia-process-dept">{t("Department")}</Label>
                 <Select
-                  value={formData.departmentId || "none"}
-                  onValueChange={(v) =>
+                  value={formData.departmentId || undefined}
+                  onValueChange={(v) => {
+                    const newDeptId = v === "none" ? "" : v;
+                    const ownerStillValid = auditHeadUsers.some(
+                      (u) => u.id === formData.processOwner && u.departmentId === newDeptId
+                    );
                     setFormData({
                       ...formData,
-                      departmentId: v === "none" ? "" : v,
-                    })
-                  }
+                      departmentId: newDeptId,
+                      processOwner: ownerStillValid ? formData.processOwner : "",
+                    });
+                  }}
                 >
                   <SelectTrigger id="ia-process-dept" className="w-full">
                     <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t("None")}</SelectItem>
+                    <SelectItem value="none">{t("Select")}</SelectItem>
                     {departments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
@@ -579,6 +611,61 @@ export default function InternalAuditProcessPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ia-process-owner">{t("Process Owner")}</Label>
+              {(() => {
+                const ownerOptions = formData.departmentId
+                  ? auditHeadUsers.filter((u) => u.departmentId === formData.departmentId)
+                  : [];
+                return (
+                  <>
+                    <Select
+                      key={`owner-${formData.departmentId}`}
+                      value={formData.processOwner || undefined}
+                      disabled={!formData.departmentId}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, processOwner: v === "none" ? "" : v })
+                      }
+                    >
+                      <SelectTrigger id="ia-process-owner" className="w-full">
+                        <SelectValue
+                          placeholder={
+                            formData.departmentId
+                              ? t("Select process owner")
+                              : t("Select a department first")
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("Select")}</SelectItem>
+                        {ownerOptions.length === 0 ? (
+                          <div className="px-3 py-2 text-xs text-slate-400">
+                            {t("No audit heads in this department")}
+                          </div>
+                        ) : (
+                          ownerOptions.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.fullName}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {!formData.departmentId && (
+                      <p className="text-xs text-slate-400">
+                        {t("Please select a department to view available process owners.")}
+                      </p>
+                    )}
+                    {formData.departmentId && ownerOptions.length === 0 && (
+                      <p className="text-xs text-amber-600">
+                        {t("No audit heads are assigned to the selected department.")}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div className="space-y-2">

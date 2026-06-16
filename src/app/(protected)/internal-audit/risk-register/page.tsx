@@ -159,6 +159,23 @@ interface FieldworkAuditPlanResponse {
   audit_plan: AuditPlanItem[];
 }
 
+interface AuditSubCategory {
+  id: string;
+  name: string;
+  categoryId: string;
+}
+
+interface IAProcess {
+  id: string;
+  processCode: string | null;
+  name: string;
+}
+
+interface RiskControl {
+  description: string;
+  effectiveness: string;
+}
+
 interface InternalAuditRiskDetail {
   id: string;
   riskId: string;
@@ -173,6 +190,13 @@ interface InternalAuditRiskDetail {
   category: { id: string; name: string } | null;
   auditTypeId: string | null;
   auditType: { id: string; name: string } | null;
+  subCategoryId: string | null;
+  subCategory: { id: string; name: string } | null;
+  riskDrivers: string | null;
+  riskConsequences: string | null;
+  relatedLawRegulation: string | null;
+  controlsData: string | null;
+  processLinks: Array<{ id: string; process: { id: string; name: string; processCode: string | null } }>;
   inherentLikelihood: number | null;
   inherentImpact: number | null;
   inherentScore: number | null;
@@ -260,6 +284,10 @@ export default function RiskRegisterPage() {
 
   // Reference data for form
   const [categories, setCategories] = useState<AuditCategory[]>([]);
+  const [subCategories, setSubCategories] = useState<AuditSubCategory[]>([]);
+  const [iaProcesses, setIAProcesses] = useState<IAProcess[]>([]);
+  const [selectedProcessIds, setSelectedProcessIds] = useState<string[]>([]);
+  const [controls, setControls] = useState<RiskControl[]>([{ description: '', effectiveness: '' }]);
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
   const [probabilities, setProbabilities] = useState<Probability[]>([]);
   const [impacts, setImpacts] = useState<Impact[]>([]);
@@ -299,6 +327,7 @@ export default function RiskRegisterPage() {
     subProcess: "",
     activity: "",
     categoryId: "",
+    subCategoryId: "",
     auditTypeId: "",
     inherentLikelihood: "",
     inherentImpact: "",
@@ -309,6 +338,9 @@ export default function RiskRegisterPage() {
     creationDate: new Date().toISOString().split("T")[0],
     auditComment: "",
     status: "Open",
+    riskDrivers: "",
+    riskConsequences: "",
+    relatedLawRegulation: "",
   };
   const [formData, setFormData] = useState(initialFormData);
 
@@ -387,12 +419,14 @@ export default function RiskRegisterPage() {
 
   const fetchReferenceData = async () => {
     try {
-      const [catRes, typeRes, probRes, impactRes, configRes] = await Promise.all([
+      const [catRes, typeRes, probRes, impactRes, configRes, subCatRes, procRes] = await Promise.all([
         fetch("/api/internal-audit/categories"),
         fetch("/api/internal-audit/audit-types"),
         fetch("/api/internal-audit/probability"),
         fetch("/api/internal-audit/impact"),
         fetch("/api/internal-audit/scoring-config"),
+        fetch("/api/internal-audit/sub-categories"),
+        fetch("/api/internal-audit/ia-processes"),
       ]);
 
       if (catRes.ok) setCategories(await catRes.json());
@@ -400,6 +434,8 @@ export default function RiskRegisterPage() {
       if (probRes.ok) setProbabilities(await probRes.json());
       if (impactRes.ok) setImpacts(await impactRes.json());
       if (configRes.ok) setScoringConfig(await configRes.json());
+      if (subCatRes.ok) setSubCategories(await subCatRes.json());
+      if (procRes.ok) setIAProcesses(await procRes.json());
     } catch (error) {
       console.error("Failed to fetch reference data:", error);
     }
@@ -539,6 +575,8 @@ export default function RiskRegisterPage() {
   const openAddRiskModal = () => {
     setFormData(initialFormData);
     setUploadedFiles([]);
+    setSelectedProcessIds([]);
+    setControls([{ description: '', effectiveness: '' }]);
     setIsAddRiskOpen(true);
   };
 
@@ -546,6 +584,8 @@ export default function RiskRegisterPage() {
     setIsAddRiskOpen(false);
     setFormData(initialFormData);
     setUploadedFiles([]);
+    setSelectedProcessIds([]);
+    setControls([{ description: '', effectiveness: '' }]);
     setFieldErrors({});
   };
 
@@ -570,6 +610,7 @@ export default function RiskRegisterPage() {
           subProcess: data.subProcess || "",
           activity: data.activity || "",
           categoryId: data.categoryId || "",
+          subCategoryId: data.subCategoryId || "",
           auditTypeId: data.auditTypeId || "",
           inherentLikelihood: data.inherentLikelihood?.toString() || "",
           inherentImpact: data.inherentImpact?.toString() || "",
@@ -580,7 +621,17 @@ export default function RiskRegisterPage() {
           creationDate: data.creationDate ? data.creationDate.split("T")[0] : "",
           auditComment: data.auditComment || "",
           status: data.status || "Open",
+          riskDrivers: data.riskDrivers || "",
+          riskConsequences: data.riskConsequences || "",
+          relatedLawRegulation: data.relatedLawRegulation || "",
         });
+        setSelectedProcessIds(data.processLinks?.map((pl: { process: { id: string } }) => pl.process.id) || []);
+        try {
+          const ctrl = data.controlsData ? JSON.parse(data.controlsData) : [];
+          setControls(ctrl.length > 0 ? ctrl : [{ description: '', effectiveness: '' }]);
+        } catch {
+          setControls([{ description: '', effectiveness: '' }]);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch risk details:", error);
@@ -599,6 +650,8 @@ export default function RiskRegisterPage() {
     setEditingRisk(null);
     setRawEditRisk(null);
     setFormData(initialFormData);
+    setSelectedProcessIds([]);
+    setControls([{ description: '', effectiveness: '' }]);
     setFieldErrors({});
   };
 
@@ -768,6 +821,11 @@ export default function RiskRegisterPage() {
       errors.residualImpact = t("Residual impact is required");
     }
 
+    // Validation: Category
+    if (!formData.categoryId) {
+      errors.categoryId = t("Risk category is required");
+    }
+
     // If there are validation errors, set them and stop
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -795,7 +853,13 @@ export default function RiskRegisterPage() {
           residualScore: residualScore || null,
           departmentId: formData.departmentId || null,
           categoryId: formData.categoryId || null,
+          subCategoryId: formData.subCategoryId || null,
           auditTypeId: formData.auditTypeId || null,
+          riskDrivers: formData.riskDrivers || null,
+          riskConsequences: formData.riskConsequences || null,
+          relatedLawRegulation: formData.relatedLawRegulation || null,
+          controlsData: JSON.stringify(controls.filter(c => c.description.trim())),
+          processIds: selectedProcessIds,
         }),
       });
 
@@ -869,6 +933,11 @@ export default function RiskRegisterPage() {
       errors.residualImpact = t("Residual impact is required");
     }
 
+    // Validation: Category
+    if (!formData.categoryId) {
+      errors.categoryId = t("Risk category is required");
+    }
+
     // If there are validation errors, set them and stop
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -895,7 +964,13 @@ export default function RiskRegisterPage() {
           residualScore: residualScore || null,
           departmentId: formData.departmentId || null,
           categoryId: formData.categoryId || null,
+          subCategoryId: formData.subCategoryId || null,
           auditTypeId: formData.auditTypeId || null,
+          riskDrivers: formData.riskDrivers || null,
+          riskConsequences: formData.riskConsequences || null,
+          relatedLawRegulation: formData.relatedLawRegulation || null,
+          controlsData: JSON.stringify(controls.filter(c => c.description.trim())),
+          processIds: selectedProcessIds,
         }),
       });
 
@@ -972,6 +1047,22 @@ export default function RiskRegisterPage() {
       </span>
     );
   };
+
+  // Computed sub-categories filtered by selected category
+  const filteredSubCategories = subCategories.filter(sc => sc.categoryId === formData.categoryId);
+
+  // Process multi-select toggle
+  const toggleProcess = (id: string) => {
+    setSelectedProcessIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  // Control management functions
+  const addControl = () => setControls(prev => [...prev, { description: '', effectiveness: '' }]);
+  const removeControl = (i: number) => setControls(prev => prev.filter((_, idx) => idx !== i));
+  const updateControl = (i: number, field: 'description' | 'effectiveness', val: string) =>
+    setControls(prev => prev.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
 
   const dateLocaleMap: Record<string, string> = { en: "en-US", ar: "ar-SA", lv: "lv-LV" };
   const formatDate = (dateString: string) => {
@@ -1823,12 +1914,12 @@ export default function RiskRegisterPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-red-500">*</span></Label>
                     <Select
                       value={formData.categoryId}
                       onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.categoryId ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1836,6 +1927,24 @@ export default function RiskRegisterPage() {
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
                           </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldErrors.categoryId && <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryId}</p>}
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Risk Sub-Category")}</Label>
+                    <Select
+                      value={formData.subCategoryId}
+                      onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
+                      disabled={!formData.categoryId}
+                    >
+                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectValue placeholder={formData.categoryId ? t("Select sub-category") : t("Select category first")} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                        {filteredSubCategories.map((sc) => (
+                          <SelectItem key={sc.id} value={sc.id}>{sc.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1965,34 +2074,103 @@ export default function RiskRegisterPage() {
                 </div>
               </div>
 
-              {/* Control Information */}
+              {/* Risk Drivers & Consequences */}
               <div className="space-y-4">
-                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Control Information")}</h3>
+                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Risk Drivers & Consequences")}</h3>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Control Description")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Risk Driver(s) / Cause(s)")}</Label>
                   <Textarea
-                    value={formData.controlDescription}
-                    onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
-                    placeholder={t("Enter control description")}
+                    value={formData.riskDrivers}
+                    onChange={(e) => setFormData({ ...formData, riskDrivers: e.target.value })}
+                    placeholder={t("Describe the root causes or drivers of this risk")}
                     className="mt-1.5 w-full bg-white"
-                    rows={3}
+                    rows={2}
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
-                  <Select
-                    value={formData.controlEffectiveness}
-                    onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
-                  >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder={t("Select effectiveness")} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                      <SelectItem value="Effective">{t("Effective")}</SelectItem>
-                      <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
-                      <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm font-medium text-slate-700">{t("Risk Consequence(s)")}</Label>
+                  <Textarea
+                    value={formData.riskConsequences}
+                    onChange={(e) => setFormData({ ...formData, riskConsequences: e.target.value })}
+                    placeholder={t("Describe the potential consequences of this risk")}
+                    className="mt-1.5 w-full bg-white"
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              {/* Linked Processes */}
+              <div className="space-y-4">
+                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Linked Processes")}</h3>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Processes")}</Label>
+                  <div className="mt-1.5 border rounded-md bg-white max-h-40 overflow-y-auto p-2 space-y-1">
+                    {iaProcesses.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-2 text-center">{t("No processes available")}</p>
+                    ) : iaProcesses.map(proc => {
+                      const isSelected = selectedProcessIds.includes(proc.id);
+                      return (
+                        <div
+                          key={proc.id}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm transition-colors ${isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-slate-50'}`}
+                          onClick={() => toggleProcess(proc.id)}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary-600 border-primary-600' : 'border-slate-300'}`}>
+                            {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                          </div>
+                          <span>{proc.name}</span>
+                          {proc.processCode && <span className="text-xs text-slate-400">({proc.processCode})</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {selectedProcessIds.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-1">{selectedProcessIds.length} {t("process(es) selected")}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Control Information — multi */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-semibold text-slate-800">{t("Control Information")}</h3>
+                  <Button type="button" variant="outline" size="sm" onClick={addControl} className="h-7 text-xs gap-1">
+                    <Plus className="h-3 w-3" /> {t("Add Control")}
+                  </Button>
+                </div>
+                <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                  {controls.map((ctrl, i) => (
+                    <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-3 relative">
+                      {controls.length > 1 && (
+                        <button type="button" onClick={() => removeControl(i)} className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">{t("Control Description")}{controls.length > 1 ? ` #${i + 1}` : ''}</Label>
+                        <Textarea
+                          value={ctrl.description}
+                          onChange={(e) => updateControl(i, 'description', e.target.value)}
+                          placeholder={t("Enter control description")}
+                          className="mt-1.5 w-full bg-white"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
+                        <Select value={ctrl.effectiveness} onValueChange={(v) => updateControl(i, 'effectiveness', v)}>
+                          <SelectTrigger className="mt-1.5 w-full bg-white">
+                            <SelectValue placeholder={t("Select effectiveness")} />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                            <SelectItem value="Effective">{t("Effective")}</SelectItem>
+                            <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
+                            <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -2052,6 +2230,20 @@ export default function RiskRegisterPage() {
                       <p className="text-red-500 text-xs mt-1">{fieldErrors.residualImpact}</p>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Related Law / Regulation / Policy Reference */}
+              <div className="space-y-4">
+                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Related Law / Regulation / Policy Reference")}</h3>
+                <div>
+                  <Textarea
+                    value={formData.relatedLawRegulation}
+                    onChange={(e) => setFormData({ ...formData, relatedLawRegulation: e.target.value })}
+                    placeholder={t("Enter related laws, regulations, or policy references")}
+                    className="w-full bg-white"
+                    rows={2}
+                  />
                 </div>
               </div>
 
@@ -2254,12 +2446,12 @@ export default function RiskRegisterPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-red-500">*</span></Label>
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                       >
-                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.categoryId ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select category")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -2267,6 +2459,24 @@ export default function RiskRegisterPage() {
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
                             </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldErrors.categoryId && <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryId}</p>}
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Risk Sub-Category")}</Label>
+                      <Select
+                        value={formData.subCategoryId}
+                        onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
+                        disabled={!formData.categoryId}
+                      >
+                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                          <SelectValue placeholder={formData.categoryId ? t("Select sub-category") : t("Select category first")} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                          {filteredSubCategories.map((sc) => (
+                            <SelectItem key={sc.id} value={sc.id}>{sc.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -2396,34 +2606,103 @@ export default function RiskRegisterPage() {
                   </div>
                 </div>
 
-                {/* Control Information */}
+                {/* Risk Drivers & Consequences */}
                 <div className="space-y-4">
-                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Control Information")}</h3>
+                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Risk Drivers & Consequences")}</h3>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Control Description")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Risk Driver(s) / Cause(s)")}</Label>
                     <Textarea
-                      value={formData.controlDescription}
-                      onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
-                      placeholder={t("Enter control description")}
+                      value={formData.riskDrivers}
+                      onChange={(e) => setFormData({ ...formData, riskDrivers: e.target.value })}
+                      placeholder={t("Describe the root causes or drivers of this risk")}
                       className="mt-1.5 w-full bg-white"
-                      rows={3}
+                      rows={2}
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
-                    <Select
-                      value={formData.controlEffectiveness}
-                      onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
-                    >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
-                        <SelectValue placeholder={t("Select effectiveness")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        <SelectItem value="Effective">{t("Effective")}</SelectItem>
-                        <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
-                        <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-sm font-medium text-slate-700">{t("Risk Consequence(s)")}</Label>
+                    <Textarea
+                      value={formData.riskConsequences}
+                      onChange={(e) => setFormData({ ...formData, riskConsequences: e.target.value })}
+                      placeholder={t("Describe the potential consequences of this risk")}
+                      className="mt-1.5 w-full bg-white"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+
+                {/* Linked Processes */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Linked Processes")}</h3>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Processes")}</Label>
+                    <div className="mt-1.5 border rounded-md bg-white max-h-40 overflow-y-auto p-2 space-y-1">
+                      {iaProcesses.length === 0 ? (
+                        <p className="text-xs text-slate-400 py-2 text-center">{t("No processes available")}</p>
+                      ) : iaProcesses.map(proc => {
+                        const isSelected = selectedProcessIds.includes(proc.id);
+                        return (
+                          <div
+                            key={proc.id}
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm transition-colors ${isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-slate-50'}`}
+                            onClick={() => toggleProcess(proc.id)}
+                          >
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary-600 border-primary-600' : 'border-slate-300'}`}>
+                              {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                            <span>{proc.name}</span>
+                            {proc.processCode && <span className="text-xs text-slate-400">({proc.processCode})</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {selectedProcessIds.length > 0 && (
+                      <p className="text-xs text-slate-500 mt-1">{selectedProcessIds.length} {t("process(es) selected")}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Control Information — multi */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="text-base font-semibold text-slate-800">{t("Control Information")}</h3>
+                    <Button type="button" variant="outline" size="sm" onClick={addControl} className="h-7 text-xs gap-1">
+                      <Plus className="h-3 w-3" /> {t("Add Control")}
+                    </Button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                    {controls.map((ctrl, i) => (
+                      <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-3 relative">
+                        {controls.length > 1 && (
+                          <button type="button" onClick={() => removeControl(i)} className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">{t("Control Description")}{controls.length > 1 ? ` #${i + 1}` : ''}</Label>
+                          <Textarea
+                            value={ctrl.description}
+                            onChange={(e) => updateControl(i, 'description', e.target.value)}
+                            placeholder={t("Enter control description")}
+                            className="mt-1.5 w-full bg-white"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
+                          <Select value={ctrl.effectiveness} onValueChange={(v) => updateControl(i, 'effectiveness', v)}>
+                            <SelectTrigger className="mt-1.5 w-full bg-white">
+                              <SelectValue placeholder={t("Select effectiveness")} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                              <SelectItem value="Effective">{t("Effective")}</SelectItem>
+                              <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
+                              <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -2483,6 +2762,20 @@ export default function RiskRegisterPage() {
                         <p className="text-red-500 text-xs mt-1">{fieldErrors.residualImpact}</p>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Related Law / Regulation / Policy Reference */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Related Law / Regulation / Policy Reference")}</h3>
+                  <div>
+                    <Textarea
+                      value={formData.relatedLawRegulation}
+                      onChange={(e) => setFormData({ ...formData, relatedLawRegulation: e.target.value })}
+                      placeholder={t("Enter related laws, regulations, or policy references")}
+                      className="w-full bg-white"
+                      rows={2}
+                    />
                   </div>
                 </div>
 
@@ -2660,6 +2953,10 @@ export default function RiskRegisterPage() {
                         <p className="text-sm text-slate-700">{tCat(viewingRisk.categoryId) || viewingRisk.category?.name || "-"}</p>
                       </div>
                       <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Risk Sub-Category")}</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.subCategory?.name || "-"}</p>
+                      </div>
+                      <div>
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Audit Type")}</label>
                         <p className="text-sm text-slate-700">{translatedAuditTypes.find(at => at.id === viewingRisk.auditTypeId)?.name || viewingRisk.auditType?.name || "-"}</p>
                       </div>
@@ -2735,22 +3032,93 @@ export default function RiskRegisterPage() {
                   </div>
                 </section>
 
+                {/* Risk Drivers & Consequences */}
+                {(viewingRisk.riskDrivers || viewingRisk.riskConsequences) && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Risk Drivers & Consequences")}</h3>
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 grid grid-cols-2 gap-6">
+                      {viewingRisk.riskDrivers && (
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Risk Driver(s) / Cause(s)")}</label>
+                          <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.riskDrivers}</p>
+                        </div>
+                      )}
+                      {viewingRisk.riskConsequences && (
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Risk Consequence(s)")}</label>
+                          <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.riskConsequences}</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                {/* Linked Processes */}
+                {viewingRisk.processLinks && viewingRisk.processLinks.length > 0 && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Linked Processes")}</h3>
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                      <div className="flex flex-wrap gap-2">
+                        {viewingRisk.processLinks.map((pl: { process: { id: string; name: string; processCode?: string | null } }) => (
+                          <span key={pl.process.id} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-100">
+                            {pl.process.name}
+                            {pl.process.processCode && <span className="text-blue-400">({pl.process.processCode})</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                )}
+
                 {/* Control Information */}
                 <section>
                   <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Control Information")}</h3>
-                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Description")}</label>
-                        <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.controlDescription || "-"}</p>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Effectiveness")}</label>
-                        <p className="text-sm text-slate-700">{viewingRisk.controlEffectiveness ? t(viewingRisk.controlEffectiveness) : "-"}</p>
-                      </div>
-                    </div>
+                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 space-y-4">
+                    {(() => {
+                      let parsedControls: { description: string; effectiveness: string }[] = [];
+                      try { parsedControls = viewingRisk.controlsData ? JSON.parse(viewingRisk.controlsData) : []; } catch { /* */ }
+                      if (parsedControls.length > 0) {
+                        return parsedControls.map((ctrl, i) => (
+                          <div key={i} className={parsedControls.length > 1 ? "pb-4 border-b border-slate-200 last:border-0 last:pb-0" : ""}>
+                            {parsedControls.length > 1 && <p className="text-xs font-semibold text-slate-500 mb-2">{t("Control")} #{i + 1}</p>}
+                            <div className="grid grid-cols-2 gap-6">
+                              <div>
+                                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Description")}</label>
+                                <p className="text-sm text-slate-700 leading-relaxed">{ctrl.description || "-"}</p>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Effectiveness")}</label>
+                                <p className="text-sm text-slate-700">{ctrl.effectiveness ? t(ctrl.effectiveness) : "-"}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ));
+                      }
+                      return (
+                        <div className="grid grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Description")}</label>
+                            <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.controlDescription || "-"}</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Effectiveness")}</label>
+                            <p className="text-sm text-slate-700">{viewingRisk.controlEffectiveness ? t(viewingRisk.controlEffectiveness) : "-"}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </section>
+
+                {/* Related Law / Regulation / Policy Reference */}
+                {viewingRisk.relatedLawRegulation && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Related Law / Regulation / Policy Reference")}</h3>
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                      <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.relatedLawRegulation}</p>
+                    </div>
+                  </section>
+                )}
 
                 {/* Status & Comments */}
                 <section>

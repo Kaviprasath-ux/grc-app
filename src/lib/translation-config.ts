@@ -71,6 +71,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'InternalAuditDocument', fields: [{ name: 'name' }, { name: 'fileName' }], priority: 4 },
   { modelName: 'AuditType', fields: [{ name: 'name' }], priority: 4 },
   { modelName: 'AuditCategory', fields: [{ name: 'name' }], priority: 4 },
+  { modelName: 'AuditSubCategory', fields: [{ name: 'name' }], priority: 4 },
   { modelName: 'AuditNatureOfControl', fields: [{ name: 'label' }], priority: 4 },
   { modelName: 'AuditPeriodicity', fields: [{ name: 'interval' }], priority: 4 },
   { modelName: 'AuditRiskFactor', fields: [{ name: 'label' }], priority: 4 },
