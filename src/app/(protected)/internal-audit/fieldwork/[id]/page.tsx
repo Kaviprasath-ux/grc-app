@@ -2074,27 +2074,48 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setAiWorkpapersOpen(!aiWorkpapersOpen)}
       >
         <div className="space-y-4">
-          {isAuditTeam && (
-            <div className="flex ltr:justify-end rtl:justify-start">
-              <Button
-                size="sm"
-                onClick={handleGenerateAIWorkpapers}
-                disabled={generatingWorkpapers || isReadOnly}
-              >
-                {generatingWorkpapers ? (
-                  <>
-                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
-                    {t("Generating...")}
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-                    {t("Generate Workpaper with AI")}
-                  </>
-                )}
-              </Button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-500">
+              {t("Audit Program Overview")}: {aiWorkpapers.length}{" "}
+              {aiWorkpapers.length === 1 ? t("procedure") : t("procedures")}
+            </p>
+            <div className="flex items-center gap-2">
+              {aiWorkpapers.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    window.open(
+                      `/api/internal-audit/fieldwork/${engagementId}/ai-workpapers/download`,
+                      "_blank"
+                    )
+                  }
+                >
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Download Audit Program")}
+                </Button>
+              )}
+              {isAuditTeam && (
+                <Button
+                  size="sm"
+                  onClick={handleGenerateAIWorkpapers}
+                  disabled={generatingWorkpapers || isReadOnly}
+                >
+                  {generatingWorkpapers ? (
+                    <>
+                      <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                      {t("Generating...")}
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                      {t("Generate Workpaper with AI")}
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
-          )}
+          </div>
           {aiWorkpapers.length > 0 ? (
             <div className="bg-white border rounded-lg overflow-x-auto">
               <Table className="min-w-[600px]">

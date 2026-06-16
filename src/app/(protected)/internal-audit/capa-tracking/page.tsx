@@ -522,6 +522,29 @@ export default function CAPATrackingPage() {
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
           {t("Corrective & Preventive Actions (CAPA)")}
         </h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (selectedDepartment && selectedDepartment !== "all") {
+              params.append("departmentId", selectedDepartment);
+            }
+            if (engagementStatusFilter) {
+              params.append("engagementStatus", engagementStatusFilter);
+            }
+            if (searchQuery.trim()) {
+              params.append("search", searchQuery.trim());
+            }
+            window.open(
+              `/api/internal-audit/capa-tracking/download?${params.toString()}`,
+              "_blank"
+            );
+          }}
+        >
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Implementation Recommendation Document")}
+        </Button>
       </div>
 
       {/* Table */}
