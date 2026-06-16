@@ -5412,5 +5412,12 @@
   "Download Audit Program": "تنزيل برنامج التدقيق",
   "Implementation Recommendation Document": "وثيقة توصيات التنفيذ",
   "procedure": "إجراء",
-  "procedures": "إجراءات"
+  "procedures": "إجراءات",
+  "Failed to submit strategic plan": "فشل إرسال الخطة الاستراتيجية",
+  "Failed to withdraw submission": "فشل سحب الطلب",
+  "Strategic plan submitted for approval": "تم إرسال الخطة الاستراتيجية للموافقة",
+  "Submission withdrawn": "تم سحب الطلب",
+  "Submit this strategic plan for approval by the approving authority.": "إرسال هذه الخطة الاستراتيجية للموافقة من قبل الجهة المعتمِدة.",
+  "This strategic plan is awaiting approval.": "هذه الخطة الاستراتيجية في انتظار الموافقة.",
+  "Withdraw to Draft": "إعادة إلى المسودة"
 }

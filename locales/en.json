@@ -5412,5 +5412,12 @@
   "Download Audit Program": "Download Audit Program",
   "Implementation Recommendation Document": "Implementation Recommendation Document",
   "procedure": "procedure",
-  "procedures": "procedures"
+  "procedures": "procedures",
+  "Failed to submit strategic plan": "Failed to submit strategic plan",
+  "Failed to withdraw submission": "Failed to withdraw submission",
+  "Strategic plan submitted for approval": "Strategic plan submitted for approval",
+  "Submission withdrawn": "Submission withdrawn",
+  "Submit this strategic plan for approval by the approving authority.": "Submit this strategic plan for approval by the approving authority.",
+  "This strategic plan is awaiting approval.": "This strategic plan is awaiting approval.",
+  "Withdraw to Draft": "Withdraw to Draft"
 }

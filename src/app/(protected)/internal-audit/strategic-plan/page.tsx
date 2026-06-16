@@ -241,6 +241,42 @@ export default function StrategicPlanPage() {
     }
   };
 
+  const handleSubmitForApproval = async () => {
+    if (!viewPlan) return;
+    setApproving(true);
+    try {
+      const res = await fetch(`/api/internal-audit/strategic-plans/${viewPlan.id}/submit`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Strategic plan submitted for approval"));
+      await openView(viewPlan.id);
+      fetchPlans();
+    } catch {
+      toast.error(t("Failed to submit strategic plan"));
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!viewPlan) return;
+    setApproving(true);
+    try {
+      const res = await fetch(`/api/internal-audit/strategic-plans/${viewPlan.id}/submit`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Submission withdrawn"));
+      await openView(viewPlan.id);
+      fetchPlans();
+    } catch {
+      toast.error(t("Failed to withdraw submission"));
+    } finally {
+      setApproving(false);
+    }
+  };
+
   const handleRevoke = async () => {
     if (!viewPlan) return;
     setApproving(true);
@@ -593,55 +629,103 @@ export default function StrategicPlanPage() {
                 </div>
 
                 {/* Approval section */}
-                {canApprove && (
-                  <div className="border-t pt-4 print:hidden">
-                    {viewPlan.status !== "Approved" ? (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold flex items-center gap-2">
-                          <ShieldCheck className="h-4 w-4" />
-                          {t("Approval")}
-                        </h3>
+                {(canEdit || canApprove) && viewPlan.status !== "Approved" && (
+                  <div className="border-t pt-4 print:hidden space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4" />
+                      {t("Approval")}
+                    </h3>
+
+                    {/* Draft: submit for approval */}
+                    {viewPlan.status === "Draft" && canEdit && (
+                      <>
                         <p className="text-sm text-muted-foreground">
-                          {t("Upload the signed copy to mark this strategic plan as approved.")}
+                          {t("Submit this strategic plan for approval by the approving authority.")}
                         </p>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label>{t("Approved By")}</Label>
-                            <Input
-                              value={approvedByName}
-                              onChange={(e) => setApprovedByName(e.target.value)}
-                              placeholder={t("Name of approving authority")}
-                            />
-                          </div>
-                          <div>
-                            <Label>{t("Signed Copy")}</Label>
-                            <Input
-                              type="file"
-                              onChange={(e) =>
-                                setSignedFile(e.target.files?.[0] || null)
-                              }
-                            />
-                          </div>
-                        </div>
-                        <Button onClick={handleApprove} disabled={approving}>
+                        <Button onClick={handleSubmitForApproval} disabled={approving}>
                           {approving ? (
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           ) : (
-                            <Upload className="h-4 w-4 mr-2" />
+                            <ShieldCheck className="h-4 w-4 mr-2" />
                           )}
-                          {t("Upload & Approve")}
+                          {t("Submit for Approval")}
                         </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        onClick={handleRevoke}
-                        disabled={approving}
-                      >
-                        {approving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        {t("Revoke Approval")}
-                      </Button>
+                      </>
                     )}
+
+                    {/* Pending Approval: upload signed copy to approve, or withdraw */}
+                    {viewPlan.status === "Pending Approval" && (
+                      <>
+                        <Badge className={statusColor(viewPlan.status)}>
+                          {t("Pending Approval")}
+                        </Badge>
+                        {canApprove ? (
+                          <>
+                            <p className="text-sm text-muted-foreground">
+                              {t("Upload the signed copy to mark this strategic plan as approved.")}
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label>{t("Approved By")}</Label>
+                                <Input
+                                  value={approvedByName}
+                                  onChange={(e) => setApprovedByName(e.target.value)}
+                                  placeholder={t("Name of approving authority")}
+                                />
+                              </div>
+                              <div>
+                                <Label>{t("Signed Copy")}</Label>
+                                <Input
+                                  type="file"
+                                  onChange={(e) =>
+                                    setSignedFile(e.target.files?.[0] || null)
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            {t("This strategic plan is awaiting approval.")}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2">
+                          {canApprove && (
+                            <Button onClick={handleApprove} disabled={approving}>
+                              {approving ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Upload className="h-4 w-4 mr-2" />
+                              )}
+                              {t("Upload & Approve")}
+                            </Button>
+                          )}
+                          {canEdit && (
+                            <Button
+                              variant="outline"
+                              onClick={handleWithdraw}
+                              disabled={approving}
+                            >
+                              {t("Withdraw to Draft")}
+                            </Button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Approved: revoke */}
+                {canApprove && viewPlan.status === "Approved" && (
+                  <div className="border-t pt-4 print:hidden">
+                    <Button
+                      variant="outline"
+                      onClick={handleRevoke}
+                      disabled={approving}
+                    >
+                      {approving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      {t("Revoke Approval")}
+                    </Button>
                   </div>
                 )}
               </div>

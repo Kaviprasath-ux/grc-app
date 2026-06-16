@@ -53,7 +53,11 @@ export const GET = withAuth(
           subCategory: true,
           processLinks: { include: { process: { select: { id: true, name: true, processCode: true } } } },
         },
-        orderBy: { createdAt: "desc" },
+        // Auto-sort by residual risk so the highest-priority risks appear at the top.
+        orderBy: [
+          { residualScore: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" },
+        ],
       });
 
       return NextResponse.json(risks);

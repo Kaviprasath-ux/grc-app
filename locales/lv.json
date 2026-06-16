@@ -5412,5 +5412,12 @@
   "Download Audit Program": "Lejupielādēt audita programmu",
   "Implementation Recommendation Document": "Ieviešanas ieteikumu dokuments",
   "procedure": "procedūra",
-  "procedures": "procedūras"
+  "procedures": "procedūras",
+  "Failed to submit strategic plan": "Neizdevās iesniegt stratēģisko plānu",
+  "Failed to withdraw submission": "Neizdevās atsaukt iesniegumu",
+  "Strategic plan submitted for approval": "Stratēģiskais plāns iesniegts apstiprināšanai",
+  "Submission withdrawn": "Iesniegums atsaukts",
+  "Submit this strategic plan for approval by the approving authority.": "Iesniegt šo stratēģisko plānu apstiprināšanai apstiprinātājinstitūcijā.",
+  "This strategic plan is awaiting approval.": "Šis stratēģiskais plāns gaida apstiprinājumu.",
+  "Withdraw to Draft": "Atsaukt uz melnrakstu"
 }

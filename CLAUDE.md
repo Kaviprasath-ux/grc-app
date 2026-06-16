@@ -11,6 +11,11 @@ This is a **GRC (Governance, Risk, and Compliance) application** built with Next
 - **Asset Management** - Inventory, classification
 - **Internal Audit** - Audit universe, planning, fieldwork, findings, CAPA tracking, reports
 
+**IMPORTANT — Internal Audit documentation:** Whenever you add, change, or remove
+Internal Audit functionality (features, workflow steps, roles/permissions, or
+APIs under `internal-audit`), update `docs/INTERNAL_AUDIT_MODULE.md` accordingly
+so the implementation inventory and the role-based access matrix stay accurate.
+
 CODEX will review your response and code once you are done so do not slack off.
 
 ## Commands

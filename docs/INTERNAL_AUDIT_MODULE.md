@@ -32,7 +32,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 | Feature | Where | Notes |
 |---|---|---|
 | **Audit Universe** | `/internal-audit/audit-universe` | Auditable entities by department/process/IT area |
-| **Risk Register** | `/internal-audit/risk-register` | Risk ID, process link, title, description, category/sub-category, source, cause/driver, consequence, inherent & residual likelihood/impact/rating, control effectiveness, related law, policy reference, document links |
+| **Risk Register** | `/internal-audit/risk-register` | Risk ID, process link, title, description, category/sub-category, source, cause/driver, consequence, inherent & residual likelihood/impact/rating, control effectiveness, related law, policy reference, document links. **Auto-sorted by residual risk (highest first).** |
 | **Risk Identification / Risk Universe** | `/internal-audit/risk-identification`, `/risk-universe` | AI-assisted risk suggestions |
 | **Process Inventory** | `/internal-audit/organization/process` | Process ID, name, owner, supporting documents, notes |
 | **Departments** | `/internal-audit/settings/departments` | Department master data |
@@ -41,7 +41,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 ### 2.2 Planning
 | Feature | Status | Notes |
 |---|---|---|
-| **Strategic Audit Plan** | ✅ | 3/4/5-year duration dropdown; **auto-generated from risk levels** (ordered by residual score, year-bucketed, priority-ranked); approval via signed-copy upload (approver name recorded); **print** option; approved plans visually highlighted; **click a year → opens the Annual Plan** |
+| **Strategic Audit Plan** | ✅ | 3/4/5-year duration dropdown; **auto-generated from risk levels** (ordered by residual score, year-bucketed, priority-ranked); approval workflow **Draft → Pending Approval → Approved** (submit for approval, then signed-copy upload with approver name); withdraw back to Draft; **print** option; approved plans visually highlighted; **click a year → opens the Annual Plan** |
 | **Operational (Annual) Plan** | ✅ | Year-wise from the strategic plan (one per year); **view all vs selected year**; add/delete audits; **upload approval document** |
 
 ### 2.3 Engagements
@@ -75,9 +75,10 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 | **Automated Monitoring** | ✅ | Cron jobs: due-date reminders, escalation, remediation reminders, plan transitions |
 | **Internationalization** | ✅ | All IA UI in English / Arabic / Latvian |
 
-### 2.6 Known Gaps (not yet implemented)
-- **Risk register auto-sort by priority** — the register currently sorts by creation date, not by priority rank / residual score.
-- **Strategic plan "Pending Approval" state** — the plan goes Draft → Approved directly; there is no intermediate "Pending Approval" queue.
+### 2.6 Known Gaps
+None outstanding against the MOF requirements. The previously open items —
+risk-register auto-sort by priority and the strategic-plan "Pending Approval"
+state — are now implemented (see sections 2.1 and 2.2).
 
 ---
 
