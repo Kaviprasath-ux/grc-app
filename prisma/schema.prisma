@@ -3307,6 +3307,8 @@ model AuditEngagementAPM {
   objectives        String?
   methodology       String?
   timeline          String? // narrative timeline / milestones
+  // A. Audit Program Overview — JSON array of { auditTitle, department, period }
+  programOverview   String?                        @db.Text
   startDate         DateTime?
   endDate           DateTime?
   status            String                         @default("Draft") // Draft, Finalized
@@ -3664,6 +3666,33 @@ model AuditFollowUpMeeting {
   // Repeatable sections, stored as JSON arrays
   attendees         String?  @db.Text // JSON: [{ name, jobTitle, management, signature }]
   recommendations   String?  @db.Text // JSON: [{ number, recommendation, official, implementationDate, implementationStatus, notes }]
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// Preliminary Observations / Findings Discussion Meeting form (workflow step 7).
+// One per engagement. Header fields are scalar; attendees, notes-discussed and
+// agreed-actions are stored as JSON text (variable-length rows).
+model AuditFindingsDiscussionMeeting {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // Header / meeting metadata
+  meetingVenue      String?
+  history           String?
+  assignmentTitle   String?
+  auditTaskNumber   String?
+  department        String?
+  management        String?
+  // Repeatable sections, stored as JSON arrays
+  attendees         String?  @db.Text // JSON: [{ name, jobTitle, management, signature }]
+  notesDiscussed    String?  @db.Text // JSON: [{ number, note, degreeOfRisk, managementResponse, proposedAction }]
+  agreedActions     String?  @db.Text // JSON: [{ number, procedure, official, implementationDate }]
   createdById       String?
   updatedById       String?
   createdAt         DateTime @default(now())

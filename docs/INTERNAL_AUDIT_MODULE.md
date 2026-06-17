@@ -56,12 +56,12 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 | Step | Status | Notes |
 |---|---|---|
 | **Announcement** | ✅ | Templated notification email (auto-filled from engagement data); save draft / send to auditee; locked once sent |
-| **Audit Planning Memorandum (APM)** | ✅ | Scope, objectives, methodology, timeline + audit-program document attachments (encrypted at rest) |
+| **Audit Planning Memorandum (APM)** | ✅ | **A. Audit Program Overview** table (Audit Title / Department / Period) + scope, objectives, methodology, timeline + audit-program document attachments (encrypted at rest) |
 | **Opening Meeting** | ✅ | Minutes of Meeting (shared MoM component) |
 | **Audit Program** | ✅ | Program **overview** + **download as PDF** before fieldwork; AI-generated workpapers |
 | **Fieldwork** | ✅ | Workpapers, evidence (PBC) requests, evidence upload, review/approval, AI review |
 | **Findings** | ✅ | Communication mode toggle — **Continuous** (share each finding with the auditee individually) vs **Aggregated** (consolidated into the report) |
-| **Findings Discussion** | ✅ | Minutes of Meeting (validate facts, agree action plans, finalize responses) |
+| **Findings Discussion** | ✅ | Structured **Preliminary Observations Discussion Meeting** form (model `AuditFindingsDiscussionMeeting`): Header table (Meeting Venue / History / Assignment Title / Audit Task Number / Department / Management) + Attendees + **Notes Discussed** (Note / Degree of Risk / Management Response / Proposed Action) + **Agreed Actions** (Procedure / Official / Implementation Date); Notes & Agreed Actions pre-fill from the engagement's findings; Save + Print + Export PDF. (Opening/Closing meetings still use the generic Minutes-of-Meeting recorder.) |
 | **Closing Meeting** | ✅ | Minutes of Meeting |
 
 > **Note:** The engagement workflow stepper is **8 steps**. **Report** and **Follow-up** are no longer steps in the stepper — they are accessed from the Internal Audit sidebar (`Report`, and `Follow-up` which points to the CAPA Tracking page). See §2.5.

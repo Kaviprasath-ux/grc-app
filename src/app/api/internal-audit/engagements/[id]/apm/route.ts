@@ -111,6 +111,7 @@ export const PUT = withAuth(
         objectives,
         methodology,
         timeline,
+        programOverview,
         startDate,
         endDate,
         status,
@@ -118,6 +119,10 @@ export const PUT = withAuth(
 
       const startDateValue = startDate ? new Date(startDate) : null;
       const endDateValue = endDate ? new Date(endDate) : null;
+      const programOverviewValue =
+        programOverview && typeof programOverview === 'object'
+          ? JSON.stringify(programOverview)
+          : null;
 
       const apm = await prisma.auditEngagementAPM.upsert({
         where: { engagementId: id },
@@ -128,6 +133,7 @@ export const PUT = withAuth(
           objectives: objectives ?? null,
           methodology: methodology ?? null,
           timeline: timeline ?? null,
+          programOverview: programOverviewValue,
           startDate: startDateValue,
           endDate: endDateValue,
           status: status ?? 'Draft',
@@ -139,6 +145,7 @@ export const PUT = withAuth(
           objectives: objectives ?? null,
           methodology: methodology ?? null,
           timeline: timeline ?? null,
+          programOverview: programOverviewValue,
           startDate: startDateValue,
           endDate: endDateValue,
           ...(status !== undefined ? { status } : {}),

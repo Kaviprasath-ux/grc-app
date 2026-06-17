@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import MeetingMinutes from "@/components/internal-audit/MeetingMinutes";
+import FindingsDiscussionMeeting from "@/components/internal-audit/FindingsDiscussionMeeting";
 import AuditPlanningMemorandum from "@/components/internal-audit/AuditPlanningMemorandum";
 import AuditAnnouncement from "@/components/internal-audit/AuditAnnouncement";
 import FindingsCommunication from "@/components/internal-audit/FindingsCommunication";
@@ -230,11 +231,17 @@ export default function EngagementWorkflowPage({
 
         {stage.kind === "meeting" && stage.meetingType && (
           <div className="mt-5">
-            <MeetingMinutes
-              engagementId={engagement.id}
-              meetingType={stage.meetingType}
-              canEdit={canEdit}
-            />
+            {stage.meetingType === "discussion" ? (
+              // Findings Discussion uses the structured Preliminary Observations
+              // Discussion Meeting form (header + attendees + notes + agreed actions).
+              <FindingsDiscussionMeeting engagementId={engagement.id} canEdit={canEdit} />
+            ) : (
+              <MeetingMinutes
+                engagementId={engagement.id}
+                meetingType={stage.meetingType}
+                canEdit={canEdit}
+              />
+            )}
           </div>
         )}
 

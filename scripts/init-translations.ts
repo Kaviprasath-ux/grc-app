@@ -3247,6 +3247,16 @@ const translations: [string, string, string][] = [
   ['Quarterly report removed', 'تمت إزالة التقرير الربع سنوي', 'Ceturkšņa pārskats noņemts'],
   ['Failed to remove quarterly report', 'فشل إزالة التقرير الربع سنوي', 'Neizdevās noņemt ceturkšņa pārskatu'],
   ['Download uploaded report', 'تنزيل التقرير المرفوع', 'Lejupielādēt augšupielādēto pārskatu'],
+  ['Notes Discussed', 'الملاحظات المناقشة', 'Apspriestās piezīmes'],
+  ['Degree of Risk', 'درجة المخاطر', 'Riska pakāpe'],
+  ['Management Response', 'رد الإدارة', 'Vadības atbilde'],
+  ['Proposed Action', 'الإجراء المقترح', 'Ierosinātā darbība'],
+  ['Agreed Actions', 'الإجراءات المتفق عليها', 'Saskaņotās darbības'],
+  ['Failed to load meeting form', 'فشل تحميل نموذج الاجتماع', 'Neizdevās ielādēt sanāksmes veidlapu'],
+  ['Meeting form saved', 'تم حفظ نموذج الاجتماع', 'Sanāksmes veidlapa saglabāta'],
+  ['Failed to save meeting form', 'فشل حفظ نموذج الاجتماع', 'Neizdevās saglabāt sanāksmes veidlapu'],
+  ['A. Audit Program Overview', 'أ. نظرة عامة على برنامج التدقيق', 'A. Audita programmas pārskats'],
+  ['Period', 'الفترة', 'Periods'],
 
   // Audit Planning & Fieldwork translations
   ['Add Audit Plan', 'إضافة خطة تدقيق', 'Pievienot audita plānu'],
