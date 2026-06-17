@@ -554,11 +554,22 @@ function OperationalPlanContent() {
                               )}
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
+                              <a
+                                href={`/api/internal-audit/operational-plans/${plan.id}/quarter-summary/${q}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={t("Generate Report")}
+                              >
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                  <Sparkles className="h-3.5 w-3.5 text-primary-600" />
+                                </Button>
+                              </a>
                               {report && (
                                 <a
                                   href={`/api/internal-audit/operational-plans/${plan.id}/quarter-reports/${report.id}/doc`}
                                   target="_blank"
                                   rel="noopener noreferrer"
+                                  title={t("Download uploaded report")}
                                 >
                                   <Button variant="ghost" size="icon" className="h-7 w-7">
                                     <Download className="h-3.5 w-3.5" />

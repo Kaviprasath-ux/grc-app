@@ -3246,6 +3246,7 @@ const translations: [string, string, string][] = [
   ['Failed to upload quarterly report', 'فشل رفع التقرير الربع سنوي', 'Neizdevās augšupielādēt ceturkšņa pārskatu'],
   ['Quarterly report removed', 'تمت إزالة التقرير الربع سنوي', 'Ceturkšņa pārskats noņemts'],
   ['Failed to remove quarterly report', 'فشل إزالة التقرير الربع سنوي', 'Neizdevās noņemt ceturkšņa pārskatu'],
+  ['Download uploaded report', 'تنزيل التقرير المرفوع', 'Lejupielādēt augšupielādēto pārskatu'],
 
   // Audit Planning & Fieldwork translations
   ['Add Audit Plan', 'إضافة خطة تدقيق', 'Pievienot audita plānu'],
