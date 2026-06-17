@@ -19,6 +19,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import MeetingMinutes from "@/components/internal-audit/MeetingMinutes";
 import FindingsDiscussionMeeting from "@/components/internal-audit/FindingsDiscussionMeeting";
+import ClosingMeeting from "@/components/internal-audit/ClosingMeeting";
 import AuditPlanningMemorandum from "@/components/internal-audit/AuditPlanningMemorandum";
 import AuditAnnouncement from "@/components/internal-audit/AuditAnnouncement";
 import FindingsCommunication from "@/components/internal-audit/FindingsCommunication";
@@ -235,6 +236,9 @@ export default function EngagementWorkflowPage({
               // Findings Discussion uses the structured Preliminary Observations
               // Discussion Meeting form (header + attendees + notes + agreed actions).
               <FindingsDiscussionMeeting engagementId={engagement.id} canEdit={canEdit} />
+            ) : stage.meetingType === "closing" ? (
+              // Closing Meeting uses the download-template / upload-minutes flow.
+              <ClosingMeeting engagementId={engagement.id} canEdit={canEdit} />
             ) : (
               <MeetingMinutes
                 engagementId={engagement.id}

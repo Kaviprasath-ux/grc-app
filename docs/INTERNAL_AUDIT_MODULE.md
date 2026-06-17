@@ -63,7 +63,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 | **Fieldwork** | ✅ | Workpapers, evidence (PBC) requests, evidence upload, review/approval, AI review |
 | **Findings** | ✅ | Communication mode toggle — **Continuous** (share each finding with the auditee individually) vs **Aggregated** (consolidated into the report) |
 | **Findings Discussion** | ✅ | Structured **Preliminary Observations Discussion Meeting** form (model `AuditFindingsDiscussionMeeting`): Header table (Meeting Venue / History / Assignment Title / Audit Task Number / Department / Management) + Attendees + **Notes Discussed** (Note / Degree of Risk / Management Response / Proposed Action) + **Agreed Actions** (Procedure / Official / Implementation Date); Notes & Agreed Actions pre-fill from the engagement's findings; Save + Print + Export PDF. (Opening/Closing meetings still use the generic Minutes-of-Meeting recorder.) |
-| **Closing Meeting** | ✅ | Minutes of Meeting |
+| **Closing Meeting** | ✅ | **Audit Task Closing Meeting Minutes** via **Download Template (Excel)** → fill offline → **Upload** → parsed data displayed on the page (model `AuditClosingMeeting`). Sections: Meeting Details, Attendees, Summary of Audit Results (Key Note / Degree of Risk / Recommendation / Management Response), Decisions taken (Implementation Date / Official / Decision). |
 
 > **Note:** The engagement workflow stepper is **8 steps**. **Report** and **Follow-up** are no longer steps in the stepper — they are accessed from the Internal Audit sidebar (`Report`, and `Follow-up` which points to the CAPA Tracking page). See §2.5.
 

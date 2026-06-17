@@ -293,7 +293,7 @@ export default function AuditPlanningPage() {
   const filteredPlannedAudits = plannedAudits.filter((p) => {
     if (yearFilter !== "all" && String(p.year ?? "") !== yearFilter) return false;
     if (departmentFilter !== "all" && p.departmentId !== departmentFilter) return false;
-    if (statusFilter !== "all" && statusFilter !== "Planned") return false;
+    if (statusFilter !== "all" && statusFilter !== "Pending Approval") return false;
     if (searchFilter && !(p.title || "").toLowerCase().includes(searchFilter.toLowerCase()))
       return false;
     return true;
@@ -1604,6 +1604,7 @@ export default function AuditPlanningPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("All Status")}</SelectItem>
+                <SelectItem value="Pending Approval">{t("Pending Approval")}</SelectItem>
                 <SelectItem value="Planned">{t("Planned")}</SelectItem>
                 <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
                 <SelectItem value="Completed">{t("Completed")}</SelectItem>
@@ -1688,9 +1689,7 @@ export default function AuditPlanningPage() {
               ))}
             {filteredPlannedAudits.map((p) => (
               <TableRow key={p.id} className="border-b border-slate-100 last:border-0">
-                <TableCell className="py-3 pl-5 whitespace-nowrap">
-                  <span className="text-xs text-slate-400 italic">{t("Pending approval")}</span>
-                </TableCell>
+                <TableCell className="py-3 pl-5 text-sm text-slate-400 whitespace-nowrap">—</TableCell>
                 <TableCell className="py-3 text-sm text-slate-700">
                   {p.title}
                   <span className="ltr:ml-2 rtl:mr-2 text-xs text-slate-400 whitespace-nowrap">
@@ -1701,7 +1700,7 @@ export default function AuditPlanningPage() {
                 <TableCell className="py-3 text-sm text-slate-700">{p.auditType || "-"}</TableCell>
                 <TableCell className="py-3 text-sm text-slate-400">—</TableCell>
                 <TableCell className="py-3">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{t("Planned")}</span>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{t("Pending Approval")}</span>
                 </TableCell>
                 <TableCell className="py-3 pr-5 text-sm text-slate-400">—</TableCell>
               </TableRow>
