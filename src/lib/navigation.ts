@@ -306,7 +306,6 @@ export const navigation: NavItem[] = [
       { name: "Strategic Plan", href: "/internal-audit/strategic-plan", icon: CalendarRange, permission: "audit.strategic-plan:view" },
       { name: "Operational Plan", href: "/internal-audit/operational-plan", icon: CalendarClock, permission: "audit.operational-plan:view" },
       { name: "Audit Planning", href: "/internal-audit/audit-planning", icon: Calendar, permission: "audit.planning:view" },
-      { name: "FieldWork", href: "/internal-audit/fieldwork", icon: Clipboard, permission: "audit.fieldwork:view" },
       { name: "Report", href: "/internal-audit/report", icon: FileOutput, permission: "audit.reports:view" },
       { name: "CAPA Tracking", href: "/internal-audit/capa-tracking", icon: CheckSquare, permission: "audit.capa:view" },
       { name: "Document Library", href: "/internal-audit/document-library", icon: FolderOpen, permission: "audit.documents:view" },

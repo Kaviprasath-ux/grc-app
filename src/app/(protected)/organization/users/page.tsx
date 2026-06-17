@@ -107,7 +107,7 @@ interface User {
 const rolesByFunction: Record<string, string[]> = {
   Business: ["DepartmentReviewer", "DepartmentContributor"],
   Security: ["Reviewer"],
-  Audit: ["AuditHead", "Auditor", "Auditee"],
+  Audit: ["AuditHead", "AuditManager", "Auditor", "Auditee"],
 };
 
 // All assignable roles for filtering (excludes GRCAdministrator)
@@ -115,6 +115,7 @@ const rolesByFunction: Record<string, string[]> = {
 const allUserRoles = [
   "CustomerAdministrator",
   "AuditHead",
+  "AuditManager",
   "Auditor",
   "Auditee",
   "Reviewer",
