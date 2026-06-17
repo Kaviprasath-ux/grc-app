@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth';
 import { saveUploadedFile } from '@/lib/file-upload';
+import { isSpreadsheetFile, validateAuditProgramWorkbook } from '@/lib/audit-program-template';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -87,6 +88,26 @@ export const POST = withAuth(
           { error: 'No files provided' },
           { status: 400 }
         );
+      }
+
+      // Validation pass: any uploaded spreadsheet must match the Audit Program
+      // template (so a filled-in template is checked before it is stored).
+      // Non-spreadsheet files (supporting docs) are allowed through.
+      for (const file of files) {
+        if (file instanceof File && isSpreadsheetFile(file.name)) {
+          const buf = Buffer.from(await file.arrayBuffer());
+          const result = validateAuditProgramWorkbook(buf);
+          if (!result.valid) {
+            return NextResponse.json(
+              {
+                error: result.reason || 'The uploaded file does not match the Audit Program template.',
+                fileName: file.name,
+                missing: result.missing,
+              },
+              { status: 400 }
+            );
+          }
+        }
       }
 
       const uploadedFiles = [];

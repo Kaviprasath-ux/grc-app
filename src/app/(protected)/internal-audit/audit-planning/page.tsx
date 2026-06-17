@@ -99,6 +99,19 @@ interface ScoringRange {
   label: string;
 }
 
+// A planned audit from an operational plan that is not yet linked to an engagement.
+interface PlannedAudit {
+  id: string;
+  title: string;
+  auditType: string | null;
+  plannedQuarter: string | null;
+  riskLevel: string | null;
+  departmentId: string | null;
+  departmentName: string | null;
+  planCode: string | null;
+  year: number | null;
+}
+
 interface Engagement {
   id: string;
   auditId: string;
@@ -192,6 +205,7 @@ export default function AuditPlanningPage() {
   const { t } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
   const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const [plannedAudits, setPlannedAudits] = useState<PlannedAudit[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
@@ -274,15 +288,28 @@ export default function AuditPlanningPage() {
   const { data: translatedAuditors } = useTranslatedData(auditors, { modelName: 'User' });
   const { data: translatedAuditees } = useTranslatedData(auditees, { modelName: 'User' });
 
+  // Planned audits (operational-plan items without an engagement), filtered to
+  // match the active filters. Planned items are implicitly status "Planned".
+  const filteredPlannedAudits = plannedAudits.filter((p) => {
+    if (yearFilter !== "all" && String(p.year ?? "") !== yearFilter) return false;
+    if (departmentFilter !== "all" && p.departmentId !== departmentFilter) return false;
+    if (statusFilter !== "all" && statusFilter !== "Planned") return false;
+    if (searchFilter && !(p.title || "").toLowerCase().includes(searchFilter.toLowerCase()))
+      return false;
+    return true;
+  });
+
   useEffect(() => {
     fetchDepartments();
     fetchEngagements();
+    fetchPlannedAudits();
     fetchAvailableYears();
     fetchAuditorsAndAuditees();
   }, []);
 
   useEffect(() => {
     fetchEngagements();
+    fetchPlannedAudits();
   }, [departmentFilter, statusFilter, yearFilter, searchFilter]);
 
   const fetchDepartments = async () => {
@@ -326,6 +353,19 @@ export default function AuditPlanningPage() {
       console.error("Failed to fetch engagements:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // All operational-plan audits not yet converted to engagements (any year/quarter).
+  const fetchPlannedAudits = async () => {
+    try {
+      const response = await fetch(`/api/internal-audit/audit-planning/planned-audits`);
+      if (response.ok) {
+        const data = await response.json();
+        setPlannedAudits(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch planned audits:", error);
     }
   };
 
@@ -1599,8 +1639,7 @@ export default function AuditPlanningPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {translatedEngagements.length > 0 ? (
-              translatedEngagements.map((engagement) => (
+            {translatedEngagements.map((engagement) => (
                 <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0">
                   <TableCell className="py-3 pl-5 text-sm font-medium text-slate-800">{engagement.auditId}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700">{engagement.engagementTitle}</TableCell>
@@ -1646,8 +1685,28 @@ export default function AuditPlanningPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
+              ))}
+            {filteredPlannedAudits.map((p) => (
+              <TableRow key={p.id} className="border-b border-slate-100 last:border-0">
+                <TableCell className="py-3 pl-5 whitespace-nowrap">
+                  <span className="text-xs text-slate-400 italic">{t("Pending approval")}</span>
+                </TableCell>
+                <TableCell className="py-3 text-sm text-slate-700">
+                  {p.title}
+                  <span className="ltr:ml-2 rtl:mr-2 text-xs text-slate-400 whitespace-nowrap">
+                    {[p.planCode, p.year, p.plannedQuarter].filter(Boolean).join(" · ")}
+                  </span>
+                </TableCell>
+                <TableCell className="py-3 text-sm text-slate-700">{translatedDepartments.find(d => d.id === p.departmentId)?.name || p.departmentName || "-"}</TableCell>
+                <TableCell className="py-3 text-sm text-slate-700">{p.auditType || "-"}</TableCell>
+                <TableCell className="py-3 text-sm text-slate-400">—</TableCell>
+                <TableCell className="py-3">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{t("Planned")}</span>
+                </TableCell>
+                <TableCell className="py-3 pr-5 text-sm text-slate-400">—</TableCell>
+              </TableRow>
+            ))}
+            {translatedEngagements.length === 0 && filteredPlannedAudits.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">
                   {t("No audit engagements found")}

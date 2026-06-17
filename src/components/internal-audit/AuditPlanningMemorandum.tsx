@@ -167,12 +167,17 @@ export default function AuditPlanningMemorandum({
         method: "POST",
         body: formData,
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        // Surface validation errors (e.g. wrong template) from the API.
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Failed");
+      }
 
       toast.success(t("Documents uploaded"));
       await loadAttachments();
-    } catch {
-      toast.error(t("Failed to upload documents"));
+    } catch (err) {
+      const msg = err instanceof Error && err.message !== "Failed" ? err.message : t("Failed to upload documents");
+      toast.error(msg);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

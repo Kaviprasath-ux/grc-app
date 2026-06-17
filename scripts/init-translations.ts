@@ -3247,6 +3247,7 @@ const translations: [string, string, string][] = [
   ['Quarterly report removed', 'تمت إزالة التقرير الربع سنوي', 'Ceturkšņa pārskats noņemts'],
   ['Failed to remove quarterly report', 'فشل إزالة التقرير الربع سنوي', 'Neizdevās noņemt ceturkšņa pārskatu'],
   ['Download uploaded report', 'تنزيل التقرير المرفوع', 'Lejupielādēt augšupielādēto pārskatu'],
+  ['Pending approval', 'بانتظار الموافقة', 'Gaida apstiprinājumu'],
   ['Notes Discussed', 'الملاحظات المناقشة', 'Apspriestās piezīmes'],
   ['Degree of Risk', 'درجة المخاطر', 'Riska pakāpe'],
   ['Management Response', 'رد الإدارة', 'Vadības atbilde'],

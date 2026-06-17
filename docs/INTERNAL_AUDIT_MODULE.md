@@ -50,6 +50,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 |---|---|---|
 | **Auto-generate engagements** | ✅ | On operational-plan **approval**, one engagement is created per planned audit (idempotent, traceable back to the plan item) |
 | **Engagement management** | ✅ | Create/edit, assign auditor & auditee, per-quarter timelines/schedules |
+| **Consolidated planned audits** | ✅ | Audit Planning lists **all** planned audits together regardless of year/quarter/approval: engagements **plus** operational-plan audit items not yet converted to engagements (shown with a **Planned** badge + plan code · year · quarter). Source: `/api/internal-audit/audit-planning/planned-audits` |
 | **Engagement Workflow Hub** | ✅ | Single-page stepper across the full lifecycle with per-step progress tracking (`/internal-audit/engagement/[id]`) |
 
 ### 2.4 Engagement Workflow Steps
