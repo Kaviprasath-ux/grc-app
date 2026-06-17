@@ -27,6 +27,18 @@ export const GET = withAuth(
         where,
         include: {
           items: { orderBy: [{ priorityRank: "asc" }] },
+          // Quarter reports: metadata only — never pull the binary blob into list payloads.
+          quarterReports: {
+            select: {
+              id: true,
+              quarter: true,
+              status: true,
+              reportDocName: true,
+              notes: true,
+              uploadedAt: true,
+            },
+            orderBy: [{ quarter: "asc" }],
+          },
           createdBy: { select: { id: true, fullName: true } },
           _count: { select: { items: true } },
         },

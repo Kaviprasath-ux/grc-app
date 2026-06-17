@@ -1616,12 +1616,13 @@ export default function AuditPlanningPage() {
                     <div className="flex items-center ltr:justify-end rtl:justify-start gap-0.5">
                       <Link href={`/internal-audit/engagement/${engagement.id}`}>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1.5 text-slate-600 hover:text-slate-800"
                           title={t("Workflow")}
                         >
                           <Workflow className="h-4 w-4" />
+                          {t("Workflow")}
                         </Button>
                       </Link>
                       <Button

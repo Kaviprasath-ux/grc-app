@@ -89,28 +89,12 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     meetingType: "discussion",
   },
   {
-    key: "report",
-    label: "Report",
-    description:
-      "Generate the draft and final audit reports and capture auditee responses.",
-    kind: "reuse",
-    href: () => `/internal-audit/report`,
-  },
-  {
     key: "closing-meeting",
     label: "Closing Meeting",
     description:
       "Discuss final observations and action plans; capture the Minutes of Meeting.",
     kind: "meeting",
     meetingType: "closing",
-  },
-  {
-    key: "follow-up",
-    label: "Follow-up",
-    description:
-      "Track implementation of recommendations, due dates and remediation progress.",
-    kind: "reuse",
-    href: () => `/internal-audit/capa-tracking`,
   },
 ];
 

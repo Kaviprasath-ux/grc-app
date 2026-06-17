@@ -66,6 +66,15 @@ interface OpItem {
   notes: string | null;
 }
 
+interface QuarterReport {
+  id: string;
+  quarter: string;
+  status: string;
+  reportDocName: string | null;
+  notes: string | null;
+  uploadedAt: string | null;
+}
+
 interface OperationalPlan {
   id: string;
   planCode: string;
@@ -75,8 +84,11 @@ interface OperationalPlan {
   approvalDocName: string | null;
   hasApprovalDoc?: boolean;
   items: OpItem[];
+  quarterReports?: QuarterReport[];
   _count?: { items: number };
 }
+
+const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
 
 interface StrategicPlanLite {
   id: string;
@@ -257,6 +269,37 @@ function OperationalPlanContent() {
       loadForStrategicPlan(selectedSpId);
     } catch {
       toast.error(t("Failed to upload approval document"));
+    }
+  };
+
+  const handleUploadQuarterReport = async (planId: string, quarter: string, file: File) => {
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("quarter", quarter);
+      const res = await fetch(`/api/internal-audit/operational-plans/${planId}/quarter-reports`, {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Quarterly report uploaded"));
+      loadForStrategicPlan(selectedSpId);
+    } catch {
+      toast.error(t("Failed to upload quarterly report"));
+    }
+  };
+
+  const handleDeleteQuarterReport = async (planId: string, reportId: string) => {
+    try {
+      const res = await fetch(
+        `/api/internal-audit/operational-plans/${planId}/quarter-reports/${reportId}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Quarterly report removed"));
+      loadForStrategicPlan(selectedSpId);
+    } catch {
+      toast.error(t("Failed to remove quarterly report"));
     }
   };
 
@@ -479,6 +522,81 @@ function OperationalPlanContent() {
                       ))}
                     </TableBody>
                   </Table>
+                )}
+
+                {plan && (
+                  <div className="border-t bg-muted/20 px-4 py-3">
+                    <h4 className="text-sm font-semibold mb-2">{t("Quarterly Reports")}</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                      {QUARTERS.map((q) => {
+                        const report = plan.quarterReports?.find((r) => r.quarter === q);
+                        return (
+                          <div
+                            key={q}
+                            className="flex items-center justify-between rounded-md border bg-background px-3 py-2"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-sm font-medium">{q}</span>
+                              {report ? (
+                                <a
+                                  href={`/api/internal-audit/operational-plans/${plan.id}/quarter-reports/${report.id}/doc`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline truncate"
+                                  title={report.reportDocName || undefined}
+                                >
+                                  {report.reportDocName}
+                                </a>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  {t("No report")}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {report && (
+                                <a
+                                  href={`/api/internal-audit/operational-plans/${plan.id}/quarter-reports/${report.id}/doc`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <Download className="h-3.5 w-3.5" />
+                                  </Button>
+                                </a>
+                              )}
+                              {canEdit && (
+                                <label className="cursor-pointer" title={report ? t("Replace") : t("Upload")}>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      if (f) handleUploadQuarterReport(plan.id, q, f);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                  <span className="inline-flex items-center justify-center h-7 w-7 rounded hover:bg-muted">
+                                    <Upload className="h-3.5 w-3.5" />
+                                  </span>
+                                </label>
+                              )}
+                              {report && canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleDeleteQuarterReport(plan.id, report.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
             );

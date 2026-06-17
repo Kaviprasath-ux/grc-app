@@ -18,8 +18,8 @@ The Internal Audit module implements the full audit lifecycle:
 Audit Universe → Risk Register → Risk Assessment / Heatmap →
 Strategic Plan → Operational (Annual) Plan → Engagements →
 Engagement Workflow (Announcement → APM → Opening Meeting → Audit Program →
-Fieldwork → Findings → Findings Discussion → Report → Closing Meeting → Follow-up)
-→ Reporting → Automated Monitoring
+Fieldwork → Findings → Findings Discussion → Closing Meeting)
+→ Report (sidebar) → Follow-up / CAPA (sidebar) → Automated Monitoring
 ```
 
 All pages are available in **English, Arabic (RTL), and Latvian**.
@@ -43,6 +43,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 |---|---|---|
 | **Strategic Audit Plan** | ✅ | 3/4/5-year duration dropdown; **auto-generated from risk levels** (ordered by residual score, year-bucketed, priority-ranked); created by the Audit Director and **approved externally by the Minister** — uploading the signed copy (with approver name) marks the plan **Approved** (no in-app approval workflow); **print** option; approved plans visually highlighted; **click a year → opens the Annual Plan** |
 | **Operational (Annual) Plan** | ✅ | Year-wise from the strategic plan (one per year); **view all vs selected year**; add/delete audits; **upload approval document** |
+| **Quarterly Reports** | ✅ | Per operational-plan year, upload/replace/download/delete a report document for each quarter (Q1–Q4); shown as a section inside each year block; binary stored encrypted (mirrors the approval-doc pattern) |
 
 ### 2.3 Engagements
 | Feature | Status | Notes |
@@ -61,15 +62,17 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 | **Fieldwork** | ✅ | Workpapers, evidence (PBC) requests, evidence upload, review/approval, AI review |
 | **Findings** | ✅ | Communication mode toggle — **Continuous** (share each finding with the auditee individually) vs **Aggregated** (consolidated into the report) |
 | **Findings Discussion** | ✅ | Minutes of Meeting (validate facts, agree action plans, finalize responses) |
-| **Report** | ✅ | Draft / Review / Final; **Draft carries a watermark, Final has none**; PDF download |
 | **Closing Meeting** | ✅ | Minutes of Meeting |
-| **Follow-up** | ✅ | CAPA tracking (status, due dates, remediation progress) + **Implementation Recommendation Document** PDF |
+
+> **Note:** The engagement workflow stepper is **8 steps**. **Report** and **Follow-up** are no longer steps in the stepper — they are accessed from the Internal Audit sidebar (`Report`, and `Follow-up` which points to the CAPA Tracking page). See §2.5.
 
 ### 2.5 Reporting, Monitoring & Support
 | Feature | Status | Notes |
 |---|---|---|
 | **Audit Reports** | ✅ | Draft (watermarked) / Final report generation + PDF download |
 | **CAPA Tracking** | ✅ | Findings + corrective/preventive actions, evidence, AI review |
+| **Follow-up** | ✅ | **Separate top-level sidebar menu** (sibling to Internal Audit, module `INTERNAL_AUDIT`) at `/internal-audit/follow-up` — hosts the Follow-up Meeting Form. CAPA Tracking remains its own page/menu, unchanged. |
+| **Follow-up Meeting Form** | ✅ | Follow-up landing page lists engagements in a Risk-Register-style table (search + department/status filters) with an **Open** action per row → detail page `/internal-audit/follow-up/[id]`. The detail page is the per-engagement fillable form (meeting details, attendees, recommendation-implementation status grid); recommendation rows pre-fill from the engagement's findings; status = Open / In Progress / Implemented / Closed; due dates with auto-overdue flagging + progress %; **Save** (persisted, model `AuditFollowUpMeeting`), **Print**, and **Export PDF** (pdf-lib) |
 | **Dashboard & Analytics** | ✅ | Risk heatmap, CAPA status, audit stats, auditor schedule, annual-plan timeline, drill-down |
 | **Document Library** | ✅ | Upload, categorize, AI search & ingest |
 | **Automated Monitoring** | ✅ | Cron jobs: due-date reminders, escalation, remediation reminders, plan transitions |

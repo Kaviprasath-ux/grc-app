@@ -315,6 +315,18 @@ export const navigation: NavItem[] = [
   },
   // ==================== End Internal Audit Section ====================
 
+  // ==================== Follow-up Section (Internal Audit module, separate parent menu) ====================
+  // Standalone top-level menu (sibling to Internal Audit). Hosts the Follow-up
+  // Meeting Form for tracking implementation of audit recommendations.
+  {
+    name: "Follow-up",
+    module: "INTERNAL_AUDIT",
+    href: "/internal-audit/follow-up",
+    icon: ListChecks,
+    permission: "audit.capa:view",
+  },
+  // ==================== End Follow-up Section ====================
+
   // ==================== TPRM Section ====================
   // Grouped under TPRM parent. Visible to CustomerAdministrator when isTprmAdded=true.
   // Module flag filtering controls whether GRC and/or TPRM sections appear in the sidebar.

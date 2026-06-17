@@ -3634,6 +3634,32 @@ model InternalAuditCAPA {
   @@index([customerAccountId])
 }
 
+// Follow-up Meeting Form for the implementation of audit recommendations.
+// One per engagement. Header fields are scalar; attendees and the
+// recommendation-status grid are stored as JSON text (variable-length rows).
+model AuditFollowUpMeeting {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // Header / meeting metadata
+  meetingVenue      String?
+  history           String?
+  assignmentTitle   String?
+  auditTaskNumber   String?
+  department        String?
+  management        String?
+  // Repeatable sections, stored as JSON arrays
+  attendees         String?  @db.Text // JSON: [{ name, jobTitle, management, signature }]
+  recommendations   String?  @db.Text // JSON: [{ number, recommendation, official, implementationDate, implementationStatus, notes }]
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
 // ==================== INTERNAL AUDIT - DOCUMENT LIBRARY ====================
 
 // Internal Audit Document (for document library)
@@ -3777,11 +3803,37 @@ model AuditOperationalPlan {
   createdById       String?
   createdBy         User?                      @relation("OperationalPlanCreatedBy", fields: [createdById], references: [id])
   items             AuditOperationalPlanItem[]
+  quarterReports    AuditOperationalPlanQuarterReport[]
   createdAt         DateTime                   @default(now())
   updatedAt         DateTime                   @updatedAt
 
   @@unique([strategicPlanId, year])
   @@unique([customerAccountId, planCode])
+  @@index([customerAccountId])
+}
+
+// Quarterly report document attached to an operational (annual) plan.
+// One per quarter (Q1-Q4); created on first upload via upsert on (plan, quarter).
+model AuditOperationalPlanQuarterReport {
+  id                String               @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access is validated through the parent plan.
+  customerAccountId String
+  operationalPlanId String
+  operationalPlan   AuditOperationalPlan @relation(fields: [operationalPlanId], references: [id], onDelete: Cascade)
+  quarter           String // Q1, Q2, Q3, Q4
+  status            String               @default("Submitted") // Submitted (a document is uploaded)
+  // Report document upload
+  reportDocPath     String?
+  reportDocName     String?
+  reportDocData     Bytes? // Store report-document binary for serverless compatibility (manually encrypted)
+  notes             String?
+  uploadedAt        DateTime?
+  uploadedById      String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@unique([operationalPlanId, quarter])
+  @@index([operationalPlanId])
   @@index([customerAccountId])
 }
 
