@@ -128,6 +128,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'Service', fields: [{ name: 'title' }, { name: 'description' }, { name: 'serviceCategory' }, { name: 'serviceItem' }], priority: 5 },
   { modelName: 'Stakeholder', fields: [{ name: 'name' }], priority: 5 },
   { modelName: 'Issue', fields: [{ name: 'title' }, { name: 'description' }, { name: 'domain' }, { name: 'category' }], priority: 5 },
+  { modelName: 'SupportTicket', fields: [{ name: 'subject' }, { name: 'description' }], priority: 5 },
 
   // Priority 6 — Organization settings
   { modelName: 'OrganizationLocation', fields: [{ name: 'name' }], priority: 6 },

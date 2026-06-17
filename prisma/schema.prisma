@@ -176,6 +176,9 @@ model CustomerAccount {
   // Technical Evidence Integration relations
   integrationCredentials        IntegrationCredential[]
   technicalEvidenceCollections  TechnicalEvidenceCollection[]
+  // Support ticketing relations
+  supportTickets                SupportTicket[]
+  supportRoutingRules           SupportRoutingRule[]
 }
 
 // Subscription Plan for Customer Accounts (legacy limits-based, kept for existing enforcement code)
@@ -685,6 +688,8 @@ model Department {
   qpostExceptions            QPostException[]
   qpostRequirementExceptions QPostRequirementException[]
   qpostKpis                  QPostKPI[]
+  // Support ticketing
+  supportTickets             SupportTicket[]
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
@@ -844,6 +849,13 @@ model User {
   contractDeletionReviews      TPRMContractDeletionRequest[] @relation("DeletionReviewedBy")
   // Technical Evidence relations
   technicalEvidenceCollections TechnicalEvidenceCollection[] @relation("TechEvidenceCollector")
+  // Support ticketing relations
+  assignedSupportTickets       SupportTicket[]               @relation("SupportTicketAssignee")
+  reportedSupportTickets       SupportTicket[]               @relation("SupportTicketReporter")
+  createdSupportTickets        SupportTicket[]               @relation("SupportTicketCreatedBy")
+  supportTicketComments        SupportTicketComment[]        @relation("SupportTicketCommentAuthor")
+  supportTicketActivities      SupportTicketActivity[]       @relation("SupportTicketActivityActor")
+  passwordResetTokens          PasswordResetToken[]
 
   // Multi-tenant: userId stays unique per customer (so each tenant can have
   // their own USR-001 sequence). userName and email are globally unique
@@ -5676,8 +5688,12 @@ model ChatbotKBArticle {
   productScope String // "grc", "tprm", "audit", "both"
   roles        String[] // empty = all roles, ["AuditHead"] = restricted
   question     String   @db.Text
+  answer       String?  @db.Text // raw answer body (item 11 authoring); content stays the embedded text
   content      String   @db.Text // concatenated: question + answer + steps + notes
   embedding    Float[] // 1536-dim vector from text-embedding-3-small
+  isPublished  Boolean  @default(true) // unpublished articles are excluded from search
+  source       String   @default("seed") // "seed" | "manual" (authored in the KB screen)
+  updatedById  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -5831,3 +5847,154 @@ model TechnicalEvidenceControlMapping {
 // ============================================================
 // TECHNICAL EVIDENCE INTEGRATIONS - END
 // ============================================================
+
+// ============================================================
+// SUPPORT TICKETING - START
+// ============================================================
+
+// A customer support ticket. Created manually from the support UI, or
+// automatically when the AI Help Chatbot cannot resolve a question.
+model SupportTicket {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  ticketCode        String // Human-readable code: TKT-001, TKT-002
+
+  subject     String
+  description String? @db.Text
+
+  // Classification (item 2 — auto-tagging). Stored as String with inline
+  // allowed-values comments, matching the Finding/CAPA convention.
+  priority    String  @default("P3") // P1, P2, P3, P4
+  severity    String  @default("Medium") // Critical, High, Medium, Low
+  tier        String  @default("L1") // L1, L2, L3, L4 (team currently owning it)
+  status      String  @default("New") // New, Open, In Progress, Pending Customer, Resolved, Closed, Reopened
+  category    String? // PMS, OTA, Billing, Access, etc. (drives routing)
+  subcategory String?
+  channel     String  @default("InApp") // InApp, Chatbot, Email, WhatsApp, Phone
+
+  // Reporter (a logged-in platform user in v1; email kept for future external channels)
+  reporterId    String?
+  reporter      User?   @relation("SupportTicketReporter", fields: [reporterId], references: [id])
+  reporterName  String?
+  reporterEmail String?
+
+  // Assignment
+  assignedToId String?
+  assignedTo   User?       @relation("SupportTicketAssignee", fields: [assignedToId], references: [id])
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  // Chatbot escalation linkage (item 3)
+  originConversationId String?
+  botTranscript        String? @db.Text // JSON of the failed Q&A exchange
+  escalationReason     String? // low_confidence | max_exchanges | user_requested
+
+  // SLA timestamps + breach-alert dedupe state (consumed by the SLA cron)
+  acknowledgedAt      DateTime?
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+  firstResponseAt     DateTime?
+  slaAckDeadline      DateTime?
+  slaResolveDeadline  DateTime?
+  slaAckAlertedAt     DateTime? // last time an ack-SLA alert fired (avoid repeats)
+  slaResolveAlertedAt DateTime? // last time a resolve-SLA alert fired
+
+  // CSAT / NPS (item 13) — captured when the reporter rates a resolved ticket
+  csatScore       Int? // 1-5
+  csatComment     String?   @db.Text
+  csatSubmittedAt DateTime?
+
+  // External-channel linkage (item 15 — WhatsApp / Teams)
+  reporterPhone String?
+  externalRef   String? // provider message/thread id for reply correlation
+
+  createdById String?
+  createdBy   User?    @relation("SupportTicketCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  comments   SupportTicketComment[]
+  activities SupportTicketActivity[]
+
+  @@unique([customerAccountId, ticketCode])
+  @@index([customerAccountId])
+  @@index([customerAccountId, status])
+  @@index([customerAccountId, assignedToId])
+  @@index([customerAccountId, tier, status])
+  @@index([customerAccountId, externalRef])
+}
+
+// Replies and internal notes on a ticket (mirrors EngagementComment).
+model SupportTicketComment {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User          @relation("SupportTicketCommentAuthor", fields: [userId], references: [id])
+  comment    String        @db.Text
+  isInternal Boolean       @default(false) // internal note vs customer-visible reply
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+// Audit trail of state changes on a ticket (assignment, escalation, status).
+model SupportTicketActivity {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?         @relation("SupportTicketActivityActor", fields: [actorId], references: [id])
+  action    String // created | assigned | escalated | status_changed | priority_changed | commented
+  fromValue String?
+  toValue   String?
+  note      String?
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+// Per-tenant routing config powering the auto-tagging in item 2.
+model SupportRoutingRule {
+  id                    String          @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  category              String // matches SupportTicket.category
+  defaultTier           String          @default("L1") // L1, L2, L3
+  defaultPriority       String          @default("P3") // P1, P2, P3, P4
+  assignToDepartmentId  String?
+  keywords              String?         @db.Text // JSON array; matches bump priority to P1
+  isActive              Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@unique([customerAccountId, category])
+  @@index([customerAccountId])
+}
+
+// ============================================================
+// SUPPORT TICKETING - END
+// ============================================================
+
+// ============================================================
+// SOC SELF-SERVICE PASSWORD RESET (item 14)
+// ============================================================
+
+// One-time password-reset request. The OTP is stored hashed (bcrypt). Rate
+// limiting and abuse detection query this table by requestIp + createdAt.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otpHash   String // bcrypt hash of the 6-digit OTP
+  expiresAt DateTime
+  attempts  Int       @default(0) // failed verify attempts (lock after N)
+  consumed  Boolean   @default(false)
+  consumedAt DateTime?
+  requestIp String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([requestIp, createdAt])
+}

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { HelpArticle } from "@/data/help-knowledge-base";
 import type { ScoredResult } from "@/lib/help-search";
-import { ExternalLink, User, Bot, ShieldAlert, Sparkles, BookOpen, Database, Pencil, Check, X } from "lucide-react";
+import { ExternalLink, User, Bot, ShieldAlert, Sparkles, BookOpen, Database, Pencil, Check, X, LifeBuoy } from "lucide-react";
 import { SpeakerButton } from "./voice/SpeakerButton";
 
 interface ChatMessageProps {
@@ -24,8 +24,11 @@ interface ChatMessageProps {
   pendingUpdateId?: string;
   executed?: boolean;
   confirmationResult?: "confirmed" | "cancelled";
+  escalationSuggested?: boolean;
+  escalatedTicketCode?: string;
   onSelectArticle?: (article: HelpArticle) => void;
   onConfirmUpdate?: (updateId: string, confirm: boolean) => void;
+  onCreateTicket?: (messageId: string) => void;
   /** TTS controls — supplied by parent; omit to hide the speaker button. */
   speakingId?: string | null;
   isSpeaking?: boolean;
@@ -49,8 +52,11 @@ export function ChatMessage({
   pendingUpdateId,
   executed,
   confirmationResult,
+  escalationSuggested,
+  escalatedTicketCode,
   onSelectArticle,
   onConfirmUpdate,
+  onCreateTicket,
   speakingId,
   isSpeaking,
   isLoadingSpeech,
@@ -272,6 +278,31 @@ export function ChatMessage({
               </span>
             </div>
           )}
+
+          {/* Escalation to human support (low-confidence bot replies) */}
+          {escalatedTicketCode ? (
+            <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-green-700">
+              <LifeBuoy className="w-3.5 h-3.5" />
+              {t("Support ticket created")}: {escalatedTicketCode}
+            </div>
+          ) : escalationSuggested && onCreateTicket && messageId ? (
+            <div className="mt-2 border-t border-slate-200 pt-2">
+              <p className="text-xs text-slate-500 mb-1.5">
+                {t("Didn't find what you needed?")}
+              </p>
+              <button
+                onClick={() => onCreateTicket(messageId)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-xs font-medium",
+                  "bg-primary-500 text-white hover:bg-primary-600",
+                  "px-3 py-1.5 rounded-lg transition-colors"
+                )}
+              >
+                <LifeBuoy className="w-3.5 h-3.5" />
+                {t("Create support ticket")}
+              </button>
+            </div>
+          ) : null}
 
           {/* Other matching results (Phase 1 related questions) */}
           {results && results.length > 1 && (

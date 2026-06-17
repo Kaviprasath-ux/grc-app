@@ -45,6 +45,7 @@ import {
   Radar,
   Database,
   HelpCircle,
+  BookOpen,
   UserCog,
   FileBarChart,
   Factory,
@@ -326,6 +327,23 @@ export const navigation: NavItem[] = [
     permission: "audit.capa:view",
   },
   // ==================== End Follow-up Section ====================
+
+  // ==================== Support Ticketing Section ====================
+  // Hosted under the GRC workspace. Visible to CustomerAdministrator and the
+  // Support* roles. The "Need Help?" chatbot widget feeds tickets here.
+  {
+    name: "Support",
+    module: "GRC",
+    icon: HelpCircle,
+    children: [
+      { name: "Agent Console", href: "/support/console", icon: Inbox, permission: "support.console:view" },
+      { name: "All Tickets", href: "/support/tickets", icon: ClipboardList, permission: "support.tickets:view" },
+      { name: "Support Dashboard", href: "/support/dashboard", icon: BarChart3, permission: "support.dashboard:view" },
+      { name: "Knowledge Base", href: "/support/kb", icon: BookOpen, permission: "support.kb:view" },
+      { name: "Support Settings", href: "/support/settings", icon: Settings2, permission: "support.settings:view" },
+    ],
+  },
+  // ==================== End Support Ticketing Section ====================
 
   // ==================== TPRM Section ====================
   // Grouped under TPRM parent. Visible to CustomerAdministrator when isTprmAdded=true.

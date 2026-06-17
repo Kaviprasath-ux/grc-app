@@ -4215,8 +4215,12 @@ CREATE TABLE "ChatbotKBArticle" (
     "productScope" TEXT NOT NULL,
     "roles" TEXT[],
     "question" TEXT NOT NULL,
+    "answer" TEXT,
     "content" TEXT NOT NULL,
     "embedding" DOUBLE PRECISION[],
+    "isPublished" BOOLEAN NOT NULL DEFAULT true,
+    "source" TEXT NOT NULL DEFAULT 'seed',
+    "updatedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -4324,6 +4328,105 @@ CREATE TABLE "TechnicalEvidenceControlMapping" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TechnicalEvidenceControlMapping_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SupportTicket" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "ticketCode" TEXT NOT NULL,
+    "subject" TEXT NOT NULL,
+    "description" TEXT,
+    "priority" TEXT NOT NULL DEFAULT 'P3',
+    "severity" TEXT NOT NULL DEFAULT 'Medium',
+    "tier" TEXT NOT NULL DEFAULT 'L1',
+    "status" TEXT NOT NULL DEFAULT 'New',
+    "category" TEXT,
+    "subcategory" TEXT,
+    "channel" TEXT NOT NULL DEFAULT 'InApp',
+    "reporterId" TEXT,
+    "reporterName" TEXT,
+    "reporterEmail" TEXT,
+    "assignedToId" TEXT,
+    "departmentId" TEXT,
+    "originConversationId" TEXT,
+    "botTranscript" TEXT,
+    "escalationReason" TEXT,
+    "acknowledgedAt" TIMESTAMP(3),
+    "resolvedAt" TIMESTAMP(3),
+    "closedAt" TIMESTAMP(3),
+    "firstResponseAt" TIMESTAMP(3),
+    "slaAckDeadline" TIMESTAMP(3),
+    "slaResolveDeadline" TIMESTAMP(3),
+    "slaAckAlertedAt" TIMESTAMP(3),
+    "slaResolveAlertedAt" TIMESTAMP(3),
+    "csatScore" INTEGER,
+    "csatComment" TEXT,
+    "csatSubmittedAt" TIMESTAMP(3),
+    "reporterPhone" TEXT,
+    "externalRef" TEXT,
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SupportTicket_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SupportTicketComment" (
+    "id" TEXT NOT NULL,
+    "ticketId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "comment" TEXT NOT NULL,
+    "isInternal" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "SupportTicketComment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SupportTicketActivity" (
+    "id" TEXT NOT NULL,
+    "ticketId" TEXT NOT NULL,
+    "actorId" TEXT,
+    "action" TEXT NOT NULL,
+    "fromValue" TEXT,
+    "toValue" TEXT,
+    "note" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "SupportTicketActivity_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SupportRoutingRule" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "defaultTier" TEXT NOT NULL DEFAULT 'L1',
+    "defaultPriority" TEXT NOT NULL DEFAULT 'P3',
+    "assignToDepartmentId" TEXT,
+    "keywords" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SupportRoutingRule_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PasswordResetToken" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "otpHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "consumed" BOOLEAN NOT NULL DEFAULT false,
+    "consumedAt" TIMESTAMP(3),
+    "requestIp" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PasswordResetToken_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -5585,6 +5688,42 @@ CREATE INDEX "TechnicalEvidenceControlMapping_controlId_idx" ON "TechnicalEviden
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TechnicalEvidenceControlMapping_collectionId_controlId_key" ON "TechnicalEvidenceControlMapping"("collectionId", "controlId");
+
+-- CreateIndex
+CREATE INDEX "SupportTicket_customerAccountId_idx" ON "SupportTicket"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "SupportTicket_customerAccountId_status_idx" ON "SupportTicket"("customerAccountId", "status");
+
+-- CreateIndex
+CREATE INDEX "SupportTicket_customerAccountId_assignedToId_idx" ON "SupportTicket"("customerAccountId", "assignedToId");
+
+-- CreateIndex
+CREATE INDEX "SupportTicket_customerAccountId_tier_status_idx" ON "SupportTicket"("customerAccountId", "tier", "status");
+
+-- CreateIndex
+CREATE INDEX "SupportTicket_customerAccountId_externalRef_idx" ON "SupportTicket"("customerAccountId", "externalRef");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SupportTicket_customerAccountId_ticketCode_key" ON "SupportTicket"("customerAccountId", "ticketCode");
+
+-- CreateIndex
+CREATE INDEX "SupportTicketComment_ticketId_idx" ON "SupportTicketComment"("ticketId");
+
+-- CreateIndex
+CREATE INDEX "SupportTicketActivity_ticketId_idx" ON "SupportTicketActivity"("ticketId");
+
+-- CreateIndex
+CREATE INDEX "SupportRoutingRule_customerAccountId_idx" ON "SupportRoutingRule"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SupportRoutingRule_customerAccountId_category_key" ON "SupportRoutingRule"("customerAccountId", "category");
+
+-- CreateIndex
+CREATE INDEX "PasswordResetToken_userId_idx" ON "PasswordResetToken"("userId");
+
+-- CreateIndex
+CREATE INDEX "PasswordResetToken_requestIp_createdAt_idx" ON "PasswordResetToken"("requestIp", "createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
@@ -6974,6 +7113,39 @@ ALTER TABLE "TechnicalEvidenceControlMapping" ADD CONSTRAINT "TechnicalEvidenceC
 
 -- AddForeignKey
 ALTER TABLE "TechnicalEvidenceControlMapping" ADD CONSTRAINT "TechnicalEvidenceControlMapping_frameworkId_fkey" FOREIGN KEY ("frameworkId") REFERENCES "Framework"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicket" ADD CONSTRAINT "SupportTicket_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicket" ADD CONSTRAINT "SupportTicket_reporterId_fkey" FOREIGN KEY ("reporterId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicket" ADD CONSTRAINT "SupportTicket_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicket" ADD CONSTRAINT "SupportTicket_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicket" ADD CONSTRAINT "SupportTicket_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicketComment" ADD CONSTRAINT "SupportTicketComment_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "SupportTicket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicketComment" ADD CONSTRAINT "SupportTicketComment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicketActivity" ADD CONSTRAINT "SupportTicketActivity_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "SupportTicket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportTicketActivity" ADD CONSTRAINT "SupportTicketActivity_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SupportRoutingRule" ADD CONSTRAINT "SupportRoutingRule_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PasswordResetToken" ADD CONSTRAINT "PasswordResetToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
