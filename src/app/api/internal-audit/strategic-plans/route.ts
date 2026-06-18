@@ -96,8 +96,15 @@ export const POST = withAuth(
 
       if (body.generateFromRisk) {
         // Pull risks ordered by residual score (highest first) and spread across the plan years.
+        // Only risks that have BOTH inherent and residual assessments completed are
+        // eligible — un-assessed risks do not appear in the strategic audit plan.
         const risks = await prisma.internalAuditRisk.findMany({
-          where: { ...tenantFilter, ...(auditHeadId ? { auditHeadId } : {}) },
+          where: {
+            ...tenantFilter,
+            ...(auditHeadId ? { auditHeadId } : {}),
+            inherentScore: { not: null },
+            residualScore: { not: null },
+          },
           include: { department: true, auditType: true },
           orderBy: [{ residualScore: "desc" }, { inherentScore: "desc" }],
         });

@@ -51,6 +51,7 @@ import {
   Download,
   CheckCircle2,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -64,6 +65,12 @@ interface OpItem {
   riskLevel: string | null;
   priorityRank: number | null;
   notes: string | null;
+  assignedAuditorId: string | null;
+}
+
+interface Auditor {
+  id: string;
+  fullName: string;
 }
 
 interface QuarterReport {
@@ -134,6 +141,66 @@ function OperationalPlanContent() {
 
   // Delete confirms
   const [deletePlan, setDeletePlan] = useState<OperationalPlan | null>(null);
+
+  // Assign-auditors dialog
+  const [auditors, setAuditors] = useState<Auditor[]>([]);
+  const [assignTarget, setAssignTarget] = useState<OperationalPlan | null>(null);
+  const [assignMap, setAssignMap] = useState<Record<string, string>>({});
+  const [savingAssign, setSavingAssign] = useState(false);
+
+  // Fetch the auditor list once (for the Assign Auditors dialog).
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/internal-audit/users?role=auditors");
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : data.users || [];
+          setAuditors(list.map((u: any) => ({ id: u.id, fullName: u.fullName || u.name || u.email })));
+        }
+      } catch {
+        /* non-fatal */
+      }
+    })();
+  }, []);
+
+  const auditorName = (id: string | null) =>
+    id ? auditors.find((a) => a.id === id)?.fullName || "—" : "—";
+
+  const openAssign = (plan: OperationalPlan) => {
+    setAssignTarget(plan);
+    const map: Record<string, string> = {};
+    plan.items.forEach((it) => {
+      map[it.id] = it.assignedAuditorId || "";
+    });
+    setAssignMap(map);
+  };
+
+  const handleSaveAssignments = async () => {
+    if (!assignTarget) return;
+    setSavingAssign(true);
+    try {
+      const changed = assignTarget.items.filter(
+        (it) => (it.assignedAuditorId || "") !== (assignMap[it.id] || "")
+      );
+      await Promise.all(
+        changed.map((it) =>
+          fetch(`/api/internal-audit/operational-plans/${assignTarget.id}/items/${it.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assignedAuditorId: assignMap[it.id] || null }),
+          })
+        )
+      );
+      toast.success(t("Auditors assigned"));
+      setAssignTarget(null);
+      loadForStrategicPlan(selectedSpId);
+    } catch {
+      toast.error(t("Failed to assign auditors"));
+    } finally {
+      setSavingAssign(false);
+    }
+  };
 
   // Fetch strategic plans for the selector
   useEffect(() => {
@@ -415,6 +482,16 @@ function OperationalPlanContent() {
                           {t("Add Audit")}
                         </Button>
                       )}
+                      {canEdit && plan.items.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openAssign(plan)}
+                        >
+                          <Users className="h-4 w-4 mr-1" />
+                          {t("Assign Auditors")}
+                        </Button>
+                      )}
                       {canEdit && (
                         <label className="cursor-pointer">
                           <input
@@ -490,6 +567,7 @@ function OperationalPlanContent() {
                         <TableHead>{t("Type")}</TableHead>
                         <TableHead>{t("Quarter")}</TableHead>
                         <TableHead>{t("Risk Level")}</TableHead>
+                        <TableHead>{t("Auditor")}</TableHead>
                         {canDelete && <TableHead className="text-right">{t("Actions")}</TableHead>}
                       </TableRow>
                     </TableHeader>
@@ -506,6 +584,9 @@ function OperationalPlanContent() {
                             ) : (
                               "—"
                             )}
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-700">
+                            {auditorName(it.assignedAuditorId)}
                           </TableCell>
                           {canDelete && (
                             <TableCell className="text-right">
@@ -671,6 +752,66 @@ function OperationalPlanContent() {
             <Button onClick={handleAddItem} disabled={savingItem}>
               {savingItem && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t("Add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign auditors dialog */}
+      <Dialog open={!!assignTarget} onOpenChange={(o) => !o && setAssignTarget(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {t("Assign Auditors")}
+              {assignTarget ? ` — ${assignTarget.planCode}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("Assign an auditor to each audit. On plan approval, the audit is sent to that auditor.")}
+          </p>
+          <div className="space-y-3 mt-2">
+            {assignTarget?.items.map((it) => (
+              <div
+                key={it.id}
+                className="grid grid-cols-1 sm:grid-cols-[1fr_220px] sm:items-center gap-2 border rounded-md px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{it.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {[it.auditType, it.plannedQuarter].filter(Boolean).join(" · ") || "—"}
+                  </p>
+                </div>
+                <Select
+                  value={assignMap[it.id] || "unassigned"}
+                  onValueChange={(v) =>
+                    setAssignMap((m) => ({ ...m, [it.id]: v === "unassigned" ? "" : v }))
+                  }
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder={t("Select auditor")} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                    <SelectItem value="unassigned">{t("Unassigned")}</SelectItem>
+                    {auditors.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+            {auditors.length === 0 && (
+              <p className="text-xs text-amber-600">{t("No auditors found")}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignTarget(null)}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleSaveAssignments} disabled={savingAssign}>
+              {savingAssign && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t("Save")}
             </Button>
           </DialogFooter>
         </DialogContent>

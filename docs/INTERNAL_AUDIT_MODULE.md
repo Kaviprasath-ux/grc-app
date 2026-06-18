@@ -42,7 +42,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 | Feature | Status | Notes |
 |---|---|---|
 | **Strategic Audit Plan** | ✅ | 3/4/5-year duration dropdown; **auto-generated from risk levels** (ordered by residual score, year-bucketed, priority-ranked); created by the Audit Director and **approved externally by the Minister** — uploading the signed copy (with approver name) marks the plan **Approved** (no in-app approval workflow); **print** option; approved plans visually highlighted; **click a year → opens the Annual Plan** |
-| **Operational (Annual) Plan** | ✅ | Year-wise from the strategic plan (one per year); **view all vs selected year**; add/delete audits; **upload approval document** |
+| **Operational (Annual) Plan** | ✅ | Year-wise from the strategic plan (one per year); **view all vs selected year**; add/delete audits; **Assign Auditors** (per-audit auditor dropdown — on plan approval the engagement is auto-assigned to that auditor and they are notified); **upload approval document** |
 | **Quarterly Reports** | ✅ | Per operational-plan year, a Q1–Q4 section inside each year block. **Auto-generate** a quarterly audit report PDF (summarizing that quarter's planned audits, engagement status, and findings open/total) via the Generate action; **plus** optional upload/replace/download/delete of a manual report document (encrypted, mirrors the approval-doc pattern) |
 
 ### 2.3 Engagements

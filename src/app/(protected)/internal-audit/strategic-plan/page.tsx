@@ -39,7 +39,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   Plus,
@@ -69,6 +68,16 @@ interface PlanItem {
   riskLevel: string | null;
   priorityRank: number | null;
   notes: string | null;
+}
+
+interface AssessedRisk {
+  id: string;
+  riskId: string;
+  riskName: string;
+  inherentScore: number | null;
+  residualScore: number | null;
+  riskLevel: string | null;
+  departmentName: string | null;
 }
 
 interface StrategicPlan {
@@ -159,22 +168,53 @@ export default function StrategicPlanPage() {
     }
   }, [t]);
 
+  // ----- Risk Assessment section (assessed risks not yet added to a plan) -----
+  const [assessedRisks, setAssessedRisks] = useState<AssessedRisk[]>([]);
+  const [addingRiskId, setAddingRiskId] = useState<string | null>(null);
+
+  const fetchAssessedRisks = useCallback(async () => {
+    try {
+      const res = await fetch("/api/internal-audit/strategic-plans/assessed-risks");
+      if (res.ok) setAssessedRisks(await res.json());
+    } catch {
+      /* non-fatal */
+    }
+  }, []);
+
+  const handleAddRisk = async (riskId: string) => {
+    setAddingRiskId(riskId);
+    try {
+      const res = await fetch("/api/internal-audit/strategic-plans/add-risk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ riskId }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Added to strategic plan"));
+      fetchAssessedRisks();
+      fetchPlans();
+    } catch {
+      toast.error(t("Failed to add to strategic plan"));
+    } finally {
+      setAddingRiskId(null);
+    }
+  };
+
   useEffect(() => {
     fetchPlans();
-  }, [fetchPlans]);
+    fetchAssessedRisks();
+  }, [fetchPlans, fetchAssessedRisks]);
 
   const handleCreate = async () => {
-    if (!form.title.trim()) {
-      toast.error(t("Please enter a plan title"));
-      return;
-    }
     setSaving(true);
     try {
+      // Title is auto-derived from the duration (the Plan Title field was removed).
+      const title = `${form.durationYears}-Year Internal Audit Strategy`;
       const res = await fetch("/api/internal-audit/strategic-plans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: form.title,
+          title,
           description: form.description,
           durationYears: parseInt(form.durationYears),
           startYear: parseInt(form.startYear),
@@ -297,15 +337,72 @@ export default function StrategicPlanPage() {
             {t("Multi-year, risk-based audit strategy")}
           </p>
         </div>
-        {canCreate && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("Create Strategic Plan")}
-          </Button>
-        )}
       </div>
 
-      {/* List */}
+      {/* Section 1: Risk Assessment (assessed risks not yet added to a plan) */}
+      <div>
+        <h2 className="text-lg font-semibold mb-2">{t("Risk Assessment")}</h2>
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("Risk ID")}</TableHead>
+                <TableHead>{t("Risk")}</TableHead>
+                <TableHead>{t("Department")}</TableHead>
+                <TableHead>{t("Inherent Score")}</TableHead>
+                <TableHead>{t("Residual Score")}</TableHead>
+                <TableHead>{t("Risk Level")}</TableHead>
+                <TableHead className="text-right">{t("Actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {assessedRisks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    {t("No assessed risks available to plan")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                assessedRisks.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.riskId}</TableCell>
+                    <TableCell>{r.riskName}</TableCell>
+                    <TableCell>{r.departmentName || "—"}</TableCell>
+                    <TableCell>{r.inherentScore ?? "—"}</TableCell>
+                    <TableCell>{r.residualScore ?? "—"}</TableCell>
+                    <TableCell>
+                      {r.riskLevel ? (
+                        <Badge className={statusColor(r.riskLevel)}>{r.riskLevel}</Badge>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {canCreate && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddRisk(r.id)}
+                          disabled={addingRiskId === r.id}
+                        >
+                          {addingRiskId === r.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4 mr-1" />
+                          )}
+                          {t("Add Plan")}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Section 2: Strategic Plan */}
+      <h2 className="text-lg font-semibold mb-2">{t("Strategic Plan")}</h2>
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
@@ -330,7 +427,7 @@ export default function StrategicPlanPage() {
             ) : plans.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  {t("No strategic plans yet")}
+                  {t("No plans yet. Add an assessed risk above to build the strategic plan.")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -356,7 +453,7 @@ export default function StrategicPlanPage() {
                   </TableCell>
                   <TableCell>{plan.createdBy?.fullName || "—"}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
+                    <div className="flex justify-end items-center gap-1">
                       <Button variant="ghost" size="icon" onClick={() => openView(plan.id)}>
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -385,14 +482,6 @@ export default function StrategicPlanPage() {
             <DialogTitle>{t("Create Strategic Plan")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>{t("Plan Title")}</Label>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder={t("e.g. 3-Year Internal Audit Strategy")}
-              />
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("Duration")}</Label>
@@ -427,23 +516,9 @@ export default function StrategicPlanPage() {
                 rows={2}
               />
             </div>
-            <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-md">
-              <Checkbox
-                id="genrisk"
-                checked={form.generateFromRisk}
-                onCheckedChange={(c) =>
-                  setForm({ ...form, generateFromRisk: !!c })
-                }
-              />
-              <div className="space-y-0.5">
-                <Label htmlFor="genrisk" className="cursor-pointer">
-                  {t("Generate from Risk Register")}
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  {t("Populate the plan from the risk register, ranked by residual risk. Highest-risk audits are scheduled in the earliest years.")}
-                </p>
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("Audits are automatically populated from the risk register, ranked by residual risk — highest-risk audits scheduled in the earliest years.")}
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>

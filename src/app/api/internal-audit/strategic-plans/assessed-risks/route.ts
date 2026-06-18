@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
+
+// GET - Assessed risks (both inherent + residual scored) that are NOT yet added
+// to a strategic plan. These populate the "Risk Assessment" section; clicking
+// "Add Plan" on one moves it into the Strategic Plan.
+export const GET = withAuth(
+  async (req, context, session) => {
+    try {
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
+      // Risk ids already used in any strategic plan item.
+      const usedItems = await prisma.auditStrategicPlanItem.findMany({
+        where: { riskId: { not: null } },
+        select: { riskId: true },
+      });
+      const usedRiskIds = usedItems.map((i) => i.riskId).filter(Boolean) as string[];
+
+      const risks = await prisma.internalAuditRisk.findMany({
+        where: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+          inherentScore: { not: null },
+          residualScore: { not: null },
+          ...(usedRiskIds.length ? { id: { notIn: usedRiskIds } } : {}),
+        },
+        select: {
+          id: true,
+          riskId: true,
+          riskName: true,
+          inherentScore: true,
+          residualScore: true,
+          riskLevel: true,
+          department: { select: { id: true, name: true } },
+        },
+        orderBy: [{ residualScore: "desc" }, { inherentScore: "desc" }],
+      });
+
+      return NextResponse.json(
+        risks.map((r) => ({
+          id: r.id,
+          riskId: r.riskId,
+          riskName: r.riskName,
+          inherentScore: r.inherentScore,
+          residualScore: r.residualScore,
+          riskLevel: r.riskLevel,
+          departmentName: r.department?.name ?? null,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching assessed risks:", error);
+      return NextResponse.json({ error: "Failed to fetch assessed risks" }, { status: 500 });
+    }
+  },
+  { resource: "audit.strategic-plan", action: "view" }
+);
