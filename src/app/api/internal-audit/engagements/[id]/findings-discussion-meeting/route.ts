@@ -1,44 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { parseFindingsDiscussionWorkbook } from "@/lib/findings-discussion-template";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-interface FindingForPrefill {
-  finding: string;
-  description: string | null;
-  severity: string;
-  recommendation: string | null;
-  responsiblePerson: string | null;
-  targetDate: Date | null;
-}
-
-function buildNotesFromFindings(findings: FindingForPrefill[]) {
-  return findings.map((f, idx) => ({
-    number: String(idx + 1),
-    note: f.finding || f.description || "",
-    degreeOfRisk: f.severity || "",
-    managementResponse: "",
-    proposedAction: f.recommendation || "",
-  }));
-}
-
-function buildAgreedActionsFromFindings(findings: FindingForPrefill[]) {
-  return findings
-    .filter((f) => (f.recommendation || "").trim())
-    .map((f, idx) => ({
-      number: String(idx + 1),
-      procedure: f.recommendation || "",
-      official: f.responsiblePerson || "",
-      implementationDate: f.targetDate ? f.targetDate.toISOString().slice(0, 10) : "",
-    }));
-}
-
-// GET - fetch the Findings Discussion (Preliminary Observations) meeting form.
-// When none is saved, returns a blank shell with the Notes Discussed and Agreed
-// Actions grids pre-filled from the engagement's findings.
+// GET - fetch the saved Findings Discussion data for an engagement (display on page).
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
@@ -47,50 +16,30 @@ export const GET = withAuth(
 
       const engagement = await prisma.auditEngagement.findFirst({
         where: { id, ...tenantFilter },
-        select: { id: true, auditId: true, engagementTitle: true },
+        select: { id: true },
       });
       if (!engagement) {
         return NextResponse.json({ error: "Engagement not found" }, { status: 404 });
       }
 
-      const existing = await prisma.auditFindingsDiscussionMeeting.findUnique({
+      const saved = await prisma.auditFindingsDiscussionMeeting.findUnique({
         where: { engagementId: id },
       });
-
-      if (existing) {
-        return NextResponse.json({
-          ...existing,
-          attendees: existing.attendees ? JSON.parse(existing.attendees) : [],
-          notesDiscussed: existing.notesDiscussed ? JSON.parse(existing.notesDiscussed) : [],
-          agreedActions: existing.agreedActions ? JSON.parse(existing.agreedActions) : [],
-        });
+      if (!saved) {
+        return NextResponse.json(null);
       }
 
-      const findings = await prisma.internalAuditFinding.findMany({
-        where: { engagementId: id, ...tenantFilter },
-        select: {
-          finding: true,
-          description: true,
-          severity: true,
-          recommendation: true,
-          responsiblePerson: true,
-          targetDate: true,
-        },
-        orderBy: { createdAt: "asc" },
-      });
-
       return NextResponse.json({
-        id: null,
-        engagementId: id,
-        meetingVenue: "",
-        history: "",
-        assignmentTitle: engagement.engagementTitle || "",
-        auditTaskNumber: engagement.auditId || "",
-        department: "",
-        management: "",
-        attendees: [],
-        notesDiscussed: buildNotesFromFindings(findings),
-        agreedActions: buildAgreedActionsFromFindings(findings),
+        meetingVenue: saved.meetingVenue,
+        history: saved.history,
+        assignmentTitle: saved.assignmentTitle,
+        auditTaskNumber: saved.auditTaskNumber,
+        department: saved.department,
+        management: saved.management,
+        attendees: saved.attendees ? JSON.parse(saved.attendees) : [],
+        notesDiscussed: saved.notesDiscussed ? JSON.parse(saved.notesDiscussed) : [],
+        agreedActions: saved.agreedActions ? JSON.parse(saved.agreedActions) : [],
+        updatedAt: saved.updatedAt,
       });
     } catch (error) {
       console.error("Error fetching findings discussion meeting:", error);
@@ -103,8 +52,8 @@ export const GET = withAuth(
   { resource: "audit.fieldwork", action: "view" }
 );
 
-// PUT - create or update (upsert) the findings discussion meeting form.
-export const PUT = withAuth(
+// POST - upload a filled Findings Discussion template; parse it and save.
+export const POST = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const { id } = await (context as RouteContext).params;
@@ -123,45 +72,58 @@ export const PUT = withAuth(
         return NextResponse.json({ error: "No customer account associated" }, { status: 400 });
       }
 
-      const body = await req.json();
-      const data = {
-        meetingVenue: body.meetingVenue ?? null,
-        history: body.history ?? null,
-        assignmentTitle: body.assignmentTitle ?? null,
-        auditTaskNumber: body.auditTaskNumber ?? null,
-        department: body.department ?? null,
-        management: body.management ?? null,
-        attendees: Array.isArray(body.attendees) ? JSON.stringify(body.attendees) : null,
-        notesDiscussed: Array.isArray(body.notesDiscussed)
-          ? JSON.stringify(body.notesDiscussed)
-          : null,
-        agreedActions: Array.isArray(body.agreedActions)
-          ? JSON.stringify(body.agreedActions)
-          : null,
+      const formData = await req.formData();
+      const file = formData.get("file") as File | null;
+      if (!file) {
+        return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+      if (!/\.(xlsx|xlsm|xls)$/i.test(file.name)) {
+        return NextResponse.json(
+          { error: "Please upload the filled Excel template (.xlsx)." },
+          { status: 400 }
+        );
+      }
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const { data, error } = parseFindingsDiscussionWorkbook(buffer);
+      if (error || !data) {
+        return NextResponse.json({ error: error || "Could not parse the file." }, { status: 400 });
+      }
+
+      const payload = {
+        meetingVenue: data.header.meetingVenue || null,
+        history: data.header.history || null,
+        assignmentTitle: data.header.assignmentTitle || null,
+        auditTaskNumber: data.header.auditTaskNumber || null,
+        department: data.header.department || null,
+        management: data.header.management || null,
+        attendees: JSON.stringify(data.attendees),
+        notesDiscussed: JSON.stringify(data.notesDiscussed),
+        agreedActions: JSON.stringify(data.agreedActions),
       };
 
-      const saved = await prisma.auditFindingsDiscussionMeeting.upsert({
+      await prisma.auditFindingsDiscussionMeeting.upsert({
         where: { engagementId: id },
         create: {
           customerAccountId,
           engagementId: id,
           createdById: session.id || null,
           updatedById: session.id || null,
-          ...data,
+          ...payload,
         },
-        update: { updatedById: session.id || null, ...data },
+        update: { updatedById: session.id || null, ...payload },
       });
 
       return NextResponse.json({
-        ...saved,
-        attendees: saved.attendees ? JSON.parse(saved.attendees) : [],
-        notesDiscussed: saved.notesDiscussed ? JSON.parse(saved.notesDiscussed) : [],
-        agreedActions: saved.agreedActions ? JSON.parse(saved.agreedActions) : [],
+        ...data.header,
+        attendees: data.attendees,
+        notesDiscussed: data.notesDiscussed,
+        agreedActions: data.agreedActions,
       });
     } catch (error) {
-      console.error("Error saving findings discussion meeting:", error);
+      console.error("Error uploading findings discussion meeting:", error);
       return NextResponse.json(
-        { error: "Failed to save findings discussion meeting" },
+        { error: "Failed to upload findings discussion meeting" },
         { status: 500 }
       );
     }

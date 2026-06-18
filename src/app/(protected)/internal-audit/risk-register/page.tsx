@@ -1198,7 +1198,7 @@ export default function RiskRegisterPage() {
       toast({ title: t("Success"), description: t("Successfully added to Audit Planning!") });
 
       // Optionally navigate to audit planning
-      // router.push("/internal-audit/audit-planning");
+      // router.push("/internal-audit/audit-engagement");
     } catch (e) {
       console.error("Add to audit plan error:", e);
       toast({ title: t("Error"), description: t("Failed to add to audit plan"), variant: "destructive" });

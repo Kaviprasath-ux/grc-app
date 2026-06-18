@@ -289,7 +289,7 @@ export default function EditEngagementPage({ params }: PageProps) {
         const errorData = await engagementRes.json();
         console.error("Failed to load engagement:", errorData);
         toast({ title: t("Error"), description: errorData.error || t("Failed to load engagement"), variant: "destructive" });
-        router.push("/internal-audit/audit-planning");
+        router.push("/internal-audit/audit-engagement");
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -457,7 +457,7 @@ export default function EditEngagementPage({ params }: PageProps) {
           relatedPolicies: formData.relatedPolicies || null,
         });
         toast({ title: t("Success"), description: t("Engagement updated successfully") });
-        router.push("/internal-audit/audit-planning");
+        router.push("/internal-audit/audit-engagement");
       } else {
         const error = await response.json();
         toast({ title: t("Error"), description: error.error || t("Failed to update engagement"), variant: "destructive" });
@@ -483,13 +483,13 @@ export default function EditEngagementPage({ params }: PageProps) {
     return (
       <div className="p-3 sm:p-6">
         <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
-          <Link href="/internal-audit/audit-planning" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Link href="/internal-audit/audit-engagement" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
             <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-          <Link href="/internal-audit/audit-planning" className="text-slate-500 hover:text-primary-600 transition-colors">
-            {t("Audit Planning")}
+          <Link href="/internal-audit/audit-engagement" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Audit Engagement")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
           <span className="text-primary-700 font-medium">{t("Edit")}</span>
@@ -512,13 +512,13 @@ export default function EditEngagementPage({ params }: PageProps) {
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <nav className="flex items-center gap-1.5 text-sm mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
-        <Link href="/internal-audit/audit-planning" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+        <Link href="/internal-audit/audit-engagement" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
           <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <Link href="/internal-audit/audit-planning" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Audit Planning")}
+        <Link href="/internal-audit/audit-engagement" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Audit Engagement")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <span className="text-primary-700 font-medium">{t("Edit")}</span>
@@ -1040,7 +1040,7 @@ export default function EditEngagementPage({ params }: PageProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/internal-audit/audit-planning")}
+            onClick={() => router.push("/internal-audit/audit-engagement")}
           >
             {t("Cancel")}
           </Button>

@@ -1259,7 +1259,7 @@ export const helpArticles: HelpArticle[] = [
       "Use **Export** to download the audit plan list in Excel format",
       "Use **Generate Annual Plan Report** to create a summarized annual report",
     ],
-    relatedLinks: [{ label: "Audit Planning", href: "/internal-audit/audit-planning" }],
+    relatedLinks: [{ label: "Audit Planning", href: "/internal-audit/audit-engagement" }],
   },
   {
     id: "audit-planning-create",
@@ -1291,7 +1291,7 @@ export const helpArticles: HelpArticle[] = [
       "You can add more testing procedure rows using the **+ Add Task** button",
       "Historical risks are read-only and shown for reference only",
     ],
-    relatedLinks: [{ label: "Audit Planning", href: "/internal-audit/audit-planning" }],
+    relatedLinks: [{ label: "Audit Planning", href: "/internal-audit/audit-engagement" }],
   },
   {
     id: "audit-annual-report",
@@ -1309,7 +1309,7 @@ export const helpArticles: HelpArticle[] = [
       "Click **Edit** to modify the report content if needed",
       "Click **Download** to save the report in PDF format",
     ],
-    relatedLinks: [{ label: "Audit Planning", href: "/internal-audit/audit-planning" }],
+    relatedLinks: [{ label: "Audit Planning", href: "/internal-audit/audit-engagement" }],
   },
 
   // ─── Field Work ─────────────────────────────────────────────────
@@ -1632,7 +1632,7 @@ export const helpArticles: HelpArticle[] = [
     ],
     relatedLinks: [
       { label: "Audit Universe", href: "/internal-audit/audit-universe" },
-      { label: "Audit Planning", href: "/internal-audit/audit-planning" },
+      { label: "Audit Planning", href: "/internal-audit/audit-engagement" },
     ],
   },
 
@@ -2776,7 +2776,7 @@ export const helpArticles: HelpArticle[] = [
     ],
     relatedLinks: [
       { label: "Audit Universe", href: "/internal-audit/audit-universe" },
-      { label: "Audit Planning", href: "/internal-audit/audit-planning" },
+      { label: "Audit Planning", href: "/internal-audit/audit-engagement" },
     ],
   },
   {
@@ -2898,7 +2898,7 @@ export const helpArticles: HelpArticle[] = [
       "Use **Export** to download the audit plan list in Excel format",
     ],
     relatedLinks: [
-      { label: "Audit Planning", href: "/internal-audit/audit-planning" },
+      { label: "Audit Planning", href: "/internal-audit/audit-engagement" },
       { label: "Audit Universe", href: "/internal-audit/audit-universe" },
     ],
   },
@@ -10117,7 +10117,7 @@ export const helpArticles: HelpArticle[] = [
       "Engagements relevant to your department help you prepare for upcoming audits",
     ],
     relatedLinks: [
-      { label: "Audit Planning", href: "/internal-audit/audit-planning" },
+      { label: "Audit Planning", href: "/internal-audit/audit-engagement" },
     ],
     roles: ["Auditee"],
   },

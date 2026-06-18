@@ -111,7 +111,7 @@ export const RESOURCES = {
   'audit.risk-register': '/internal-audit/risk-register',
   'audit.strategic-plan': '/internal-audit/strategic-plan',
   'audit.operational-plan': '/internal-audit/operational-plan',
-  'audit.planning': '/internal-audit/audit-planning',
+  'audit.planning': '/internal-audit/audit-engagement',
   'audit.fieldwork': '/internal-audit/fieldwork',
   'audit.reports': '/internal-audit/report',
   'audit.capa': '/internal-audit/capa-tracking',

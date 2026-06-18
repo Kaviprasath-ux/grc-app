@@ -1546,7 +1546,7 @@ export default function AuditPlanningPage() {
             <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           </>
         )}
-        <span className="text-primary-700 font-medium">{t("Audit Planning")}</span>
+        <span className="text-primary-700 font-medium">{t("Audit Engagement")}</span>
       </nav>
 
       {/* Page Header */}

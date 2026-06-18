@@ -148,8 +148,8 @@ export default function EngagementWorkflowPage({
       <div className="flex items-center gap-1.5 text-sm text-slate-500">
         <Home className="h-4 w-4" />
         <ChevronRight className="h-3.5 w-3.5" />
-        <Link href="/internal-audit/audit-planning" className="hover:text-slate-700">
-          {t("Audit Planning")}
+        <Link href="/internal-audit/audit-engagement" className="hover:text-slate-700">
+          {t("Audit Engagement")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-slate-700 font-medium">{engagement.auditId}</span>

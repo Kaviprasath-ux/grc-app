@@ -43,7 +43,7 @@ async function main() {
   assert(isSuspendedAllowlisted("/signup"), "/signup allowed");
   assert(!isSuspendedAllowlisted("/compliance/framework"), "/compliance/* blocked");
   assert(!isSuspendedAllowlisted("/tprm/vendor-management"), "/tprm/* blocked");
-  assert(!isSuspendedAllowlisted("/internal-audit/audit-planning"), "/internal-audit/* blocked");
+  assert(!isSuspendedAllowlisted("/internal-audit/audit-engagement"), "/internal-audit/* blocked");
   assert(!isSuspendedAllowlisted("/"), "home page blocked");
   assert(!isSuspendedAllowlisted("/settings"), "/settings (without /subscription) blocked");
   // Edge: don't allowlist "/settings/subscriptionFOO"
