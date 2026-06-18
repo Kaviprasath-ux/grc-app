@@ -318,22 +318,25 @@ export default function StrategicPlanPage() {
     Array.from({ length: plan.durationYears }, (_, i) => plan.startYear + i);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Home className="h-4 w-4" />
-        <span>{t("Internal Audit")}</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground font-medium">{t("Strategic Plan")}</span>
-      </div>
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Strategic Plan")}</span>
+      </nav>
 
-      <div className="flex items-center justify-between">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <CalendarRange className="h-6 w-6" />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <CalendarRange className="h-6 w-6 text-slate-700" />
             {t("Strategic Audit Plan")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-slate-500 mt-1">
             {t("Multi-year, risk-based audit strategy")}
           </p>
         </div>
@@ -341,43 +344,44 @@ export default function StrategicPlanPage() {
 
       {/* Section 1: Risk Assessment (assessed risks not yet added to a plan) */}
       <div>
-        <h2 className="text-lg font-semibold mb-2">{t("Risk Assessment")}</h2>
-        <div className="border rounded-lg">
-          <Table>
+        <h2 className="text-lg font-semibold text-slate-800 mb-2">{t("Risk Assessment")}</h2>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+          <Table className="min-w-[760px]">
             <TableHeader>
-              <TableRow>
-                <TableHead>{t("Risk ID")}</TableHead>
-                <TableHead>{t("Risk")}</TableHead>
-                <TableHead>{t("Department")}</TableHead>
-                <TableHead>{t("Inherent Score")}</TableHead>
-                <TableHead>{t("Residual Score")}</TableHead>
-                <TableHead>{t("Risk Level")}</TableHead>
-                <TableHead className="text-right">{t("Actions")}</TableHead>
+              <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Risk ID")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Inherent Score")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Residual Score")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {assessedRisks.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-sm text-slate-400">
                     {t("No assessed risks available to plan")}
                   </TableCell>
                 </TableRow>
               ) : (
                 assessedRisks.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.riskId}</TableCell>
-                    <TableCell>{r.riskName}</TableCell>
-                    <TableCell>{r.departmentName || "—"}</TableCell>
-                    <TableCell>{r.inherentScore ?? "—"}</TableCell>
-                    <TableCell>{r.residualScore ?? "—"}</TableCell>
-                    <TableCell>
+                  <TableRow key={r.id} className="border-b border-slate-100 last:border-0">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{r.riskId}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{r.riskName}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{r.departmentName || "—"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{r.inherentScore ?? "—"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{r.residualScore ?? "—"}</TableCell>
+                    <TableCell className="py-3">
                       {r.riskLevel ? (
                         <Badge className={statusColor(r.riskLevel)}>{r.riskLevel}</Badge>
                       ) : (
                         "—"
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
                       {canCreate && (
                         <Button
                           size="sm"
@@ -398,35 +402,37 @@ export default function StrategicPlanPage() {
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </div>
 
       {/* Section 2: Strategic Plan */}
-      <h2 className="text-lg font-semibold mb-2">{t("Strategic Plan")}</h2>
-      <div className="border rounded-lg">
-        <Table>
+      <h2 className="text-lg font-semibold text-slate-800 mb-2">{t("Strategic Plan")}</h2>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+        <Table className="min-w-[760px]">
           <TableHeader>
-            <TableRow>
-              <TableHead>{t("Code")}</TableHead>
-              <TableHead>{t("Title")}</TableHead>
-              <TableHead>{t("Duration")}</TableHead>
-              <TableHead>{t("Period")}</TableHead>
-              <TableHead>{t("Audits")}</TableHead>
-              <TableHead>{t("Status")}</TableHead>
-              <TableHead>{t("Created By")}</TableHead>
-              <TableHead className="text-right">{t("Actions")}</TableHead>
+            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Code")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Duration")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Period")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audits")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Created By")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin inline" />
+                  <Loader2 className="h-5 w-5 animate-spin inline text-slate-400" />
                 </TableCell>
               </TableRow>
             ) : plans.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-sm text-slate-400">
                   {t("No plans yet. Add an assessed risk above to build the strategic plan.")}
                 </TableCell>
               </TableRow>
@@ -434,16 +440,16 @@ export default function StrategicPlanPage() {
               plans.map((plan) => (
                 <TableRow
                   key={plan.id}
-                  className={plan.status === "Approved" ? "bg-green-50/60" : ""}
+                  className={`border-b border-slate-100 last:border-0 ${plan.status === "Approved" ? "bg-green-50/60" : ""}`}
                 >
-                  <TableCell className="font-medium">{plan.planCode}</TableCell>
-                  <TableCell>{plan.title}</TableCell>
-                  <TableCell>{plan.durationYears} {t("Years")}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{plan.planCode}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{plan.title}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{plan.durationYears} {t("Years")}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">
                     {plan.startYear}–{plan.startYear + plan.durationYears - 1}
                   </TableCell>
-                  <TableCell>{plan._count?.items ?? 0}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{plan._count?.items ?? 0}</TableCell>
+                  <TableCell className="py-3">
                     <Badge className={statusColor(plan.status)}>
                       {plan.status === "Approved" && (
                         <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -451,19 +457,20 @@ export default function StrategicPlanPage() {
                       {t(plan.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{plan.createdBy?.fullName || "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openView(plan.id)}>
+                  <TableCell className="py-3 text-sm text-slate-700">{plan.createdBy?.fullName || "—"}</TableCell>
+                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
+                    <div className="flex ltr:justify-end rtl:justify-start items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openView(plan.id)}>
                         <Eye className="h-4 w-4" />
                       </Button>
                       {canDelete && plan.status !== "Approved" && (
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                           onClick={() => setDeleteTarget(plan)}
                         >
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -473,6 +480,7 @@ export default function StrategicPlanPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Create dialog */}

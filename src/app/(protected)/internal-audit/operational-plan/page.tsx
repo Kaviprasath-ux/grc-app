@@ -386,20 +386,23 @@ function OperationalPlanContent() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Home className="h-4 w-4" />
-        <span>{t("Internal Audit")}</span>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground font-medium">{t("Operational Plan")}</span>
-      </div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Operational Plan")}</span>
+      </nav>
 
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <CalendarClock className="h-6 w-6" />
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <CalendarClock className="h-6 w-6 text-slate-700" />
           {t("Operational Audit Plan")}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-slate-500 mt-1">
           {t("Year-wise audit plans derived from a Strategic Plan")}
         </p>
       </div>
@@ -449,10 +452,10 @@ function OperationalPlanContent() {
             const plan = opPlans.find((p) => p.year === year);
             const yearLabel = `${t("Year")} ${year - (selectedSp?.startYear ?? year) + 1} · ${year}`;
             return (
-              <div key={year} className="border rounded-lg overflow-hidden">
-                <div className="flex items-center justify-between bg-muted/50 px-4 py-3">
+              <div key={year} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="flex items-center justify-between bg-slate-50 border-b border-slate-100 px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <h3 className="font-semibold">{yearLabel}</h3>
+                    <h3 className="font-semibold text-slate-800">{yearLabel}</h3>
                     {plan && (
                       <Badge
                         className={
@@ -555,47 +558,49 @@ function OperationalPlanContent() {
                     )}
                   </div>
                 ) : plan.items.length === 0 ? (
-                  <p className="px-4 py-4 text-sm text-muted-foreground">
+                  <p className="px-4 py-4 text-sm text-slate-400">
                     {t("No audits in this plan. Use Add Audit to add one.")}
                   </p>
                 ) : (
-                  <Table>
+                  <div className="overflow-x-auto">
+                  <Table className="min-w-[680px]">
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">#</TableHead>
-                        <TableHead>{t("Audit")}</TableHead>
-                        <TableHead>{t("Type")}</TableHead>
-                        <TableHead>{t("Quarter")}</TableHead>
-                        <TableHead>{t("Risk Level")}</TableHead>
-                        <TableHead>{t("Auditor")}</TableHead>
-                        {canDelete && <TableHead className="text-right">{t("Actions")}</TableHead>}
+                      <TableRow className="h-11 border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-12 ltr:pl-5 rtl:pr-5">#</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Quarter")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
+                        {canDelete && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {plan.items.map((it, idx) => (
-                        <TableRow key={it.id}>
-                          <TableCell>{idx + 1}</TableCell>
-                          <TableCell className="font-medium">{it.title}</TableCell>
-                          <TableCell>{it.auditType || "—"}</TableCell>
-                          <TableCell>{it.plannedQuarter || "—"}</TableCell>
-                          <TableCell>
+                        <TableRow key={it.id} className="border-b border-slate-100 last:border-0">
+                          <TableCell className="py-3 text-sm text-slate-700 ltr:pl-5 rtl:pr-5">{idx + 1}</TableCell>
+                          <TableCell className="py-3 text-sm font-medium text-slate-800">{it.title}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{it.auditType || "—"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{it.plannedQuarter || "—"}</TableCell>
+                          <TableCell className="py-3">
                             {it.riskLevel ? (
                               <Badge className={riskLevelColor(it.riskLevel)}>{it.riskLevel}</Badge>
                             ) : (
                               "—"
                             )}
                           </TableCell>
-                          <TableCell className="text-sm text-slate-700">
+                          <TableCell className="py-3 text-sm text-slate-700">
                             {auditorName(it.assignedAuditorId)}
                           </TableCell>
                           {canDelete && (
-                            <TableCell className="text-right">
+                            <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                                 onClick={() => handleDeleteItem(plan.id, it.id)}
                               >
-                                <Trash2 className="h-4 w-4 text-red-500" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           )}
@@ -603,11 +608,12 @@ function OperationalPlanContent() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
 
                 {plan && (
-                  <div className="border-t bg-muted/20 px-4 py-3">
-                    <h4 className="text-sm font-semibold mb-2">{t("Quarterly Reports")}</h4>
+                  <div className="border-t border-slate-100 bg-slate-50/40 px-4 py-3">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-2">{t("Quarterly Reports")}</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                       {QUARTERS.map((q) => {
                         const report = plan.quarterReports?.find((r) => r.quarter === q);
