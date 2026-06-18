@@ -59,8 +59,8 @@ export default function InternalAuditSettingsPage() {
       href: "/internal-audit/settings/audit-types",
     },
     {
-      name: t("Risk Sub-Category"),
-      description: t("Manage risk sub-categories linked to audit categories"),
+      name: t("Sub-Category"),
+      description: t("Manage sub-categories linked to audit categories"),
       icon: Tag,
       href: "/internal-audit/settings/sub-categories",
     },

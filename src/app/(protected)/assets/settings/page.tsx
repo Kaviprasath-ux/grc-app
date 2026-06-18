@@ -563,6 +563,9 @@ export default function AssetSettingsPage() {
     if (!groupForm.status) {
       errors.groupStatus = t("Please select status");
     }
+    if (!groupForm.subCategoryId) {
+      errors.groupSubCategoryId = t("Please select asset sub category");
+    }
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -604,6 +607,9 @@ export default function AssetSettingsPage() {
     }
     if (!groupForm.status) {
       errors.groupStatus = t("Please select status");
+    }
+    if (!groupForm.subCategoryId) {
+      errors.groupSubCategoryId = t("Please select asset sub category");
     }
 
     if (Object.keys(errors).length > 0) {
@@ -2661,12 +2667,15 @@ export default function AssetSettingsPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                     <Select
                       value={groupForm.subCategoryId}
-                      onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
+                      onValueChange={(value) => {
+                        setGroupForm({ ...groupForm, subCategoryId: value });
+                        if (fieldErrors.groupSubCategoryId) setFieldErrors({ ...fieldErrors, groupSubCategoryId: "" });
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full">
+                      <SelectTrigger className={fieldErrors.groupSubCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                         <SelectValue placeholder={t("Select sub category")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -2677,6 +2686,9 @@ export default function AssetSettingsPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.groupSubCategoryId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.groupSubCategoryId}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -2899,12 +2911,15 @@ export default function AssetSettingsPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                     <Select
                       value={groupForm.subCategoryId}
-                      onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
+                      onValueChange={(value) => {
+                        setGroupForm({ ...groupForm, subCategoryId: value });
+                        if (fieldErrors.groupSubCategoryId) setFieldErrors({ ...fieldErrors, groupSubCategoryId: "" });
+                      }}
                     >
-                      <SelectTrigger className="mt-1.5 w-full">
+                      <SelectTrigger className={fieldErrors.groupSubCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                         <SelectValue placeholder={t("Select sub category")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -2915,6 +2930,9 @@ export default function AssetSettingsPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.groupSubCategoryId && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.groupSubCategoryId}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -4175,12 +4193,15 @@ export default function AssetSettingsPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={groupForm.subCategoryId}
-                    onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
+                    onValueChange={(value) => {
+                      setGroupForm({ ...groupForm, subCategoryId: value });
+                      if (fieldErrors.groupSubCategoryId) setFieldErrors({ ...fieldErrors, groupSubCategoryId: "" });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={fieldErrors.groupSubCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                       <SelectValue placeholder={t("Select sub category")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -4191,6 +4212,9 @@ export default function AssetSettingsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.groupSubCategoryId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.groupSubCategoryId}</p>
+                  )}
                 </div>
               </>
             )}
@@ -4441,12 +4465,15 @@ export default function AssetSettingsPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={groupForm.subCategoryId}
-                    onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
+                    onValueChange={(value) => {
+                      setGroupForm({ ...groupForm, subCategoryId: value });
+                      if (fieldErrors.groupSubCategoryId) setFieldErrors({ ...fieldErrors, groupSubCategoryId: "" });
+                    }}
                   >
-                    <SelectTrigger className="mt-1.5 w-full">
+                    <SelectTrigger className={fieldErrors.groupSubCategoryId ? "mt-1.5 w-full border-red-500" : "mt-1.5 w-full"}>
                       <SelectValue placeholder={t("Select sub category")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -4457,6 +4484,9 @@ export default function AssetSettingsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.groupSubCategoryId && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.groupSubCategoryId}</p>
+                  )}
                 </div>
               </>
             )}

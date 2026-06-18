@@ -33,7 +33,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronRight, Home, Eye } from "lucide-react";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -76,6 +76,14 @@ interface Impact {
   id: string;
   label: string;
   value: number;
+}
+
+interface ScoringRange {
+  id: string;
+  label: string;
+  lowValue: number;
+  highValue: number | null;
+  calculationType: string;
 }
 
 interface UploadedFile {
@@ -291,6 +299,7 @@ export default function RiskRegisterPage() {
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
   const [probabilities, setProbabilities] = useState<Probability[]>([]);
   const [impacts, setImpacts] = useState<Impact[]>([]);
+  const [scoringRanges, setScoringRanges] = useState<ScoringRange[]>([]);
 
   // Translated reference data for dropdowns
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
@@ -419,7 +428,7 @@ export default function RiskRegisterPage() {
 
   const fetchReferenceData = async () => {
     try {
-      const [catRes, typeRes, probRes, impactRes, configRes, subCatRes, procRes] = await Promise.all([
+      const [catRes, typeRes, probRes, impactRes, configRes, subCatRes, procRes, rangesRes] = await Promise.all([
         fetch("/api/internal-audit/categories"),
         fetch("/api/internal-audit/audit-types"),
         fetch("/api/internal-audit/probability"),
@@ -427,6 +436,7 @@ export default function RiskRegisterPage() {
         fetch("/api/internal-audit/scoring-config"),
         fetch("/api/internal-audit/sub-categories"),
         fetch("/api/internal-audit/ia-processes"),
+        fetch("/api/internal-audit/scoring-ranges"),
       ]);
 
       if (catRes.ok) setCategories(await catRes.json());
@@ -436,6 +446,7 @@ export default function RiskRegisterPage() {
       if (configRes.ok) setScoringConfig(await configRes.json());
       if (subCatRes.ok) setSubCategories(await subCatRes.json());
       if (procRes.ok) setIAProcesses(await procRes.json());
+      if (rangesRes.ok) setScoringRanges(await rangesRes.json());
     } catch (error) {
       console.error("Failed to fetch reference data:", error);
     }
@@ -1351,28 +1362,39 @@ export default function RiskRegisterPage() {
                   <TableCell className="py-3 whitespace-nowrap">{getRiskLevelBadge(risk.riskLevel)}</TableCell>
                   <TableCell className="py-3 whitespace-nowrap">{getStatusBadge(risk.status)}</TableCell>
                   <TableCell className="py-3 ltr:pr-5 rtl:pl-5 whitespace-nowrap">
-                    {!isReadOnlyRole && (
-                      <div className="flex items-center justify-end gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                          onClick={() => openEditRiskModal(risk)}
-                          title={t("Edit")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                          onClick={() => openDeleteDialog(risk)}
-                          title={t("Delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-primary-600"
+                        onClick={() => openViewRiskModal(risk)}
+                        title={t("View")}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {!isReadOnlyRole && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={() => openEditRiskModal(risk)}
+                            title={t("Edit")}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                            onClick={() => openDeleteDialog(risk)}
+                            title={t("Delete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -1933,7 +1955,7 @@ export default function RiskRegisterPage() {
                     {fieldErrors.categoryId && <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryId}</p>}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Risk Sub-Category")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Sub-Category")}</Label>
                     <Select
                       value={formData.subCategoryId}
                       onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
@@ -2465,7 +2487,7 @@ export default function RiskRegisterPage() {
                       {fieldErrors.categoryId && <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryId}</p>}
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Risk Sub-Category")}</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Sub-Category")}</Label>
                       <Select
                         value={formData.subCategoryId}
                         onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
@@ -2953,7 +2975,7 @@ export default function RiskRegisterPage() {
                         <p className="text-sm text-slate-700">{tCat(viewingRisk.categoryId) || viewingRisk.category?.name || "-"}</p>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Risk Sub-Category")}</label>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Sub-Category")}</label>
                         <p className="text-sm text-slate-700">{viewingRisk.subCategory?.name || "-"}</p>
                       </div>
                       <div>
@@ -3024,6 +3046,102 @@ export default function RiskRegisterPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Heat Map */}
+                  {(() => {
+                    const probValues = probabilities.length > 0
+                      ? [...probabilities].sort((a, b) => a.value - b.value)
+                      : [1,2,3,4,5].map(v => ({ id: String(v), label: String(v), value: v }));
+                    const impactValues = impacts.length > 0
+                      ? [...impacts].sort((a, b) => a.value - b.value)
+                      : [1,2,3,4,5].map(v => ({ id: String(v), label: String(v), value: v }));
+                    const impactRows = [...impactValues].reverse();
+
+                    const getCellColor = (pVal: number, iVal: number) => {
+                      const score = applyCalcMethod(pVal, iVal, scoringConfig?.probabilityImpactCalcType || "Product of all");
+                      if (scoringRanges.length > 0) {
+                        const sorted = [...scoringRanges].sort((a, b) => b.lowValue - a.lowValue);
+                        const match = sorted.find(r => score >= r.lowValue && (r.highValue === null || score <= r.highValue));
+                        if (match) {
+                          const lbl = match.label.toLowerCase();
+                          if (lbl === "extreme") return "bg-blue-600";
+                          if (lbl === "high") return "bg-red-400";
+                          if (lbl === "medium") return "bg-amber-300";
+                          return "bg-emerald-200";
+                        }
+                      }
+                      if (score >= 15) return "bg-blue-600";
+                      if (score >= 8) return "bg-red-400";
+                      return "bg-emerald-200";
+                    };
+
+                    const uniqueLabels = Array.from(
+                      new Map(
+                        [...scoringRanges]
+                          .sort((a, b) => b.lowValue - a.lowValue)
+                          .map(r => [r.label.toLowerCase(), r.label])
+                      ).values()
+                    );
+
+                    return (
+                      <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-100">
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">{t("Risk Heat Map")}</h4>
+                        <div className="flex gap-6 items-start">
+                          <div className="flex gap-2 items-center">
+                            <span className="text-xs text-slate-400 [writing-mode:vertical-rl] rotate-180 tracking-wider">{t("Impact")}</span>
+                            <div>
+                              {impactRows.map((imp) => (
+                                <div key={imp.id} className="flex items-center gap-1 mb-1">
+                                  <span className="w-5 text-right text-xs text-slate-400">{imp.value}</span>
+                                  {probValues.map((prob) => {
+                                    const isInherent = viewingRisk.inherentLikelihood === prob.value && viewingRisk.inherentImpact === imp.value;
+                                    return (
+                                      <div key={prob.id} className={`w-9 h-9 rounded flex flex-col items-center justify-center ${getCellColor(prob.value, imp.value)}`} title={`P:${prob.value} I:${imp.value}`}>
+                                        {isInherent && (
+                                          <>
+                                            <div className="w-2 h-2 rounded-full bg-slate-900 ring-1 ring-white mb-0.5" />
+                                            <span className="text-[10px] font-bold text-slate-900 leading-none">
+                                              {applyCalcMethod(prob.value, imp.value, scoringConfig?.probabilityImpactCalcType || "Product of all")}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                              <div className="flex items-center gap-1 mt-1">
+                                <span className="w-5" />
+                                {probValues.map((prob) => (
+                                  <span key={prob.id} className="w-9 text-center text-xs text-slate-400">{prob.value}</span>
+                                ))}
+                              </div>
+                              <div className="text-center text-xs text-slate-400 mt-1 tracking-wider">{t("Probability")}</div>
+                            </div>
+                          </div>
+                          {/* Legend */}
+                          <div className="flex flex-col gap-2 text-xs text-slate-600 min-w-[90px]">
+                            <p className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] mb-1">{t("Zone")}</p>
+                            {uniqueLabels.length > 0 ? uniqueLabels.map((lbl) => {
+                              const l = lbl.toLowerCase();
+                              const color = l === "extreme" ? "bg-blue-600" : l === "high" ? "bg-red-400" : l === "medium" ? "bg-amber-300" : "bg-emerald-200";
+                              return <div key={lbl} className="flex items-center gap-2"><div className={`w-3 h-3 rounded flex-shrink-0 ${color}`} />{lbl}</div>;
+                            }) : (
+                              <>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-red-400 flex-shrink-0" />{t("High")}</div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-amber-300 flex-shrink-0" />{t("Medium")}</div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-emerald-200 flex-shrink-0" />{t("Low")}</div>
+                              </>
+                            )}
+                            <div className="mt-3 flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-slate-900 ring-2 ring-white flex-shrink-0" />
+                              {t("Inherent")}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Risk Level Badge */}
                   <div className="mt-4 flex items-center justify-between bg-slate-50 rounded-lg px-5 py-3 border border-slate-100">
