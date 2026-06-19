@@ -89,6 +89,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
   const [isEditingAuditeeComment, setIsEditingAuditeeComment] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingAuditeeComment, setSavingAuditeeComment] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [users, setUsers] = useState<UserOption[]>([]);
 
   // Edit form state (for AuditHead)
@@ -255,6 +256,37 @@ export default function AuditReportViewPage({ params }: PageProps) {
     }
   };
 
+  const handleSetStatus = async (newStatus: "Draft" | "Final") => {
+    if (!report) return;
+
+    setFinalizing(true);
+    try {
+      const response = await fetch(`/api/internal-audit/report/${engagementId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        const updatedReport = await response.json();
+        setReport(updatedReport);
+        toast.success(
+          newStatus === "Final"
+            ? t("Report finalized")
+            : t("Report reverted to draft")
+        );
+      } else {
+        const error = await response.json().catch(() => ({}));
+        toast.error(error.error || t("Failed to update report status"));
+      }
+    } catch (error) {
+      console.error("Error updating report status:", error);
+      toast.error(t("Failed to update report status"));
+    } finally {
+      setFinalizing(false);
+    }
+  };
+
   const handleDownloadReport = async () => {
     if (!report) return;
 
@@ -343,6 +375,15 @@ export default function AuditReportViewPage({ params }: PageProps) {
         <span className="text-slate-600">{t("Report")}</span>
         <span className="text-slate-400">|</span>
         <span className="text-primary-600 font-semibold">{t("Audit Report")}</span>
+        <span
+          className={`ltr:ml-auto rtl:mr-auto px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            report.status === "Final"
+              ? "bg-green-50 text-green-700"
+              : "bg-amber-50 text-amber-700"
+          }`}
+        >
+          {report.status === "Final" ? t("Final") : t("Draft")}
+        </span>
       </div>
 
       {/* Report Content */}
@@ -695,6 +736,31 @@ export default function AuditReportViewPage({ params }: PageProps) {
           <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Download Report")}
         </Button>
+        {isAuditHead && !isEditing && (
+          report.status === "Final" ? (
+            <Button
+              variant="outline"
+              onClick={() => handleSetStatus("Draft")}
+              disabled={finalizing}
+            >
+              {finalizing ? (
+                <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+              ) : null}
+              {t("Revert to Draft")}
+            </Button>
+          ) : (
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => handleSetStatus("Final")}
+              disabled={finalizing}
+            >
+              {finalizing ? (
+                <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+              ) : null}
+              {t("Finalize Report")}
+            </Button>
+          )
+        )}
         {(isAuditHead || isAuditor) && (
           <>
             {!isEditing ? (

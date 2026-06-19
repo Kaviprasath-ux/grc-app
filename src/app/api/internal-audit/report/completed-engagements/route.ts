@@ -73,7 +73,7 @@ export const GET = withAuth(
             select: { id: true, firstName: true, lastName: true },
           },
           report: {
-            select: { id: true },
+            select: { id: true, status: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -94,6 +94,8 @@ export const GET = withAuth(
         status: engagement.status,
         hasReport: !!engagement.report,
         reportId: engagement.report?.id || null,
+        // Draft / Final status of the generated report (null if none yet).
+        reportStatus: engagement.report?.status || null,
       }));
 
       return NextResponse.json({

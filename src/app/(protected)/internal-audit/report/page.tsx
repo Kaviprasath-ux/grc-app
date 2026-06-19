@@ -45,6 +45,7 @@ interface CompletedEngagement {
   status: string;
   hasReport: boolean;
   reportId: string | null;
+  reportStatus: string | null;
 }
 
 interface Finding {
@@ -133,6 +134,7 @@ export default function ReportsPage() {
   const [isEditingAuditeeComment, setIsEditingAuditeeComment] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingAuditeeComment, setSavingAuditeeComment] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [editForm, setEditForm] = useState({
     executiveSummary: "",
@@ -336,6 +338,39 @@ export default function ReportsPage() {
     }
   };
 
+  const handleSetStatus = async (newStatus: "Draft" | "Final") => {
+    if (!report) return;
+
+    setFinalizing(true);
+    try {
+      const response = await fetch(`/api/internal-audit/report/${currentEngagementId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        const updatedReport = await response.json();
+        setReport(updatedReport);
+        // Refresh the list so the Draft/Final tabs and row badges update.
+        fetchCompletedEngagements();
+        toast.success(
+          newStatus === "Final"
+            ? t("Report finalized")
+            : t("Report reverted to draft")
+        );
+      } else {
+        const error = await response.json().catch(() => ({}));
+        toast.error(error.error || t("Failed to update report status"));
+      }
+    } catch (error) {
+      console.error("Error updating report status:", error);
+      toast.error(t("Failed to update report status"));
+    } finally {
+      setFinalizing(false);
+    }
+  };
+
   const handleDownloadReport = async () => {
     if (!report) return;
 
@@ -427,10 +462,12 @@ export default function ReportsPage() {
       e.departmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.auditType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.assignedAuditorName.toLowerCase().includes(searchTerm.toLowerCase());
+    const isFinal = e.hasReport && e.reportStatus === "Final";
+    const isDraft = e.hasReport && e.reportStatus !== "Final";
     const matchesStatus =
       statusFilter === "all" ||
-      (statusFilter === "has-report" && e.hasReport) ||
-      (statusFilter === "pending" && !e.hasReport);
+      (statusFilter === "draft" && isDraft) ||
+      (statusFilter === "final" && isFinal);
     return matchesSearch && matchesStatus;
   });
   const totalItems = filteredEngagements.length;
@@ -442,8 +479,8 @@ export default function ReportsPage() {
 
   const filterTabs = [
     { id: "all", label: "All", count: translatedEngagements.length },
-    { id: "has-report", label: "Report Ready", count: translatedEngagements.filter((e) => e.hasReport).length },
-    { id: "pending", label: "Pending", count: translatedEngagements.filter((e) => !e.hasReport).length },
+    { id: "draft", label: "Draft", count: translatedEngagements.filter((e) => e.hasReport && e.reportStatus !== "Final").length },
+    { id: "final", label: "Final", count: translatedEngagements.filter((e) => e.hasReport && e.reportStatus === "Final").length },
   ];
 
   if (loading) {
@@ -569,11 +606,17 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      engagement.hasReport
-                        ? "bg-green-50 text-green-700"
-                        : "bg-amber-50 text-amber-700"
+                      !engagement.hasReport
+                        ? "bg-amber-50 text-amber-700"
+                        : engagement.reportStatus === "Final"
+                          ? "bg-green-50 text-green-700"
+                          : "bg-blue-50 text-blue-700"
                     }`}>
-                      {engagement.hasReport ? t("Report Ready") : t("Pending")}
+                      {!engagement.hasReport
+                        ? t("Pending")
+                        : engagement.reportStatus === "Final"
+                          ? t("Final")
+                          : t("Draft")}
                     </span>
                     {isClickable && (
                       <ChevronRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-500 ltr:rotate-0 rtl:rotate-180" />
@@ -673,8 +716,19 @@ export default function ReportsPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 sm:px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">
+              <DialogTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
                 {translatedReport ? translatedReport.title : t("Audit Report")}
+                {report && (
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      report.status === "Final"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {report.status === "Final" ? t("Final") : t("Draft")}
+                  </span>
+                )}
               </DialogTitle>
               {report && (
                 <p className="text-sm text-slate-500 mt-0.5">{report.reportCode}</p>
@@ -1039,6 +1093,14 @@ export default function ReportsPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex ltr:justify-end rtl:justify-start items-center gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+            {report && !isEditing && (
+              <Button
+                variant="outline"
+                onClick={closeReportModal}
+              >
+                {t("Cancel")}
+              </Button>
+            )}
             {report && (
               <Button
                 variant="outline"
@@ -1047,6 +1109,27 @@ export default function ReportsPage() {
                 <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Download")}
               </Button>
+            )}
+            {report && isAuditHead && !isEditing && (
+              report.status === "Final" ? (
+                <Button
+                  variant="outline"
+                  onClick={() => handleSetStatus("Draft")}
+                  disabled={finalizing}
+                >
+                  {finalizing ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : null}
+                  {t("Revert to Draft")}
+                </Button>
+              ) : (
+                <Button
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => handleSetStatus("Final")}
+                  disabled={finalizing}
+                >
+                  {finalizing ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : null}
+                  {t("Finalize Report")}
+                </Button>
+              )
             )}
             {report && (isAuditHead || isAuditor) && (
               <>

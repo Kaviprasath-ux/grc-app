@@ -70,7 +70,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 ### 2.5 Reporting, Monitoring & Support
 | Feature | Status | Notes |
 |---|---|---|
-| **Audit Reports** | ✅ | Draft (watermarked) / Final report generation + PDF download |
+| **Audit Reports** | ✅ | Generated as **Draft** (status `Draft`); **AuditHead** can **Finalize Report** (→ status `Final`) or **Revert to Draft** from the report list dialog and the report detail page. The Reports list has **All / Draft / Final / Pending tabs** (with counts) plus a per-row Draft/Final/Pending status badge. **PDF download** available in both states: **Draft PDFs carry a visible diagonal "DRAFT" watermark**, **Final PDFs have none** (`/api/internal-audit/report/[id]/download`). Status transition via `PATCH /api/internal-audit/report/[id]` (`status` field, AuditHead-only). |
 | **CAPA Tracking** | ✅ | Findings + corrective/preventive actions, evidence, AI review |
 | **Follow-up** | ✅ | **Separate top-level sidebar menu** (sibling to Internal Audit, module `INTERNAL_AUDIT`) at `/internal-audit/follow-up` — hosts the Follow-up Meeting Form. CAPA Tracking remains its own page/menu, unchanged. |
 | **Follow-up Meeting Form** | ✅ | Follow-up landing page lists engagements in a Risk-Register-style table (search + department/status filters) with an **Open** action per row → detail page `/internal-audit/follow-up/[id]`. The detail page is the per-engagement fillable form (meeting details, attendees, recommendation-implementation status grid); recommendation rows pre-fill from the engagement's findings; status = Open / In Progress / Implemented / Closed; due dates with auto-overdue flagging + progress %; **Save** (persisted, model `AuditFollowUpMeeting`), **Print**, and **Export PDF** (pdf-lib) |

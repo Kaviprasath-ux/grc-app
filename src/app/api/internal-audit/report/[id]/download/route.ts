@@ -320,7 +320,7 @@ export const GET = withAuth(
       const isFinalReport = report.status === 'Final' || report.status === 'Published';
       if (!isFinalReport) {
         const watermarkText = 'DRAFT';
-        const watermarkSize = 120;
+        const watermarkSize = 130;
         const textWidth = helveticaBold.widthOfTextAtSize(watermarkText, watermarkSize);
         const cos45 = Math.cos(Math.PI / 4);
         for (const p of pdfDoc.getPages()) {
@@ -330,7 +330,10 @@ export const GET = withAuth(
             y: ph / 2 - (textWidth / 2) * cos45,
             size: watermarkSize,
             font: helveticaBold,
-            color: rgb(0.85, 0.85, 0.85),
+            // Clearly visible diagonal gray watermark (was near-invisible before:
+            // 0.85 gray @ 0.35 alpha composited to ~95% white). 0.5 gray @ 0.35
+            // alpha lands at ~83% over white — readable as DRAFT, body text stays legible.
+            color: rgb(0.5, 0.5, 0.5),
             rotate: degrees(45),
             opacity: 0.35,
           });

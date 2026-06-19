@@ -96,6 +96,7 @@ export const PATCH = withAuth(
         auditeeComment,
         auditeeId,
         auditeeName,
+        status,
       } = body;
 
       const tenantFilter = getTenantFilter(session);
@@ -127,6 +128,25 @@ export const PATCH = withAuth(
       if (auditeeComment !== undefined) updateData.auditeeComment = auditeeComment;
       if (auditeeId !== undefined) updateData.auditeeId = auditeeId;
       if (auditeeName !== undefined) updateData.auditeeName = auditeeName;
+
+      // Status transition (Draft <-> Final). Only an Audit Head may finalize
+      // or revert a report. Finalizing removes the DRAFT watermark on download.
+      if (status !== undefined) {
+        const allowedStatuses = ['Draft', 'Final'];
+        if (!allowedStatuses.includes(status)) {
+          return NextResponse.json(
+            { error: 'Invalid status. Must be Draft or Final.' },
+            { status: 400 }
+          );
+        }
+        if (!session.roles.includes('AuditHead')) {
+          return NextResponse.json(
+            { error: 'Only an Audit Head can finalize or revert a report.' },
+            { status: 403 }
+          );
+        }
+        updateData.status = status;
+      }
 
       // Update the report using id (verified above to belong to this audit head)
       const updatedReport = await prisma.auditReport.update({
