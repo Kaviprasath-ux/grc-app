@@ -19,9 +19,16 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
-interface Department {
+interface AuditCategory {
   id: string;
   name: string;
+}
+
+interface Entity {
+  id: string;
+  name: string;
+  code?: string | null;
+  type: "process" | "engagement";
 }
 
 interface GeneratedRisk {
@@ -39,8 +46,11 @@ interface RecentSearch {
   result?: string;
   generatedRisks?: GeneratedRisk[];
   total_risks?: number;
-  department?: string;
-  departmentId?: string; // Store department ID for adding risks
+  categoryId?: string;
+  categoryName?: string;
+  entityId?: string;
+  entityType?: "process" | "engagement";
+  entityName?: string;
   specific_audit_focus?: string;
 }
 
@@ -53,8 +63,13 @@ export default function RiskIdentificationPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
   const { canView: canViewDashboard } = usePermissions('audit.dashboard');
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+
+  const [categories, setCategories] = useState<AuditCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [entities, setEntities] = useState<Entity[]>([]);
+  const [selectedEntity, setSelectedEntity] = useState<string>("");
+  const [entitiesLoading, setEntitiesLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ category?: string; entity?: string }>({});
   const [auditFocus, setAuditFocus] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -62,7 +77,7 @@ export default function RiskIdentificationPage() {
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
 
   // Dynamic data translation
-  const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: 'AuditCategory' });
 
   // Track which risks have been added to register (key: "searchId-riskIndex")
   const [addedRisks, setAddedRisks] = useState<Set<string>>(new Set());
@@ -75,7 +90,7 @@ export default function RiskIdentificationPage() {
   ) ?? false;
 
   useEffect(() => {
-    fetchDepartments();
+    fetchCategories();
     const saved = sessionStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -94,18 +109,51 @@ export default function RiskIdentificationPage() {
     };
   }, []);
 
-  const fetchDepartments = async () => {
+  const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/departments");
+      const response = await fetch("/api/internal-audit/categories");
       if (response.ok) {
         const data = await response.json();
-        setDepartments(data);
+        setCategories(data);
       }
     } catch (error) {
-      console.error("Failed to fetch departments:", error);
+      console.error("Failed to fetch audit categories:", error);
     } finally {
       setPageLoading(false);
     }
+  };
+
+  const fetchEntities = useCallback(async (categoryId: string) => {
+    setEntities([]);
+    setSelectedEntity("");
+    if (!categoryId) return;
+    setEntitiesLoading(true);
+    try {
+      const response = await fetch(`/api/internal-audit/categories/${categoryId}/entities`);
+      if (response.ok) {
+        const data = await response.json();
+        const combined: Entity[] = [
+          ...(data.processes || []),
+          ...(data.engagements || []),
+        ];
+        setEntities(combined);
+      }
+    } catch (error) {
+      console.error("Failed to fetch entities:", error);
+    } finally {
+      setEntitiesLoading(false);
+    }
+  }, []);
+
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setFieldErrors((prev) => ({ ...prev, category: undefined }));
+    fetchEntities(categoryId);
+  };
+
+  const handleEntityChange = (entityId: string) => {
+    setSelectedEntity(entityId);
+    setFieldErrors((prev) => ({ ...prev, entity: undefined }));
   };
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
@@ -143,13 +191,14 @@ export default function RiskIdentificationPage() {
   };
 
   const handleSuggestRisks = async () => {
-    // Validation: Check department
-    if (!selectedDepartment) {
-      toast.error(t("Please select a department first"));
+    const errors: { category?: string; entity?: string } = {};
+    if (!selectedCategory) errors.category = t("Please select an audit category");
+    if (!selectedEntity) errors.entity = t("Please select an audit or process");
+    if (errors.category || errors.entity) {
+      setFieldErrors(errors);
       return;
     }
 
-    // Validation: Check if user has permission (only Audit Head can suggest risks)
     if (!isAuditHead) {
       toast.error(t("Only Audit Head can suggest risks with AI"));
       return;
@@ -158,7 +207,14 @@ export default function RiskIdentificationPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("departmentId", selectedDepartment);
+      formData.append("auditCategoryId", selectedCategory);
+      if (selectedEntity) {
+        const entity = entities.find((e) => e.id === selectedEntity);
+        if (entity) {
+          formData.append("entityId", entity.id);
+          formData.append("entityType", entity.type);
+        }
+      }
       if (auditFocus.trim()) formData.append("auditFocus", auditFocus.trim());
       files.forEach((f) => formData.append("files", f));
 
@@ -174,23 +230,32 @@ export default function RiskIdentificationPage() {
         return;
       }
 
-      const deptName = translatedDepartments.find((d) => d.id === selectedDepartment)?.name ?? "Unknown";
+      const categoryName = translatedCategories.find((c) => c.id === selectedCategory)?.name ?? "Unknown";
+      const entity = entities.find((e) => e.id === selectedEntity);
+      const entityName = entity?.name ?? "";
       const generatedRisks = (data.generated_risks ?? []) as GeneratedRisk[];
       const total_risks = typeof data.total_risks === "number" ? data.total_risks : generatedRisks.length;
-      const query = `${deptName}${auditFocus.trim() ? ` - ${auditFocus.trim()}` : ""}`;
+
+      const queryParts = [categoryName];
+      if (entityName) queryParts.push(entityName);
+      if (auditFocus.trim()) queryParts.push(auditFocus.trim());
+      const query = queryParts.join(" / ");
 
       const newSearch: RecentSearch = {
         id: Date.now().toString(),
         query,
         timestamp: new Date(),
         result: total_risks
-          ? `${t("Generated")} ${total_risks} ${t("risk(s) for")} ${deptName}.`
-          : `${t("No risks generated for")} ${deptName}.`,
+          ? `${t("Generated")} ${total_risks} ${t("risk(s) for")} ${categoryName}.`
+          : `${t("No risks generated for")} ${categoryName}.`,
         generatedRisks: generatedRisks.length ? generatedRisks : undefined,
         total_risks,
-        department: data.department ?? deptName,
-        departmentId: selectedDepartment, // Store department ID for adding risks
-        specific_audit_focus: data.specific_audit_focus || undefined,
+        categoryId: selectedCategory,
+        categoryName,
+        entityId: entity?.id,
+        entityType: entity?.type,
+        entityName,
+        specific_audit_focus: auditFocus.trim() || undefined,
       };
 
       const updated = [newSearch, ...recentSearches].slice(0, 10);
@@ -219,33 +284,25 @@ export default function RiskIdentificationPage() {
     risk: GeneratedRisk,
     searchId: string,
     riskIndex: number,
-    departmentId: string | undefined
+    search: RecentSearch
   ) => {
-    // Create unique key for tracking
     const riskKey = `${searchId}-${riskIndex}`;
 
-    // Check if already added or currently adding
-    if (addedRisks.has(riskKey) || addingRisks.has(riskKey)) {
-      return;
-    }
+    if (addedRisks.has(riskKey) || addingRisks.has(riskKey)) return;
 
-    // Check permission
     if (!isAuditHead) {
       toast.error(t("Only Audit Head can add risks to register"));
       return;
     }
 
-    // Validate department
-    if (!departmentId) {
-      toast.error(t("Department information missing. Please regenerate risks."));
+    if (!search.categoryId) {
+      toast.error(t("Category information missing. Please regenerate risks."));
       return;
     }
 
-    // Set loading state
     setAddingRisks((prev) => new Set(prev).add(riskKey));
 
     try {
-      // Map risk level to residual score for the API
       let riskLevel = "Low";
       let residualScore = 25;
       if (risk.level === "High") {
@@ -256,21 +313,24 @@ export default function RiskIdentificationPage() {
         residualScore = 50;
       }
 
+      const body: Record<string, unknown> = {
+        riskName: risk.title.substring(0, 100),
+        riskDescription: risk.description,
+        categoryId: search.categoryId,
+        riskLevel,
+        residualScore,
+        status: "Open",
+        auditComment: "Source: AI Suggested Risk",
+      };
+
+      if (search.entityId && search.entityType === "process") {
+        body.processIds = [search.entityId];
+      }
+
       const response = await fetch("/api/internal-audit/risks", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          riskName: risk.title.substring(0, 100),
-          riskDescription: risk.description,
-          departmentId: departmentId,
-          riskLevel,
-          residualScore,
-          status: "Open",
-          // Source tracking (stored in auditComment for now)
-          auditComment: "Source: AI Suggested Risk",
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -283,14 +343,12 @@ export default function RiskIdentificationPage() {
         triggerTranslation('InternalAuditRisk', savedRisk.id, { riskName: savedRisk.riskName, riskDescription: savedRisk.riskDescription });
       }
 
-      // Mark as added
       setAddedRisks((prev) => new Set(prev).add(riskKey));
       toast.success(t("Risk added to register successfully"));
     } catch (error) {
       console.error("Error adding risk:", error);
       toast.error(t("Failed to add risk. Please try again."));
     } finally {
-      // Remove loading state
       setAddingRisks((prev) => {
         const newSet = new Set(prev);
         newSet.delete(riskKey);
@@ -331,7 +389,6 @@ export default function RiskIdentificationPage() {
           <span className="text-primary-700 font-medium">{t("Risk Identification")}</span>
         </nav>
 
-        {/* Page Header */}
         <div className="flex flex-col gap-1">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
         </div>
@@ -383,41 +440,112 @@ export default function RiskIdentificationPage() {
           </div>
         </div>
         <div className="px-4 sm:px-6 py-5 space-y-5">
-          {/* Department & Audit Focus - 2 column grid */}
+          {/* Row 1: Audit Category + Entity */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {/* Department Selection */}
+            {/* Audit Category */}
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">
-                {t("Department")} <span className="text-red-500">*</span>
+                {t("Audit Category")} <span className="text-red-500">*</span>
               </label>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="w-full h-9 bg-white border-slate-300">
-                  <SelectValue placeholder={t("Select department...")} />
+              <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                <SelectTrigger className={`w-full h-9 bg-white ${fieldErrors.category ? "border-red-400 focus:ring-red-300" : "border-slate-300"}`}>
+                  <SelectValue placeholder={t("Select audit category...")} />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  {translatedDepartments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
+                  {translatedCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors.category && (
+                <p className="mt-1 text-xs text-red-500">{fieldErrors.category}</p>
+              )}
             </div>
 
-            {/* Specific Audit Focus */}
+            {/* Dependent Entity (Audit / Process) */}
             <div>
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">
-                {t("Specific Audit Focus")}
-                <span className="text-slate-400 font-normal ml-1">({t("Optional")})</span>
+                {t("Audit / Process")} <span className="text-red-500">*</span>
               </label>
-              <Textarea
-                placeholder={t("e.g. Payroll processing, Third-party management...")}
-                value={auditFocus}
-                onChange={(e) => setAuditFocus(e.target.value)}
-                rows={1}
-                className="resize-none bg-white border-slate-300 min-h-[36px]"
-              />
+              <Select
+                value={selectedEntity}
+                onValueChange={handleEntityChange}
+                disabled={!selectedCategory || entitiesLoading}
+              >
+                <SelectTrigger className={`w-full h-9 bg-white ${fieldErrors.entity ? "border-red-400 focus:ring-red-300" : "border-slate-300"}`}>
+                  {entitiesLoading ? (
+                    <span className="flex items-center gap-2 text-slate-400">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      {t("Loading...")}
+                    </span>
+                  ) : (
+                    <SelectValue
+                      placeholder={
+                        !selectedCategory
+                          ? t("Select a category first...")
+                          : entities.length === 0
+                          ? t("No entities available")
+                          : t("Select audit or process...")
+                      }
+                    />
+                  )}
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {entities.length > 0 && (
+                    <>
+                      {entities.filter((e) => e.type === "engagement").length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                            {t("Audits")}
+                          </div>
+                          {entities
+                            .filter((e) => e.type === "engagement")
+                            .map((e) => (
+                              <SelectItem key={e.id} value={e.id}>
+                                {e.code ? `${e.code} – ` : ""}{e.name}
+                              </SelectItem>
+                            ))}
+                        </>
+                      )}
+                      {entities.filter((e) => e.type === "process").length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                            {t("Processes")}
+                          </div>
+                          {entities
+                            .filter((e) => e.type === "process")
+                            .map((e) => (
+                              <SelectItem key={e.id} value={e.id}>
+                                {e.code ? `${e.code} – ` : ""}{e.name}
+                              </SelectItem>
+                            ))}
+                        </>
+                      )}
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+              {fieldErrors.entity && (
+                <p className="mt-1 text-xs text-red-500">{fieldErrors.entity}</p>
+              )}
             </div>
+          </div>
+
+          {/* Row 2: Specific Audit Focus */}
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+              {t("Specific Audit Focus")}
+              <span className="text-slate-400 font-normal ml-1">({t("Optional")})</span>
+            </label>
+            <Textarea
+              placeholder={t("e.g. Payroll processing, Third-party management...")}
+              value={auditFocus}
+              onChange={(e) => setAuditFocus(e.target.value)}
+              rows={1}
+              className="resize-none bg-white border-slate-300 min-h-[36px]"
+            />
           </div>
 
           {/* File Upload Area */}
@@ -584,7 +712,7 @@ export default function RiskIdentificationPage() {
                                     variant="outline"
                                     className="h-8 text-xs"
                                     disabled={isAdding}
-                                    onClick={() => handleAddToRegister(r, search.id, idx, search.departmentId)}
+                                    onClick={() => handleAddToRegister(r, search.id, idx, search)}
                                   >
                                     {isAdding ? (
                                       <>

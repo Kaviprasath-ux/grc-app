@@ -33,6 +33,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 |---|---|---|
 | **Audit Universe** | `/internal-audit/audit-universe` | Org-chart grouped by **Audit Category** → Processes / Risks / Audits under each category. Stat cards: Categories, Processes, Risks, Total Audits. **Table columns**: Process/System/Entity, Department, Description, Last Audit Date, Audit Frequency (Years), Regulatory Requirement, Notes. Audits appear under a category if linked via `auditCategoryId` on the engagement OR via a risk's `engagementId`. |
 | **Risk Register** | `/internal-audit/risk-register` | Risk ID, process link, title, description, category/sub-category, source, cause/driver, consequence, inherent & residual likelihood/impact/rating, control effectiveness, related law, policy reference, document links. **Auto-sorted by residual risk (highest first).** |
+| **Risk Assessment** | `/internal-audit/risk-assessment` | Dedicated listing of all Internal Audit risks with a 5-step assessment wizard per risk. Steps: Risk Context → Likelihood → Impact → Risk Rating (Control Effectiveness + calculated score) → Summary. Supports localStorage save/restore for in-progress assessments. Actions: "Initiate Assessment" (not-assessed), "Resume" (in-progress), "Re-assess" (already assessed). Calls `PATCH /api/internal-audit/risks/[id]/assess`. |
 | **Risk Identification / Risk Universe** | `/internal-audit/risk-identification`, `/risk-universe` | AI-assisted risk suggestions |
 | **Process Inventory** | `/internal-audit/organization/process` | Process ID, name, **audit category (mandatory — from Audit Settings)**, owner, department, supporting documents, link to IA risks. Accessible to **AuditHead** (full CRUD) and CustomerAdministrator. Navigation visible to AuditHead via `audit.process:view`. |
 | **Departments** | `/internal-audit/settings/departments` | Department master data |
@@ -114,6 +115,7 @@ Legend: **F** = Full (view/create/edit/delete, plus approve where applicable) ·
 | Audit Universe | F | F | F | V | — | — | — | — |
 | Risk Identification | F | F | F | V | — | — | — | — |
 | Risk Register | F | F | F | V | — | CRUD | — | V _(dept)_ |
+| Risk Assessment | F | F | F | — | — | — | — | — |
 | Risk Universe | F | F | F | — | — | — | — | — |
 | Process Inventory | F | F | F | V | — | CRUD | — | V _(dept)_ |
 | **Strategic Plan** | **F (create)** | **V** | V | — | — | — | — | — |

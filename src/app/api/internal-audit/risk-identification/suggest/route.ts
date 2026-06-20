@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
-    const departmentId = formData.get("departmentId") as string;
+    const auditCategoryId = formData.get("auditCategoryId") as string;
+    const entityId = (formData.get("entityId") as string) || "";
+    const entityType = (formData.get("entityType") as string) || "";
     const auditFocus = (formData.get("auditFocus") as string) || "";
     const files = formData.getAll("files") as File[];
     const targetLanguageFromForm = formData.get("target_language") as string;
@@ -34,24 +36,40 @@ export async function POST(request: NextRequest) {
     // Get target language from form or cookie (defaults to 'en')
     const targetLanguage = targetLanguageFromForm || request.cookies.get('NEXT_LOCALE')?.value || 'en';
 
-    if (!departmentId) {
-      console.log("[RunPod assess-risks] Abort: Department is required");
+    if (!auditCategoryId) {
+      console.log("[RunPod assess-risks] Abort: Audit Category is required");
       return NextResponse.json(
-        { error: "Department is required" },
+        { error: "Audit Category is required" },
         { status: 400 }
       );
     }
 
-    const department = await prisma.department.findUnique({
-      where: { id: departmentId },
+    const category = await prisma.auditCategory.findUnique({
+      where: { id: auditCategoryId },
     });
 
-    if (!department) {
-      console.log("[RunPod assess-risks] Abort: Department not found for id=" + departmentId);
+    if (!category) {
+      console.log("[RunPod assess-risks] Abort: Audit Category not found for id=" + auditCategoryId);
       return NextResponse.json(
-        { error: "Department not found" },
+        { error: "Audit Category not found" },
         { status: 404 }
       );
+    }
+
+    // Resolve entity name for AI context
+    let entityName = "";
+    if (entityId && entityType === "process") {
+      const process = await prisma.internalAuditProcess.findUnique({
+        where: { id: entityId },
+        select: { name: true },
+      });
+      entityName = process?.name || "";
+    } else if (entityId && entityType === "engagement") {
+      const engagement = await prisma.auditEngagement.findUnique({
+        where: { id: entityId },
+        select: { engagementTitle: true },
+      });
+      entityName = engagement?.engagementTitle || "";
     }
 
     const secret = EXTERNAL_API_SECRETS.PYTHON_API_SECRET;
@@ -63,8 +81,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Send entity name (or category name as fallback) as the department context for AI
+    const departmentContext = entityName || category.name;
+
     const payload = new FormData();
-    payload.append("department", department.name);
+    payload.append("department", departmentContext);
+    payload.append("audit_category", category.name);
     payload.append("target_language", targetLanguage);
     if (auditFocus.trim()) {
       payload.append("specific_audit_focus", auditFocus.trim());
@@ -86,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     const url = getExternalApiUrl("PYTHON_BACKEND", "/api/assess-risks");
-    console.log("[RunPod assess-risks] Request -> department=" + department.name + ", auditFocus=" + (auditFocus || "(none)") + ", filesCount=" + validFiles.length);
+    console.log("[RunPod assess-risks] Request -> category=" + category.name + ", entity=" + (entityName || "(none)") + ", auditFocus=" + (auditFocus || "(none)") + ", filesCount=" + validFiles.length);
     console.log("[RunPod assess-risks] Calling RunPod POST " + url);
 
     const res = await fetch(url, {

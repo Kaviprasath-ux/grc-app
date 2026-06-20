@@ -302,6 +302,7 @@ export const navigation: NavItem[] = [
       { name: "Audit Universe", href: "/internal-audit/audit-universe", icon: Network, permission: "audit.auditables:view" },
       { name: "Risk Identification", href: "/internal-audit/risk-identification", icon: Brain, permission: "audit.risk-identification:view" },
       { name: "RiskRegister", href: "/internal-audit/risk-register", icon: ClipboardList, permission: "audit.risk-register:view" },
+      { name: "Risk Assessment", href: "/internal-audit/risk-assessment", icon: Search, permission: "audit.risk-register:view" },
       { name: "Strategic Plan", href: "/internal-audit/strategic-plan", icon: CalendarRange, permission: "audit.strategic-plan:view" },
       { name: "Operational Plan", href: "/internal-audit/operational-plan", icon: CalendarClock, permission: "audit.operational-plan:view" },
       { name: "Audit Engagement", href: "/internal-audit/audit-engagement", icon: Calendar, permission: "audit.planning:view" },
