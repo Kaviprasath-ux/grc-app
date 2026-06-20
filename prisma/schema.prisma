@@ -3766,6 +3766,37 @@ model AuditOpeningMeeting {
   @@index([customerAccountId])
 }
 
+// Audit Program form (workflow step: Audit Program). One per engagement.
+// Header fields are scalar; instructions is free text; the detailed program
+// rows and the review/approval block are stored as JSON / scalar fields.
+model AuditProgram {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // A. Audit Program Overview
+  auditTitle        String?
+  department        String?
+  period            String?
+  // B. Instructions (free text, default boilerplate)
+  instructions      String?  @db.Text
+  // C. Detailed audit program rows (JSON array of the 14-column rows)
+  rows              String?  @db.Text // JSON: [{ objective, processSubprocess, risk, control, controlType, testType, auditProcedure, samplingMethod, sampleSize, evidenceRequired, result, conclusion, exception, workingPaperRef }]
+  // D. Review & Approval
+  preparedBy        String?
+  preparedDate      String?
+  reviewedBy        String?
+  reviewedDate      String?
+  approvedBy        String?
+  approvedDate      String?
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
 // ==================== INTERNAL AUDIT - DOCUMENT LIBRARY ====================
 
 // Internal Audit Document (for document library)

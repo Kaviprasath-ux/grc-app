@@ -47,6 +47,70 @@ export const GET = withAuth(
   { resource: "audit.fieldwork", action: "view" }
 );
 
+// PUT - save the Closing Meeting minutes from the inline form (JSON).
+export const PUT = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const { id } = await (context as RouteContext).params;
+      const tenantFilter = getTenantFilter(session);
+
+      const engagement = await prisma.auditEngagement.findFirst({
+        where: { id, ...tenantFilter },
+        select: { id: true },
+      });
+      if (!engagement) {
+        return NextResponse.json({ error: "Engagement not found" }, { status: 404 });
+      }
+
+      const customerAccountId = getCustomerAccountId(session);
+      if (!customerAccountId) {
+        return NextResponse.json({ error: "No customer account associated" }, { status: 400 });
+      }
+
+      const body = await req.json();
+      const payload = {
+        meetingVenue: body.meetingVenue ?? null,
+        history: body.history ?? null,
+        assignmentTitle: body.assignmentTitle ?? null,
+        auditTaskNumber: body.auditTaskNumber ?? null,
+        department: body.department ?? null,
+        management: body.management ?? null,
+        attendees: JSON.stringify(Array.isArray(body.attendees) ? body.attendees : []),
+        summaryOfResults: JSON.stringify(Array.isArray(body.summary) ? body.summary : []),
+        decisionsTaken: JSON.stringify(Array.isArray(body.decisions) ? body.decisions : []),
+      };
+
+      const saved = await prisma.auditClosingMeeting.upsert({
+        where: { engagementId: id },
+        create: {
+          customerAccountId,
+          engagementId: id,
+          createdById: session.id || null,
+          updatedById: session.id || null,
+          ...payload,
+        },
+        update: { updatedById: session.id || null, ...payload },
+      });
+
+      return NextResponse.json({
+        meetingVenue: saved.meetingVenue,
+        history: saved.history,
+        assignmentTitle: saved.assignmentTitle,
+        auditTaskNumber: saved.auditTaskNumber,
+        department: saved.department,
+        management: saved.management,
+        attendees: saved.attendees ? JSON.parse(saved.attendees) : [],
+        summary: saved.summaryOfResults ? JSON.parse(saved.summaryOfResults) : [],
+        decisions: saved.decisionsTaken ? JSON.parse(saved.decisionsTaken) : [],
+      });
+    } catch (error) {
+      console.error("Error saving closing meeting:", error);
+      return NextResponse.json({ error: "Failed to save closing meeting" }, { status: 500 });
+    }
+  },
+  { resource: "audit.fieldwork", action: "edit" }
+);
+
 // POST - upload a filled Closing Meeting template; parse it and save.
 export const POST = withAuth(
   async (req: NextRequest, context, session) => {

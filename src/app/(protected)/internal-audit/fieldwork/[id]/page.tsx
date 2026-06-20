@@ -184,7 +184,7 @@ interface UploadedFile {
   file?: File;
 }
 
-export default function FieldworkDetailsPage() {
+export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean } = {}) {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -1872,41 +1872,45 @@ export default function FieldworkDetailsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <Home className="h-4 w-4" />
-          <span>{t("Internal Audit")}</span>
-        </div>
-        {canViewDashboard && (
-          <>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-            <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
-              {t("Dashboard")}
-            </Link>
-          </>
-        )}
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Fieldwork")}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{engagement.auditId}</span>
-      </nav>
-
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{displayEngagement?.engagementTitle || engagement.engagementTitle}</h1>
-          <p className="text-sm text-slate-500">{engagement.auditId}</p>
-        </div>
-        {isCompleted && (
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md text-sm text-emerald-700">
-            <Check className="h-4 w-4" />
-            <span>{t("Completed")}</span>
+      {/* Breadcrumb (hidden when embedded inside the engagement workflow) */}
+      {!embedded && (
+        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
           </div>
-        )}
-      </div>
+          {canViewDashboard && (
+            <>
+              <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+              <Link href="/internal-audit/dashboard" className="text-slate-500 hover:text-primary-600 transition-colors">
+                {t("Dashboard")}
+              </Link>
+            </>
+          )}
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Fieldwork")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+          <span className="text-primary-700 font-medium">{engagement.auditId}</span>
+        </nav>
+      )}
+
+      {/* Page Header (hidden when embedded — the workflow already shows it) */}
+      {!embedded && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{displayEngagement?.engagementTitle || engagement.engagementTitle}</h1>
+            <p className="text-sm text-slate-500">{engagement.auditId}</p>
+          </div>
+          {isCompleted && (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md text-sm text-emerald-700">
+              <Check className="h-4 w-4" />
+              <span>{t("Completed")}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Engagement Details Section */}
       <CollapsibleSection
@@ -2232,178 +2236,6 @@ export default function FieldworkDetailsPage() {
       </CollapsibleSection>
       )}
 
-      {/* Audit Engagement Task List Section - Hidden for auditees */}
-      {!isAuditeeOnly && (
-      <CollapsibleSection
-        title={t("Audit Engagement Task List")}
-        isOpen={taskListOpen}
-        onToggle={() => setTaskListOpen(!taskListOpen)}
-      >
-        <div className="space-y-4">
-          <div className="flex ltr:justify-end rtl:justify-start">
-            <Button
-              size="sm"
-              onClick={handleAddTask}
-              disabled={addingTask || isReadOnly}
-            >
-              {addingTask ? (
-                <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              )}
-              {t("Add Task")}
-            </Button>
-          </div>
-          <div className="bg-white border rounded-lg overflow-x-auto">
-            <Table className="min-w-[600px]">
-              <TableHeader>
-                <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                  <TableHead className="text-xs font-semibold text-slate-600 w-[80px]">{t("Ref No")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Task")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 w-[200px]">{t("Document")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 w-[100px] text-center">{t("Executed")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">{t("Comments")}</TableHead>
-                  {isAuditTeam && <TableHead className="text-xs font-semibold text-slate-600 w-[100px]">{t("Action")}</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {taskList.length > 0 ? (
-                  taskList.map((task) => (
-                    <TableRow key={task.id} className="hover:bg-slate-50">
-                      <TableCell>
-                        <Input
-                          value={task.refNo}
-                          readOnly
-                          className="w-16 bg-slate-50 text-center"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={task.task}
-                          onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)}
-                          onBlur={(e) => handleUpdateTask(task.id, "task", e.target.value)}
-                          placeholder={t("Enter task description")}
-                          className="border-slate-300"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {task.document ? (
-                          <div className="flex items-center gap-2">
-                            <a
-                              href={`/api${task.document}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary-600 hover:underline text-sm truncate max-w-[120px]"
-                              title={task.documentName || t("Document")}
-                            >
-                              {task.documentName || t("View")}
-                            </a>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => {
-                                const input = document.createElement("input");
-                                input.type = "file";
-                                input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
-                                input.onchange = (e) => {
-                                  const file = (e.target as HTMLInputElement).files?.[0];
-                                  if (file) handleUploadTaskDocument(task.id, file);
-                                };
-                                input.click();
-                              }}
-                            >
-                              <Upload className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            disabled={uploadingTaskDocument === task.id || isReadOnly}
-                            onClick={() => {
-                              const input = document.createElement("input");
-                              input.type = "file";
-                              input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
-                              input.onchange = (e) => {
-                                const file = (e.target as HTMLInputElement).files?.[0];
-                                if (file) handleUploadTaskDocument(task.id, file);
-                              };
-                              input.click();
-                            }}
-                          >
-                            {uploadingTaskDocument === task.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <>
-                                <Upload className="h-3 w-3 mr-1" />
-                                {t("Upload")}
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Checkbox
-                          checked={task.executed}
-                          onCheckedChange={(checked) =>
-                            handleUpdateTask(task.id, "executed", checked === true)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={task.comments}
-                          onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
-                          onBlur={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
-                          placeholder={t("Enter comments")}
-                          className="border-slate-300"
-                        />
-                      </TableCell>
-                      {isAuditTeam && (
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleSaveTask(task)}
-                              disabled={savingTask === task.id || isReadOnly}
-                              title={t("Save task")}
-                            >
-                              {savingTask === task.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-green-600" />
-                              ) : (
-                                <Save className="h-4 w-4 text-green-600" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteTask(task.id)}
-                              title={t("Delete task")}
-                              disabled={isReadOnly}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={isAuditTeam ? 6 : 5} className="text-center py-8 text-slate-500">
-                      {t("No tasks found. Click \"Add Task\" to create one.")}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      </CollapsibleSection>
-      )}
 
       {/* Evidence Request Section - Visible for auditees */}
       <CollapsibleSection
@@ -2705,104 +2537,6 @@ export default function FieldworkDetailsPage() {
         </div>
       </CollapsibleSection>
 
-      {/* Other Documents Section - Hidden for auditees */}
-      {!isAuditeeOnly && (
-      <CollapsibleSection
-        title={t("Other Documents")}
-        isOpen={otherDocsOpen}
-        onToggle={() => setOtherDocsOpen(!otherDocsOpen)}
-      >
-        <div className="space-y-4">
-          <div className="flex ltr:justify-end rtl:justify-start">
-            <Button
-              size="sm"
-              onClick={() => {
-                setUploadedFiles([]);
-                setNewDocument({ title: "", documentType: "", description: "" });
-                setDocumentValidationErrors({});
-                setNewDocumentDialogOpen(true);
-              }}
-              disabled={isReadOnly}
-            >
-              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Upload Document")}
-            </Button>
-          </div>
-          {otherDocuments.length > 0 ? (
-            <div className="bg-white border rounded-lg overflow-x-auto">
-              <Table className="min-w-[600px]">
-                <TableHeader>
-                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Document Type")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("File")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Uploaded")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {otherDocuments.map((doc) => (
-                    <TableRow key={doc.id} className="hover:bg-slate-50">
-                      <TableCell className="font-medium">{doc.title || doc.fileName}</TableCell>
-                      <TableCell>{doc.documentType || "-"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{doc.description || "-"}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-primary-600" />
-                          <span className="text-sm">{doc.fileName}</span>
-                          <span className="text-xs text-slate-400">({formatFileSize(doc.fileSize)})</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={t("View")}
-                            onClick={() => handleOpenViewDocument(doc, false)}
-                          >
-                            <Eye className="h-4 w-4 text-slate-600" />
-                          </Button>
-                          {isAuditTeam && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title={t("Edit")}
-                                onClick={() => handleOpenViewDocument(doc, true)}
-                                disabled={isReadOnly}
-                              >
-                                <Pencil className="h-4 w-4 text-primary-600" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title={t("Delete")}
-                                onClick={() => {
-                                  setDocumentToDelete(doc);
-                                  setDeleteDocumentDialogOpen(true);
-                                }}
-                                disabled={isReadOnly}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-500">{t("No other documents uploaded yet")}</div>
-          )}
-        </div>
-      </CollapsibleSection>
-      )}
 
 
       {/* Comments Dialog */}
@@ -4844,4 +4578,9 @@ export default function FieldworkDetailsPage() {
       </Dialog>
     </div>
   );
+}
+
+// Default page export (standalone /internal-audit/fieldwork/[id] route).
+export default function FieldworkDetailsPage() {
+  return <FieldworkDetailsView />;
 }

@@ -15,7 +15,7 @@ export const POST = withAuth(
         where: { id: findingId, ...tenantFilter },
         include: {
           engagement: {
-            select: { id: true, auditId: true, engagementTitle: true, auditeeId: true },
+            select: { id: true, auditId: true, engagementTitle: true, auditeeId: true, reportingMode: true },
           },
         },
       });
@@ -24,6 +24,16 @@ export const POST = withAuth(
         return NextResponse.json(
           { error: 'Finding not found' },
           { status: 404 }
+        );
+      }
+
+      // Individual sharing is only valid under Continuous reporting. In
+      // Aggregated mode findings are communicated together via the
+      // consolidated draft report (share-all endpoint).
+      if (finding.engagement?.reportingMode === 'Aggregated') {
+        return NextResponse.json(
+          { error: 'Engagement is in Aggregated reporting mode; share the consolidated draft report instead.' },
+          { status: 409 }
         );
       }
 

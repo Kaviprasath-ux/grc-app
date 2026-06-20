@@ -2655,6 +2655,30 @@ CREATE TABLE "AuditOpeningMeeting" (
 );
 
 -- CreateTable
+CREATE TABLE "AuditProgram" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
+    "auditTitle" TEXT,
+    "department" TEXT,
+    "period" TEXT,
+    "instructions" TEXT,
+    "rows" TEXT,
+    "preparedBy" TEXT,
+    "preparedDate" TEXT,
+    "reviewedBy" TEXT,
+    "reviewedDate" TEXT,
+    "approvedBy" TEXT,
+    "approvedDate" TEXT,
+    "createdById" TEXT,
+    "updatedById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuditProgram_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "InternalAuditDocument" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -5264,6 +5288,12 @@ CREATE UNIQUE INDEX "AuditOpeningMeeting_engagementId_key" ON "AuditOpeningMeeti
 
 -- CreateIndex
 CREATE INDEX "AuditOpeningMeeting_customerAccountId_idx" ON "AuditOpeningMeeting"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditProgram_engagementId_key" ON "AuditProgram"("engagementId");
+
+-- CreateIndex
+CREATE INDEX "AuditProgram_customerAccountId_idx" ON "AuditProgram"("customerAccountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "InternalAuditDocument_documentCode_key" ON "InternalAuditDocument"("documentCode");

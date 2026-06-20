@@ -17,6 +17,8 @@ export type EngagementStageKind =
   | "stub"
   | "meeting"
   | "apm"
+  | "audit-program"
+  | "fieldwork"
   | "announcement"
   | "findings";
 
@@ -60,17 +62,15 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     key: "audit-program",
     label: "Audit Program",
     description:
-      "Review the audit program overview and prepare workpapers before fieldwork begins.",
-    kind: "reuse",
-    href: (id) => `/internal-audit/fieldwork/${id}`,
+      "Build the detailed audit program: objectives, risks, controls, procedures and working-paper references.",
+    kind: "audit-program",
   },
   {
     key: "fieldwork",
     label: "Fieldwork",
     description:
       "Run walkthroughs and control testing, manage workpapers, and collect evidence.",
-    kind: "reuse",
-    href: (id) => `/internal-audit/fieldwork/${id}`,
+    kind: "fieldwork",
   },
   {
     key: "findings",

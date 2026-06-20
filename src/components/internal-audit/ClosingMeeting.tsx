@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -11,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { Loader2, Trash2, FileText, Save, Plus, Download } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Attendee {
@@ -32,26 +35,29 @@ interface DecisionRow {
   official: string;
   decision: string;
 }
-interface ClosingData {
-  meetingVenue: string | null;
-  history: string | null;
-  assignmentTitle: string | null;
-  auditTaskNumber: string | null;
-  department: string | null;
-  management: string | null;
+interface ClosingForm {
+  meetingVenue: string;
+  history: string;
+  assignmentTitle: string;
+  auditTaskNumber: string;
+  department: string;
+  management: string;
   attendees: Attendee[];
   summary: SummaryRow[];
   decisions: DecisionRow[];
 }
 
-const HEADER_FIELDS: { key: keyof ClosingData; label: string }[] = [
-  { key: "meetingVenue", label: "Meeting Venue" },
-  { key: "history", label: "History" },
-  { key: "assignmentTitle", label: "Assignment Title" },
-  { key: "auditTaskNumber", label: "Audit Task Number" },
-  { key: "department", label: "Department" },
-  { key: "management", label: "Management" },
-];
+const EMPTY_FORM: ClosingForm = {
+  meetingVenue: "",
+  history: "",
+  assignmentTitle: "",
+  auditTaskNumber: "",
+  department: "",
+  management: "",
+  attendees: [],
+  summary: [],
+  decisions: [],
+};
 
 export default function ClosingMeeting({
   engagementId,
@@ -61,25 +67,37 @@ export default function ClosingMeeting({
   canEdit: boolean;
 }) {
   const { t } = useLanguage();
-  const [data, setData] = useState<ClosingData | null>(null);
+  const [form, setForm] = useState<ClosingForm>(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
 
   const base = `/api/internal-audit/engagements/${engagementId}/closing-meeting`;
-  const headTh = "text-xs font-medium text-slate-500 uppercase tracking-wider py-2";
+  const headHd = "text-xs font-medium text-slate-500 uppercase tracking-wider py-3";
 
   useEffect(() => {
+    if (!engagementId) return;
     (async () => {
       setLoading(true);
       try {
         const res = await fetch(base);
-        if (res.ok) {
-          const d = await res.json();
-          setData(d || null);
+        if (!res.ok) throw new Error("Failed");
+        const d = await res.json();
+        if (d) {
+          setForm({
+            meetingVenue: d.meetingVenue || "",
+            history: d.history || "",
+            assignmentTitle: d.assignmentTitle || "",
+            auditTaskNumber: d.auditTaskNumber || "",
+            department: d.department || "",
+            management: d.management || "",
+            attendees: Array.isArray(d.attendees) ? d.attendees : [],
+            summary: Array.isArray(d.summary) ? d.summary : [],
+            decisions: Array.isArray(d.decisions) ? d.decisions : [],
+          });
         }
       } catch {
         toast.error(t("Failed to load closing meeting"));
+        setForm(EMPTY_FORM);
       } finally {
         setLoading(false);
       }
@@ -87,32 +105,88 @@ export default function ClosingMeeting({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engagementId]);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
+  const save = async (): Promise<boolean> => {
+    setSaving(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(base, { method: "POST", body: fd });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error || "Failed");
-      }
-      const d = await res.json();
-      setData(d);
-      toast.success(t("Closing meeting minutes uploaded"));
-    } catch (err) {
-      const msg =
-        err instanceof Error && err.message !== "Failed"
-          ? err.message
-          : t("Failed to upload closing meeting minutes");
-      toast.error(msg);
+      const res = await fetch(base, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Closing meeting minutes saved"));
+      return true;
+    } catch {
+      toast.error(t("Failed to save closing meeting minutes"));
+      return false;
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setSaving(false);
     }
   };
+
+  const exportPdf = async () => {
+    if (!(await save())) return;
+    window.open(`${base}/download`, "_blank");
+  };
+
+  const print = async () => {
+    if (!(await save())) return;
+    try {
+      const res = await fetch(`${base}/download`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url);
+      if (w) w.onload = () => w.print();
+    } catch {
+      toast.error(t("Failed to print"));
+    }
+  };
+
+  // --- Row helpers ---
+  const addAttendee = () =>
+    setForm((p) => ({
+      ...p,
+      attendees: [...p.attendees, { name: "", jobTitle: "", management: "", signature: "" }],
+    }));
+  const updateAttendee = (idx: number, field: keyof Attendee, value: string) =>
+    setForm((p) => {
+      const next = [...p.attendees];
+      next[idx] = { ...next[idx], [field]: value };
+      return { ...p, attendees: next };
+    });
+
+  const addSummary = () =>
+    setForm((p) => ({
+      ...p,
+      summary: [
+        ...p.summary,
+        {
+          number: String(p.summary.length + 1),
+          keyNote: "",
+          degreeOfRisk: "",
+          recommendation: "",
+          managementResponse: "",
+        },
+      ],
+    }));
+  const updateSummary = (idx: number, field: keyof SummaryRow, value: string) =>
+    setForm((p) => {
+      const next = [...p.summary];
+      next[idx] = { ...next[idx], [field]: value };
+      return { ...p, summary: next };
+    });
+
+  const addDecision = () =>
+    setForm((p) => ({
+      ...p,
+      decisions: [...p.decisions, { implementationDate: "", official: "", decision: "" }],
+    }));
+  const updateDecision = (idx: number, field: keyof DecisionRow, value: string) =>
+    setForm((p) => {
+      const next = [...p.decisions];
+      next[idx] = { ...next[idx], [field]: value };
+      return { ...p, decisions: next };
+    });
 
   if (loading) {
     return (
@@ -123,176 +197,300 @@ export default function ClosingMeeting({
   }
 
   return (
-    <div className="space-y-5">
-      {/* Actions */}
-      <div className="flex flex-wrap items-center gap-2">
-        <a href={`${base}/template`} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Download Template")}
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-base font-semibold text-slate-800">
+          <FileText className="h-5 w-5 text-slate-500" />
+          {t("Closing Meeting Minutes")}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={print} disabled={saving}>
+            <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Print")}
           </Button>
-        </a>
-        {canEdit && (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xlsm,.xls"
-              className="hidden"
-              onChange={handleUpload}
-            />
-            <Button
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="bg-primary-600 hover:bg-primary-700"
-            >
-              {uploading ? (
+          <Button variant="outline" size="sm" onClick={exportPdf} disabled={saving}>
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Export PDF")}
+          </Button>
+          {canEdit && (
+            <Button size="sm" onClick={save} disabled={saving}>
+              {saving ? (
                 <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
               ) : (
-                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                <Save className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               )}
-              {t("Upload")}
+              {t("Save")}
             </Button>
-          </>
-        )}
+          )}
+        </div>
       </div>
 
-      {!data ? (
-        <div className="border border-dashed rounded-lg p-8 text-center text-sm text-slate-500">
-          <FileSpreadsheet className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-          {t("Download the template, fill it in, then upload it to record the closing meeting minutes.")}
+      {/* Meeting details */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-4 sm:px-5 py-3 border-b border-slate-100 bg-slate-50">
+          <h3 className="text-sm font-semibold text-slate-700">{t("Meeting Details")}</h3>
         </div>
-      ) : (
-        <div className="space-y-5">
-          {/* Meeting Details */}
-          <div className="rounded-lg border border-slate-200 overflow-x-auto">
-            <Table className="min-w-[720px]">
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  {HEADER_FIELDS.map((h) => (
-                    <TableHead key={h.key} className={headTh}>{t(h.label)}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 sm:p-5">
+          {(
+            [
+              ["management", "Management"],
+              ["department", "Department"],
+              ["auditTaskNumber", "Audit Task Number"],
+              ["assignmentTitle", "Assignment Title"],
+              ["history", "History"],
+              ["meetingVenue", "Meeting Venue"],
+            ] as Array<[keyof ClosingForm, string]>
+          ).map(([key, label]) => (
+            <div key={key}>
+              <Label className="text-xs text-muted-foreground">{t(label)}</Label>
+              <Input
+                value={form[key] as string}
+                disabled={!canEdit}
+                onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Attendees */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100 bg-slate-50">
+          <h3 className="text-sm font-semibold text-slate-700">{t("Attendees")}</h3>
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={addAttendee}>
+              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+              {t("Add Row")}
+            </Button>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <Table className="min-w-[600px]">
+            <TableHeader>
+              <TableRow className="h-11 border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
+                <TableHead className={`${headHd} ltr:pl-5 rtl:pr-5`}>{t("Name")}</TableHead>
+                <TableHead className={headHd}>{t("Job Title")}</TableHead>
+                <TableHead className={headHd}>{t("Management")}</TableHead>
+                <TableHead className={headHd}>{t("Signature")}</TableHead>
+                {canEdit && <TableHead className="w-10" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {form.attendees.length === 0 ? (
                 <TableRow>
-                  {HEADER_FIELDS.map((h) => (
-                    <TableCell key={h.key} className="text-sm text-slate-700">
-                      {(data[h.key] as string) || "—"}
-                    </TableCell>
-                  ))}
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                    {t("No rows. Use Add Row.")}
+                  </TableCell>
                 </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Attendees */}
-          <div>
-            <h4 className="text-sm font-semibold text-slate-700 mb-2">{t("Attendees")}</h4>
-            <div className="rounded-lg border border-slate-200 overflow-x-auto">
-              <Table className="min-w-[640px]">
-                <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50">
-                    <TableHead className={headTh}>{t("Name")}</TableHead>
-                    <TableHead className={headTh}>{t("Job Title")}</TableHead>
-                    <TableHead className={headTh}>{t("Management")}</TableHead>
-                    <TableHead className={headTh}>{t("Signature")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.attendees.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-sm text-slate-400">
-                        {t("No data")}
+              ) : (
+                form.attendees.map((a, idx) => (
+                  <TableRow key={idx}>
+                    {(["name", "jobTitle", "management", "signature"] as const).map((field) => (
+                      <TableCell key={field}>
+                        <Input
+                          value={a[field]}
+                          disabled={!canEdit}
+                          onChange={(e) => updateAttendee(idx, field, e.target.value)}
+                        />
                       </TableCell>
-                    </TableRow>
-                  ) : (
-                    data.attendees.map((a, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm text-slate-700">{a.name || "—"}</TableCell>
-                        <TableCell className="text-sm text-slate-700">{a.jobTitle || "—"}</TableCell>
-                        <TableCell className="text-sm text-slate-700">{a.management || "—"}</TableCell>
-                        <TableCell className="text-sm text-slate-700">{a.signature || "—"}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-
-          {/* Summary of Audit Results */}
-          <div>
-            <h4 className="text-sm font-semibold text-slate-700 mb-2">{t("Summary of Audit Results")}</h4>
-            <div className="rounded-lg border border-slate-200 overflow-x-auto">
-              <Table className="min-w-[820px]">
-                <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50">
-                    <TableHead className={`${headTh} w-12`}>#</TableHead>
-                    <TableHead className={headTh}>{t("Key Note")}</TableHead>
-                    <TableHead className={headTh}>{t("Degree of Risk")}</TableHead>
-                    <TableHead className={headTh}>{t("Recommendation")}</TableHead>
-                    <TableHead className={headTh}>{t("Management Response")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.summary.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-sm text-slate-400">
-                        {t("No data")}
+                    ))}
+                    {canEdit && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setForm((p) => ({
+                              ...p,
+                              attendees: p.attendees.filter((_, i) => i !== idx),
+                            }))
+                          }
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
                       </TableCell>
-                    </TableRow>
-                  ) : (
-                    data.summary.map((s, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm text-slate-700">{s.number || i + 1}</TableCell>
-                        <TableCell className="text-sm text-slate-700 whitespace-pre-wrap">{s.keyNote || "—"}</TableCell>
-                        <TableCell className="text-sm text-slate-700">{s.degreeOfRisk || "—"}</TableCell>
-                        <TableCell className="text-sm text-slate-700 whitespace-pre-wrap">{s.recommendation || "—"}</TableCell>
-                        <TableCell className="text-sm text-slate-700 whitespace-pre-wrap">{s.managementResponse || "—"}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-
-          {/* Decisions taken */}
-          <div>
-            <h4 className="text-sm font-semibold text-slate-700 mb-2">{t("Decisions taken")}</h4>
-            <div className="rounded-lg border border-slate-200 overflow-x-auto">
-              <Table className="min-w-[560px]">
-                <TableHeader>
-                  <TableRow className="bg-slate-50 hover:bg-slate-50">
-                    <TableHead className={headTh}>{t("Implementation Date")}</TableHead>
-                    <TableHead className={headTh}>{t("Official")}</TableHead>
-                    <TableHead className={headTh}>{t("Decision")}</TableHead>
+                    )}
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(!data.decisions || data.decisions.length === 0) ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center text-sm text-slate-400">
-                        {t("No data")}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    data.decisions.map((d, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm text-slate-700">{d.implementationDate || "—"}</TableCell>
-                        <TableCell className="text-sm text-slate-700">{d.official || "—"}</TableCell>
-                        <TableCell className="text-sm text-slate-700 whitespace-pre-wrap">{d.decision || "—"}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
-      )}
+      </div>
+
+      {/* Summary of Audit Results */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100 bg-slate-50">
+          <h3 className="text-sm font-semibold text-slate-700">{t("Summary of Audit Results")}</h3>
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={addSummary}>
+              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+              {t("Add Row")}
+            </Button>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <Table className="min-w-[860px]">
+            <TableHeader>
+              <TableRow className="h-11 border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
+                <TableHead className={`${headHd} w-12 ltr:pl-5 rtl:pr-5`}>#</TableHead>
+                <TableHead className={headHd}>{t("Key Note")}</TableHead>
+                <TableHead className={headHd}>{t("Degree of Risk")}</TableHead>
+                <TableHead className={headHd}>{t("Recommendation")}</TableHead>
+                <TableHead className={headHd}>{t("Management Response")}</TableHead>
+                {canEdit && <TableHead className="w-10" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {form.summary.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                    {t("No rows. Use Add Row.")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                form.summary.map((row, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>
+                      <Input
+                        value={row.number}
+                        disabled={!canEdit}
+                        onChange={(e) => updateSummary(idx, "number", e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Textarea
+                        rows={2}
+                        value={row.keyNote}
+                        disabled={!canEdit}
+                        onChange={(e) => updateSummary(idx, "keyNote", e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.degreeOfRisk}
+                        disabled={!canEdit}
+                        onChange={(e) => updateSummary(idx, "degreeOfRisk", e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Textarea
+                        rows={2}
+                        value={row.recommendation}
+                        disabled={!canEdit}
+                        onChange={(e) => updateSummary(idx, "recommendation", e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Textarea
+                        rows={2}
+                        value={row.managementResponse}
+                        disabled={!canEdit}
+                        onChange={(e) => updateSummary(idx, "managementResponse", e.target.value)}
+                      />
+                    </TableCell>
+                    {canEdit && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setForm((p) => ({
+                              ...p,
+                              summary: p.summary.filter((_, i) => i !== idx),
+                            }))
+                          }
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Decisions taken */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100 bg-slate-50">
+          <h3 className="text-sm font-semibold text-slate-700">{t("Decisions taken")}</h3>
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={addDecision}>
+              <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+              {t("Add Row")}
+            </Button>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <Table className="min-w-[620px]">
+            <TableHeader>
+              <TableRow className="h-11 border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
+                <TableHead className={`${headHd} ltr:pl-5 rtl:pr-5`}>{t("Implementation Date")}</TableHead>
+                <TableHead className={headHd}>{t("Official")}</TableHead>
+                <TableHead className={headHd}>{t("Decision")}</TableHead>
+                {canEdit && <TableHead className="w-10" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {form.decisions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    {t("No rows. Use Add Row.")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                form.decisions.map((row, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>
+                      <Input
+                        type="date"
+                        value={row.implementationDate}
+                        disabled={!canEdit}
+                        onChange={(e) => updateDecision(idx, "implementationDate", e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.official}
+                        disabled={!canEdit}
+                        onChange={(e) => updateDecision(idx, "official", e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Textarea
+                        rows={2}
+                        value={row.decision}
+                        disabled={!canEdit}
+                        onChange={(e) => updateDecision(idx, "decision", e.target.value)}
+                      />
+                    </TableCell>
+                    {canEdit && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setForm((p) => ({
+                              ...p,
+                              decisions: p.decisions.filter((_, i) => i !== idx),
+                            }))
+                          }
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
   );
 }

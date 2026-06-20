@@ -22,6 +22,8 @@ import OpeningMeeting from "@/components/internal-audit/OpeningMeeting";
 import FindingsDiscussionMeeting from "@/components/internal-audit/FindingsDiscussionMeeting";
 import ClosingMeeting from "@/components/internal-audit/ClosingMeeting";
 import AuditPlanningMemorandum from "@/components/internal-audit/AuditPlanningMemorandum";
+import AuditProgram from "@/components/internal-audit/AuditProgram";
+import { FieldworkDetailsView } from "@/app/(protected)/internal-audit/fieldwork/[id]/page";
 import AuditAnnouncement from "@/components/internal-audit/AuditAnnouncement";
 import FindingsCommunication from "@/components/internal-audit/FindingsCommunication";
 import {
@@ -257,6 +259,18 @@ export default function EngagementWorkflowPage({
         {stage.kind === "apm" && (
           <div className="mt-5">
             <AuditPlanningMemorandum engagementId={engagement.id} canEdit={canEdit} />
+          </div>
+        )}
+
+        {stage.kind === "audit-program" && (
+          <div className="mt-5">
+            <AuditProgram engagementId={engagement.id} canEdit={canEdit} />
+          </div>
+        )}
+
+        {stage.kind === "fieldwork" && (
+          <div className="mt-5">
+            <FieldworkDetailsView embedded />
           </div>
         )}
 

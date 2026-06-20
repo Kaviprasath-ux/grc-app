@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -18,7 +17,6 @@ import { toast } from "sonner";
 import {
   Share2,
   CheckCircle2,
-  ExternalLink,
   Loader2,
   Megaphone,
   Undo2,
@@ -59,6 +57,7 @@ export default function FindingsCommunication({
   const [loading, setLoading] = useState<boolean>(true);
   const [savingMode, setSavingMode] = useState<boolean>(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyAll, setBusyAll] = useState<boolean>(false);
 
   const formatDate = useCallback((iso: string | null): string => {
     if (!iso) return "—";
@@ -151,6 +150,54 @@ export default function FindingsCommunication({
     }
   };
 
+  const handleShareAll = async () => {
+    setBusyAll(true);
+    try {
+      const res = await fetch(
+        `/api/internal-audit/engagements/${engagementId}/findings/share-all`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      toast.success(
+        t("Consolidated draft shared with auditee") +
+          ` (${data.shared ?? findings.length})`
+      );
+      await loadFindings();
+    } catch {
+      toast.error(t("Failed to share consolidated draft"));
+    } finally {
+      setBusyAll(false);
+    }
+  };
+
+  const handleUnshareAll = async () => {
+    if (
+      !(await confirm({
+        title: t("Recall consolidated draft?"),
+        description: t("This action cannot be undone."),
+      }))
+    )
+      return;
+    setBusyAll(true);
+    try {
+      const res = await fetch(
+        `/api/internal-audit/engagements/${engagementId}/findings/share-all`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Consolidated draft recalled"));
+      await loadFindings();
+    } catch {
+      toast.error(t("Failed to recall consolidated draft"));
+    } finally {
+      setBusyAll(false);
+    }
+  };
+
+  const sharedCount = findings.filter((f) => !!f.sharedWithAuditeeAt).length;
+  const allShared = findings.length > 0 && sharedCount === findings.length;
+
   const severityBadgeClass = (severity: string): string => {
     switch (severity) {
       case "Critical":
@@ -190,12 +237,6 @@ export default function FindingsCommunication({
               <Megaphone className="h-5 w-5 text-slate-500" />
               {t("Findings Communication")}
             </CardTitle>
-            <Link href={`/internal-audit/fieldwork/${engagementId}`}>
-              <Button size="sm" variant="outline">
-                <ExternalLink className="h-4 w-4 mr-1" />
-                {t("Open in Fieldwork")}
-              </Button>
-            </Link>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
@@ -230,6 +271,65 @@ export default function FindingsCommunication({
           </p>
         </CardContent>
       </Card>
+
+      {/* Aggregated: consolidated draft report sharing */}
+      {reportingMode === "Aggregated" && findings.length > 0 && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                <p className="font-medium text-slate-700">
+                  {t("Draft Detailed Report")}
+                </p>
+                <p className="text-sm text-slate-500">
+                  {allShared
+                    ? t("All findings consolidated and shared with the auditee.")
+                    : t(
+                        "Consolidate all findings into the draft detailed report and share them with the auditee at once."
+                      )}{" "}
+                  <span className="text-slate-400">
+                    ({sharedCount}/{findings.length} {t("shared")})
+                  </span>
+                </p>
+              </div>
+              {canEdit && (
+                <div className="flex items-center gap-2">
+                  {allShared ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={busyAll}
+                      onClick={handleUnshareAll}
+                    >
+                      {busyAll ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Undo2 className="h-4 w-4 mr-1" />
+                      )}
+                      {t("Recall draft")}
+                    </Button>
+                  ) : (
+                    <Button size="sm" disabled={busyAll} onClick={handleShareAll}>
+                      {busyAll ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Share2 className="h-4 w-4 mr-1" />
+                      )}
+                      {t("Share consolidated draft with auditee")}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+            {allShared && (
+              <Badge className="mt-3 bg-green-100 text-green-700 flex items-center gap-1 w-fit">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {t("Shared")}
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Findings list */}
       {findings.length === 0 ? (
