@@ -112,6 +112,7 @@ export const PUT = withAuth(
         methodology,
         timeline,
         programOverview,
+        content,
         startDate,
         endDate,
         status,
@@ -123,6 +124,11 @@ export const PUT = withAuth(
         programOverview && typeof programOverview === 'object'
           ? JSON.stringify(programOverview)
           : null;
+      // Full 17-section memorandum content (ApmContent). Only update when
+      // provided so callers that save just the program overview don't wipe it.
+      const hasContent = content !== undefined;
+      const contentValue =
+        content && typeof content === 'object' ? JSON.stringify(content) : null;
 
       const apm = await prisma.auditEngagementAPM.upsert({
         where: { engagementId: id },
@@ -134,6 +140,7 @@ export const PUT = withAuth(
           methodology: methodology ?? null,
           timeline: timeline ?? null,
           programOverview: programOverviewValue,
+          content: contentValue,
           startDate: startDateValue,
           endDate: endDateValue,
           status: status ?? 'Draft',
@@ -145,9 +152,12 @@ export const PUT = withAuth(
           objectives: objectives ?? null,
           methodology: methodology ?? null,
           timeline: timeline ?? null,
-          programOverview: programOverviewValue,
-          startDate: startDateValue,
-          endDate: endDateValue,
+          // Only overwrite a field when the caller actually sent it, so saving
+          // one part of the APM (overview vs full memorandum) never wipes the other.
+          ...(programOverview !== undefined ? { programOverview: programOverviewValue } : {}),
+          ...(hasContent ? { content: contentValue } : {}),
+          ...(startDate !== undefined ? { startDate: startDateValue } : {}),
+          ...(endDate !== undefined ? { endDate: endDateValue } : {}),
           ...(status !== undefined ? { status } : {}),
         },
       });

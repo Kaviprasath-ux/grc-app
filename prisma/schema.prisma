@@ -3309,6 +3309,8 @@ model AuditEngagementAPM {
   timeline          String? // narrative timeline / milestones
   // A. Audit Program Overview — JSON array of { auditTitle, department, period }
   programOverview   String?                        @db.Text
+  // Full 17-section Audit Planning Memorandum — JSON of ApmContent (see src/lib/apm-template.ts)
+  content           String?                        @db.Text
   startDate         DateTime?
   endDate           DateTime?
   status            String                         @default("Draft") // Draft, Finalized
