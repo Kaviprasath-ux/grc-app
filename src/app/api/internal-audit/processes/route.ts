@@ -22,6 +22,7 @@ export const GET = withAuth(
         },
         include: {
           department: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
           attachments: {
             select: {
               id: true,
@@ -65,17 +66,26 @@ export const POST = withAuth(
         processOwner,
         departmentId,
         riskIds,
+        categoryId,
       }: {
         name?: string;
         description?: string | null;
         processOwner?: string | null;
         departmentId?: string | null;
         riskIds?: string[];
+        categoryId?: string | null;
       } = body;
 
       if (!name || !name.trim()) {
         return NextResponse.json(
           { error: 'Process name is required' },
+          { status: 400 }
+        );
+      }
+
+      if (!categoryId) {
+        return NextResponse.json(
+          { error: 'Audit category is required' },
           { status: 400 }
         );
       }
@@ -125,6 +135,7 @@ export const POST = withAuth(
           description: description?.toString().trim() || null,
           processOwner: processOwner?.toString().trim() || null,
           departmentId: departmentId || null,
+          categoryId: categoryId || null,
           customerAccountId: customerAccountId || null,
           auditHeadId: auditHeadId || null,
           linkedRisks: cleanRiskIds.length
@@ -135,6 +146,7 @@ export const POST = withAuth(
         },
         include: {
           department: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
           attachments: true,
           linkedRisks: { include: { risk: { select: { id: true, riskId: true, riskName: true } } } },
         },

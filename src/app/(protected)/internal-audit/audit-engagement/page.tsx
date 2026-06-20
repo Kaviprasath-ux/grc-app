@@ -94,6 +94,11 @@ interface AuditType {
   name: string;
 }
 
+interface AuditCategory {
+  id: string;
+  name: string;
+}
+
 interface ScoringRange {
   id: string;
   label: string;
@@ -156,6 +161,7 @@ interface EngagementFormData {
   engagementScope: string;
   auditRating: string;
   auditType: string;
+  auditCategoryId: string;
   processId: string;
   startDate: string;
   targetDate: string;
@@ -193,6 +199,7 @@ const emptyFormData: EngagementFormData = {
   engagementScope: "",
   auditRating: "",
   auditType: "",
+  auditCategoryId: "",
   processId: "",
   startDate: "",
   targetDate: "",
@@ -243,6 +250,7 @@ export default function AuditPlanningPage() {
   const [auditors, setAuditors] = useState<User[]>([]);
   const [auditees, setAuditees] = useState<User[]>([]);
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
+  const [auditCategories, setAuditCategories] = useState<AuditCategory[]>([]);
   const [auditRatings, setAuditRatings] = useState<ScoringRange[]>([]);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [saving, setSaving] = useState(false);
@@ -281,6 +289,7 @@ export default function AuditPlanningPage() {
   // Translated reference data for dropdowns
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
   const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
+  const { data: translatedAuditCategories } = useTranslatedData(auditCategories, { modelName: 'AuditCategory' });
   const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
   const { data: translatedAuditRatings } = useTranslatedData(auditRatings, { modelName: 'AuditScoringRange' });
   const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'InternalAuditRisk' });
@@ -396,12 +405,13 @@ export default function AuditPlanningPage() {
 
   const fetchAuditorsAndAuditees = async () => {
     try {
-      const [auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, processesRes] = await Promise.all([
+      const [auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, processesRes, categoriesRes] = await Promise.all([
         fetch("/api/internal-audit/users?role=Auditee"),
         fetch("/api/internal-audit/users?role=auditors"),
         fetch("/api/internal-audit/audit-types"),
         fetch("/api/internal-audit/scoring-ranges"),
         fetch("/api/processes"),
+        fetch("/api/internal-audit/categories"),
       ]);
 
       if (auditeesRes.ok) {
@@ -428,6 +438,10 @@ export default function AuditPlanningPage() {
       if (processesRes.ok) {
         const processesData = await processesRes.json();
         setProcesses(processesData || []);
+      }
+      if (categoriesRes.ok) {
+        const categoriesData = await categoriesRes.json();
+        setAuditCategories(categoriesData || []);
       }
     } catch (error) {
       console.error("Failed to fetch auditors/auditees:", error);
@@ -535,6 +549,7 @@ export default function AuditPlanningPage() {
           engagementScope: (te.engagementScope as string) || data.engagementScope || "",
           auditRating: data.auditRating || "",
           auditType: data.auditType || "",
+          auditCategoryId: data.auditCategoryId || "",
           processId: data.processId || "",
           startDate: (data.plannedStartDate || data.startDate) ? (data.plannedStartDate || data.startDate).split("T")[0] : "",
           targetDate: (data.plannedEndDate || data.endDate) ? (data.plannedEndDate || data.endDate).split("T")[0] : "",
@@ -674,6 +689,9 @@ export default function AuditPlanningPage() {
     }
     if (!engagementForm.engagementScope.trim()) {
       errors.engagementScope = t("Engagement Scope is required") || "Engagement Scope is required";
+    }
+    if (!engagementForm.auditCategoryId) {
+      errors.auditCategoryId = t("Audit Category is required") || "Audit Category is required";
     }
     if (selectedDeptIds.length === 0) {
       errors.departmentId = t("At least one department must be selected") || "At least one department must be selected";
@@ -1049,6 +1067,37 @@ export default function AuditPlanningPage() {
         />
         {validationErrors.engagementScope && (
           <p className="text-sm text-red-600 mt-1">{validationErrors.engagementScope}</p>
+        )}
+      </div>
+
+      {/* Audit Category */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">
+          {t("Audit Category")} <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={engagementForm.auditCategoryId}
+          onValueChange={(value) => setEngagementForm({ ...engagementForm, auditCategoryId: value })}
+        >
+          <SelectTrigger className={`w-full bg-white ${validationErrors.auditCategoryId ? 'border-red-500' : ''}`}>
+            <SelectValue placeholder={t("Select Audit Category")} />
+          </SelectTrigger>
+          <SelectContent>
+            {translatedAuditCategories.length > 0 ? (
+              translatedAuditCategories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="none" disabled>
+                {t("No audit categories configured")}
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+        {validationErrors.auditCategoryId && (
+          <p className="text-sm text-red-600 mt-1">{validationErrors.auditCategoryId}</p>
         )}
       </div>
 

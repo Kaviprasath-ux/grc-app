@@ -75,6 +75,7 @@ export const PUT = withAuth(
         departmentId,
         auditType,
         auditRating,
+        auditCategoryId,
         auditorId,
         auditeeId,
         startDate,
@@ -95,6 +96,7 @@ export const PUT = withAuth(
       if (departmentId !== undefined) updateData.departmentId = departmentId || null;
       if (auditType !== undefined) updateData.auditType = auditType;
       if (auditRating !== undefined) updateData.auditRating = auditRating;
+      if (auditCategoryId !== undefined) updateData.auditCategoryId = auditCategoryId || null;
       if (auditorId !== undefined) updateData.assignedAuditorId = auditorId || null;
       if (auditeeId !== undefined) updateData.auditeeId = auditeeId || null;
       if (startDate !== undefined) {

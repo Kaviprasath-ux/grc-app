@@ -2753,8 +2753,10 @@ model AuditCategory {
   name               String
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-  internalAuditRisks InternalAuditRisk[]
-  subCategories      AuditSubCategory[]
+  internalAuditRisks     InternalAuditRisk[]
+  subCategories          AuditSubCategory[]
+  internalAuditProcesses InternalAuditProcess[] @relation("InternalAuditProcessCategory")
+  engagements            AuditEngagement[]      @relation("EngagementAuditCategory")
 
   @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
@@ -3058,6 +3060,8 @@ model InternalAuditProcess {
   processOwner      String?
   departmentId      String?
   department        Department?                      @relation("InternalAuditProcessDepartment", fields: [departmentId], references: [id])
+  categoryId        String?
+  category          AuditCategory?                   @relation("InternalAuditProcessCategory", fields: [categoryId], references: [id])
   createdAt         DateTime                         @default(now())
   updatedAt         DateTime                         @updatedAt
   // Relations
@@ -3234,6 +3238,9 @@ model AuditEngagement {
   // Process relation
   processId           String?
   process             Process?                   @relation("EngagementProcess", fields: [processId], references: [id])
+  // Audit Category relation
+  auditCategoryId     String?
+  auditCategory       AuditCategory?             @relation("EngagementAuditCategory", fields: [auditCategoryId], references: [id])
   // Status
   status              String                     @default("Planned") // Planned, In Progress, Completed, Cancelled
   priority            String                     @default("Medium") // Low, Medium, High

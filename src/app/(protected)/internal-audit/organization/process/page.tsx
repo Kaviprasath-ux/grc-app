@@ -58,6 +58,11 @@ interface Department {
   name: string;
 }
 
+interface AuditCategory {
+  id: string;
+  name: string;
+}
+
 interface LinkedRiskSummary {
   id: string;
   riskId: string;
@@ -80,6 +85,8 @@ interface IAProcess {
   processOwner: string | null;
   departmentId: string | null;
   department: Department | null;
+  categoryId: string | null;
+  category: AuditCategory | null;
   attachments: ProcessAttachment[];
   linkedRisks: { id: string; risk: LinkedRiskSummary }[];
   createdAt: string;
@@ -103,6 +110,7 @@ const initialFormState = {
   description: "",
   processOwner: "",
   departmentId: "",
+  categoryId: "",
   riskIds: [] as string[],
 };
 
@@ -120,6 +128,7 @@ export default function InternalAuditProcessPage() {
 
   const [processes, setProcesses] = useState<IAProcess[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [categories, setCategories] = useState<AuditCategory[]>([]);
   const [risks, setRisks] = useState<IARisk[]>([]);
   const [auditHeadUsers, setAuditHeadUsers] = useState<AuditHeadUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,9 +159,10 @@ export default function InternalAuditProcessPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [processesRes, deptRes, riskRes, auditHeadRes] = await Promise.all([
+      const [processesRes, deptRes, catRes, riskRes, auditHeadRes] = await Promise.all([
         fetch("/api/internal-audit/processes"),
         fetch("/api/departments"),
+        fetch("/api/internal-audit/categories"),
         fetch("/api/internal-audit/risks"),
         fetch("/api/internal-audit/users?role=AuditHead"),
       ]);
@@ -162,6 +172,10 @@ export default function InternalAuditProcessPage() {
       }
       if (deptRes.ok) {
         setDepartments(await deptRes.json());
+      }
+      if (catRes.ok) {
+        const raw = (await catRes.json()) as Array<{ id: string; name: string }>;
+        setCategories(raw.map((c) => ({ id: c.id, name: c.name })));
       }
       if (riskRes.ok) {
         const raw = (await riskRes.json()) as Array<{
@@ -238,6 +252,7 @@ export default function InternalAuditProcessPage() {
       description: proc.description || "",
       processOwner: proc.processOwner || "",
       departmentId: proc.departmentId || "",
+      categoryId: proc.categoryId || "",
       riskIds: proc.linkedRisks.map((l) => l.risk.id),
     });
     setPendingFiles([]);
@@ -253,6 +268,9 @@ export default function InternalAuditProcessPage() {
     } else if (!isValidName(trimmedName)) {
       errors.name = t("Please enter a valid name");
     }
+    if (!formData.categoryId) {
+      errors.categoryId = t("Audit category is required");
+    }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -266,6 +284,7 @@ export default function InternalAuditProcessPage() {
         description: formData.description.trim() || null,
         processOwner: formData.processOwner.trim() || null,
         departmentId: formData.departmentId || null,
+        categoryId: formData.categoryId || null,
         riskIds: formData.riskIds,
       };
 
@@ -456,6 +475,9 @@ export default function InternalAuditProcessPage() {
                   {t("Description")}
                 </th>
                 <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  {t("Audit Category")}
+                </th>
+                <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {t("Process Owner")}
                 </th>
                 <th className="text-start py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -471,7 +493,7 @@ export default function InternalAuditProcessPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10">
+                  <td colSpan={7} className="text-center py-10">
                     <Loader2 className="h-5 w-5 animate-spin inline mr-2" />
                     {t("Loading...")}
                   </td>
@@ -479,7 +501,7 @@ export default function InternalAuditProcessPage() {
               ) : filteredProcesses.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center py-10 text-slate-500"
                   >
                     {t("No processes found")}
@@ -501,6 +523,9 @@ export default function InternalAuditProcessPage() {
                       <span className="truncate max-w-[280px] block">
                         {p.description || "-"}
                       </span>
+                    </td>
+                    <td className="text-start py-3.5 text-sm text-slate-600">
+                      {p.category?.name || "-"}
                     </td>
                     <td className="text-start py-3.5 text-sm text-slate-600">
                       {auditHeadUsers.find((u) => u.id === p.processOwner)?.fullName || "-"}
@@ -611,6 +636,37 @@ export default function InternalAuditProcessPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ia-process-category">
+                {t("Audit Category")}{" "}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.categoryId || undefined}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, categoryId: v === "none" ? "" : v })
+                }
+              >
+                <SelectTrigger
+                  id="ia-process-category"
+                  className={`w-full ${formErrors.categoryId ? "border-red-500" : ""}`}
+                >
+                  <SelectValue placeholder={t("Select audit category")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("Select")}</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formErrors.categoryId && (
+                <p className="text-xs text-red-500">{formErrors.categoryId}</p>
+              )}
             </div>
 
             <div className="space-y-2">

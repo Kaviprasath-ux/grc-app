@@ -167,7 +167,6 @@ export const navigation: NavItem[] = [
     name: "Organization",
     module: "INTERNAL_AUDIT",
     icon: Building2,
-    permission: "organization.profile:view",
     children: [
       { name: "Profile", href: "/internal-audit/organization/profile", icon: User, permission: "organization.profile:view" },
       { name: "Process", href: "/internal-audit/organization/process", icon: GitBranch, permission: "audit.process:view" },

@@ -31,10 +31,10 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 ### 2.1 Foundation & Master Data
 | Feature | Where | Notes |
 |---|---|---|
-| **Audit Universe** | `/internal-audit/audit-universe` | Auditable entities by department/process/IT area |
+| **Audit Universe** | `/internal-audit/audit-universe` | Org-chart grouped by **Audit Category** → Processes / Risks / Audits under each category. Stat cards: Categories, Processes, Risks, Total Audits. **Table columns**: Process/System/Entity, Department, Description, Last Audit Date, Audit Frequency (Years), Regulatory Requirement, Notes. Audits appear under a category if linked via `auditCategoryId` on the engagement OR via a risk's `engagementId`. |
 | **Risk Register** | `/internal-audit/risk-register` | Risk ID, process link, title, description, category/sub-category, source, cause/driver, consequence, inherent & residual likelihood/impact/rating, control effectiveness, related law, policy reference, document links. **Auto-sorted by residual risk (highest first).** |
 | **Risk Identification / Risk Universe** | `/internal-audit/risk-identification`, `/risk-universe` | AI-assisted risk suggestions |
-| **Process Inventory** | `/internal-audit/organization/process` | Process ID, name, owner, supporting documents, notes |
+| **Process Inventory** | `/internal-audit/organization/process` | Process ID, name, **audit category (mandatory — from Audit Settings)**, owner, department, supporting documents, link to IA risks. Accessible to **AuditHead** (full CRUD) and CustomerAdministrator. Navigation visible to AuditHead via `audit.process:view`. |
 | **Departments** | `/internal-audit/settings/departments` | Department master data |
 | **Settings / Master Data** | `/internal-audit/settings` | Audit types, categories, sub-categories, periodicity, nature of controls, risk-assessment config, escalation rules |
 
@@ -49,7 +49,7 @@ All pages are available in **English, Arabic (RTL), and Latvian**.
 | Feature | Status | Notes |
 |---|---|---|
 | **Auto-generate engagements** | ✅ | On operational-plan **approval**, one engagement is created per planned audit (idempotent, traceable back to the plan item) |
-| **Engagement management** | ✅ | Create/edit, assign auditor & auditee, per-quarter timelines/schedules |
+| **Engagement management** | ✅ | Create/edit, assign auditor & auditee, per-quarter timelines/schedules. Add Engagement form includes a mandatory **Audit Category** dropdown (fetched from Audit Settings `/api/internal-audit/categories`); stored as `auditCategoryId` on `AuditEngagement`. |
 | **Consolidated planned audits** | ✅ | Audit Planning lists **all** planned audits together regardless of year/quarter/approval: engagements **plus** operational-plan audit items not yet converted to engagements (shown with a **Planned** badge + plan code · year · quarter). Source: `/api/internal-audit/audit-planning/planned-audits` |
 | **Engagement Workflow Hub** | ✅ | Single-page stepper across the full lifecycle with per-step progress tracking (`/internal-audit/engagement/[id]`) |
 
@@ -115,7 +115,7 @@ Legend: **F** = Full (view/create/edit/delete, plus approve where applicable) ·
 | Risk Identification | F | F | F | V | — | — | — | — |
 | Risk Register | F | F | F | V | — | CRUD | — | V _(dept)_ |
 | Risk Universe | F | F | F | — | — | — | — | — |
-| Process Inventory | F | F | F | V | — | — | — | — |
+| Process Inventory | F | F | F | V | — | CRUD | — | V _(dept)_ |
 | **Strategic Plan** | **F (create)** | **V** | V | — | — | — | — | — |
 | **Operational Plan** | F | **F** | **V** | — | — | — | — | — |
 | Audit Planning (Engagements) | F | F | F | V | — | — | — | — |
