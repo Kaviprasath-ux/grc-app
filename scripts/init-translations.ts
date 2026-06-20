@@ -267,6 +267,8 @@ const translations: [string, string, string][] = [
   ['Exceptions must be supported by evidence.', 'يجب دعم الاستثناءات بالأدلة.', 'Izņēmumi jāpamato ar pierādījumiem.'],
   ['Working papers must be referenced.', 'يجب الإشارة إلى أوراق العمل.', 'Jāatsaucas uz darba dokumentiem.'],
   ['Any deviation from plan must be justified.', 'يجب تبرير أي انحراف عن الخطة.', 'Jebkura novirze no plāna jāpamato.'],
+  ['Use Add Finding to record an audit finding.', 'استخدم "إضافة ملاحظة" لتسجيل ملاحظة تدقيق.', 'Izmantojiet "Pievienot konstatējumu", lai reģistrētu audita konstatējumu.'],
+  ['No audits yet. Add audits from the Strategic Plan first.', 'لا توجد عمليات تدقيق بعد. أضف عمليات التدقيق من الخطة الاستراتيجية أولاً.', 'Vēl nav auditu. Vispirms pievienojiet auditus no stratēģiskā plāna.'],
   ['Findings Discussion Meeting Minutes', 'محضر اجتماع مناقشة الملاحظات', 'Konstatējumu apspriešanas sapulces protokols'],
   ['Findings discussion minutes saved', 'تم حفظ محضر مناقشة الملاحظات', 'Konstatējumu apspriešanas protokols saglabāts'],
   ['Failed to save findings discussion minutes', 'فشل حفظ محضر مناقشة الملاحظات', 'Neizdevās saglabāt konstatējumu apspriešanas protokolu'],

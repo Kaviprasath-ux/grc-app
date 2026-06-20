@@ -22,6 +22,16 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+interface PlanItem {
+  id: string;
+  year: number;
+  title: string;
+  auditType: string | null;
+  residualScore: number | null;
+  riskLevel: string | null;
+  priorityRank: number | null;
+}
+
 interface StrategicPlanRow {
   id: string;
   planCode: string;
@@ -29,15 +39,20 @@ interface StrategicPlanRow {
   durationYears: number;
   startYear: number;
   status: string;
+  items?: PlanItem[];
   _count?: { items: number };
 }
 
-const statusColor = (status: string): string => {
-  switch (status) {
-    case "Approved":
+const riskLevelColor = (level: string | null): string => {
+  switch ((level || "").toLowerCase()) {
+    case "extreme":
+      return "bg-red-100 text-red-700";
+    case "high":
+      return "bg-orange-100 text-orange-700";
+    case "medium":
+      return "bg-yellow-100 text-yellow-700";
+    case "low":
       return "bg-green-100 text-green-700";
-    case "Pending Approval":
-      return "bg-amber-100 text-amber-700";
     default:
       return "bg-gray-100 text-gray-600";
   }
@@ -91,45 +106,57 @@ export default function OperationalPlanListPage() {
         </p>
       </div>
 
-      {/* Strategic plans as rows — click Edit to open the year-wise detail */}
+      {/* Audits as rows (same layout as Strategic Plan) — Edit opens the year-wise detail */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="min-w-[640px]">
             <TableHeader>
               <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Strategic Plan")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-12 ltr:pl-5 rtl:pr-5">#</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Duration")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audits")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:text-right rtl:text-left">{t("Residual Score")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <Loader2 className="h-5 w-5 animate-spin inline text-slate-400" />
                   </TableCell>
                 </TableRow>
-              ) : plans.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-sm text-slate-400">
-                    {t("No strategic plans yet. Create one in Strategic Plan first.")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                plans.map((p) => (
+              ) : (() => {
+                const rows = plans.flatMap((p) => (p.items || []).map((it) => ({ it, plan: p })));
+                if (rows.length === 0) {
+                  return (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-sm text-slate-400">
+                        {t("No audits yet. Add audits from the Strategic Plan first.")}
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                return rows.map(({ it, plan }, idx) => (
                   <TableRow
-                    key={p.id}
+                    key={it.id}
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 cursor-pointer"
-                    onClick={() => open(p.id)}
+                    onClick={() => open(plan.id)}
                   >
-                    <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{p.title}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{p.durationYears} {t("Years")}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{p._count?.items ?? 0}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700 ltr:pl-5 rtl:pr-5">{idx + 1}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800">{it.title}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{it.auditType || "—"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{plan.durationYears} {t("Years")}</TableCell>
                     <TableCell className="py-3">
-                      <Badge className={statusColor(p.status)}>{t(p.status)}</Badge>
+                      {it.riskLevel ? (
+                        <Badge className={riskLevelColor(it.riskLevel)}>{it.riskLevel}</Badge>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700 ltr:text-right rtl:text-left">{it.residualScore ?? "—"}</TableCell>
                     <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
                       <Button
                         variant="ghost"
@@ -138,15 +165,15 @@ export default function OperationalPlanListPage() {
                         title={t("Edit")}
                         onClick={(e) => {
                           e.stopPropagation();
-                          open(p.id);
+                          open(plan.id);
                         }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+                ));
+              })()}
             </TableBody>
           </Table>
         </div>
