@@ -33,6 +33,7 @@ export const GET = withAuth(
         include: {
           createdBy: { select: { id: true, fullName: true } },
           _count: { select: { items: true } },
+          items: { orderBy: [{ year: "asc" }, { priorityRank: "asc" }] },
         },
         orderBy: { createdAt: "desc" },
       });

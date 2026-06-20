@@ -3737,6 +3737,35 @@ model AuditClosingMeeting {
   @@index([customerAccountId])
 }
 
+// Audit Task Opening Meeting Minutes form (workflow step: Opening Meeting).
+// One per engagement. Header fields are scalar; objective is free text;
+// attendees, topics-discussed and agreed-actions are stored as JSON text.
+model AuditOpeningMeeting {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // Header / meeting metadata
+  meetingVenue      String?
+  history           String?
+  assignmentTitle   String?
+  auditTaskNumber   String?
+  department        String?
+  management        String?
+  // Objective of the meeting (free text)
+  objective         String?  @db.Text
+  // Repeatable sections, stored as JSON arrays
+  attendees         String?  @db.Text // JSON: [{ name, jobTitle, management, signature }]
+  topicsDiscussed   String?  @db.Text // JSON: [{ number, subject, details }]
+  agreedActions     String?  @db.Text // JSON: [{ number, actionRequired, official, implementationDate }]
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
 // ==================== INTERNAL AUDIT - DOCUMENT LIBRARY ====================
 
 // Internal Audit Document (for document library)

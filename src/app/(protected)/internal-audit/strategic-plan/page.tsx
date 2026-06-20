@@ -42,8 +42,8 @@ import {
 import { toast } from "sonner";
 import {
   Plus,
+  Pencil,
   Trash2,
-  Eye,
   Printer,
   Upload,
   Download,
@@ -170,7 +170,17 @@ export default function StrategicPlanPage() {
 
   // ----- Risk Assessment section (assessed risks not yet added to a plan) -----
   const [assessedRisks, setAssessedRisks] = useState<AssessedRisk[]>([]);
-  const [addingRiskId, setAddingRiskId] = useState<string | null>(null);
+
+  // Add Plan popup state — only the plan duration is captured here.
+  const [planDialogRisk, setPlanDialogRisk] = useState<AssessedRisk | null>(null);
+  const [planDuration, setPlanDuration] = useState("3");
+  const [savingPlan, setSavingPlan] = useState(false);
+
+  // Edit / delete a single strategic plan item (audit).
+  const [editItem, setEditItem] = useState<PlanItem | null>(null);
+  const [editItemForm, setEditItemForm] = useState({ title: "", auditType: "", year: "", notes: "" });
+  const [savingItem, setSavingItem] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<PlanItem | null>(null);
 
   const fetchAssessedRisks = useCallback(async () => {
     try {
@@ -181,22 +191,81 @@ export default function StrategicPlanPage() {
     }
   }, []);
 
-  const handleAddRisk = async (riskId: string) => {
-    setAddingRiskId(riskId);
+  // Open the Add Plan popup for an assessed risk; default duration to the
+  // existing plan's duration (or 3 years when no plan exists yet).
+  const openPlanDialog = (risk: AssessedRisk) => {
+    setPlanDialogRisk(risk);
+    setPlanDuration("3");
+  };
+
+  const handleSavePlan = async () => {
+    if (!planDialogRisk) return;
+    setSavingPlan(true);
     try {
       const res = await fetch("/api/internal-audit/strategic-plans/add-risk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ riskId }),
+        body: JSON.stringify({
+          riskId: planDialogRisk.id,
+          durationYears: parseInt(planDuration),
+        }),
       });
       if (!res.ok) throw new Error("Failed");
       toast.success(t("Added to strategic plan"));
+      setPlanDialogRisk(null);
       fetchAssessedRisks();
       fetchPlans();
     } catch {
       toast.error(t("Failed to add to strategic plan"));
     } finally {
-      setAddingRiskId(null);
+      setSavingPlan(false);
+    }
+  };
+
+  // Open the edit dialog for a plan item (title / type / notes).
+  const openEditItem = (item: PlanItem) => {
+    setEditItem(item);
+    setEditItemForm({
+      title: item.title,
+      auditType: item.auditType || "",
+      year: String(item.year),
+      notes: item.notes || "",
+    });
+  };
+
+  const handleSaveItem = async () => {
+    if (!editItem) return;
+    setSavingItem(true);
+    try {
+      const res = await fetch(`/api/internal-audit/strategic-plans/items/${editItem.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editItemForm),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Audit updated"));
+      setEditItem(null);
+      fetchPlans();
+    } catch {
+      toast.error(t("Failed to update audit"));
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    if (!deleteItem) return;
+    try {
+      const res = await fetch(`/api/internal-audit/strategic-plans/items/${deleteItem.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Audit removed from plan"));
+      setDeleteItem(null);
+      fetchPlans();
+      fetchAssessedRisks();
+    } catch {
+      toast.error(t("Failed to remove audit"));
     }
   };
 
@@ -383,16 +452,8 @@ export default function StrategicPlanPage() {
                     </TableCell>
                     <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
                       {canCreate && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleAddRisk(r.id)}
-                          disabled={addingRiskId === r.id}
-                        >
-                          {addingRiskId === r.id ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <Plus className="h-4 w-4 mr-1" />
-                          )}
+                        <Button size="sm" onClick={() => openPlanDialog(r)}>
+                          <Plus className="h-4 w-4 mr-1" />
                           {t("Add Plan")}
                         </Button>
                       )}
@@ -406,82 +467,152 @@ export default function StrategicPlanPage() {
         </div>
       </div>
 
-      {/* Section 2: Strategic Plan */}
+      {/* Section 2: Strategic Plan — flat audits table (no per-plan header) */}
       <h2 className="text-lg font-semibold text-slate-800 mb-2">{t("Strategic Plan")}</h2>
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-        <Table className="min-w-[760px]">
-          <TableHeader>
-            <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Code")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Title")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Duration")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Period")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audits")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Created By")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin inline text-slate-400" />
-                </TableCell>
-              </TableRow>
-            ) : plans.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-sm text-slate-400">
-                  {t("No plans yet. Add an assessed risk above to build the strategic plan.")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              plans.map((plan) => (
-                <TableRow
-                  key={plan.id}
-                  className={`border-b border-slate-100 last:border-0 ${plan.status === "Approved" ? "bg-green-50/60" : ""}`}
-                >
-                  <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{plan.planCode}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{plan.title}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{plan.durationYears} {t("Years")}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">
-                    {plan.startYear}–{plan.startYear + plan.durationYears - 1}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{plan._count?.items ?? 0}</TableCell>
-                  <TableCell className="py-3">
-                    <Badge className={statusColor(plan.status)}>
-                      {plan.status === "Approved" && (
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                      )}
-                      {t(plan.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700">{plan.createdBy?.fullName || "—"}</TableCell>
-                  <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
-                    <div className="flex ltr:justify-end rtl:justify-start items-center gap-0.5">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openView(plan.id)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {canDelete && plan.status !== "Approved" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                          onClick={() => setDeleteTarget(plan)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 py-8 text-center">
+          <Loader2 className="h-5 w-5 animate-spin inline text-slate-400" />
         </div>
-      </div>
+      ) : (
+        (() => {
+          const rows = plans.flatMap((p) => (p.items || []).map((it) => ({ it, plan: p })));
+          if (rows.length === 0) {
+            return (
+              <div className="bg-white rounded-xl border border-slate-200 py-8 text-center text-sm text-slate-400">
+                {t("No audits yet. Use Add Plan on an assessed risk above.")}
+              </div>
+            );
+          }
+          return (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table className="min-w-[640px]">
+                  <TableHeader>
+                    <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-12 ltr:pl-5 rtl:pr-5">#</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Duration")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:text-right rtl:text-left">{t("Residual Score")}</TableHead>
+                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map(({ it, plan }, idx) => (
+                      <TableRow key={it.id} className="border-b border-slate-100 last:border-0">
+                        <TableCell className="py-3 text-sm text-slate-700 ltr:pl-5 rtl:pr-5">{idx + 1}</TableCell>
+                        <TableCell className="py-3 text-sm font-medium text-slate-800">{it.title}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{it.auditType || "—"}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">
+                          {plan.durationYears} {t("Years")}
+                        </TableCell>
+                        <TableCell className="py-3">
+                          {it.riskLevel ? (
+                            <Badge className={riskLevelColor(it.riskLevel)}>{it.riskLevel}</Badge>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700 ltr:text-right rtl:text-left">{it.residualScore ?? "—"}</TableCell>
+                        <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
+                          {plan.status !== "Approved" && (
+                            <div className="flex ltr:justify-end rtl:justify-start items-center gap-0.5">
+                              {canCreate && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                                  onClick={() => openEditItem(it)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                                  onClick={() => setDeleteItem(it)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          );
+        })()
+      )}
+
+      {/* Add Plan popup — capture the plan-item details for an assessed risk */}
+      <Dialog open={!!planDialogRisk} onOpenChange={(o) => !o && setPlanDialogRisk(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("Add Plan")}</DialogTitle>
+          </DialogHeader>
+          {planDialogRisk && (
+            <div className="space-y-4">
+              {/* Risk context (read-only) */}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm grid grid-cols-2 gap-x-4 gap-y-1">
+                <div>
+                  <span className="text-slate-500">{t("Risk ID")}: </span>
+                  <span className="font-medium text-slate-800">{planDialogRisk.riskId}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">{t("Risk Level")}: </span>
+                  {planDialogRisk.riskLevel || "—"}
+                </div>
+                <div className="col-span-2">
+                  <span className="text-slate-500">{t("Risk")}: </span>
+                  {planDialogRisk.riskName}
+                </div>
+                <div>
+                  <span className="text-slate-500">{t("Department")}: </span>
+                  {planDialogRisk.departmentName || "—"}
+                </div>
+                <div>
+                  <span className="text-slate-500">{t("Residual Score")}: </span>
+                  {planDialogRisk.residualScore ?? "—"}
+                </div>
+              </div>
+
+              <div>
+                <Label>{t("Duration")}</Label>
+                <Select value={planDuration} onValueChange={setPlanDuration}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 {t("Years")}</SelectItem>
+                    <SelectItem value="4">4 {t("Years")}</SelectItem>
+                    <SelectItem value="5">5 {t("Years")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-400 mt-1">
+                  {t("The audit is added to the plan of this duration (a new plan is created if needed).")}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPlanDialogRisk(null)}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleSavePlan} disabled={savingPlan}>
+              {savingPlan && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t("Save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -733,6 +864,67 @@ export default function StrategicPlanPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit item dialog */}
+      <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("Edit Audit")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t("Audit Title")}</Label>
+              <Input
+                value={editItemForm.title}
+                onChange={(e) => setEditItemForm({ ...editItemForm, title: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>{t("Audit Type")}</Label>
+              <Input
+                value={editItemForm.auditType}
+                onChange={(e) => setEditItemForm({ ...editItemForm, auditType: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>{t("Notes")}</Label>
+              <Textarea
+                value={editItemForm.notes}
+                onChange={(e) => setEditItemForm({ ...editItemForm, notes: e.target.value })}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditItem(null)}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleSaveItem} disabled={savingItem}>
+              {savingItem && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t("Save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete item confirm */}
+      <AlertDialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Remove Audit")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Are you sure you want to remove")} &quot;{deleteItem?.title}&quot;{" "}
+              {t("from the strategic plan?")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteItem} className="bg-red-600 hover:bg-red-700">
+              {t("Remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete confirm */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>

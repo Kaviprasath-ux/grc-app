@@ -21,6 +21,10 @@ export const POST = withAuth(
       if (!riskId) {
         return NextResponse.json({ error: "riskId is required" }, { status: 400 });
       }
+      // Plan duration chosen in the Add Plan popup (3, 4 or 5 years).
+      const durationYears = [3, 4, 5].includes(Number(body.durationYears))
+        ? Number(body.durationYears)
+        : undefined;
 
       const tenantFilter = getTenantFilter(session);
       const auditHeadId = getAuditHeadId(session);
@@ -44,9 +48,13 @@ export const POST = withAuth(
         );
       }
 
-      // Find the active strategic plan (latest for this tenant / audit head) or create one.
+      // One strategic plan per distinct duration: route the risk to the plan
+      // whose duration matches the chosen value, creating it if none exists.
+      // This lets the user keep e.g. a 3-year plan AND a 4-year plan separately;
+      // adding to one never changes the other's duration.
+      const dur = durationYears || 3;
       let plan = await prisma.auditStrategicPlan.findFirst({
-        where: { ...tenantFilter, ...(auditHeadId ? { auditHeadId } : {}) },
+        where: { ...tenantFilter, ...(auditHeadId ? { auditHeadId } : {}), durationYears: dur },
         orderBy: { createdAt: "desc" },
       });
 
@@ -68,11 +76,11 @@ export const POST = withAuth(
             customerAccountId,
             auditHeadId: createAuditHeadId || null,
             planCode,
-            title: `Strategic Audit Plan ${startYear}-${startYear + 2}`,
-            durationYears: 3,
+            title: `${dur}-Year Strategic Audit Plan`,
+            durationYears: dur,
             startYear,
             status: "Draft",
-            generatedFromRisk: true,
+            generatedFromRisk: false,
             createdById: session.id || null,
           },
         });
@@ -99,21 +107,90 @@ export const POST = withAuth(
         });
       }
 
-      // Re-rank by residual score and re-distribute across the plan years.
+      // Rank items within each year by residual score; clamp years that fall
+      // outside the (possibly shortened) plan range to the last year.
+      const maxYear = plan.startYear + plan.durationYears - 1;
       const items = await prisma.auditStrategicPlanItem.findMany({
         where: { strategicPlanId: plan.id },
-        orderBy: [{ residualScore: "desc" }],
+        orderBy: [{ year: "asc" }, { residualScore: "desc" }],
       });
-      const perYear = Math.max(1, Math.ceil(items.length / plan.durationYears));
+      const perYearCount: Record<number, number> = {};
       await Promise.all(
-        items.map((it, idx) => {
-          const bucket = Math.min(plan!.durationYears - 1, Math.floor(idx / perYear));
+        items.map((it) => {
+          const yr = Math.min(maxYear, Math.max(plan!.startYear, it.year));
+          perYearCount[yr] = (perYearCount[yr] || 0) + 1;
           return prisma.auditStrategicPlanItem.update({
             where: { id: it.id },
-            data: { priorityRank: idx + 1, year: plan!.startYear + bucket },
+            data: { priorityRank: perYearCount[yr], year: yr },
           });
         })
       );
+
+      // --- Auto-sync to operational plans ---------------------------------
+      // Each strategic-plan year's audits should also appear in the operational
+      // plan for that year. Create the operational plan when missing; append
+      // new audits (by riskId) to an existing one without disturbing edits.
+      const syncedItems = await prisma.auditStrategicPlanItem.findMany({
+        where: { strategicPlanId: plan.id },
+        orderBy: [{ year: "asc" }, { priorityRank: "asc" }],
+      });
+      const planYears = [...new Set(syncedItems.map((i) => i.year))];
+      const opAuditHeadId = auditHeadId ?? (await resolveAuditHeadIdForCreate(session));
+      const existingOpCodes = await prisma.auditOperationalPlan.findMany({
+        where: tenantFilter,
+        select: { planCode: true },
+      });
+      let opMax = 0;
+      for (const p of existingOpCodes) {
+        const m = p.planCode.match(/(\d+)$/);
+        if (m && parseInt(m[1], 10) > opMax) opMax = parseInt(m[1], 10);
+      }
+      const toItemData = (it: (typeof syncedItems)[number]) => ({
+        title: it.title,
+        departmentId: it.departmentId,
+        auditableEntityId: it.auditableEntityId,
+        riskId: it.riskId,
+        auditType: it.auditType,
+        residualScore: it.residualScore,
+        riskLevel: it.riskLevel,
+        priorityRank: it.priorityRank,
+      });
+      for (const yr of planYears) {
+        const yearItems = syncedItems.filter((i) => i.year === yr);
+        const op = await prisma.auditOperationalPlan.findFirst({
+          where: { strategicPlanId: plan.id, year: yr },
+        });
+        if (!op) {
+          opMax += 1;
+          await prisma.auditOperationalPlan.create({
+            data: {
+              customerAccountId,
+              auditHeadId: opAuditHeadId || null,
+              strategicPlanId: plan.id,
+              year: yr,
+              planCode: `OAP${String(opMax).padStart(3, "0")}`,
+              title: `Operational Audit Plan ${yr}`,
+              status: "Draft",
+              createdById: session.id || null,
+              items: { create: yearItems.map(toItemData) },
+            },
+          });
+        } else {
+          const existing = await prisma.auditOperationalPlanItem.findMany({
+            where: { operationalPlanId: op.id },
+            select: { riskId: true },
+          });
+          const existingRiskIds = new Set(
+            existing.map((x) => x.riskId).filter(Boolean) as string[]
+          );
+          const toAdd = yearItems.filter((it) => it.riskId && !existingRiskIds.has(it.riskId));
+          if (toAdd.length) {
+            await prisma.auditOperationalPlanItem.createMany({
+              data: toAdd.map((it) => ({ operationalPlanId: op.id, ...toItemData(it) })),
+            });
+          }
+        }
+      }
 
       const updated = await prisma.auditStrategicPlan.findUnique({
         where: { id: plan.id },
