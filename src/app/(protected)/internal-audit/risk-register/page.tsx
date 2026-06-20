@@ -131,13 +131,26 @@ interface InternalAuditRisk {
   department: Department | null;
   categoryId: string | null;
   category: AuditCategory | null;
+  auditTypeId?: string | null;
+  auditType?: { id: string; name: string } | null;
+  riskDrivers?: string | null;
   creationDate: string;
   inherentScore: number | null;
   residualScore: number | null;
   riskLevel: string | null;
   status: string;
-  engagementId?: string | null; // Link to audit engagement/plan
+  engagementId?: string | null;
+  assessmentStatus: string;
+  strategicImpact: number | null;
+  financialImpact: number | null;
+  complianceRisk: number | null;
+  operationalRisk: number | null;
+  itDataRisk: number | null;
+  controlEffectivenessScore: number | null;
+  assessmentLikelihood: number | null;
+  assessmentResidualScore: number | null;
 }
+
 
 const RISK_LEVEL_MAP: Record<string, string> = {
   Extreme: "critical",
@@ -296,6 +309,7 @@ export default function RiskRegisterPage() {
   const [iaProcesses, setIAProcesses] = useState<IAProcess[]>([]);
   const [selectedProcessIds, setSelectedProcessIds] = useState<string[]>([]);
   const [controls, setControls] = useState<RiskControl[]>([{ description: '', effectiveness: '' }]);
+
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
   const [probabilities, setProbabilities] = useState<Probability[]>([]);
   const [impacts, setImpacts] = useState<Impact[]>([]);
@@ -1345,7 +1359,7 @@ export default function RiskRegisterPage() {
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Inherent Score")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Residual Score")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Risk Level")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[90px]">{t("Status")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Status")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap ltr:pr-5 rtl:pl-5 min-w-[90px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -1358,9 +1372,17 @@ export default function RiskRegisterPage() {
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(risk.creationDate)}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{tCat(risk.categoryId) || risk.category?.name || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.inherentScore ?? "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.residualScore ?? "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">
+                    {risk.assessmentStatus === "Assessed" && risk.assessmentResidualScore != null
+                      ? risk.assessmentResidualScore.toFixed(2)
+                      : "-"}
+                  </TableCell>
                   <TableCell className="py-3 whitespace-nowrap">{getRiskLevelBadge(risk.riskLevel)}</TableCell>
-                  <TableCell className="py-3 whitespace-nowrap">{getStatusBadge(risk.status)}</TableCell>
+                  <TableCell className="py-3 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${risk.assessmentStatus === "Assessed" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                      {t(risk.assessmentStatus ?? "Not Assessed")}
+                    </span>
+                  </TableCell>
                   <TableCell className="py-3 ltr:pr-5 rtl:pl-5 whitespace-nowrap">
                     <div className="flex items-center justify-end gap-0.5">
                       <Button
@@ -1400,7 +1422,7 @@ export default function RiskRegisterPage() {
               ))}
               {paginatedRisks.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center text-sm text-slate-500">
+                  <TableCell colSpan={11} className="h-24 text-center text-sm text-slate-500">
                     {isReadOnlyRole ? t("No risks found.") : t("No risks found. Click \"Add Risk\" to create your first risk.")}
                   </TableCell>
                 </TableRow>
@@ -2056,10 +2078,8 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select likelihood")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {translatedProbabilities.map((prob) => (
-                          <SelectItem key={prob.id} value={prob.value.toString()}>
-                            {prob.label} ({prob.value})
-                          </SelectItem>
+                        {[1,2,3,4,5].map(v => (
+                          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -2082,10 +2102,8 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select impact")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {translatedImpacts.map((imp) => (
-                          <SelectItem key={imp.id} value={imp.value.toString()}>
-                            {imp.label} ({imp.value})
-                          </SelectItem>
+                        {[1,2,3,4,5].map(v => (
+                          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -2215,10 +2233,8 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select likelihood")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {translatedProbabilities.map((prob) => (
-                          <SelectItem key={prob.id} value={prob.value.toString()}>
-                            {prob.label} ({prob.value})
-                          </SelectItem>
+                        {[1,2,3,4,5].map(v => (
+                          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -2241,10 +2257,8 @@ export default function RiskRegisterPage() {
                         <SelectValue placeholder={t("Select impact")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {translatedImpacts.map((imp) => (
-                          <SelectItem key={imp.id} value={imp.value.toString()}>
-                            {imp.label} ({imp.value})
-                          </SelectItem>
+                        {[1,2,3,4,5].map(v => (
+                          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

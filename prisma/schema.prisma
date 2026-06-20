@@ -3154,6 +3154,16 @@ model InternalAuditRisk {
   status               String                     @default("Open") // Open, Closed, Under Review
   evidenceFilePath     String?
   evidenceFileName     String?
+  // Risk Assessment (Initiate Risk Assessment workflow)
+  strategicImpact           Int?
+  financialImpact           Int?
+  complianceRisk            Int?
+  operationalRisk           Int?
+  itDataRisk                Int?
+  controlEffectivenessScore Int?   // 1=Very Ineffective 2=Ineffective 3=Moderately Effective 4=Effective 5=Highly Effective
+  assessmentStatus          String @default("Not Assessed") // "Not Assessed" | "Assessed"
+  assessmentLikelihood      Int?
+  assessmentResidualScore   Float?
   // Engagement link
   engagementId         String?
   engagement           AuditEngagement?           @relation(fields: [engagementId], references: [id])
