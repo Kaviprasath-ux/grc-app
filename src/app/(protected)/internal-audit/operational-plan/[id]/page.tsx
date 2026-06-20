@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { confirm } from "@/components/ui/confirm";
 
 interface OpItem {
   id: string;
@@ -281,6 +282,7 @@ export default function OperationalPlanDetailPage() {
   };
 
   const handleDeleteItem = async (planId: string, itemId: string) => {
+    if (!(await confirm({ title: t("Delete Audit?"), description: t("This action cannot be undone.") }))) return;
     try {
       const res = await fetch(
         `/api/internal-audit/operational-plans/${planId}/items/${itemId}`,
@@ -334,6 +336,7 @@ export default function OperationalPlanDetailPage() {
   };
 
   const handleDeleteQuarterReport = async (planId: string, reportId: string) => {
+    if (!(await confirm({ title: t("Remove Quarterly Report?"), description: t("This action cannot be undone.") }))) return;
     try {
       const res = await fetch(
         `/api/internal-audit/operational-plans/${planId}/quarter-reports/${reportId}`,

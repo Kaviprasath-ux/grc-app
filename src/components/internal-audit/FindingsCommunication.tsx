@@ -24,6 +24,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { confirm } from "@/components/ui/confirm";
 
 type ReportingMode = "Continuous" | "Aggregated";
 
@@ -133,6 +134,7 @@ export default function FindingsCommunication({
   };
 
   const handleUnshare = async (finding: Finding) => {
+    if (!(await confirm({ title: t("Unshare Finding?"), description: t("This action cannot be undone.") }))) return;
     setBusyId(finding.id);
     try {
       const res = await fetch(

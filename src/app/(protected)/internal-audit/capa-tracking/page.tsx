@@ -52,6 +52,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
+import { confirm } from "@/components/ui/confirm";
 
 interface FindingAttachment {
   id: string;
@@ -354,6 +355,7 @@ export default function CAPATrackingPage() {
 
   const handleDeleteAttachment = async (attachmentId: string) => {
     if (!findingToEdit) return;
+    if (!(await confirm({ title: t("Delete Attachment?"), description: t("This action cannot be undone.") }))) return;
 
     try {
       const response = await fetch(

@@ -76,6 +76,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNameWithNumbers } from "@/lib/validations";
 import { DatePicker } from "@/components/ui/date-picker";
+import { confirm } from "@/components/ui/confirm";
 import Link from "next/link";
 
 interface Department {
@@ -1651,6 +1652,7 @@ export default function FieldworkDetailsPage() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    if (!(await confirm({ title: t("Delete Task?"), description: t("This action cannot be undone.") }))) return;
     try {
       const response = await fetch(
         `/api/internal-audit/fieldwork/${engagementId}/tasks?taskId=${taskId}`,

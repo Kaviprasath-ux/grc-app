@@ -34,6 +34,7 @@ import {
   Download,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
+import { confirm } from "@/components/ui/confirm";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
@@ -226,6 +227,7 @@ function ViewFindingContent() {
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!(await confirm({ title: t("Delete Attachment?"), description: t("This action cannot be undone.") }))) return;
     setDeletingAttachment(attachmentId);
     try {
       const response = await fetch(`/api/internal-audit/findings/${findingId}/attachments?attachmentId=${attachmentId}`, {

@@ -30,6 +30,7 @@ import {
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import { confirm } from "@/components/ui/confirm";
 
 interface RecentSearch {
   id: string;
@@ -324,6 +325,7 @@ export default function DocumentLibraryPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!(await confirm({ title: t("Delete Document?"), description: t("This action cannot be undone.") }))) return;
     try {
       const response = await fetch(`/api/internal-audit/documents/${id}`, {
         method: "DELETE",
