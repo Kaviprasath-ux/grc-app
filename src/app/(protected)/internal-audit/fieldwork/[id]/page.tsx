@@ -240,7 +240,6 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
   const [taskListOpen, setTaskListOpen] = useState(false);
   const [evidenceRequestOpen, setEvidenceRequestOpen] = useState(false);
   const [otherDocsOpen, setOtherDocsOpen] = useState(false);
-  const [findingsOpen, setFindingsOpen] = useState(false);
 
   // Data states
   const [workpapers, setWorkpapers] = useState<Workpaper[]>([]);
@@ -2537,74 +2536,6 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
         </div>
       </CollapsibleSection>
 
-      {/* Findings Section */}
-      <CollapsibleSection
-        title={`${t("Findings")}${findings.length ? ` (${findings.length})` : ""}`}
-        isOpen={findingsOpen}
-        onToggle={() => setFindingsOpen(!findingsOpen)}
-        headerAction={
-          !isAuditeeOnly ? (
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                setFindingsOpen(true);
-                setAddFullFindingDialogOpen(true);
-              }}
-              disabled={isReadOnly}
-            >
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Add Finding")}
-            </Button>
-          ) : undefined
-        }
-      >
-        <div className="space-y-3">
-          {translatedFindings.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              <p>{t("No findings recorded yet.")}</p>
-              <p className="mt-1 text-xs text-slate-400">
-                {t("Use Add Finding to record an audit finding.")}
-              </p>
-            </div>
-          ) : (
-            translatedFindings.map((f) => (
-              <div
-                key={f.id}
-                className="flex items-start justify-between gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-slate-300"
-                onClick={() => {
-                  setSelectedFindingForView(f);
-                  setViewFindingDialogOpen(true);
-                }}
-              >
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs text-slate-500">{f.findingId}</span>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        f.severity === "Critical" || f.severity === "High"
-                          ? "bg-red-100 text-red-700"
-                          : f.severity === "Medium"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {t(f.severity)}
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                      {t(f.status)}
-                    </span>
-                  </div>
-                  <p className="font-medium text-slate-700 break-words">{f.title}</p>
-                  {f.description && (
-                    <p className="text-sm text-slate-500 line-clamp-2 break-words">{f.description}</p>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </CollapsibleSection>
 
 
 

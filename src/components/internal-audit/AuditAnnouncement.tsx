@@ -19,8 +19,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, Send, Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { Mail, Send, Save, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatLocalDate } from "@/lib/utils";
 
@@ -47,19 +54,21 @@ interface AuditAnnouncementProps {
   canEdit: boolean;
 }
 
+interface IaUser {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
 interface AnnouncementFormState {
-  recipientName: string;
-  recipientEmail: string;
-  additionalRecipients: Recipient[];
+  recipients: Recipient[];
   subject: string;
   body: string;
   commenceDate: string;
 }
 
 const emptyForm: AnnouncementFormState = {
-  recipientName: "",
-  recipientEmail: "",
-  additionalRecipients: [],
+  recipients: [],
   subject: "",
   body: "",
   commenceDate: "",
@@ -88,12 +97,34 @@ export default function AuditAnnouncement({
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [form, setForm] = useState<AnnouncementFormState>(emptyForm);
 
+  const [iaUsers, setIaUsers] = useState<IaUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [sending, setSending] = useState<boolean>(false);
   const [confirmSend, setConfirmSend] = useState<boolean>(false);
 
   const baseUrl = `/api/internal-audit/engagements/${engagementId}/announcement`;
+
+  // Load the customer's Internal Audit module users for the recipient picker.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/internal-audit/users");
+        if (!res.ok) return;
+        const data = await res.json();
+        const list: IaUser[] = (Array.isArray(data) ? data : [])
+          .map((u: { id: string; fullName?: string; userName?: string; email?: string }) => ({
+            id: u.id,
+            fullName: u.fullName || u.userName || u.email || "",
+            email: u.email || "",
+          }))
+          .filter((u: IaUser) => u.email);
+        setIaUsers(list);
+      } catch {
+        /* non-fatal: picker just stays empty */
+      }
+    })();
+  }, []);
 
   const formatDateTime = useCallback((iso: string | null): string => {
     if (!iso) return "—";
@@ -104,10 +135,19 @@ export default function AuditAnnouncement({
 
   const applyAnnouncement = useCallback((data: Announcement | null) => {
     setAnnouncement(data);
+    // Combine the primary recipient + additional recipients into one list, deduped by email.
+    const combined: Recipient[] = [];
+    const seen = new Set<string>();
+    const push = (name: string, email: string) => {
+      const e = (email || "").trim().toLowerCase();
+      if (!e || seen.has(e)) return;
+      seen.add(e);
+      combined.push({ name: (name || "").trim(), email: email.trim() });
+    };
+    push(data?.recipientName ?? "", data?.recipientEmail ?? "");
+    for (const r of parseRecipients(data?.additionalRecipients)) push(r.name, r.email);
     setForm({
-      recipientName: data?.recipientName ?? "",
-      recipientEmail: data?.recipientEmail ?? "",
-      additionalRecipients: parseRecipients(data?.additionalRecipients),
+      recipients: combined,
       subject: data?.subject ?? "",
       body: data?.body ?? "",
       commenceDate: data?.commenceDate ? data.commenceDate.slice(0, 10) : "",
@@ -133,27 +173,32 @@ export default function AuditAnnouncement({
     void loadAnnouncement();
   }, [loadAnnouncement]);
 
-  const buildPayload = () => ({
-    recipientName: form.recipientName.trim() || null,
-    recipientEmail: form.recipientEmail.trim() || null,
-    additionalRecipients: form.additionalRecipients
-      .map((r) => ({ name: r.name.trim(), email: r.email.trim() }))
-      .filter((r) => r.email),
-    subject: form.subject.trim() || null,
-    body: form.body.trim() || null,
-    commenceDate: form.commenceDate || null,
-  });
+  const buildPayload = () => {
+    const recips = form.recipients
+      .map((r) => ({ name: (r.name || "").trim(), email: (r.email || "").trim() }))
+      .filter((r) => r.email);
+    return {
+      // First selected recipient is the primary; the rest are additional.
+      recipientName: recips[0]?.name || null,
+      recipientEmail: recips[0]?.email || null,
+      additionalRecipients: recips.slice(1),
+      subject: form.subject.trim() || null,
+      body: form.body.trim() || null,
+      commenceDate: form.commenceDate || null,
+    };
+  };
 
-  const addRecipient = () =>
-    setForm((p) => ({ ...p, additionalRecipients: [...p.additionalRecipients, { name: "", email: "" }] }));
-  const updateRecipient = (idx: number, field: keyof Recipient, value: string) =>
+  // Add a recipient picked from the IA-user dropdown (email auto-filled), deduped by email.
+  const addRecipientFromUser = (userId: string) => {
+    const u = iaUsers.find((x) => x.id === userId);
+    if (!u) return;
     setForm((p) => {
-      const next = [...p.additionalRecipients];
-      next[idx] = { ...next[idx], [field]: value };
-      return { ...p, additionalRecipients: next };
+      if (p.recipients.some((r) => r.email.toLowerCase() === u.email.toLowerCase())) return p;
+      return { ...p, recipients: [...p.recipients, { name: u.fullName, email: u.email }] };
     });
-  const removeRecipient = (idx: number) =>
-    setForm((p) => ({ ...p, additionalRecipients: p.additionalRecipients.filter((_, i) => i !== idx) }));
+  };
+  const removeRecipientAt = (idx: number) =>
+    setForm((p) => ({ ...p, recipients: p.recipients.filter((_, i) => i !== idx) }));
 
   const handleSave = async () => {
     setSaving(true);
@@ -231,62 +276,58 @@ export default function AuditAnnouncement({
         <CardContent className="space-y-4 text-sm">
           {editable ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>{t("Recipient Name")}</Label>
-                  <Input
-                    value={form.recipientName}
-                    onChange={(e) =>
-                      setForm({ ...form, recipientName: e.target.value })
-                    }
-                    placeholder={t("Management contact")}
-                  />
-                </div>
-                <div>
-                  <Label>{t("Recipient Email")}</Label>
-                  <Input
-                    type="email"
-                    value={form.recipientEmail}
-                    onChange={(e) =>
-                      setForm({ ...form, recipientEmail: e.target.value })
-                    }
-                    placeholder={t("Email address")}
-                  />
-                </div>
-              </div>
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Label>{t("Additional Recipients")}</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addRecipient}>
-                    <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {t("Add Recipient")}
-                  </Button>
-                </div>
-                {form.additionalRecipients.length === 0 ? (
-                  <p className="text-xs text-slate-400">
-                    {t("Add more people to receive this announcement (CC).")}
+                <Label>{t("Recipients")}</Label>
+                <Select value="" onValueChange={addRecipientFromUser}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("Select recipient")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {iaUsers.filter(
+                      (u) => !form.recipients.some((r) => r.email.toLowerCase() === u.email.toLowerCase())
+                    ).length === 0 ? (
+                      <div className="px-2 py-3 text-xs text-slate-400 text-center">
+                        {iaUsers.length === 0 ? t("No users found") : t("All users already added")}
+                      </div>
+                    ) : (
+                      iaUsers
+                        .filter((u) => !form.recipients.some((r) => r.email.toLowerCase() === u.email.toLowerCase()))
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.fullName} ({u.email})
+                          </SelectItem>
+                        ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {form.recipients.length === 0 ? (
+                  <p className="text-xs text-slate-400 mt-2">
+                    {t("Select one or more recipients; their email is added automatically.")}
                   </p>
                 ) : (
-                  <div className="space-y-2">
-                    {form.additionalRecipients.map((r, idx) => (
-                      <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
-                        <Input
-                          value={r.name}
-                          onChange={(e) => updateRecipient(idx, "name", e.target.value)}
-                          placeholder={t("Recipient Name")}
-                        />
-                        <Input
-                          type="email"
-                          value={r.email}
-                          onChange={(e) => updateRecipient(idx, "email", e.target.value)}
-                          placeholder={t("Email address")}
-                        />
+                  <div className="mt-2 space-y-2">
+                    {form.recipients.map((r, idx) => (
+                      <div
+                        key={`${r.email}-${idx}`}
+                        className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-700 truncate">
+                            {r.name || r.email}
+                            {idx === 0 && (
+                              <span className="ltr:ml-2 rtl:mr-2 text-[10px] uppercase tracking-wide text-primary-600">
+                                {t("Primary")}
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-slate-500 truncate">{r.email}</p>
+                        </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="text-slate-400 hover:text-red-500"
-                          onClick={() => removeRecipient(idx)}
+                          className="text-slate-400 hover:text-red-500 shrink-0"
+                          onClick={() => removeRecipientAt(idx)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -348,35 +389,15 @@ export default function AuditAnnouncement({
           ) : (
             <div className="space-y-3">
               <Separator />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="font-medium text-slate-700">
-                    {t("Recipient Name")}
-                  </p>
-                  <p className="text-slate-600">
-                    {form.recipientName.trim() || "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-medium text-slate-700">
-                    {t("Recipient Email")}
-                  </p>
-                  <p className="text-slate-600">
-                    {form.recipientEmail.trim() || "—"}
-                  </p>
-                </div>
+              <div>
+                <p className="font-medium text-slate-700">{t("Recipients")}</p>
+                <p className="text-slate-600">
+                  {form.recipients
+                    .map((r) => (r.name.trim() ? `${r.name.trim()} <${r.email.trim()}>` : r.email.trim()))
+                    .filter(Boolean)
+                    .join(", ") || "—"}
+                </p>
               </div>
-              {form.additionalRecipients.length > 0 && (
-                <div>
-                  <p className="font-medium text-slate-700">{t("Additional Recipients")}</p>
-                  <p className="text-slate-600">
-                    {form.additionalRecipients
-                      .map((r) => (r.name.trim() ? `${r.name.trim()} <${r.email.trim()}>` : r.email.trim()))
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-                  </p>
-                </div>
-              )}
               <div>
                 <p className="font-medium text-slate-700">{t("Subject")}</p>
                 <p className="text-slate-600">{form.subject.trim() || "—"}</p>
