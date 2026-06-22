@@ -335,6 +335,7 @@ export default function RiskRegisterPage() {
   const [singleAssessmentRow, setSingleAssessmentRow] = useState<AssessmentRow>(BLANK_ASSESSMENT_ROW);
   const [savingAssessment, setSavingAssessment] = useState(false);
   const [inProgressRisks, setInProgressRisks] = useState<Set<string>>(new Set());
+  const [assessmentStepError, setAssessmentStepError] = useState<string>("");
 
   // Scoring config for calculation method
   const [scoringConfig, setScoringConfig] = useState<{ probabilityImpactCalcType: string; riskRatingCalcType: string } | null>(null);
@@ -1193,6 +1194,7 @@ export default function RiskRegisterPage() {
   };
 
   const updateSingleAssessmentField = (field: keyof AssessmentRow, value: string) => {
+    setAssessmentStepError("");
     setSingleAssessmentRow((prev) => {
       const updated = { ...prev, [field]: value };
       if (selectedAssessmentRisk) saveAssessmentProgress(assessmentStep, updated, selectedAssessmentRisk.id);
@@ -3527,6 +3529,7 @@ export default function RiskRegisterPage() {
             setSelectedAssessmentRisk(null);
             setSingleAssessmentRow(BLANK_ASSESSMENT_ROW);
             setAssessmentStep(1);
+            setAssessmentStepError("");
           }
         }}
       >
@@ -3714,35 +3717,58 @@ export default function RiskRegisterPage() {
                 </div>
 
                 {/* Footer */}
-                <div className="border-t border-slate-100 bg-[#faf8f6] px-8 py-5 flex items-center justify-between flex-shrink-0">
-                  <span className="text-sm text-[#c4896e] font-semibold">{t("Step")} {assessmentStep} {t("of")} {TOTAL_STEPS}</span>
-                  <div className="flex gap-3">
-                    <Button variant="outline" className="border-slate-200 text-slate-600 px-6"
-                      onClick={() => {
-                        if (assessmentStep > 1) {
-                          const prevStep = assessmentStep - 1;
-                          setAssessmentStep(prevStep);
-                          saveAssessmentProgress(prevStep, singleAssessmentRow, selectedAssessmentRisk.id);
-                        } else {
-                          setAssessmentDialogOpen(false);
-                        }
-                      }}>
-                      {assessmentStep > 1 ? t("Back") : t("Cancel")}
-                    </Button>
-                    {assessmentStep < TOTAL_STEPS ? (
-                      <Button className="bg-[#7c3f2f] hover:bg-[#6a3528] text-white px-6"
+                <div className="border-t border-slate-100 bg-[#faf8f6] px-8 py-5 flex-shrink-0">
+                  {assessmentStepError && (
+                    <p className="text-xs text-red-600 mb-3 font-medium">{assessmentStepError}</p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#c4896e] font-semibold">{t("Step")} {assessmentStep} {t("of")} {TOTAL_STEPS}</span>
+                    <div className="flex gap-3">
+                      <Button variant="outline" className="border-slate-200 text-slate-600 px-6"
                         onClick={() => {
-                          const nextStep = assessmentStep + 1;
-                          setAssessmentStep(nextStep);
-                          saveAssessmentProgress(nextStep, singleAssessmentRow, selectedAssessmentRisk.id);
+                          setAssessmentStepError("");
+                          if (assessmentStep > 1) {
+                            const prevStep = assessmentStep - 1;
+                            setAssessmentStep(prevStep);
+                            saveAssessmentProgress(prevStep, singleAssessmentRow, selectedAssessmentRisk.id);
+                          } else {
+                            setAssessmentDialogOpen(false);
+                          }
                         }}>
-                        {t("Next")} <ChevronRight className="h-4 w-4" />
+                        {assessmentStep > 1 ? t("Back") : t("Cancel")}
                       </Button>
-                    ) : (
-                      <Button className="bg-[#7c3f2f] hover:bg-[#6a3528] text-white px-6" onClick={handleSaveAssessment} disabled={savingAssessment}>
-                        {savingAssessment ? <><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</> : t("Save Assessment")}
-                      </Button>
-                    )}
+                      {assessmentStep < TOTAL_STEPS ? (
+                        <Button className="bg-[#7c3f2f] hover:bg-[#6a3528] text-white px-6"
+                          onClick={() => {
+                            // Per-step validation
+                            if (assessmentStep === 2 && !row.assessmentLikelihood) {
+                              setAssessmentStepError(t("Please select a likelihood value before proceeding."));
+                              return;
+                            }
+                            if (assessmentStep === 3) {
+                              const missing = impactFields.filter(({ field }) => !row[field]);
+                              if (missing.length > 0) {
+                                setAssessmentStepError(t("Please rate all impact dimensions before proceeding."));
+                                return;
+                              }
+                            }
+                            if (assessmentStep === 4 && !row.controlEffectivenessScore) {
+                              setAssessmentStepError(t("Please select a control effectiveness score before proceeding."));
+                              return;
+                            }
+                            setAssessmentStepError("");
+                            const nextStep = assessmentStep + 1;
+                            setAssessmentStep(nextStep);
+                            saveAssessmentProgress(nextStep, singleAssessmentRow, selectedAssessmentRisk.id);
+                          }}>
+                          {t("Next")} <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button className="bg-[#7c3f2f] hover:bg-[#6a3528] text-white px-6" onClick={handleSaveAssessment} disabled={savingAssessment}>
+                          {savingAssessment ? <><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</> : t("Save Assessment")}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
