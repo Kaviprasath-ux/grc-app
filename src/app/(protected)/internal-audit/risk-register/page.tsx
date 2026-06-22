@@ -254,6 +254,7 @@ interface InternalAuditRiskDetail {
   residualImpact: number | null;
   residualScore: number | null;
   riskLevel: string | null;
+  assessmentStatus: string | null;
   creationDate: string;
   auditComment: string | null;
   status: string;
@@ -3278,8 +3279,17 @@ export default function RiskRegisterPage() {
                     </div>
                   </div>
 
-                  {/* Heat Map */}
+                  {/* Heat Map — only shown once the risk assessment is completed */}
                   {(() => {
+                    if (viewingRisk.assessmentStatus !== "Assessed") {
+                      return (
+                        <div className="mt-5 bg-slate-50 rounded-xl p-6 border border-dashed border-slate-200 text-center">
+                          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t("Risk Heat Map")}</h4>
+                          <p className="text-sm text-slate-400">{t("Complete the risk assessment to view the heat map.")}</p>
+                        </div>
+                      );
+                    }
+
                     const probValues = probabilities.length > 0
                       ? [...probabilities].sort((a, b) => a.value - b.value)
                       : [1,2,3,4,5].map(v => ({ id: String(v), label: String(v), value: v }));

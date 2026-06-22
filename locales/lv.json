@@ -5371,5 +5371,7 @@
   "No risks match the selected risk level.": "Neviens risks neatbilst atlasītajam riska līmenim.",
   "Additional Recipients": "Papildu saņēmēji",
   "Add Recipient": "Pievienot saņēmēju",
-  "Add more people to receive this announcement (CC).": "Pievienojiet vairāk personu, kas saņems šo paziņojumu (CC)."
+  "Add more people to receive this announcement (CC).": "Pievienojiet vairāk personu, kas saņems šo paziņojumu (CC).",
+  "Risk Heat Map": "Risku siltuma karte",
+  "Complete the risk assessment to view the heat map.": "Pabeidziet riska novērtējumu, lai skatītu siltuma karti."
 }

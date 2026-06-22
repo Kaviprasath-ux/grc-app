@@ -3274,6 +3274,8 @@ const translations: [string, string, string][] = [
   ['Generated at', 'تم الإنشاء في', 'Ģenerēts'],
   ['Failed to load recommendations. Please try again.', 'فشل في تحميل التوصيات. يرجى المحاولة مرة أخرى.', 'Neizdevās ielādēt ieteikumus. Lūdzu, mēģiniet vēlreiz.'],
   ['Current Risk Level', 'مستوى المخاطر الحالي', 'Pašreizējais riska līmenis'],
+  ['Risk Heat Map', 'خريطة حرارة المخاطر', 'Risku siltuma karte'],
+  ['Complete the risk assessment to view the heat map.', 'أكمل تقييم المخاطر لعرض خريطة الحرارة.', 'Pabeidziet riska novērtējumu, lai skatītu siltuma karti.'],
   ['Status & Comments', 'الحالة والتعليقات', 'Statuss un komentāri'],
   ['Last Updated', 'آخر تحديث', 'Pēdējo reizi atjaunināts'],
   ['Review eligible risks grouped by department. Only High and Medium risks without audit plans are shown.', 'مراجعة المخاطر المؤهلة مجمعة حسب القسم. يتم عرض المخاطر العالية والمتوسطة فقط بدون خطط تدقيق.', 'Pārskatiet atbilstošos riskus, kas sagrupēti pēc nodaļas. Tiek rādīti tikai augsti un vidēji riski bez audita plāniem.'],

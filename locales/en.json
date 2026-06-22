@@ -5371,5 +5371,7 @@
   "No risks match the selected risk level.": "No risks match the selected risk level.",
   "Additional Recipients": "Additional Recipients",
   "Add Recipient": "Add Recipient",
-  "Add more people to receive this announcement (CC).": "Add more people to receive this announcement (CC)."
+  "Add more people to receive this announcement (CC).": "Add more people to receive this announcement (CC).",
+  "Risk Heat Map": "Risk Heat Map",
+  "Complete the risk assessment to view the heat map.": "Complete the risk assessment to view the heat map."
 }

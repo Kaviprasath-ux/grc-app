@@ -5371,5 +5371,7 @@
   "No risks match the selected risk level.": "لا توجد مخاطر تطابق مستوى المخاطر المحدد.",
   "Additional Recipients": "مستلمون إضافيون",
   "Add Recipient": "إضافة مستلم",
-  "Add more people to receive this announcement (CC).": "أضف المزيد من الأشخاص لتلقي هذا الإعلان (نسخة)."
+  "Add more people to receive this announcement (CC).": "أضف المزيد من الأشخاص لتلقي هذا الإعلان (نسخة).",
+  "Risk Heat Map": "خريطة حرارة المخاطر",
+  "Complete the risk assessment to view the heat map.": "أكمل تقييم المخاطر لعرض خريطة الحرارة."
 }
