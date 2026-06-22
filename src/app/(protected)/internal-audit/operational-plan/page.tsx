@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -42,21 +41,6 @@ interface StrategicPlanRow {
   items?: PlanItem[];
   _count?: { items: number };
 }
-
-const riskLevelColor = (level: string | null): string => {
-  switch ((level || "").toLowerCase()) {
-    case "extreme":
-      return "bg-red-100 text-red-700";
-    case "high":
-      return "bg-orange-100 text-orange-700";
-    case "medium":
-      return "bg-yellow-100 text-yellow-700";
-    case "low":
-      return "bg-green-100 text-green-700";
-    default:
-      return "bg-gray-100 text-gray-600";
-  }
-};
 
 export default function OperationalPlanListPage() {
   const { t } = useLanguage();
@@ -116,15 +100,13 @@ export default function OperationalPlanListPage() {
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Duration")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:text-right rtl:text-left">{t("Residual Score")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8">
                     <Loader2 className="h-5 w-5 animate-spin inline text-slate-400" />
                   </TableCell>
                 </TableRow>
@@ -133,7 +115,7 @@ export default function OperationalPlanListPage() {
                 if (rows.length === 0) {
                   return (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-sm text-slate-400">
+                      <TableCell colSpan={5} className="text-center py-8 text-sm text-slate-400">
                         {t("No audits yet. Add audits from the Strategic Plan first.")}
                       </TableCell>
                     </TableRow>
@@ -149,14 +131,6 @@ export default function OperationalPlanListPage() {
                     <TableCell className="py-3 text-sm font-medium text-slate-800">{it.title}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{it.auditType || "—"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{plan.durationYears} {t("Years")}</TableCell>
-                    <TableCell className="py-3">
-                      {it.riskLevel ? (
-                        <Badge className={riskLevelColor(it.riskLevel)}>{it.riskLevel}</Badge>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700 ltr:text-right rtl:text-left">{it.residualScore ?? "—"}</TableCell>
                     <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
                       <Button
                         variant="ghost"

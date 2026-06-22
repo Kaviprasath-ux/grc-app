@@ -170,6 +170,13 @@ export default function StrategicPlanPage() {
 
   // ----- Risk Assessment section (assessed risks not yet added to a plan) -----
   const [assessedRisks, setAssessedRisks] = useState<AssessedRisk[]>([]);
+  const [riskLevelFilter, setRiskLevelFilter] = useState<string>("all");
+  const filteredAssessedRisks =
+    riskLevelFilter === "all"
+      ? assessedRisks
+      : assessedRisks.filter(
+          (r) => (r.riskLevel || "").toLowerCase() === riskLevelFilter.toLowerCase()
+        );
 
   // Add Plan popup state — only the plan duration is captured here.
   const [planDialogRisk, setPlanDialogRisk] = useState<AssessedRisk | null>(null);
@@ -413,7 +420,24 @@ export default function StrategicPlanPage() {
 
       {/* Section 1: Risk Assessment (assessed risks not yet added to a plan) */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-800 mb-2">{t("Risk Assessment")}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <h2 className="text-lg font-semibold text-slate-800">{t("Risk Assessment")}</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500">{t("Risk Level")}</span>
+            <Select value={riskLevelFilter} onValueChange={setRiskLevelFilter}>
+              <SelectTrigger className="w-40 h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Levels")}</SelectItem>
+                <SelectItem value="Extreme">{t("Extreme")}</SelectItem>
+                <SelectItem value="High">{t("High")}</SelectItem>
+                <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                <SelectItem value="Low">{t("Low")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
           <Table className="min-w-[760px]">
@@ -429,14 +453,16 @@ export default function StrategicPlanPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assessedRisks.length === 0 ? (
+              {filteredAssessedRisks.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-sm text-slate-400">
-                    {t("No assessed risks available to plan")}
+                    {assessedRisks.length === 0
+                      ? t("No assessed risks available to plan")
+                      : t("No risks match the selected risk level.")}
                   </TableCell>
                 </TableRow>
               ) : (
-                assessedRisks.map((r) => (
+                filteredAssessedRisks.map((r) => (
                   <TableRow key={r.id} className="border-b border-slate-100 last:border-0">
                     <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{r.riskId}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{r.riskName}</TableCell>
@@ -494,8 +520,6 @@ export default function StrategicPlanPage() {
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit")}</TableHead>
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Duration")}</TableHead>
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
-                      <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:text-right rtl:text-left">{t("Residual Score")}</TableHead>
                       <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -508,14 +532,6 @@ export default function StrategicPlanPage() {
                         <TableCell className="py-3 text-sm text-slate-700">
                           {plan.durationYears} {t("Years")}
                         </TableCell>
-                        <TableCell className="py-3">
-                          {it.riskLevel ? (
-                            <Badge className={riskLevelColor(it.riskLevel)}>{it.riskLevel}</Badge>
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700 ltr:text-right rtl:text-left">{it.residualScore ?? "—"}</TableCell>
                         <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
                           {plan.status !== "Approved" && (
                             <div className="flex ltr:justify-end rtl:justify-start items-center gap-0.5">

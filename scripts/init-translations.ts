@@ -269,6 +269,8 @@ const translations: [string, string, string][] = [
   ['Any deviation from plan must be justified.', 'يجب تبرير أي انحراف عن الخطة.', 'Jebkura novirze no plāna jāpamato.'],
   ['Use Add Finding to record an audit finding.', 'استخدم "إضافة ملاحظة" لتسجيل ملاحظة تدقيق.', 'Izmantojiet "Pievienot konstatējumu", lai reģistrētu audita konstatējumu.'],
   ['No audits yet. Add audits from the Strategic Plan first.', 'لا توجد عمليات تدقيق بعد. أضف عمليات التدقيق من الخطة الاستراتيجية أولاً.', 'Vēl nav auditu. Vispirms pievienojiet auditus no stratēģiskā plāna.'],
+  ['All Levels', 'كل المستويات', 'Visi līmeņi'],
+  ['No risks match the selected risk level.', 'لا توجد مخاطر تطابق مستوى المخاطر المحدد.', 'Neviens risks neatbilst atlasītajam riska līmenim.'],
   ['Additional Recipients', 'مستلمون إضافيون', 'Papildu saņēmēji'],
   ['Add Recipient', 'إضافة مستلم', 'Pievienot saņēmēju'],
   ['Add more people to receive this announcement (CC).', 'أضف المزيد من الأشخاص لتلقي هذا الإعلان (نسخة).', 'Pievienojiet vairāk personu, kas saņems šo paziņojumu (CC).'],
