@@ -25,6 +25,7 @@ export const GET = withAuth(
           auditee: {
             select: { id: true, firstName: true, lastName: true, fullName: true }
           },
+          report: { select: { id: true } },
         }
       });
 

@@ -51,6 +51,7 @@ import {
   FileText,
   Plus,
   Pencil,
+  Eye,
   Trash2,
   Search,
   Loader2,
@@ -131,6 +132,7 @@ interface Engagement {
   startDate: string | null;
   endDate: string | null;
   assignedAuditors: string[];
+  report?: { id: string } | null;
 }
 
 interface AuditTask {
@@ -222,6 +224,31 @@ export default function AuditPlanningPage() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
+
+  // Generate Report (no dialog/navigation) — creates the report for a
+  // Completed engagement; it then appears in the Report section.
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+
+  const handleGenerateReport = async (engagementId: string) => {
+    setGeneratingId(engagementId);
+    try {
+      const res = await fetch(`/api/internal-audit/report/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ engagementId, overallResult: "Pass" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && !String(data?.error || "").toLowerCase().includes("already exists")) {
+        throw new Error(data?.error || "Failed to generate report");
+      }
+      toast.success(t("Report generated. It is now available in the Report section."));
+      await fetchEngagements(); // refresh so the row locks (report now present)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("Failed to generate report"));
+    } finally {
+      setGeneratingId(null);
+    }
+  };
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -1606,16 +1633,6 @@ export default function AuditPlanningPage() {
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
           </Button>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto border-primary-600 text-primary-600 hover:bg-primary-50" onClick={openReportDialog}>
-            <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Generate Annual Plan Report")}
-          </Button>
-          {isAuditHead && (
-            <Button size="sm" className="w-full sm:w-auto" onClick={openAddDialog}>
-              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-              {t("Add Engagement")}
-            </Button>
-          )}
         </div>
       </div>
 
@@ -1708,30 +1725,51 @@ export default function AuditPlanningPage() {
                           variant="outline"
                           size="sm"
                           className="h-8 gap-1.5 text-slate-600 hover:text-slate-800"
-                          title={t("Workflow")}
+                          title={engagement.report ? t("View") : t("Edit")}
                         >
-                          <Workflow className="h-4 w-4" />
-                          {t("Workflow")}
+                          {engagement.report ? (
+                            <Eye className="h-4 w-4" />
+                          ) : (
+                            <Pencil className="h-4 w-4" />
+                          )}
+                          {engagement.report ? t("View") : t("Edit")}
                         </Button>
                       </Link>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openEditDialog(engagement)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                        onClick={() => openDeleteDialog(engagement)}
-                        title={t("Delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {engagement.report ? (
+                        // Once a report is generated, the engagement is locked (non-editable).
+                        <span className="ltr:ml-1 rtl:mr-1 inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1 text-xs text-emerald-700">
+                          <FileText className="h-3.5 w-3.5" />
+                          {t("Report generated")}
+                        </span>
+                      ) : (
+                        <>
+                          {engagement.status === "Completed" && (
+                            <Button
+                              size="sm"
+                              className="h-8 gap-1.5"
+                              title={t("Generate Report")}
+                              disabled={generatingId === engagement.id}
+                              onClick={() => handleGenerateReport(engagement.id)}
+                            >
+                              {generatingId === engagement.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FileText className="h-4 w-4" />
+                              )}
+                              {t("Generate Report")}
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                            onClick={() => openDeleteDialog(engagement)}
+                            title={t("Delete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

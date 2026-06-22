@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Home,
@@ -11,10 +12,26 @@ import {
   CircleDot,
   Loader2,
   ExternalLink,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import MeetingMinutes from "@/components/internal-audit/MeetingMinutes";
@@ -42,6 +59,7 @@ interface Engagement {
   department?: { id: string; name: string } | null;
   currentStage: string;
   stageProgress: StageProgressMap | null;
+  report?: { id: string } | null;
 }
 
 export default function EngagementWorkflowPage({
@@ -51,12 +69,16 @@ export default function EngagementWorkflowPage({
 }) {
   const { id } = use(params);
   const { t } = useLanguage();
-  const { canEdit } = usePermissions("audit.fieldwork");
+  const { canEdit: canEditPerm } = usePermissions("audit.fieldwork");
 
   const [engagement, setEngagement] = useState<Engagement | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedStage, setSelectedStage] = useState<string>(DEFAULT_ENGAGEMENT_STAGE);
+  const router = useRouter();
+  const [finishOpen, setFinishOpen] = useState(false);
+  const [overallResult, setOverallResult] = useState<string>("Pass");
+  const [generating, setGenerating] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -75,6 +97,10 @@ export default function EngagementWorkflowPage({
   useEffect(() => {
     load();
   }, [load]);
+
+  // Once a report is generated, the engagement is locked (read-only).
+  const reportGenerated = !!engagement?.report;
+  const canEdit = canEditPerm && !reportGenerated;
 
   const progress: StageProgressMap = engagement?.stageProgress || {};
 
@@ -125,6 +151,70 @@ export default function EngagementWorkflowPage({
     toast.success(t("Current step updated"));
   };
 
+  // Once every workflow step is complete, the engagement is auto-marked
+  // "Completed"; the overview then shows a single "Generate Report" action
+  // (beside the workflow stepper) gated on that status.
+  const allStepsComplete =
+    ENGAGEMENT_STAGES.length > 0 &&
+    ENGAGEMENT_STAGES.every((s) => progress[s.key] === "completed");
+  const planCompleted = engagement?.status === "Completed";
+
+  // Auto-complete the engagement when all steps are done (idempotent).
+  const autoCompleteRef = useRef(false);
+  useEffect(() => {
+    if (!engagement || !canEdit) return;
+    if (allStepsComplete && engagement.status !== "Completed" && !autoCompleteRef.current) {
+      autoCompleteRef.current = true;
+      (async () => {
+        try {
+          await fetch(`/api/internal-audit/engagements/${engagement.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "Completed" }),
+          });
+          await load();
+        } catch {
+          autoCompleteRef.current = false;
+        }
+      })();
+    }
+  }, [engagement, canEdit, allStepsComplete, load]);
+
+  const handleFinishAndGenerate = async () => {
+    if (!engagement) return;
+    setGenerating(true);
+    try {
+      // Mark all steps complete and the engagement Completed.
+      const allComplete: StageProgressMap = {};
+      for (const s of ENGAGEMENT_STAGES) allComplete[s.key] = "completed";
+      const res1 = await fetch(`/api/internal-audit/engagements/${engagement.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stageProgress: allComplete, status: "Completed" }),
+      });
+      if (!res1.ok) throw new Error(t("Failed to complete engagement"));
+
+      // Generate the report (idempotent — treat "already exists" as success).
+      const res2 = await fetch(`/api/internal-audit/report/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ engagementId: engagement.id, overallResult }),
+      });
+      const data2 = await res2.json().catch(() => ({}));
+      if (!res2.ok && !String(data2?.error || "").toLowerCase().includes("already exists")) {
+        throw new Error(data2?.error || t("Failed to generate report"));
+      }
+
+      toast.success(t("Report generated. Opening the Report section."));
+      setFinishOpen(false);
+      router.push("/internal-audit/report");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("Failed to generate report"));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-slate-500">
@@ -170,9 +260,33 @@ export default function EngagementWorkflowPage({
             {` · ${t(engagement.status)}`}
           </p>
         </div>
-        <Badge variant="outline" className="text-sm">
-          {completedCount}/{ENGAGEMENT_STAGES.length} {t("steps complete")}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="text-sm">
+            {completedCount}/{ENGAGEMENT_STAGES.length} {t("steps complete")}
+          </Badge>
+          {reportGenerated ? (
+            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm flex items-center gap-1">
+              <FileText className="h-3.5 w-3.5" />
+              {t("Report generated — read only")}
+            </Badge>
+          ) : (
+            canEdit && planCompleted && (
+              <Button
+                size="sm"
+                className="gap-2"
+                disabled={saving || generating}
+                onClick={() => setFinishOpen(true)}
+              >
+                {generating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                {t("Generate Report")}
+              </Button>
+            )
+          )}
+        </div>
       </div>
 
       {/* Stepper */}
@@ -330,6 +444,43 @@ export default function EngagementWorkflowPage({
           )}
         </div>
       </Card>
+
+      {/* Generate Report dialog */}
+      <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Generate Report")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2 text-sm">
+            <p className="text-slate-600">
+              {t(
+                "This marks the engagement as completed and generates the audit report. The report will appear in the Report section."
+              )}
+            </p>
+            <div>
+              <Label>{t("Overall Result")}</Label>
+              <Select value={overallResult} onValueChange={setOverallResult}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pass">{t("Pass")}</SelectItem>
+                  <SelectItem value="Fail">{t("Fail")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinishOpen(false)} disabled={generating}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleFinishAndGenerate} disabled={generating}>
+              {generating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t("Generate Report")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

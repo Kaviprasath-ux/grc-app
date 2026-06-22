@@ -187,10 +187,6 @@ export default function AuditProgram({ engagementId, canEdit }: AuditProgramProp
           {t("Audit Program")}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={print} disabled={saving}>
-            <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("Print")}
-          </Button>
           <Button variant="outline" size="sm" onClick={exportPdf} disabled={saving}>
             <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export PDF")}

@@ -111,7 +111,8 @@ export const GET = withAuth(
           },
           assignedAuditor: {
             select: { id: true, fullName: true, firstName: true, lastName: true }
-          }
+          },
+          report: { select: { id: true } }
         },
         orderBy: { createdAt: 'desc' }
       });
