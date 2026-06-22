@@ -20,14 +20,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
-import { Mail, Send, Save, Loader2, CheckCircle2 } from "lucide-react";
+import { Mail, Send, Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatLocalDate } from "@/lib/utils";
+
+interface Recipient {
+  name: string;
+  email: string;
+}
 
 interface Announcement {
   id: string | null;
   recipientName: string | null;
   recipientEmail: string | null;
+  additionalRecipients: Recipient[] | string | null;
   subject: string | null;
   body: string | null;
   commenceDate: string | null;
@@ -44,6 +50,7 @@ interface AuditAnnouncementProps {
 interface AnnouncementFormState {
   recipientName: string;
   recipientEmail: string;
+  additionalRecipients: Recipient[];
   subject: string;
   body: string;
   commenceDate: string;
@@ -52,10 +59,25 @@ interface AnnouncementFormState {
 const emptyForm: AnnouncementFormState = {
   recipientName: "",
   recipientEmail: "",
+  additionalRecipients: [],
   subject: "",
   body: "",
   commenceDate: "",
 };
+
+// Tolerantly parse additionalRecipients which may arrive as an array or a JSON string.
+function parseRecipients(value: Recipient[] | string | null | undefined): Recipient[] {
+  if (Array.isArray(value)) return value.filter((r) => r && typeof r.email === "string");
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const arr = JSON.parse(value);
+      return Array.isArray(arr) ? arr.filter((r) => r && typeof r.email === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 export default function AuditAnnouncement({
   engagementId,
@@ -85,6 +107,7 @@ export default function AuditAnnouncement({
     setForm({
       recipientName: data?.recipientName ?? "",
       recipientEmail: data?.recipientEmail ?? "",
+      additionalRecipients: parseRecipients(data?.additionalRecipients),
       subject: data?.subject ?? "",
       body: data?.body ?? "",
       commenceDate: data?.commenceDate ? data.commenceDate.slice(0, 10) : "",
@@ -113,10 +136,24 @@ export default function AuditAnnouncement({
   const buildPayload = () => ({
     recipientName: form.recipientName.trim() || null,
     recipientEmail: form.recipientEmail.trim() || null,
+    additionalRecipients: form.additionalRecipients
+      .map((r) => ({ name: r.name.trim(), email: r.email.trim() }))
+      .filter((r) => r.email),
     subject: form.subject.trim() || null,
     body: form.body.trim() || null,
     commenceDate: form.commenceDate || null,
   });
+
+  const addRecipient = () =>
+    setForm((p) => ({ ...p, additionalRecipients: [...p.additionalRecipients, { name: "", email: "" }] }));
+  const updateRecipient = (idx: number, field: keyof Recipient, value: string) =>
+    setForm((p) => {
+      const next = [...p.additionalRecipients];
+      next[idx] = { ...next[idx], [field]: value };
+      return { ...p, additionalRecipients: next };
+    });
+  const removeRecipient = (idx: number) =>
+    setForm((p) => ({ ...p, additionalRecipients: p.additionalRecipients.filter((_, i) => i !== idx) }));
 
   const handleSave = async () => {
     setSaving(true);
@@ -218,6 +255,47 @@ export default function AuditAnnouncement({
                 </div>
               </div>
               <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label>{t("Additional Recipients")}</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addRecipient}>
+                    <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t("Add Recipient")}
+                  </Button>
+                </div>
+                {form.additionalRecipients.length === 0 ? (
+                  <p className="text-xs text-slate-400">
+                    {t("Add more people to receive this announcement (CC).")}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {form.additionalRecipients.map((r, idx) => (
+                      <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
+                        <Input
+                          value={r.name}
+                          onChange={(e) => updateRecipient(idx, "name", e.target.value)}
+                          placeholder={t("Recipient Name")}
+                        />
+                        <Input
+                          type="email"
+                          value={r.email}
+                          onChange={(e) => updateRecipient(idx, "email", e.target.value)}
+                          placeholder={t("Email address")}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-400 hover:text-red-500"
+                          onClick={() => removeRecipient(idx)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
                 <Label>{t("Commence Date")}</Label>
                 <DatePicker
                   value={form.commenceDate || undefined}
@@ -288,6 +366,17 @@ export default function AuditAnnouncement({
                   </p>
                 </div>
               </div>
+              {form.additionalRecipients.length > 0 && (
+                <div>
+                  <p className="font-medium text-slate-700">{t("Additional Recipients")}</p>
+                  <p className="text-slate-600">
+                    {form.additionalRecipients
+                      .map((r) => (r.name.trim() ? `${r.name.trim()} <${r.email.trim()}>` : r.email.trim()))
+                      .filter(Boolean)
+                      .join(", ") || "—"}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="font-medium text-slate-700">{t("Subject")}</p>
                 <p className="text-slate-600">{form.subject.trim() || "—"}</p>

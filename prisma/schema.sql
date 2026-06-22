@@ -2270,6 +2270,7 @@ CREATE TABLE "AuditEngagementAnnouncement" (
     "engagementId" TEXT NOT NULL,
     "recipientName" TEXT,
     "recipientEmail" TEXT,
+    "additionalRecipients" TEXT,
     "subject" TEXT,
     "body" TEXT,
     "commenceDate" TIMESTAMP(3),

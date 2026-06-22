@@ -102,6 +102,7 @@ Head of Internal Audit`;
         engagementId: id,
         recipientName: engagement.auditee ? auditeeName : null,
         recipientEmail: engagement.auditee?.email || null,
+        additionalRecipients: [],
         subject,
         body,
         commenceDate,
@@ -150,8 +151,11 @@ export const PUT = withAuth(
       }
       const customerAccountId = getCustomerAccountId(session);
 
-      const { recipientName, recipientEmail, subject, body: announcementBody, commenceDate } = body;
+      const { recipientName, recipientEmail, additionalRecipients, subject, body: announcementBody, commenceDate } = body;
       const commenceDateValue = commenceDate ? new Date(commenceDate) : null;
+      const additionalRecipientsJson = JSON.stringify(
+        Array.isArray(additionalRecipients) ? additionalRecipients : []
+      );
 
       const announcement = await prisma.auditEngagementAnnouncement.upsert({
         where: { engagementId: id },
@@ -160,6 +164,7 @@ export const PUT = withAuth(
           engagementId: id,
           recipientName: recipientName ?? null,
           recipientEmail: recipientEmail ?? null,
+          additionalRecipients: additionalRecipientsJson,
           subject: subject ?? null,
           body: announcementBody ?? null,
           commenceDate: commenceDateValue,
@@ -170,6 +175,7 @@ export const PUT = withAuth(
         update: {
           recipientName: recipientName ?? null,
           recipientEmail: recipientEmail ?? null,
+          additionalRecipients: additionalRecipientsJson,
           subject: subject ?? null,
           body: announcementBody ?? null,
           commenceDate: commenceDateValue,

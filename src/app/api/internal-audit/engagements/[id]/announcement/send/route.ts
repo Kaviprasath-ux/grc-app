@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from '@/lib/notification-service';
+import { sendEmail } from '@/lib/email-service';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Escape HTML and convert newlines to <br> for a plain-text body.
+function bodyToHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937;white-space:pre-wrap">${escaped.replace(/\n/g, '<br>')}</div>`;
+}
 
 // POST /api/internal-audit/engagements/[id]/announcement/send - Mark announcement Sent and notify the auditee
 export const POST = withAuth(
@@ -32,9 +44,13 @@ export const POST = withAuth(
       }
       const customerAccountId = getCustomerAccountId(session);
 
-      const { recipientName, recipientEmail, subject, body: announcementBody, commenceDate } = body;
+      const { recipientName, recipientEmail, additionalRecipients, subject, body: announcementBody, commenceDate } = body;
       const commenceDateValue = commenceDate ? new Date(commenceDate) : null;
       const sentAt = new Date();
+      const additionalList: Array<{ name?: string; email?: string }> = Array.isArray(additionalRecipients)
+        ? additionalRecipients
+        : [];
+      const additionalRecipientsJson = JSON.stringify(additionalList);
 
       const announcement = await prisma.auditEngagementAnnouncement.upsert({
         where: { engagementId: id },
@@ -43,6 +59,7 @@ export const POST = withAuth(
           engagementId: id,
           recipientName: recipientName ?? null,
           recipientEmail: recipientEmail ?? null,
+          additionalRecipients: additionalRecipientsJson,
           subject: subject ?? null,
           body: announcementBody ?? null,
           commenceDate: commenceDateValue,
@@ -56,6 +73,7 @@ export const POST = withAuth(
         update: {
           recipientName: recipientName ?? null,
           recipientEmail: recipientEmail ?? null,
+          additionalRecipients: additionalRecipientsJson,
           subject: subject ?? null,
           body: announcementBody ?? null,
           commenceDate: commenceDateValue,
@@ -65,6 +83,26 @@ export const POST = withAuth(
           sentByName: session.name || null,
         },
       });
+
+      // Email the announcement to all recipients (primary + additional), deduped.
+      const emails = Array.from(
+        new Set(
+          [recipientEmail, ...additionalList.map((r) => r?.email)]
+            .map((e) => (e || '').trim().toLowerCase())
+            .filter((e) => EMAIL_RE.test(e))
+        )
+      );
+      if (emails.length > 0 && announcement.subject) {
+        try {
+          await sendEmail({
+            to: emails,
+            subject: announcement.subject,
+            html: bodyToHtml(announcement.body || ''),
+          });
+        } catch (emailError) {
+          console.error('Error emailing announcement recipients:', emailError);
+        }
+      }
 
       // Notify the auditee — do not let a notification failure fail the send
       if (engagement.auditeeId) {
