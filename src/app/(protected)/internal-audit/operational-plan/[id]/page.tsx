@@ -546,7 +546,6 @@ export default function OperationalPlanDetailPage() {
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Quarter")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Manager")}</TableHead>
                         {canDelete && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>}
                       </TableRow>
@@ -558,13 +557,6 @@ export default function OperationalPlanDetailPage() {
                           <TableCell className="py-3 text-sm font-medium text-slate-800">{it.title}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-700">{it.auditType || "—"}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-700">{it.plannedQuarter || "—"}</TableCell>
-                          <TableCell className="py-3">
-                            {it.riskLevel ? (
-                              <Badge className={riskLevelColor(it.riskLevel)}>{it.riskLevel}</Badge>
-                            ) : (
-                              "—"
-                            )}
-                          </TableCell>
                           <TableCell className="py-3 text-sm text-slate-700">
                             {auditorName(it.assignedAuditorId)}
                           </TableCell>
