@@ -2891,23 +2891,46 @@ export default function RiskRegisterPage() {
                   </div>
                 </div>
 
-                {/* Control Information — read-only in Edit */}
+                {/* Control Information — editable in Edit */}
                 <div className="space-y-4">
-                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Control Information")}</h3>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="text-base font-semibold text-slate-800">{t("Control Information")}</h3>
+                    <Button type="button" variant="outline" size="sm" onClick={addControl} className="h-7 text-xs gap-1">
+                      <Plus className="h-3 w-3" /> {t("Add Control")}
+                    </Button>
+                  </div>
                   <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
-                    {controls.length === 0 || (controls.length === 1 && !controls[0].description) ? (
-                      <p className="text-sm text-slate-400 italic">{t("No controls added")}</p>
-                    ) : controls.map((ctrl, i) => (
-                      <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-3 bg-slate-50">
+                    {controls.map((ctrl, i) => (
+                      <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-3 relative">
+                        {controls.length > 1 && (
+                          <button type="button" onClick={() => removeControl(i)} className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                         <div>
-                          <Label className="text-sm font-medium text-slate-500">{t("Control Description")}{controls.length > 1 ? ` #${i + 1}` : ''}</Label>
-                          <div className="mt-1.5 w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">{ctrl.description || "–"}</div>
+                          <Label className="text-sm font-medium text-slate-700">{t("Control Description")}{controls.length > 1 ? ` #${i + 1}` : ''}</Label>
+                          <Textarea
+                            value={ctrl.description}
+                            onChange={(e) => updateControl(i, 'description', e.target.value)}
+                            placeholder={t("Enter control description")}
+                            className="mt-1.5 w-full bg-white"
+                            rows={2}
+                          />
                         </div>
                         <div>
-                          <Label className="text-sm font-medium text-slate-500">{t("Control Effectiveness")}</Label>
-                          <div className="mt-1.5 w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
-                            {ctrl.effectiveness ? t(CE_LABELS[ctrl.effectiveness] ?? ctrl.effectiveness) : "–"}
-                          </div>
+                          <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
+                          <Select value={ctrl.effectiveness} onValueChange={(v) => updateControl(i, 'effectiveness', v)}>
+                            <SelectTrigger className="mt-1.5 w-full bg-white">
+                              <SelectValue placeholder={t("Select effectiveness")} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                              <SelectItem value="1">{t("1 – Very Ineffective")}</SelectItem>
+                              <SelectItem value="2">{t("2 – Ineffective")}</SelectItem>
+                              <SelectItem value="3">{t("3 – Moderately Effective")}</SelectItem>
+                              <SelectItem value="4">{t("4 – Effective")}</SelectItem>
+                              <SelectItem value="5">{t("5 – Highly Effective")}</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     ))}
