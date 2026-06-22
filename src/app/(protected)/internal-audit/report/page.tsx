@@ -322,17 +322,17 @@ export default function ReportsPage() {
         const updatedReport = await response.json();
         setReport(updatedReport);
         setIsEditingAuditeeComment(false);
-        toast.success(t("Auditee comment saved successfully"));
+        toast.success(t("Auditor comment saved successfully"));
         // Trigger dynamic translation for auditee comment
         triggerTranslation('AuditReport', updatedReport.id, {
           auditeeComment: updatedReport.auditeeComment,
         });
       } else {
-        toast.error(t("Failed to save auditee comment"));
+        toast.error(t("Failed to save auditor comment"));
       }
     } catch (error) {
       console.error("Error saving auditee comment:", error);
-      toast.error(t("Failed to save auditee comment"));
+      toast.error(t("Failed to save auditor comment"));
     } finally {
       setSavingAuditeeComment(false);
     }
@@ -774,7 +774,7 @@ export default function ReportsPage() {
                     </span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center">
-                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Assigned Auditor")}:</span>
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Assigned Audit Manager")}:</span>
                     <span className="text-slate-700">
                       {report.engagement.assignedAuditor
                         ? `${report.engagement.assignedAuditor.firstName} ${report.engagement.assignedAuditor.lastName}`
@@ -786,14 +786,14 @@ export default function ReportsPage() {
                     <span className="text-primary-600">{t("Audit Committee, CFO, Controller, IT Head")}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center">
-                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Auditee")}:</span>
+                    <span className="font-semibold w-40 shrink-0 text-slate-700">{t("Auditor")}:</span>
                     {isEditing ? (
                       <Select
                         value={editForm.auditeeId}
                         onValueChange={(value) => setEditForm((prev) => ({ ...prev, auditeeId: value }))}
                       >
                         <SelectTrigger className="w-64">
-                          <SelectValue placeholder={t("Select Auditee")} />
+                          <SelectValue placeholder={t("Select Auditor")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           {users.map((user) => (
@@ -1029,7 +1029,7 @@ export default function ReportsPage() {
                 <hr className="border-slate-200" />
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-sm text-slate-800">{t("Auditee Comment")}</h3>
+                    <h3 className="font-bold text-sm text-slate-800">{t("Auditor Comment")}</h3>
                     {isAuditee && !isAuditHead && !isAuditor && !isEditingAuditeeComment && (
                       <Button
                         size="sm"

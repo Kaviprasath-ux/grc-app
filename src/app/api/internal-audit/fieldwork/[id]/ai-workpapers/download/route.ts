@@ -162,7 +162,7 @@ export const GET = withAuth(
       addMetaRow('Audit Title:', engagement.engagementTitle || '');
       addMetaRow('Audit Type:', engagement.auditType || '');
       addMetaRow('Department:', engagement.department?.name || '');
-      addMetaRow('Auditor:', auditorName);
+      addMetaRow('Audit Manager:', auditorName);
       addMetaRow('Audit Period:', auditPeriod);
       addMetaRow('Total Procedures:', String(procedures.length));
 

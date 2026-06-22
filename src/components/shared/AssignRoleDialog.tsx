@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getRolesForModule, type ModuleCode } from "@/lib/role-module-map";
+import { getRoleDisplayName } from "@/lib/permissions";
 
 // Roles we never offer in the picker even if they're in the module map.
 //   Contributor          — hidden in Phase 4 UI (replaced by Dept variants)
@@ -55,6 +56,13 @@ const TPRM_HIDDEN_ROLES = new Set<string>([
   "TPRMSME",
   "FactoryAdmin",
   "FactoryAssessor",
+]);
+
+// Internal Audit: the legacy "Auditor" role is retired. "Auditee" remains and
+// is displayed as "Auditor" (see getRoleDisplayName), so the old Auditor must
+// not be assignable to avoid a duplicate "Auditor" entry in the picker.
+const INTERNAL_AUDIT_HIDDEN_ROLES = new Set<string>([
+  "Auditor",
 ]);
 
 interface AssignRoleDialogProps {
@@ -109,6 +117,7 @@ export function AssignRoleDialog({
       getRolesForModule(moduleCode).filter((r) => {
         if (HIDDEN_ROLES.has(r)) return false;
         if (moduleCode === "TPRM" && TPRM_HIDDEN_ROLES.has(r)) return false;
+        if (moduleCode === "INTERNAL_AUDIT" && INTERNAL_AUDIT_HIDDEN_ROLES.has(r)) return false;
         return true;
       }),
     [moduleCode],
@@ -187,7 +196,7 @@ export function AssignRoleDialog({
               <SelectContent>
                 {availableRoles.map((r) => (
                   <SelectItem key={r} value={r}>
-                    {r}
+                    {t(getRoleDisplayName(r))}
                   </SelectItem>
                 ))}
               </SelectContent>

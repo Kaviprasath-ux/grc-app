@@ -158,12 +158,12 @@ export const GET = withAuth(
       const auditorName = engagement.assignedAuditor
         ? `${engagement.assignedAuditor.firstName} ${engagement.assignedAuditor.lastName}`
         : '-';
-      addMetaRow('Assigned Auditor:', auditorName);
+      addMetaRow('Audit Manager:', auditorName);
 
       const auditeeName = engagement.auditee
         ? `${engagement.auditee.firstName} ${engagement.auditee.lastName}`
         : '-';
-      addMetaRow('Auditee:', auditeeName);
+      addMetaRow('Auditor:', auditeeName);
 
       addMetaRow('Planned Start Date:', formatDate(engagement.plannedStartDate));
       addMetaRow('Planned End Date:', formatDate(engagement.plannedEndDate));

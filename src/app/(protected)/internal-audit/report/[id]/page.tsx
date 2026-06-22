@@ -240,17 +240,17 @@ export default function AuditReportViewPage({ params }: PageProps) {
         const updatedReport = await response.json();
         setReport(updatedReport);
         setIsEditingAuditeeComment(false);
-        toast.success(t("Auditee comment saved successfully"));
+        toast.success(t("Auditor comment saved successfully"));
         // Trigger dynamic translation for auditee comment
         triggerTranslation('AuditReport', updatedReport.id, {
           auditeeComment: updatedReport.auditeeComment,
         });
       } else {
-        toast.error(t("Failed to save auditee comment"));
+        toast.error(t("Failed to save auditor comment"));
       }
     } catch (error) {
       console.error("Error saving auditee comment:", error);
-      toast.error(t("Failed to save auditee comment"));
+      toast.error(t("Failed to save auditor comment"));
     } finally {
       setSavingAuditeeComment(false);
     }
@@ -412,7 +412,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
             <span className="text-blue-600">{fieldworkPeriod}</span>
           </div>
           <div className="flex flex-col sm:flex-row">
-            <span className="font-semibold w-auto sm:w-40">{t("Assigned Auditor")}:</span>
+            <span className="font-semibold w-auto sm:w-40">{t("Assigned Audit Manager")}:</span>
             <span>
               {report.engagement.assignedAuditor
                 ? `${report.engagement.assignedAuditor.firstName} ${report.engagement.assignedAuditor.lastName}`
@@ -424,14 +424,14 @@ export default function AuditReportViewPage({ params }: PageProps) {
             <span className="text-blue-600">{distribution}</span>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center">
-            <span className="font-semibold w-auto sm:w-40">{t("Auditee")}:</span>
+            <span className="font-semibold w-auto sm:w-40">{t("Auditor")}:</span>
             {isEditing ? (
               <Select
                 value={editForm.auditeeId}
                 onValueChange={(value) => setEditForm((prev) => ({ ...prev, auditeeId: value }))}
               >
                 <SelectTrigger className="w-64">
-                  <SelectValue placeholder={t("Select Auditee")} />
+                  <SelectValue placeholder={t("Select Auditor")} />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
@@ -670,7 +670,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
         <hr className="border-gray-300" />
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold text-base">{t("Auditee Comment")}</h2>
+            <h2 className="font-bold text-base">{t("Auditor Comment")}</h2>
             {isAuditee && !isAuditHead && !isAuditor && !isEditingAuditeeComment && (
               <Button
                 size="sm"

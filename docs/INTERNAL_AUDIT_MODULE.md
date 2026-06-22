@@ -94,12 +94,20 @@ marks the plan Approved.
 ## 3. Roles & Access Privileges
 
 ### 3.1 Role Summary
+
+> **Display rename (2026-06-22):** the `Auditee` role is shown to users as
+> **"Auditor"**, the legacy `Auditor` role is hidden, and the conducting
+> `assignedAuditor` is labeled **"Audit Manager"** in the UI and generated
+> documents. This is a **display-only** change — internal keys are unchanged.
+> See **[`INTERNAL_AUDIT_ROLE_RENAME.md`](INTERNAL_AUDIT_ROLE_RENAME.md)** for
+> the full rationale, file list, and reversal steps.
+
 | Role | Intended user | Summary of Internal Audit access |
 |---|---|---|
 | **AuditHead** (Head of Audit) | Audit director / head | Full access to the entire IA module. **Only role that can create a Strategic Plan.** Settings are view-only. |
 | **AuditManager** | Audit manager | Same as AuditHead **except cannot create a Strategic Plan** (view-only). **Can fully edit the Operational Plan.** Settings view-only. |
-| **Auditor** | Auditor conducting audits | Full access to execution (planning, fieldwork, findings, CAPA, reports, documents). Strategic & Operational plans **view-only**. Settings view-only. |
-| **Auditee** | Department contact under audit | **Department-scoped**, limited to Fieldwork (view/edit), Reports (view), and CAPA (view/edit). No dashboard, plans, universe, or settings. |
+| **Auditor** (legacy — retired) | — | Internal role key kept for backward compatibility with existing assignments, but **hidden from all role pickers** (organization Users page and the Assign Role dialog). No longer offered for new assignments. Permissions unchanged for any user who still holds it. |
+| **Auditee** *(displayed as "Auditor")* | Department contact under audit | **Department-scoped**, limited to Fieldwork (view/edit), Reports (view), and CAPA (view/edit). No dashboard, plans, universe, or settings. The internal role key stays `Auditee` (DB, permission matrix, API auth all unchanged); only the **user-facing label** is "Auditor" via `getRoleDisplayName()` in `src/lib/permissions.ts`. |
 | **AuditUser** | Basic/observer audit user | View-only across universe, risk, planning, fieldwork, reports, CAPA, documents. No dashboard, plans, or settings. |
 | **CustomerAdministrator** | Org administrator | Manages **audit master data/settings** (full CRUD) and the **risk register** (full CRUD). Not the audit execution workflow. |
 | **GRCAdministrator** | System administrator | System-level **account overview** only — not the customer audit workflow. |

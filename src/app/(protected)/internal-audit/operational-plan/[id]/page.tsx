@@ -468,7 +468,7 @@ export default function OperationalPlanDetailPage() {
                           onClick={() => openAssign(plan)}
                         >
                           <Users className="h-4 w-4 mr-1" />
-                          {t("Assign Auditors")}
+                          {t("Assign Audit Managers")}
                         </Button>
                       )}
                       {canEdit && (
@@ -547,7 +547,7 @@ export default function OperationalPlanDetailPage() {
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Quarter")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Manager")}</TableHead>
                         {canDelete && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>}
                       </TableRow>
                     </TableHeader>
@@ -743,7 +743,7 @@ export default function OperationalPlanDetailPage() {
       <Dialog open={!!assignTarget} onOpenChange={(o) => !o && setAssignTarget(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("Assign Auditors")}</DialogTitle>
+            <DialogTitle>{t("Assign Audit Managers")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             {t("Assign an auditor to each audit. On plan approval, the audit is sent to that auditor.")}
@@ -767,7 +767,7 @@ export default function OperationalPlanDetailPage() {
                   }
                 >
                   <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder={t("Select auditor")} />
+                    <SelectValue placeholder={t("Select audit manager")} />
                   </SelectTrigger>
                   <SelectContent className="bg-white" position="popper" sideOffset={4}>
                     <SelectItem value="unassigned">{t("Unassigned")}</SelectItem>

@@ -304,6 +304,29 @@ export const ROLES = {
 
 export type RoleName = keyof typeof ROLES;
 
+// ==================== ROLE DISPLAY LABELS ====================
+// Some roles are presented to users under a different name than their internal
+// key. The internal key (used in the DB, permission matrix, API auth checks,
+// and session expansion) MUST stay unchanged — only the user-facing label here.
+//
+// Internal Audit: the "Auditee" role is shown to users as "Auditor". The legacy
+// "Auditor" role is retired and hidden from assignment (see HIDDEN sets in
+// AssignRoleDialog and the role lists in organization/users), so there is no
+// label collision in any surface where roles are still selectable.
+export const ROLE_DISPLAY_OVERRIDES: Record<string, string> = {
+  Auditee: 'Auditor',
+};
+
+/**
+ * Returns the user-facing display name for a role key. Falls back to the key
+ * itself when no override exists. The returned string is an English phrase that
+ * callers should still pass through `t()` for i18n.
+ */
+export function getRoleDisplayName(role: string | null | undefined): string {
+  if (!role) return '';
+  return ROLE_DISPLAY_OVERRIDES[role] ?? role;
+}
+
 // ==================== ROLE PERMISSION MATRIX ====================
 // Defines what each role can do
 interface RolePermissionDef {

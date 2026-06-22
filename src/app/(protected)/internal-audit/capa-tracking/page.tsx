@@ -907,7 +907,7 @@ export default function CAPATrackingPage() {
 
             {/* Auditee Comment */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
-              <Label className="text-slate-800 font-medium pt-2">{t("Auditee Comment")}</Label>
+              <Label className="text-slate-800 font-medium pt-2">{t("Auditor Comment")}</Label>
               <Textarea
                 value={(translatedViewFinding as Finding | null)?.auditeeComment || findingToView?.auditeeComment || ""}
                 readOnly
@@ -1147,7 +1147,7 @@ export default function CAPATrackingPage() {
 
             {/* Auditee's comments - EDITABLE for auditee */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
-              <Label className="text-slate-800 font-medium pt-2">{t("Auditee")}<br/>{t("Comment")}</Label>
+              <Label className="text-slate-800 font-medium pt-2">{t("Auditor")}<br/>{t("Comment")}</Label>
               <Textarea
                 value={editForm.auditeeComment}
                 onChange={(e) =>

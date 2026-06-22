@@ -203,9 +203,9 @@ export const GET = withAuth(
       addMetaRow('Report Number:', report.reportCode, true);
       addMetaRow('Report Date:', reportDate, true);
       addMetaRow('Fieldwork Period:', fieldworkPeriod, true);
-      addMetaRow('Assigned Auditor:', auditorName, false);
+      addMetaRow('Audit Manager:', auditorName, false);
       addMetaRow('Distribution:', 'Audit Committee, CFO, Controller, IT Head', true);
-      addMetaRow('Auditee:', auditeeName, true);
+      addMetaRow('Auditor:', auditeeName, true);
 
       // Draw line after metadata
       yPosition -= 5;

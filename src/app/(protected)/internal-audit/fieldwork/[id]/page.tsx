@@ -1712,7 +1712,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
     }
 
     if (!newEvidence.auditeeId || !newEvidence.auditeeId.trim()) {
-      toast.error(t("Auditee is required"));
+      toast.error(t("Auditor is required"));
       return;
     }
 
@@ -1966,7 +1966,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
             <p className="mt-1">{displayEngagement?.engagementTitle || engagement.engagementTitle}</p>
           </div>
           <div>
-            <Label className="text-slate-700 font-medium">{t("Auditor")}</Label>
+            <Label className="text-slate-700 font-medium">{t("Audit Manager")}</Label>
             <p className="mt-1">{getAuditorName()}</p>
           </div>
           <div>
@@ -2423,7 +2423,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                     )}
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Auditor")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
@@ -3092,7 +3092,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
               />
             </div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-end text-slate-500">{t("Auditee")} <span className="text-red-500">*</span></Label>
+              <Label className="text-end text-slate-500">{t("Auditor")} <span className="text-red-500">*</span></Label>
               <Select
                 value={newEvidence.auditeeId}
                 onValueChange={(value) => {
@@ -3105,7 +3105,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t("Select auditee")} />
+                  <SelectValue placeholder={t("Select auditor")} />
                 </SelectTrigger>
                 <SelectContent>
                   {translatedAuditees.map((auditee) => (
@@ -3790,7 +3790,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
             </div>
             {/* Auditee */}
             <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">{t("Auditee")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Auditor")}</Label>
               {isEditingEvidence ? (
                 <Select
                   value={editEvidence.auditeeId}
@@ -3804,7 +3804,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("Select auditee")}>
+                    <SelectValue placeholder={t("Select auditor")}>
                       {editEvidence.auditee && (
                         <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm">
                           {editEvidence.auditee}
