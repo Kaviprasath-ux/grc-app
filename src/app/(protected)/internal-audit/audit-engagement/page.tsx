@@ -1148,24 +1148,24 @@ export default function AuditPlanningPage() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium text-slate-600">{t("Auditor")} <span className="text-red-500">*</span></Label>
+                      <Label className="text-xs font-medium text-slate-600">{t("Audit Manager")} <span className="text-red-500">*</span></Label>
                       <MultiSelect
                         options={data.auditors.map(u => ({ value: u.id, label: u.fullName }))}
                         selected={config.auditorIds}
                         onChange={(val) => updateDeptConfig(deptId, 'auditorIds', val)}
-                        placeholder={t("Select Auditor")}
+                        placeholder={t("Select Audit Manager")}
                       />
                       {data.auditors.length === 0 && <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium text-slate-600">{t("Auditee")}</Label>
+                      <Label className="text-xs font-medium text-slate-600">{t("Auditor")}</Label>
                       <MultiSelect
                         options={data.auditees.map(u => ({ value: u.id, label: u.fullName }))}
                         selected={config.auditeeIds}
                         onChange={(val) => updateDeptConfig(deptId, 'auditeeIds', val)}
-                        placeholder={t("Select Auditee")}
+                        placeholder={t("Select Auditor")}
                       />
-                      {data.auditees.length === 0 && <p className="text-xs text-amber-600">{t("No auditees found in this department")}</p>}
+                      {data.auditees.length === 0 && <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>}
                     </div>
                     <div className="space-y-1.5 sm:col-span-2">
                       <Label className="text-xs font-medium text-slate-600">{t("Link Open Risks in this Department")}</Label>
@@ -1471,7 +1471,7 @@ export default function AuditPlanningPage() {
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[100px]">{t("Status")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[90px]">{t("Planned")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-[90px]">{t("Actual")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
+                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Manager")}</TableHead>
                         <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pe-5 w-[80px]">{t("Actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1683,7 +1683,7 @@ export default function AuditPlanningPage() {
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Engagement Name")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Type")}</TableHead>
-              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assigned Auditors")}</TableHead>
+              <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Assigned Audit Managers")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Status")}</TableHead>
               <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5">{t("Action")}</TableHead>
             </TableRow>
@@ -1999,13 +1999,13 @@ export default function AuditPlanningPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">{t("Assigned Auditor")}</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Assigned Audit Manager")}</Label>
               <Select
                 value={taskForm.auditorId}
                 onValueChange={(value) => setTaskForm({ ...taskForm, auditorId: value })}
               >
                 <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder={t("Select auditor")} />
+                  <SelectValue placeholder={t("Select audit manager")} />
                 </SelectTrigger>
                 <SelectContent>
                   {translatedAuditors.map((user) => (

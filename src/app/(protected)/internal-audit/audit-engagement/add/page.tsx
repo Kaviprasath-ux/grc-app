@@ -626,13 +626,13 @@ export default function AddEngagementPage() {
                       {/* Auditor multi-select */}
                       <div className="space-y-2">
                         <Label className="text-gray-700 text-sm">
-                          {t("Auditor")} <span className="text-red-500">*</span>
+                          {t("Audit Manager")} <span className="text-red-500">*</span>
                         </Label>
                         <MultiSelect
                           options={data.auditors.map(u => ({ value: u.id, label: u.fullName }))}
                           selected={config.auditorIds}
                           onChange={(val) => updateDepartmentConfig(deptId, 'auditorIds', val)}
-                          placeholder={t("Select Auditor")}
+                          placeholder={t("Select Audit Manager")}
                         />
                         {data.auditors.length === 0 && (
                           <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>
@@ -641,15 +641,15 @@ export default function AddEngagementPage() {
 
                       {/* Auditee multi-select */}
                       <div className="space-y-2">
-                        <Label className="text-gray-700 text-sm">{t("Auditee")}</Label>
+                        <Label className="text-gray-700 text-sm">{t("Auditor")}</Label>
                         <MultiSelect
                           options={data.auditees.map(u => ({ value: u.id, label: u.fullName }))}
                           selected={config.auditeeIds}
                           onChange={(val) => updateDepartmentConfig(deptId, 'auditeeIds', val)}
-                          placeholder={t("Select Auditee")}
+                          placeholder={t("Select Auditor")}
                         />
                         {data.auditees.length === 0 && (
-                          <p className="text-xs text-amber-600">{t("No auditees found in this department")}</p>
+                          <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>
                         )}
                       </div>
 
@@ -893,7 +893,7 @@ export default function AddEngagementPage() {
                     <th className="p-2 border-b w-16">{t("Done")}</th>
                     <th className="p-2 border-b w-24">{t("Planned Hours")}</th>
                     <th className="p-2 border-b w-24">{t("Actual Hours")}</th>
-                    <th className="p-2 border-b w-40">{t("Auditor")}</th>
+                    <th className="p-2 border-b w-40">{t("Audit Manager")}</th>
                     <th className="p-2 border-b">{t("Comments")}</th>
                     <th className="p-2 border-b w-12"></th>
                   </tr>
@@ -936,7 +936,7 @@ export default function AddEngagementPage() {
                           onValueChange={(value) => updateTask(task.id, "auditorId", value)}
                         >
                           <SelectTrigger className="border-gray-200">
-                            <SelectValue placeholder={t("Select Auditor")} />
+                            <SelectValue placeholder={t("Select Audit Manager")} />
                           </SelectTrigger>
                           <SelectContent>
                             {globalAuditors.length > 0 ? (

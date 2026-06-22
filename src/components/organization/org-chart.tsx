@@ -12,6 +12,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
+import { getRoleDisplayName } from "@/lib/permissions";
 
 // Design system aligned colors
 const ROOT_COLOR = "var(--primary-600)"; // #8A6050 - deep terracotta for root node
@@ -71,7 +72,7 @@ function OrgChartNode({ node, isRoot = false, showDepartment = true, mirrored = 
             "font-medium truncate",
             isRoot ? "text-xs" : "text-xs"
           )}>
-            {node.designation || roleName}
+            {node.designation || getRoleDisplayName(roleName)}
           </p>
         </div>
         {/* Body with name */}

@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -49,10 +50,12 @@ interface AssessmentRow {
 interface Probability { id: string; label: string; value: number; }
 interface Impact { id: string; label: string; value: number; }
 
-export default function InternalAuditRiskAssessmentPage() {
+function RiskAssessmentContent() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { canView, canEdit, isLoading: permissionsLoading } = usePermissions("audit.risk-register");
+  const searchParams = useSearchParams();
+  const autoOpenRiskId = searchParams.get("riskId");
 
   // Data state
   const [risks, setRisks] = useState<InternalAuditRisk[]>([]);
@@ -143,6 +146,55 @@ export default function InternalAuditRiskAssessmentPage() {
     };
     init();
   }, []);
+
+  // Auto-open assessment dialog when navigated from Risk Register with a riskId
+  const autoOpenFired = useRef(false);
+  useEffect(() => {
+    if (!autoOpenRiskId || loading || risks.length === 0 || autoOpenFired.current) return;
+    const risk = risks.find((r) => r.id === autoOpenRiskId);
+    if (!risk) return;
+    autoOpenFired.current = true;
+    const saved = typeof window !== "undefined" ? localStorage.getItem(`ia-assess-${risk.id}`) : null;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSingleAssessmentRow(parsed.row ?? {
+          strategicImpact: risk.strategicImpact?.toString() ?? "",
+          financialImpact: risk.financialImpact?.toString() ?? "",
+          complianceRisk: risk.complianceRisk?.toString() ?? "",
+          operationalRisk: risk.operationalRisk?.toString() ?? "",
+          itDataRisk: risk.itDataRisk?.toString() ?? "",
+          assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
+          controlEffectivenessScore: risk.controlEffectivenessScore?.toString() ?? "",
+        });
+        setAssessmentStep(parsed.step ?? 1);
+      } catch {
+        setSingleAssessmentRow({
+          strategicImpact: risk.strategicImpact?.toString() ?? "",
+          financialImpact: risk.financialImpact?.toString() ?? "",
+          complianceRisk: risk.complianceRisk?.toString() ?? "",
+          operationalRisk: risk.operationalRisk?.toString() ?? "",
+          itDataRisk: risk.itDataRisk?.toString() ?? "",
+          assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
+          controlEffectivenessScore: risk.controlEffectivenessScore?.toString() ?? "",
+        });
+        setAssessmentStep(1);
+      }
+    } else {
+      setSingleAssessmentRow({
+        strategicImpact: risk.strategicImpact?.toString() ?? "",
+        financialImpact: risk.financialImpact?.toString() ?? "",
+        complianceRisk: risk.complianceRisk?.toString() ?? "",
+        operationalRisk: risk.operationalRisk?.toString() ?? "",
+        itDataRisk: risk.itDataRisk?.toString() ?? "",
+        assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
+        controlEffectivenessScore: risk.controlEffectivenessScore?.toString() ?? "",
+      });
+      setAssessmentStep(1);
+    }
+    setSelectedAssessmentRisk(risk);
+    setAssessmentDialogOpen(true);
+  }, [autoOpenRiskId, loading, risks]);
 
   // Recompute inProgressRisks whenever the risks list changes
   useEffect(() => {
@@ -977,5 +1029,13 @@ export default function InternalAuditRiskAssessmentPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function InternalAuditRiskAssessmentPage() {
+  return (
+    <Suspense>
+      <RiskAssessmentContent />
+    </Suspense>
   );
 }

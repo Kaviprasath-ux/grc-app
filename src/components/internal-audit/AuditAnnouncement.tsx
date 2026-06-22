@@ -418,7 +418,7 @@ export default function AuditAnnouncement({
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Send Announcement")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("Send this announcement to the auditee?")}
+              {t("Send this announcement to the auditor?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

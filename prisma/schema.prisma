@@ -3537,13 +3537,25 @@ model AuditReport {
   title              String
   executiveSummary   String?
   scope              String?
+  scopeExclusions    String? // Exclusion from the scope of work
   objectives         String?
   methodology        String?
   observations       String?
   recommendations    String?
   managementResponse String?
   conclusion         String?
-  // Overall Result (Pass/Fail)
+  // Opinion (overall audit opinion / rating)
+  opinionRating      String? // Satisfactory, Needs Improvement, Unsatisfactory
+  opinionSummary     String? // Narrative opinion text
+  // Senior management messaging
+  topMessages        String? // Top messages for senior management
+  keyRisks           String? // Key risks (Operational/Financial/Compliance/Reputation)
+  summaryKeyFindings String? // Summary of Key Audit Findings
+  // Areas requiring management attention
+  mgmtAttentionImmediate   String? // Immediate Action
+  mgmtAttentionMediumTerm  String? // Medium-Term Improvement
+  followUp           String? // Follow up paragraph
+  // Overall Result (Pass/Fail) — legacy, retained for back-compat
   overallResult      String? // Pass, Fail
   // Status
   status             String          @default("Draft") // Draft, Review, Final, Published
@@ -3584,6 +3596,8 @@ model InternalAuditFinding {
   finding             String
   description         String?
   severity            String              @default("Medium") // Low, Medium, High, Critical
+  // Finding type classification (report Definition of Finding Types)
+  findingType         String? // Absence of Control, Lack of Operational Effectiveness, Best Practices, Non-Compliance
   departmentId        String?
   department          Department?         @relation(fields: [departmentId], references: [id])
   responsiblePerson   String?

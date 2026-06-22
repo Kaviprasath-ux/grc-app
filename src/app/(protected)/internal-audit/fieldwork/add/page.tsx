@@ -445,13 +445,13 @@ export default function AddEvidenceRequestPage() {
 
         {/* Auditee Assignment */}
         <div className="space-y-2">
-          <Label className="text-blue-800">{t("Assign to Auditee")}</Label>
+          <Label className="text-blue-800">{t("Assign to Auditor")}</Label>
           <Select
             value={formData.auditeeId}
             onValueChange={(value) => setFormData({ ...formData, auditeeId: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder={t("Select Auditee")} />
+              <SelectValue placeholder={t("Select Auditor")} />
             </SelectTrigger>
             <SelectContent>
               {translatedUsers.map((user) => (
@@ -500,7 +500,7 @@ export default function AddEvidenceRequestPage() {
               <Textarea
                 value={formData.expectedEvidence}
                 onChange={(e) => setFormData({ ...formData, expectedEvidence: e.target.value })}
-                placeholder={t("Describe what evidence is expected from the auditee...")}
+                placeholder={t("Describe what evidence is expected from the auditor...")}
                 rows={4}
               />
             </div>
@@ -515,7 +515,7 @@ export default function AddEvidenceRequestPage() {
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
             <div className="space-y-2">
-              <Label className="text-blue-800">{t("Internal Notes (Not visible to Auditee)")}</Label>
+              <Label className="text-blue-800">{t("Internal Notes (Not visible to Auditor)")}</Label>
               <Textarea
                 value={formData.auditorNotes}
                 onChange={(e) => setFormData({ ...formData, auditorNotes: e.target.value })}

@@ -282,7 +282,7 @@ export default function FindingsCommunication({
         { method: "POST" }
       );
       if (!res.ok) throw new Error("Failed");
-      toast.success(t("Finding shared with auditee"));
+      toast.success(t("Finding shared with auditor"));
       await loadFindings();
     } catch {
       toast.error(t("Failed to share finding"));
@@ -319,7 +319,7 @@ export default function FindingsCommunication({
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       toast.success(
-        t("Consolidated draft shared with auditee") +
+        t("Consolidated draft shared with auditor") +
           ` (${data.shared ?? findings.length})`
       );
       await loadFindings();
@@ -599,7 +599,7 @@ export default function FindingsCommunication({
                 </p>
                 <p className="text-sm text-slate-500">
                   {allShared
-                    ? t("All findings consolidated and shared with the auditee.")
+                    ? t("All findings consolidated and shared with the auditor.")
                     : t(
                         "Consolidate all findings into the draft detailed report and share them with the auditee at once."
                       )}{" "}
@@ -631,7 +631,7 @@ export default function FindingsCommunication({
                       ) : (
                         <Share2 className="h-4 w-4 mr-1" />
                       )}
-                      {t("Share consolidated draft with auditee")}
+                      {t("Share consolidated draft with auditor")}
                     </Button>
                   )}
                 </div>
@@ -719,7 +719,7 @@ export default function FindingsCommunication({
                               ) : (
                                 <Share2 className="h-4 w-4 mr-1" />
                               )}
-                              {t("Share with auditee")}
+                              {t("Share with auditor")}
                             </Button>
                           )
                         )}

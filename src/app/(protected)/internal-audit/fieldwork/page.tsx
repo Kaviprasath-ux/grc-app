@@ -391,7 +391,7 @@ export default function FieldworkPage() {
             <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
               <SortableHeader field="auditId" className="pl-5">{t("Audit ID")}</SortableHeader>
               <SortableHeader field="name">{t("Name")}</SortableHeader>
-              <SortableHeader field="auditor">{t("Auditor")}</SortableHeader>
+              <SortableHeader field="auditor">{t("Audit Manager")}</SortableHeader>
               <SortableHeader field="startDate">{t("Start Date")}</SortableHeader>
               <SortableHeader field="targetDate">{t("Target Date")}</SortableHeader>
               <SortableHeader field="status">{t("Status")}</SortableHeader>

@@ -754,13 +754,13 @@ export default function EditEngagementPage({ params }: PageProps) {
         {/* Auditor — multi-select, filtered by department */}
         <div className="space-y-2">
           <Label className="text-slate-800">
-            {t("Auditor")} <span className="text-red-500">*</span>
+            {t("Audit Manager")} <span className="text-red-500">*</span>
           </Label>
           <MultiSelect
             options={(deptAuditors.length > 0 ? deptAuditors : translatedAuditors).map(u => ({ value: u.id, label: u.fullName }))}
             selected={formData.auditorIds}
             onChange={(val) => setFormData({ ...formData, auditorIds: val })}
-            placeholder={t("Select Auditor")}
+            placeholder={t("Select Audit Manager")}
           />
           {deptAuditors.length === 0 && translatedAuditors.length === 0 && (
             <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>
@@ -769,15 +769,15 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Auditee — multi-select, filtered by department */}
         <div className="space-y-2">
-          <Label className="text-slate-800">{t("Auditee")}</Label>
+          <Label className="text-slate-800">{t("Auditor")}</Label>
           <MultiSelect
             options={(deptAuditees.length > 0 ? deptAuditees : translatedAuditees).map(u => ({ value: u.id, label: u.fullName }))}
             selected={formData.auditeeIds}
             onChange={(val) => setFormData({ ...formData, auditeeIds: val })}
-            placeholder={t("Select Auditee")}
+            placeholder={t("Select Auditor")}
           />
           {deptAuditees.length === 0 && translatedAuditees.length === 0 && (
-            <p className="text-xs text-amber-600">{t("No auditees found in this department")}</p>
+            <p className="text-xs text-amber-600">{t("No auditors found in this department")}</p>
           )}
         </div>
 
@@ -922,7 +922,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                     <th className="p-2 border-b w-16">{t("Done")}</th>
                     <th className="p-2 border-b w-24">{t("Planned Hours")}</th>
                     <th className="p-2 border-b w-24">{t("Actual Hours")}</th>
-                    <th className="p-2 border-b w-40">{t("Auditor")}</th>
+                    <th className="p-2 border-b w-40">{t("Audit Manager")}</th>
                     <th className="p-2 border-b">{t("Comments")}</th>
                     <th className="p-2 border-b w-12"></th>
                   </tr>
@@ -965,7 +965,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                           onValueChange={(value) => updateTask(task.id, "auditorId", value)}
                         >
                           <SelectTrigger className="border-slate-200">
-                            <SelectValue placeholder={t("Select Auditor")} />
+                            <SelectValue placeholder={t("Select Audit Manager")} />
                           </SelectTrigger>
                           <SelectContent>
                             {auditors.length > 0 ? (

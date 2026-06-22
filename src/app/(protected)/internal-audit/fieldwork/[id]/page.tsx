@@ -75,6 +75,7 @@ import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNameWithNumbers } from "@/lib/validations";
+import { FINDING_TYPES } from "@/lib/internal-audit/report-shared";
 import { DatePicker } from "@/components/ui/date-picker";
 import { confirm } from "@/components/ui/confirm";
 import Link from "next/link";
@@ -388,6 +389,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
   const [fullFinding, setFullFinding] = useState({
     findingTitle: "",
     severity: "",
+    findingType: "",
     criteria: "",
     condition: "",
     cause: "",
@@ -984,6 +986,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
         body: JSON.stringify({
           title: fullFinding.findingTitle,
           severity: fullFinding.severity || "Medium",
+          findingType: fullFinding.findingType || null,
           criteria: fullFinding.criteria || null,
           condition: fullFinding.condition || null,
           cause: fullFinding.cause || null,
@@ -1025,6 +1028,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
         setFullFinding({
           findingTitle: "",
           severity: "",
+          findingType: "",
           criteria: "",
           condition: "",
           cause: "",
@@ -1711,7 +1715,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
     }
 
     if (!newEvidence.auditeeId || !newEvidence.auditeeId.trim()) {
-      toast.error(t("Auditee is required"));
+      toast.error(t("Auditor is required"));
       return;
     }
 
@@ -1965,7 +1969,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
             <p className="mt-1">{displayEngagement?.engagementTitle || engagement.engagementTitle}</p>
           </div>
           <div>
-            <Label className="text-slate-700 font-medium">{t("Auditor")}</Label>
+            <Label className="text-slate-700 font-medium">{t("Audit Manager")}</Label>
             <p className="mt-1">{getAuditorName()}</p>
           </div>
           <div>
@@ -2422,7 +2426,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                     )}
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Auditor")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
@@ -2814,6 +2818,24 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
               </Select>
             </div>
 
+            {/* Finding Type */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Finding Type")}</Label>
+              <Select
+                value={fullFinding.findingType}
+                onValueChange={(value) => setFullFinding({ ...fullFinding, findingType: value })}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select finding type")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {FINDING_TYPES.map((ft) => (
+                    <SelectItem key={ft} value={ft}>{t(ft)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Criteria */}
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
               <Label className="text-end text-slate-500 pt-2">{t("Criteria (What should be)")}</Label>
@@ -3023,7 +3045,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
               />
             </div>
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-end text-slate-500">{t("Auditee")} <span className="text-red-500">*</span></Label>
+              <Label className="text-end text-slate-500">{t("Auditor")} <span className="text-red-500">*</span></Label>
               <Select
                 value={newEvidence.auditeeId}
                 onValueChange={(value) => {
@@ -3036,7 +3058,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t("Select auditee")} />
+                  <SelectValue placeholder={t("Select auditor")} />
                 </SelectTrigger>
                 <SelectContent>
                   {translatedAuditees.map((auditee) => (
@@ -3721,7 +3743,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
             </div>
             {/* Auditee */}
             <div className="space-y-2">
-              <Label className="text-slate-700 font-medium">{t("Auditee")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Auditor")}</Label>
               {isEditingEvidence ? (
                 <Select
                   value={editEvidence.auditeeId}
@@ -3735,7 +3757,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("Select auditee")}>
+                    <SelectValue placeholder={t("Select auditor")}>
                       {editEvidence.auditee && (
                         <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm">
                           {editEvidence.auditee}
