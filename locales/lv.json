@@ -5408,5 +5408,17 @@
   "Absence of control or errors in the design of the existing control procedure.": "Kontroles trūkums vai kļūdas esošās kontroles procedūras izstrādē.",
   "The control procedure does not work as required although it is appropriately designed, or the person responsible does not have the competence and authority to implement the control effectively.": "Kontroles procedūra nedarbojas, kā paredzēts, lai gan tā ir atbilstoši izstrādāta, vai atbildīgajai personai nav kompetences un pilnvaru efektīvi īstenot kontroli.",
   "Note to strengthen the internal control environment based on best practices.": "Piezīme iekšējās kontroles vides stiprināšanai, pamatojoties uz labāko praksi.",
-  "Findings resulting from non-compliance with legislation, regulations and laws.": "Konstatējumi, kas izriet no neatbilstības tiesību aktiem, noteikumiem un likumiem."
+  "Findings resulting from non-compliance with legislation, regulations and laws.": "Konstatējumi, kas izriet no neatbilstības tiesību aktiem, noteikumiem un likumiem.",
+  "Finish & Generate Report": "Pabeigt un ģenerēt ziņojumu",
+  "Complete all previous steps to finish the audit and generate the report.": "Pabeidziet visus iepriekšējos soļus, lai pabeigtu auditu un ģenerētu ziņojumu.",
+  "Audit completed and report generated": "Audits pabeigts un ziņojums ģenerēts",
+  "Failed to finish audit and generate report": "Neizdevās pabeigt auditu un ģenerēt ziņojumu",
+  "View Report": "Skatīt ziņojumu",
+  "Add Findings": "Pievienot konstatējumus",
+  "Save Findings": "Saglabāt konstatējumus",
+  "Use Add Row to record multiple findings, then Save Findings.": "Izmantojiet \"Pievienot rindu\", lai reģistrētu vairākus konstatējumus, pēc tam saglabājiet.",
+  "Recipients": "Saņēmēji",
+  "Select recipient": "Atlasiet saņēmēju",
+  "Select one or more recipients; their email is added automatically.": "Atlasiet vienu vai vairākus saņēmējus; viņu e-pasts tiek pievienots automātiski.",
+  "All users already added": "Visi lietotāji jau pievienoti"
 }

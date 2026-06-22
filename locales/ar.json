@@ -5408,5 +5408,17 @@
   "Absence of control or errors in the design of the existing control procedure.": "غياب الرقابة أو أخطاء في تصميم إجراء الرقابة القائم.",
   "The control procedure does not work as required although it is appropriately designed, or the person responsible does not have the competence and authority to implement the control effectively.": "لا يعمل إجراء الرقابة كما هو مطلوب رغم تصميمه بشكل مناسب، أو أن الشخص المسؤول لا يملك الكفاءة والصلاحية لتنفيذ الرقابة بفعالية.",
   "Note to strengthen the internal control environment based on best practices.": "ملاحظة لتعزيز بيئة الرقابة الداخلية بناءً على أفضل الممارسات.",
-  "Findings resulting from non-compliance with legislation, regulations and laws.": "ملاحظات ناتجة عن عدم الامتثال للتشريعات واللوائح والقوانين."
+  "Findings resulting from non-compliance with legislation, regulations and laws.": "ملاحظات ناتجة عن عدم الامتثال للتشريعات واللوائح والقوانين.",
+  "Finish & Generate Report": "إنهاء وإنشاء التقرير",
+  "Complete all previous steps to finish the audit and generate the report.": "أكمل جميع الخطوات السابقة لإنهاء التدقيق وإنشاء التقرير.",
+  "Audit completed and report generated": "تم إكمال التدقيق وإنشاء التقرير",
+  "Failed to finish audit and generate report": "فشل إنهاء التدقيق وإنشاء التقرير",
+  "View Report": "عرض التقرير",
+  "Add Findings": "إضافة ملاحظات",
+  "Save Findings": "حفظ الملاحظات",
+  "Use Add Row to record multiple findings, then Save Findings.": "استخدم \"إضافة صف\" لتسجيل عدة ملاحظات، ثم احفظ الملاحظات.",
+  "Recipients": "المستلمون",
+  "Select recipient": "اختر مستلمًا",
+  "Select one or more recipients; their email is added automatically.": "اختر مستلمًا واحدًا أو أكثر؛ تتم إضافة بريدهم الإلكتروني تلقائيًا.",
+  "All users already added": "تمت إضافة جميع المستخدمين بالفعل"
 }
