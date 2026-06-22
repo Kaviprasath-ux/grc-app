@@ -2416,9 +2416,11 @@ export default function RiskRegisterPage() {
                             <SelectValue placeholder={t("Select effectiveness")} />
                           </SelectTrigger>
                           <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                            <SelectItem value="Effective">{t("Effective")}</SelectItem>
-                            <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
-                            <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
+                            <SelectItem value="1">{t("1 – Very Ineffective")}</SelectItem>
+                            <SelectItem value="2">{t("2 – Ineffective")}</SelectItem>
+                            <SelectItem value="3">{t("3 – Moderately Effective")}</SelectItem>
+                            <SelectItem value="4">{t("4 – Effective")}</SelectItem>
+                            <SelectItem value="5">{t("5 – Highly Effective")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -2944,9 +2946,11 @@ export default function RiskRegisterPage() {
                               <SelectValue placeholder={t("Select effectiveness")} />
                             </SelectTrigger>
                             <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                              <SelectItem value="Effective">{t("Effective")}</SelectItem>
-                              <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
-                              <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
+                              <SelectItem value="1">{t("1 – Very Ineffective")}</SelectItem>
+                              <SelectItem value="2">{t("2 – Ineffective")}</SelectItem>
+                              <SelectItem value="3">{t("3 – Moderately Effective")}</SelectItem>
+                              <SelectItem value="4">{t("4 – Effective")}</SelectItem>
+                              <SelectItem value="5">{t("5 – Highly Effective")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
