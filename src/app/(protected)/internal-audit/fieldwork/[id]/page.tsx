@@ -75,6 +75,7 @@ import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNameWithNumbers } from "@/lib/validations";
+import { FINDING_TYPES } from "@/lib/internal-audit/report-shared";
 import { DatePicker } from "@/components/ui/date-picker";
 import { confirm } from "@/components/ui/confirm";
 import Link from "next/link";
@@ -389,6 +390,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
   const [fullFinding, setFullFinding] = useState({
     findingTitle: "",
     severity: "",
+    findingType: "",
     criteria: "",
     condition: "",
     cause: "",
@@ -985,6 +987,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
         body: JSON.stringify({
           title: fullFinding.findingTitle,
           severity: fullFinding.severity || "Medium",
+          findingType: fullFinding.findingType || null,
           criteria: fullFinding.criteria || null,
           condition: fullFinding.condition || null,
           cause: fullFinding.cause || null,
@@ -1026,6 +1029,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
         setFullFinding({
           findingTitle: "",
           severity: "",
+          findingType: "",
           criteria: "",
           condition: "",
           cause: "",
@@ -2879,6 +2883,24 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                   <SelectItem value="Medium">{t("Medium")}</SelectItem>
                   <SelectItem value="High">{t("High")}</SelectItem>
                   <SelectItem value="Critical">{t("Critical")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Finding Type */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Finding Type")}</Label>
+              <Select
+                value={fullFinding.findingType}
+                onValueChange={(value) => setFullFinding({ ...fullFinding, findingType: value })}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select finding type")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {FINDING_TYPES.map((ft) => (
+                    <SelectItem key={ft} value={ft}>{t(ft)}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
