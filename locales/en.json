@@ -5408,5 +5408,17 @@
   "Absence of control or errors in the design of the existing control procedure.": "Absence of control or errors in the design of the existing control procedure.",
   "The control procedure does not work as required although it is appropriately designed, or the person responsible does not have the competence and authority to implement the control effectively.": "The control procedure does not work as required although it is appropriately designed, or the person responsible does not have the competence and authority to implement the control effectively.",
   "Note to strengthen the internal control environment based on best practices.": "Note to strengthen the internal control environment based on best practices.",
-  "Findings resulting from non-compliance with legislation, regulations and laws.": "Findings resulting from non-compliance with legislation, regulations and laws."
+  "Findings resulting from non-compliance with legislation, regulations and laws.": "Findings resulting from non-compliance with legislation, regulations and laws.",
+  "Finish & Generate Report": "Finish & Generate Report",
+  "Complete all previous steps to finish the audit and generate the report.": "Complete all previous steps to finish the audit and generate the report.",
+  "Audit completed and report generated": "Audit completed and report generated",
+  "Failed to finish audit and generate report": "Failed to finish audit and generate report",
+  "View Report": "View Report",
+  "Add Findings": "Add Findings",
+  "Save Findings": "Save Findings",
+  "Use Add Row to record multiple findings, then Save Findings.": "Use Add Row to record multiple findings, then Save Findings.",
+  "Recipients": "Recipients",
+  "Select recipient": "Select recipient",
+  "Select one or more recipients; their email is added automatically.": "Select one or more recipients; their email is added automatically.",
+  "All users already added": "All users already added"
 }

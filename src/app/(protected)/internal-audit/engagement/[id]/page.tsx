@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Home,
@@ -11,6 +12,7 @@ import {
   CircleDot,
   Loader2,
   ExternalLink,
+  FileCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,11 +53,13 @@ export default function EngagementWorkflowPage({
 }) {
   const { id } = use(params);
   const { t } = useLanguage();
+  const router = useRouter();
   const { canEdit } = usePermissions("audit.fieldwork");
 
   const [engagement, setEngagement] = useState<Engagement | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const [selectedStage, setSelectedStage] = useState<string>(DEFAULT_ENGAGEMENT_STAGE);
 
   const load = useCallback(async () => {
@@ -123,6 +127,55 @@ export default function EngagementWorkflowPage({
   const setAsCurrent = async (key: string) => {
     await patchStages({ currentStage: key });
     toast.success(t("Current step updated"));
+  };
+
+  // The closing meeting is the final step. "Finish & Generate Report" appears
+  // once every other step is completed; clicking it marks the closing meeting
+  // complete, sets the engagement status to Completed, and generates the audit
+  // report (which then surfaces in the Report section).
+  const CLOSING_KEY = "closing-meeting";
+  const priorStepsComplete = ENGAGEMENT_STAGES.every(
+    (s) => s.key === CLOSING_KEY || progress[s.key] === "completed"
+  );
+
+  const finishAndGenerate = async () => {
+    if (!engagement) return;
+    setFinishing(true);
+    try {
+      // 1. Mark closing meeting complete + set engagement status to Completed.
+      const completedProgress: StageProgressMap = { ...progress };
+      for (const s of ENGAGEMENT_STAGES) completedProgress[s.key] = "completed";
+      const patchRes = await fetch(`/api/internal-audit/engagements/${engagement.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "Completed",
+          currentStage: CLOSING_KEY,
+          stageProgress: completedProgress,
+        }),
+      });
+      if (!patchRes.ok) throw new Error("status");
+
+      // 2. Generate the audit report (default opinion; refine later in the report).
+      const genRes = await fetch(`/api/internal-audit/report/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ engagementId: engagement.id }),
+      });
+      // A pre-existing report is fine — treat "already exists" as success.
+      if (!genRes.ok) {
+        const err = await genRes.json().catch(() => ({}));
+        if (!String(err.error || "").toLowerCase().includes("already exists")) {
+          throw new Error("generate");
+        }
+      }
+
+      toast.success(t("Audit completed and report generated"));
+      router.push(`/internal-audit/report/${engagement.id}`);
+    } catch {
+      toast.error(t("Failed to finish audit and generate report"));
+      setFinishing(false);
+    }
   };
 
   if (loading) {
@@ -300,33 +353,65 @@ export default function EngagementWorkflowPage({
             </div>
           ) : null}
 
-          {canEdit && (
-            <>
-              {selectedStatus !== "current" && (
-                <Button
-                  variant="outline"
-                  disabled={saving}
-                  onClick={() => setAsCurrent(stage.key)}
-                >
-                  {t("Set as current step")}
-                </Button>
-              )}
-              {selectedStatus !== "completed" && (
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  disabled={saving}
-                  onClick={() => markCompleteAndAdvance(stage.key)}
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4" />
-                  )}
-                  {t("Mark complete & continue")}
-                </Button>
-              )}
-            </>
+          {stage.key === CLOSING_KEY && engagement.status === "Completed" ? (
+            // Audit already finished — offer to view the generated report.
+            <Button
+              className="gap-2"
+              onClick={() => router.push(`/internal-audit/report/${engagement.id}`)}
+            >
+              <FileCheck className="h-4 w-4" />
+              {t("View Report")}
+            </Button>
+          ) : canEdit && stage.key === CLOSING_KEY ? (
+            // Final step: a single "Finish & Generate Report" action, shown only
+            // once every previous step is complete.
+            priorStepsComplete ? (
+              <Button
+                className="gap-2 bg-green-600 hover:bg-green-700"
+                disabled={finishing}
+                onClick={finishAndGenerate}
+              >
+                {finishing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileCheck className="h-4 w-4" />
+                )}
+                {t("Finish & Generate Report")}
+              </Button>
+            ) : (
+              <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                {t("Complete all previous steps to finish the audit and generate the report.")}
+              </div>
+            )
+          ) : (
+            canEdit && (
+              <>
+                {selectedStatus !== "current" && (
+                  <Button
+                    variant="outline"
+                    disabled={saving}
+                    onClick={() => setAsCurrent(stage.key)}
+                  >
+                    {t("Set as current step")}
+                  </Button>
+                )}
+                {selectedStatus !== "completed" && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    disabled={saving}
+                    onClick={() => markCompleteAndAdvance(stage.key)}
+                  >
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4" />
+                    )}
+                    {t("Mark complete & continue")}
+                  </Button>
+                )}
+              </>
+            )
           )}
         </div>
       </Card>

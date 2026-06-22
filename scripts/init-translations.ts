@@ -6274,6 +6274,12 @@ const translations: [string, string, string][] = [
   ['The control procedure does not work as required although it is appropriately designed, or the person responsible does not have the competence and authority to implement the control effectively.', 'لا يعمل إجراء الرقابة كما هو مطلوب رغم تصميمه بشكل مناسب، أو أن الشخص المسؤول لا يملك الكفاءة والصلاحية لتنفيذ الرقابة بفعالية.', 'Kontroles procedūra nedarbojas, kā paredzēts, lai gan tā ir atbilstoši izstrādāta, vai atbildīgajai personai nav kompetences un pilnvaru efektīvi īstenot kontroli.'],
   ['Note to strengthen the internal control environment based on best practices.', 'ملاحظة لتعزيز بيئة الرقابة الداخلية بناءً على أفضل الممارسات.', 'Piezīme iekšējās kontroles vides stiprināšanai, pamatojoties uz labāko praksi.'],
   ['Findings resulting from non-compliance with legislation, regulations and laws.', 'ملاحظات ناتجة عن عدم الامتثال للتشريعات واللوائح والقوانين.', 'Konstatējumi, kas izriet no neatbilstības tiesību aktiem, noteikumiem un likumiem.'],
+  // ── Engagement finish & generate report ──
+  ['Finish & Generate Report', 'إنهاء وإنشاء التقرير', 'Pabeigt un ģenerēt ziņojumu'],
+  ['Complete all previous steps to finish the audit and generate the report.', 'أكمل جميع الخطوات السابقة لإنهاء التدقيق وإنشاء التقرير.', 'Pabeidziet visus iepriekšējos soļus, lai pabeigtu auditu un ģenerētu ziņojumu.'],
+  ['Audit completed and report generated', 'تم إكمال التدقيق وإنشاء التقرير', 'Audits pabeigts un ziņojums ģenerēts'],
+  ['Failed to finish audit and generate report', 'فشل إنهاء التدقيق وإنشاء التقرير', 'Neizdevās pabeigt auditu un ģenerēt ziņojumu'],
+  ['View Report', 'عرض التقرير', 'Skatīt ziņojumu'],
 ];
 
 function createExcelFile(): void {
