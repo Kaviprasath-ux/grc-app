@@ -134,6 +134,7 @@ interface InternalAuditRisk {
   auditTypeId?: string | null;
   auditType?: { id: string; name: string } | null;
   riskDrivers?: string | null;
+  controlsData?: string | null;
   creationDate: string;
   inherentScore: number | null;
   residualScore: number | null;
@@ -1203,7 +1204,19 @@ export default function RiskRegisterPage() {
     });
   };
 
+  const getMaxControlEffectiveness = (risk: InternalAuditRisk): string => {
+    try {
+      const controls: { description: string; effectiveness: string }[] = risk.controlsData
+        ? JSON.parse(risk.controlsData)
+        : [];
+      const nums = controls.map((c) => parseInt(c.effectiveness)).filter((n) => !isNaN(n) && n > 0);
+      if (nums.length > 0) return Math.max(...nums).toString();
+    } catch { /* */ }
+    return risk.controlEffectivenessScore?.toString() ?? "";
+  };
+
   const openAssessmentWizard = (risk: InternalAuditRisk) => {
+    const autoCE = getMaxControlEffectiveness(risk);
     const saved = typeof window !== "undefined" ? localStorage.getItem(`ia-assess-${risk.id}`) : null;
     if (saved) {
       try {
@@ -1215,7 +1228,7 @@ export default function RiskRegisterPage() {
           operationalRisk: risk.operationalRisk?.toString() ?? "",
           itDataRisk: risk.itDataRisk?.toString() ?? "",
           assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
-          controlEffectivenessScore: risk.controlEffectivenessScore?.toString() ?? "",
+          controlEffectivenessScore: autoCE,
         });
         setAssessmentStep(parsed.step ?? 1);
       } catch {
@@ -1226,7 +1239,7 @@ export default function RiskRegisterPage() {
           operationalRisk: risk.operationalRisk?.toString() ?? "",
           itDataRisk: risk.itDataRisk?.toString() ?? "",
           assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
-          controlEffectivenessScore: risk.controlEffectivenessScore?.toString() ?? "",
+          controlEffectivenessScore: autoCE,
         });
         setAssessmentStep(1);
       }
@@ -1238,7 +1251,7 @@ export default function RiskRegisterPage() {
         operationalRisk: risk.operationalRisk?.toString() ?? "",
         itDataRisk: risk.itDataRisk?.toString() ?? "",
         assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
-        controlEffectivenessScore: risk.controlEffectivenessScore?.toString() ?? "",
+        controlEffectivenessScore: autoCE,
       });
       setAssessmentStep(1);
     }
@@ -2799,61 +2812,25 @@ export default function RiskRegisterPage() {
                   </div>
                 </div>
 
-                {/* Inherent Risk Assessment */}
+                {/* Inherent Risk Assessment — read-only in Edit */}
                 <div className="space-y-4">
                   <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Inherent Risk Assessment")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={formData.inherentLikelihood}
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, inherentLikelihood: value });
-                          if (fieldErrors.inherentLikelihood) {
-                            setFieldErrors({ ...fieldErrors, inherentLikelihood: "" });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentLikelihood ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select likelihood")} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {translatedProbabilities.map((prob) => (
-                            <SelectItem key={prob.id} value={prob.value.toString()}>
-                              {prob.label} ({prob.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldErrors.inherentLikelihood && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentLikelihood}</p>
-                      )}
+                      <Label className="text-sm font-medium text-slate-500">{t("Likelihood")}</Label>
+                      <div className="mt-1.5 w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
+                        {translatedProbabilities.find(p => p.value.toString() === formData.inherentLikelihood)
+                          ? `${translatedProbabilities.find(p => p.value.toString() === formData.inherentLikelihood)!.label} (${formData.inherentLikelihood})`
+                          : formData.inherentLikelihood || "–"}
+                      </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={formData.inherentImpact}
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, inherentImpact: value });
-                          if (fieldErrors.inherentImpact) {
-                            setFieldErrors({ ...fieldErrors, inherentImpact: "" });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentImpact ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select impact")} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {translatedImpacts.map((imp) => (
-                            <SelectItem key={imp.id} value={imp.value.toString()}>
-                              {imp.label} ({imp.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldErrors.inherentImpact && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentImpact}</p>
-                      )}
+                      <Label className="text-sm font-medium text-slate-500">{t("Impact")}</Label>
+                      <div className="mt-1.5 w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
+                        {translatedImpacts.find(i => i.value.toString() === formData.inherentImpact)
+                          ? `${translatedImpacts.find(i => i.value.toString() === formData.inherentImpact)!.label} (${formData.inherentImpact})`
+                          : formData.inherentImpact || "–"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2914,107 +2891,48 @@ export default function RiskRegisterPage() {
                   </div>
                 </div>
 
-                {/* Control Information — multi */}
+                {/* Control Information — read-only in Edit */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 className="text-base font-semibold text-slate-800">{t("Control Information")}</h3>
-                    <Button type="button" variant="outline" size="sm" onClick={addControl} className="h-7 text-xs gap-1">
-                      <Plus className="h-3 w-3" /> {t("Add Control")}
-                    </Button>
-                  </div>
+                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Control Information")}</h3>
                   <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
-                    {controls.map((ctrl, i) => (
-                      <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-3 relative">
-                        {controls.length > 1 && (
-                          <button type="button" onClick={() => removeControl(i)} className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors">
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                    {controls.length === 0 || (controls.length === 1 && !controls[0].description) ? (
+                      <p className="text-sm text-slate-400 italic">{t("No controls added")}</p>
+                    ) : controls.map((ctrl, i) => (
+                      <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-3 bg-slate-50">
                         <div>
-                          <Label className="text-sm font-medium text-slate-700">{t("Control Description")}{controls.length > 1 ? ` #${i + 1}` : ''}</Label>
-                          <Textarea
-                            value={ctrl.description}
-                            onChange={(e) => updateControl(i, 'description', e.target.value)}
-                            placeholder={t("Enter control description")}
-                            className="mt-1.5 w-full bg-white"
-                            rows={2}
-                          />
+                          <Label className="text-sm font-medium text-slate-500">{t("Control Description")}{controls.length > 1 ? ` #${i + 1}` : ''}</Label>
+                          <div className="mt-1.5 w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">{ctrl.description || "–"}</div>
                         </div>
                         <div>
-                          <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
-                          <Select value={ctrl.effectiveness} onValueChange={(v) => updateControl(i, 'effectiveness', v)}>
-                            <SelectTrigger className="mt-1.5 w-full bg-white">
-                              <SelectValue placeholder={t("Select effectiveness")} />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                              <SelectItem value="1">{t("1 – Very Ineffective")}</SelectItem>
-                              <SelectItem value="2">{t("2 – Ineffective")}</SelectItem>
-                              <SelectItem value="3">{t("3 – Moderately Effective")}</SelectItem>
-                              <SelectItem value="4">{t("4 – Effective")}</SelectItem>
-                              <SelectItem value="5">{t("5 – Highly Effective")}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label className="text-sm font-medium text-slate-500">{t("Control Effectiveness")}</Label>
+                          <div className="mt-1.5 w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
+                            {ctrl.effectiveness ? t(CE_LABELS[ctrl.effectiveness] ?? ctrl.effectiveness) : "–"}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Residual Risk Assessment */}
+                {/* Residual Risk Assessment — read-only in Edit */}
                 <div className="space-y-4">
                   <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Residual Risk Assessment")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={formData.residualLikelihood}
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, residualLikelihood: value });
-                          if (fieldErrors.residualLikelihood) {
-                            setFieldErrors({ ...fieldErrors, residualLikelihood: "" });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualLikelihood ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select likelihood")} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {translatedProbabilities.map((prob) => (
-                            <SelectItem key={prob.id} value={prob.value.toString()}>
-                              {prob.label} ({prob.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldErrors.residualLikelihood && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors.residualLikelihood}</p>
-                      )}
+                      <Label className="text-sm font-medium text-slate-500">{t("Likelihood")}</Label>
+                      <div className="mt-1.5 w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
+                        {translatedProbabilities.find(p => p.value.toString() === formData.residualLikelihood)
+                          ? `${translatedProbabilities.find(p => p.value.toString() === formData.residualLikelihood)!.label} (${formData.residualLikelihood})`
+                          : formData.residualLikelihood || "–"}
+                      </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={formData.residualImpact}
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, residualImpact: value });
-                          if (fieldErrors.residualImpact) {
-                            setFieldErrors({ ...fieldErrors, residualImpact: "" });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualImpact ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select impact")} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {translatedImpacts.map((imp) => (
-                            <SelectItem key={imp.id} value={imp.value.toString()}>
-                              {imp.label} ({imp.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldErrors.residualImpact && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors.residualImpact}</p>
-                      )}
+                      <Label className="text-sm font-medium text-slate-500">{t("Impact")}</Label>
+                      <div className="mt-1.5 w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
+                        {translatedImpacts.find(i => i.value.toString() === formData.residualImpact)
+                          ? `${translatedImpacts.find(i => i.value.toString() === formData.residualImpact)!.label} (${formData.residualImpact})`
+                          : formData.residualImpact || "–"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3687,14 +3605,29 @@ export default function RiskRegisterPage() {
                       <div className="mb-6">
                         <label className="text-sm font-semibold text-slate-700 block mb-1">{t("Control Effectiveness")}</label>
                         <p className="text-xs text-slate-400 mb-3">1 = {t("Very Ineffective")} · 2 = {t("Ineffective")} · 3 = {t("Moderately Effective")} · 4 = {t("Effective")} · 5 = {t("Highly Effective")}</p>
-                        <div className="flex gap-2">
-                          {["1", "2", "3", "4", "5"].map((v) => (
-                            <button key={v} type="button" onClick={() => updateSingleAssessmentField("controlEffectivenessScore", v)}
-                              className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${row.controlEffectivenessScore === v ? "bg-[#7c3f2f] border-[#7c3f2f] text-white" : "border-slate-200 text-slate-600 hover:border-[#c4896e] hover:bg-[#fdf6f2]"}`}>
-                              {v}
-                            </button>
-                          ))}
-                        </div>
+                        {row.controlEffectivenessScore ? (
+                          <div className="flex items-center gap-3 px-5 py-4 rounded-xl border-2 border-[#c4896e] bg-[#fdf6f2]">
+                            <span className="w-10 h-10 rounded-full bg-[#7c3f2f] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                              {row.controlEffectivenessScore}
+                            </span>
+                            <div>
+                              <p className="text-sm font-semibold text-[#7c3f2f]">{t(CE_LABELS[row.controlEffectivenessScore] ?? "")}</p>
+                              <p className="text-xs text-slate-400 mt-0.5">{t("Auto-populated from risk controls (highest value)")}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-xs text-amber-600 mb-2">{t("No control effectiveness set on this risk. Please select manually.")}</p>
+                            <div className="flex gap-2">
+                              {["1", "2", "3", "4", "5"].map((v) => (
+                                <button key={v} type="button" onClick={() => updateSingleAssessmentField("controlEffectivenessScore", v)}
+                                  className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${row.controlEffectivenessScore === v ? "bg-[#7c3f2f] border-[#7c3f2f] text-white" : "border-slate-200 text-slate-600 hover:border-[#c4896e] hover:bg-[#fdf6f2]"}`}>
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="bg-slate-50 rounded-2xl p-5 space-y-3">
                         <div className="flex justify-between text-sm"><span className="text-slate-500">{t("Mean Probability")}</span><span className="font-semibold text-slate-800">{settingsMeanProbability > 0 ? settingsMeanProbability.toFixed(2) : "–"}</span></div>
