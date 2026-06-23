@@ -25,6 +25,10 @@ export const POST = withAuth(
       const durationYears = [3, 4, 5].includes(Number(body.durationYears))
         ? Number(body.durationYears)
         : undefined;
+      // Audit type chosen in the Add Plan popup (from Audit Settings); falls
+      // back to the risk's linked audit type when not provided.
+      const auditTypeOverride =
+        typeof body.auditType === "string" && body.auditType.trim() ? body.auditType.trim() : null;
 
       const tenantFilter = getTenantFilter(session);
       const auditHeadId = getAuditHeadId(session);
@@ -99,7 +103,12 @@ export const POST = withAuth(
             title: risk.riskName,
             departmentId: risk.departmentId || null,
             riskId: risk.id,
-            auditType: risk.auditType?.name || null,
+            auditType: auditTypeOverride || risk.auditType?.name || null,
+            reasonForScheduling:
+              typeof body.reasonForScheduling === "string" && body.reasonForScheduling.trim()
+                ? body.reasonForScheduling.trim()
+                : null,
+            notes: typeof body.notes === "string" && body.notes.trim() ? body.notes.trim() : null,
             residualScore: risk.residualScore,
             riskLevel: risk.riskLevel,
             priorityRank: 1,

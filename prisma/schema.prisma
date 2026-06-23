@@ -3862,6 +3862,26 @@ model AuditProgram {
   @@index([customerAccountId])
 }
 
+// Internal Audit Engagement Feedback Survey (QAIP). One per engagement.
+// Ratings (5..1 / N/A) and section comments are stored as JSON.
+model AuditFeedbackSurvey {
+  id                  String   @id @default(cuid())
+  customerAccountId   String
+  engagementId        String   @unique
+  responses           String?  @db.Text // JSON: { [questionKey]: "5"|"4"|"3"|"2"|"1"|"NA" }
+  comments            String?  @db.Text // JSON: { [sectionKey]: "comment" }
+  customRows          String?  @db.Text // JSON: { [sectionKey]: [{ key, text }] } — user-added question rows
+  overallSatisfaction Int? // 1..5
+  didWell             String?  @db.Text
+  improvements        String?  @db.Text
+  createdById         String?
+  updatedById         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
 // ==================== INTERNAL AUDIT - DOCUMENT LIBRARY ====================
 
 // Internal Audit Document (for document library)
@@ -3971,6 +3991,7 @@ model AuditStrategicPlanItem {
   residualScore     Int?
   riskLevel         String?
   priorityRank      Int?
+  reasonForScheduling String?
   notes             String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -4006,6 +4027,9 @@ model AuditOperationalPlan {
   createdBy         User?                      @relation("OperationalPlanCreatedBy", fields: [createdById], references: [id])
   items             AuditOperationalPlanItem[]
   quarterReports    AuditOperationalPlanQuarterReport[]
+  // Per-quarter Annual-Audit-Plan fields (JSON: { Q1: { residualScore, riskLevel,
+  // proposedPeriodical, estimatedHours, auditorInChargeId }, ... }).
+  quarterPlans      String?                    @db.Text
   createdAt         DateTime                   @default(now())
   updatedAt         DateTime                   @updatedAt
 
@@ -4049,10 +4073,14 @@ model AuditOperationalPlanItem {
   auditableEntityId  String?
   riskId             String?
   auditType          String?
+  auditCategory      String? // from Audit Settings categories
   plannedQuarter     String? // Q1, Q2, Q3, Q4
-  assignedAuditorId  String?
-  residualScore      Int?
-  riskLevel          String?
+  assignedAuditorId  String? // Audit Manager
+  auditorInChargeId  String? // Auditor in Charge (Annual Audit Plan)
+  residualScore      Int? // Residual risk score
+  riskLevel          String? // Risk Classification
+  proposedPeriodical String? // Proposed Periodical (e.g. Annual, Quarterly)
+  estimatedHours     Int? // Estimated Hours
   priorityRank       Int?
   notes              String?
   // Engagement auto-generated from this item on operational plan approval (idempotency + traceability)

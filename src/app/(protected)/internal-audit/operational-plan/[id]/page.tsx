@@ -53,6 +53,7 @@ import {
   CheckCircle2,
   Sparkles,
   Users,
+  FileText,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -62,12 +63,16 @@ interface OpItem {
   id: string;
   title: string;
   auditType: string | null;
+  auditCategory: string | null;
   plannedQuarter: string | null;
   residualScore: number | null;
   riskLevel: string | null;
+  proposedPeriodical: string | null;
+  estimatedHours: number | null;
   priorityRank: number | null;
   notes: string | null;
   assignedAuditorId: string | null;
+  auditorInChargeId: string | null;
 }
 
 interface Auditor {
@@ -94,7 +99,16 @@ interface OperationalPlan {
   hasApprovalDoc?: boolean;
   items: OpItem[];
   quarterReports?: QuarterReport[];
+  quarterPlans?: string | null;
   _count?: { items: number };
+}
+
+interface QuarterPlanFields {
+  residualScore: number | null;
+  riskLevel: string | null;
+  proposedPeriodical: string | null;
+  estimatedHours: number | null;
+  auditorInChargeId: string | null;
 }
 
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const;
@@ -137,11 +151,14 @@ export default function OperationalPlanDetailPage() {
 
   // Add-audit dialog
   const [addTarget, setAddTarget] = useState<OperationalPlan | null>(null);
-  const [addForm, setAddForm] = useState({ title: "", auditType: "", plannedQuarter: "", notes: "" });
+  const [addForm, setAddForm] = useState({ title: "", auditCategory: "", plannedQuarter: "", notes: "" });
   const [savingItem, setSavingItem] = useState(false);
 
   // Delete confirms
   const [deletePlan, setDeletePlan] = useState<OperationalPlan | null>(null);
+
+  // Audit categories (from Audit Settings) for the Add Audit dialog
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
   // Assign-auditors dialog
   const [auditors, setAuditors] = useState<Auditor[]>([]);
@@ -158,6 +175,22 @@ export default function OperationalPlanDetailPage() {
           const data = await res.json();
           const list = Array.isArray(data) ? data : data.users || [];
           setAuditors(list.map((u: { id: string; fullName?: string; name?: string; email?: string }) => ({ id: u.id, fullName: u.fullName || u.name || u.email || "" })));
+        }
+      } catch {
+        /* non-fatal */
+      }
+    })();
+  }, []);
+
+  // Fetch audit categories from Audit Settings (for the Add Audit Category dropdown).
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/internal-audit/categories");
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : [];
+          setCategories(list.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
         }
       } catch {
         /* non-fatal */
@@ -234,6 +267,197 @@ export default function OperationalPlanDetailPage() {
     : [];
   const visibleYears = yearFilter === "all" ? years : years.filter((y) => String(y) === yearFilter);
 
+  // Parse the per-quarter Annual-Audit-Plan fields stored on the plan.
+  const getQuarterPlan = (plan: OperationalPlan, quarter: string): QuarterPlanFields => {
+    try {
+      const all = plan.quarterPlans ? JSON.parse(plan.quarterPlans) : {};
+      const q = all?.[quarter] || {};
+      return {
+        residualScore: q.residualScore ?? null,
+        riskLevel: q.riskLevel ?? null,
+        proposedPeriodical: q.proposedPeriodical ?? null,
+        estimatedHours: q.estimatedHours ?? null,
+        auditorInChargeId: q.auditorInChargeId ?? null,
+      };
+    } catch {
+      return { residualScore: null, riskLevel: null, proposedPeriodical: null, estimatedHours: null, auditorInChargeId: null };
+    }
+  };
+
+  // Save one quarter's planning fields (optimistic update of the plan JSON + PUT).
+  const patchQuarterPlan = async (planId: string, quarter: string, patch: Partial<QuarterPlanFields>) => {
+    let nextBody: QuarterPlanFields | null = null;
+    setOpPlans((prev) =>
+      prev.map((p) => {
+        if (p.id !== planId) return p;
+        const all = (() => {
+          try {
+            return p.quarterPlans ? JSON.parse(p.quarterPlans) : {};
+          } catch {
+            return {};
+          }
+        })();
+        const merged = {
+          residualScore: null,
+          riskLevel: null,
+          proposedPeriodical: null,
+          estimatedHours: null,
+          auditorInChargeId: null,
+          ...(all[quarter] || {}),
+          ...patch,
+        } as QuarterPlanFields;
+        nextBody = merged;
+        all[quarter] = merged;
+        return { ...p, quarterPlans: JSON.stringify(all) };
+      })
+    );
+    try {
+      const res = await fetch(`/api/internal-audit/operational-plans/${planId}/quarter-plan`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quarter, ...(nextBody || patch) }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      toast.error(t("Failed to save quarter plan"));
+      loadForStrategicPlan(selectedSpId);
+    }
+  };
+
+  // Audit list table for a quarter (audit name, category, manager).
+  const thCls =
+    "text-xs font-medium text-slate-500 uppercase tracking-wider py-2 whitespace-nowrap";
+  const renderAuditTable = (planId: string, items: OpItem[]) => (
+    <div className="overflow-x-auto">
+      <Table className="min-w-[560px]">
+        <TableHeader>
+          <TableRow className="h-9 border-b border-slate-100 hover:bg-transparent">
+            <TableHead className={`${thCls} w-10 ltr:pl-3 rtl:pr-3`}>#</TableHead>
+            <TableHead className={thCls}>{t("Audit")}</TableHead>
+            <TableHead className={thCls}>{t("Category")}</TableHead>
+            <TableHead className={thCls}>{t("Audit Manager")}</TableHead>
+            {canDelete && (
+              <TableHead className={`${thCls} ltr:pr-3 rtl:pl-3 ltr:text-right rtl:text-left`}>
+                {t("Actions")}
+              </TableHead>
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((it, idx) => (
+            <TableRow key={it.id} className="border-b border-slate-100 last:border-0">
+              <TableCell className="py-2.5 text-sm text-slate-700 ltr:pl-3 rtl:pr-3">{idx + 1}</TableCell>
+              <TableCell className="py-2.5 text-sm font-medium text-slate-800">{it.title}</TableCell>
+              <TableCell className="py-2.5 text-sm text-slate-700">{it.auditCategory || "—"}</TableCell>
+              <TableCell className="py-2.5 text-sm text-slate-700 whitespace-nowrap">{auditorName(it.assignedAuditorId)}</TableCell>
+              {canDelete && (
+                <TableCell className="py-2.5 ltr:pr-3 rtl:pl-3 ltr:text-right rtl:text-left">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                    onClick={() => handleDeleteItem(planId, it.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  // Per-quarter Annual-Audit-Plan fields panel, shown below the quarter's audits.
+  const fieldLbl = "block text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1";
+  const qInput =
+    "w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-400";
+  const renderQuarterPlanFields = (plan: OperationalPlan, quarter: string) => {
+    const qp = getQuarterPlan(plan, quarter);
+    return (
+      <div className="mt-3 rounded-md border border-slate-200 bg-slate-50/60 p-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div>
+            <label className={fieldLbl}>{t("Residual Risk Score")}</label>
+            <input
+              key={`rrs-${plan.id}-${quarter}-${qp.residualScore ?? ""}`}
+              type="number"
+              min={0}
+              disabled={!canEdit}
+              defaultValue={qp.residualScore ?? ""}
+              onBlur={(e) => {
+                if (String(qp.residualScore ?? "") !== e.target.value)
+                  patchQuarterPlan(plan.id, quarter, { residualScore: e.target.value === "" ? null : Number(e.target.value) });
+              }}
+              className={qInput}
+            />
+          </div>
+          <div>
+            <label className={fieldLbl}>{t("Risk Classification")}</label>
+            <select
+              value={qp.riskLevel || ""}
+              disabled={!canEdit}
+              onChange={(e) => patchQuarterPlan(plan.id, quarter, { riskLevel: e.target.value || null })}
+              className={qInput}
+            >
+              <option value="">—</option>
+              <option value="Low">{t("Low")}</option>
+              <option value="Medium">{t("Medium")}</option>
+              <option value="High">{t("High")}</option>
+              <option value="Extreme">{t("Extreme")}</option>
+            </select>
+          </div>
+          <div>
+            <label className={fieldLbl}>{t("Proposed Periodical")}</label>
+            <input
+              key={`per-${plan.id}-${quarter}-${qp.proposedPeriodical ?? ""}`}
+              disabled={!canEdit}
+              defaultValue={qp.proposedPeriodical ?? ""}
+              placeholder={t("e.g. Annual, Quarterly")}
+              onBlur={(e) => {
+                if (String(qp.proposedPeriodical ?? "") !== e.target.value)
+                  patchQuarterPlan(plan.id, quarter, { proposedPeriodical: e.target.value || null });
+              }}
+              className={qInput}
+            />
+          </div>
+          <div>
+            <label className={fieldLbl}>{t("Estimated Hours")}</label>
+            <input
+              key={`hrs-${plan.id}-${quarter}-${qp.estimatedHours ?? ""}`}
+              type="number"
+              min={0}
+              disabled={!canEdit}
+              defaultValue={qp.estimatedHours ?? ""}
+              onBlur={(e) => {
+                if (String(qp.estimatedHours ?? "") !== e.target.value)
+                  patchQuarterPlan(plan.id, quarter, { estimatedHours: e.target.value === "" ? null : Number(e.target.value) });
+              }}
+              className={qInput}
+            />
+          </div>
+          <div>
+            <label className={fieldLbl}>{t("Auditor in Charge")}</label>
+            <select
+              value={qp.auditorInChargeId || ""}
+              disabled={!canEdit}
+              onChange={(e) => patchQuarterPlan(plan.id, quarter, { auditorInChargeId: e.target.value || null })}
+              className={qInput}
+            >
+              <option value="">—</option>
+              {auditors.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleGenerate = async (year: number) => {
     if (!selectedSpId) return;
     setGeneratingYear(year);
@@ -256,6 +480,13 @@ export default function OperationalPlanDetailPage() {
     }
   };
 
+  // Open the Add Audit dialog for a specific plan + quarter (quarter is fixed by
+  // the section the button was clicked in).
+  const openAdd = (plan: OperationalPlan, quarter: string) => {
+    setAddTarget(plan);
+    setAddForm({ title: "", auditCategory: "", plannedQuarter: quarter, notes: "" });
+  };
+
   const handleAddItem = async () => {
     if (!addTarget) return;
     if (!addForm.title.trim()) {
@@ -272,7 +503,7 @@ export default function OperationalPlanDetailPage() {
       if (!res.ok) throw new Error("Failed");
       toast.success(t("Audit added"));
       setAddTarget(null);
-      setAddForm({ title: "", auditType: "", plannedQuarter: "", notes: "" });
+      setAddForm({ title: "", auditCategory: "", plannedQuarter: "", notes: "" });
       loadForStrategicPlan(selectedSpId);
     } catch {
       toast.error(t("Failed to add audit"));
@@ -448,19 +679,19 @@ export default function OperationalPlanDetailPage() {
                   </div>
                   {plan && (
                     <div className="flex items-center gap-2">
-                      {canEdit && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setAddTarget(plan);
-                            setAddForm({ title: "", auditType: "", plannedQuarter: "", notes: "" });
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          {t("Add Audit")}
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          window.open(
+                            `/api/internal-audit/operational-plans/${plan.id}/annual-report`,
+                            "_blank"
+                          )
+                        }
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        {t("Generate Annual Report")}
+                      </Button>
                       {canEdit && plan.items.length > 0 && (
                         <Button
                           variant="ghost"
@@ -533,49 +764,58 @@ export default function OperationalPlanDetailPage() {
                       </Button>
                     )}
                   </div>
-                ) : plan.items.length === 0 ? (
-                  <p className="px-4 py-4 text-sm text-slate-400">
-                    {t("No audits in this plan. Use Add Audit to add one.")}
-                  </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                  <Table className="min-w-[680px]">
-                    <TableHeader>
-                      <TableRow className="h-11 border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 w-12 ltr:pl-5 rtl:pr-5">#</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Type")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Quarter")}</TableHead>
-                        <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Manager")}</TableHead>
-                        {canDelete && <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {plan.items.map((it, idx) => (
-                        <TableRow key={it.id} className="border-b border-slate-100 last:border-0">
-                          <TableCell className="py-3 text-sm text-slate-700 ltr:pl-5 rtl:pr-5">{idx + 1}</TableCell>
-                          <TableCell className="py-3 text-sm font-medium text-slate-800">{it.title}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{it.auditType || "—"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">{it.plannedQuarter || "—"}</TableCell>
-                          <TableCell className="py-3 text-sm text-slate-700">
-                            {auditorName(it.assignedAuditorId)}
-                          </TableCell>
-                          {canDelete && (
-                            <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                                onClick={() => handleDeleteItem(plan.id, it.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
+                  <div className="divide-y divide-slate-100">
+                    {QUARTERS.map((q) => {
+                      const qItems = plan.items.filter((it) => (it.plannedQuarter || "") === q);
+                      return (
+                        <div key={q} className="px-4 py-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center justify-center h-6 px-2 rounded bg-primary-50 text-primary-700 text-xs font-semibold">
+                                {q}
+                              </span>
+                              <span className="text-xs text-slate-400">
+                                {qItems.length} {qItems.length === 1 ? t("audit") : t("audits")}
+                              </span>
+                            </div>
+                            {canEdit && (
+                              <Button variant="ghost" size="sm" onClick={() => openAdd(plan, q)}>
+                                <Plus className="h-4 w-4 mr-1" />
+                                {t("Add Audit")}
                               </Button>
-                            </TableCell>
+                            )}
+                          </div>
+                          {qItems.length === 0 ? (
+                            <p className="text-xs text-slate-400 py-1 ltr:pl-1 rtl:pr-1">
+                              {t("No audits in this quarter.")}
+                            </p>
+                          ) : (
+                            renderAuditTable(plan.id, qItems)
                           )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          {renderQuarterPlanFields(plan, q)}
+                        </div>
+                      );
+                    })}
+                    {(() => {
+                      const unscheduled = plan.items.filter(
+                        (it) => !QUARTERS.includes((it.plannedQuarter || "") as (typeof QUARTERS)[number])
+                      );
+                      if (unscheduled.length === 0) return null;
+                      return (
+                        <div className="px-4 py-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-flex items-center justify-center h-6 px-2 rounded bg-amber-50 text-amber-700 text-xs font-semibold">
+                              {t("Unscheduled")}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {unscheduled.length} {unscheduled.length === 1 ? t("audit") : t("audits")}
+                            </span>
+                          </div>
+                          {renderAuditTable(plan.id, unscheduled)}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -674,7 +914,14 @@ export default function OperationalPlanDetailPage() {
       <Dialog open={!!addTarget} onOpenChange={(o) => !o && setAddTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("Add Audit")}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {t("Add Audit")}
+              {addForm.plannedQuarter && (
+                <span className="inline-flex items-center justify-center h-6 px-2 rounded bg-primary-50 text-primary-700 text-xs font-semibold">
+                  {addForm.plannedQuarter}
+                </span>
+              )}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -684,31 +931,29 @@ export default function OperationalPlanDetailPage() {
                 onChange={(e) => setAddForm({ ...addForm, title: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>{t("Type")}</Label>
-                <Input
-                  value={addForm.auditType}
-                  onChange={(e) => setAddForm({ ...addForm, auditType: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>{t("Quarter")}</Label>
-                <Select
-                  value={addForm.plannedQuarter}
-                  onValueChange={(v) => setAddForm({ ...addForm, plannedQuarter: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("Select")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Q1">Q1</SelectItem>
-                    <SelectItem value="Q2">Q2</SelectItem>
-                    <SelectItem value="Q3">Q3</SelectItem>
-                    <SelectItem value="Q4">Q4</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label>{t("Audit Category")}</Label>
+              <Select
+                value={addForm.auditCategory}
+                onValueChange={(v) => setAddForm({ ...addForm, auditCategory: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("Select")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.length === 0 ? (
+                    <div className="px-2 py-3 text-xs text-slate-400 text-center">
+                      {t("No audit categories found")}
+                    </div>
+                  ) : (
+                    categories.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>{t("Notes")}</Label>

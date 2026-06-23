@@ -19,9 +19,17 @@ Audit Universe → Risk Register → Risk Assessment / Heatmap →
 Strategic Plan → Operational (Annual) Plan → Engagements →
 Engagement Workflow (Announcement → APM → Opening Meeting → Audit Program →
 Fieldwork → Findings → Findings Discussion → Closing Meeting)
-→ Independence & Objectivity (sidebar) → Report (sidebar)
+→ Independence & Objectivity (sidebar) → Report (sidebar) → Feedback Survey (sidebar)
 → Follow-up / CAPA (sidebar) → Automated Monitoring
 ```
+
+**Feedback Survey** (`/internal-audit/feedback-survey`, nav after Report): the QAIP
+**Internal Audit Engagement Feedback Survey** — pick an engagement, rate Sections
+A–F (Engagement Planning / Professionalism / Audit Execution / Findings &
+Recommendations / Reporting / Value Provided) on a 5–1 / N/A scale with per-section
+comments, plus Overall Satisfaction (1–5) and two open questions. Saved per
+engagement (model `AuditFeedbackSurvey`, `PUT /api/internal-audit/engagements/[id]/feedback-survey`)
+with **Export PDF** (`/feedback-survey/download`).
 
 **Independence & Objectivity** (`/internal-audit/independence`, resource
 `audit.independence`): auditor **Independence Declaration** and **Objectivity

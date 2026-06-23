@@ -181,7 +181,26 @@ export default function StrategicPlanPage() {
   // Add Plan popup state — only the plan duration is captured here.
   const [planDialogRisk, setPlanDialogRisk] = useState<AssessedRisk | null>(null);
   const [planDuration, setPlanDuration] = useState("3");
+  const [planAuditType, setPlanAuditType] = useState("");
+  const [planReason, setPlanReason] = useState("");
+  const [planNotes, setPlanNotes] = useState("");
   const [savingPlan, setSavingPlan] = useState(false);
+
+  // Audit types (from Audit Settings) for the Add Plan dialog dropdown.
+  const [auditTypes, setAuditTypes] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/internal-audit/audit-types");
+        if (res.ok) {
+          const data = await res.json();
+          setAuditTypes((Array.isArray(data) ? data : []).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name })));
+        }
+      } catch {
+        /* non-fatal */
+      }
+    })();
+  }, []);
 
   // Edit / delete a single strategic plan item (audit).
   const [editItem, setEditItem] = useState<PlanItem | null>(null);
@@ -203,6 +222,9 @@ export default function StrategicPlanPage() {
   const openPlanDialog = (risk: AssessedRisk) => {
     setPlanDialogRisk(risk);
     setPlanDuration("3");
+    setPlanAuditType("");
+    setPlanReason("");
+    setPlanNotes("");
   };
 
   const handleSavePlan = async () => {
@@ -215,6 +237,9 @@ export default function StrategicPlanPage() {
         body: JSON.stringify({
           riskId: planDialogRisk.id,
           durationYears: parseInt(planDuration),
+          auditType: planAuditType || undefined,
+          reasonForScheduling: planReason || undefined,
+          notes: planNotes || undefined,
         }),
       });
       if (!res.ok) throw new Error("Failed");
@@ -601,6 +626,28 @@ export default function StrategicPlanPage() {
               </div>
 
               <div>
+                <Label>{t("Audit Type")}</Label>
+                <Select value={planAuditType} onValueChange={setPlanAuditType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("Select")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {auditTypes.length === 0 ? (
+                      <div className="px-2 py-3 text-xs text-slate-400 text-center">
+                        {t("No audit types found")}
+                      </div>
+                    ) : (
+                      auditTypes.map((at) => (
+                        <SelectItem key={at.id} value={at.name}>
+                          {at.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <Label>{t("Duration")}</Label>
                 <Select value={planDuration} onValueChange={setPlanDuration}>
                   <SelectTrigger>
@@ -615,6 +662,25 @@ export default function StrategicPlanPage() {
                 <p className="text-xs text-slate-400 mt-1">
                   {t("The audit is added to the plan of this duration (a new plan is created if needed).")}
                 </p>
+              </div>
+
+              <div>
+                <Label>{t("Reason for Scheduling")}</Label>
+                <Textarea
+                  rows={2}
+                  value={planReason}
+                  onChange={(e) => setPlanReason(e.target.value)}
+                  placeholder={t("Why is this audit being scheduled?")}
+                />
+              </div>
+
+              <div>
+                <Label>{t("Notes")}</Label>
+                <Textarea
+                  rows={2}
+                  value={planNotes}
+                  onChange={(e) => setPlanNotes(e.target.value)}
+                />
               </div>
             </div>
           )}

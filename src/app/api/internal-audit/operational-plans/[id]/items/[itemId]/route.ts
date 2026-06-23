@@ -34,8 +34,26 @@ export const PATCH = withAuth(
           title: body.title ?? existing.title,
           departmentId: body.departmentId !== undefined ? body.departmentId : existing.departmentId,
           auditType: body.auditType !== undefined ? body.auditType : existing.auditType,
+          auditCategory: body.auditCategory !== undefined ? body.auditCategory : existing.auditCategory,
           plannedQuarter: body.plannedQuarter !== undefined ? body.plannedQuarter : existing.plannedQuarter,
           assignedAuditorId: body.assignedAuditorId !== undefined ? body.assignedAuditorId : existing.assignedAuditorId,
+          auditorInChargeId:
+            body.auditorInChargeId !== undefined ? body.auditorInChargeId || null : existing.auditorInChargeId,
+          residualScore:
+            body.residualScore !== undefined
+              ? body.residualScore === "" || body.residualScore === null
+                ? null
+                : Number(body.residualScore)
+              : existing.residualScore,
+          riskLevel: body.riskLevel !== undefined ? body.riskLevel || null : existing.riskLevel,
+          proposedPeriodical:
+            body.proposedPeriodical !== undefined ? body.proposedPeriodical || null : existing.proposedPeriodical,
+          estimatedHours:
+            body.estimatedHours !== undefined
+              ? body.estimatedHours === "" || body.estimatedHours === null
+                ? null
+                : Number(body.estimatedHours)
+              : existing.estimatedHours,
           notes: body.notes !== undefined ? body.notes : existing.notes,
         },
       });

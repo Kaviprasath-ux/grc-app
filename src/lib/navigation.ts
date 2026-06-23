@@ -308,6 +308,7 @@ export const navigation: NavItem[] = [
       { name: "Audit Engagement", href: "/internal-audit/audit-engagement", icon: Calendar, permission: "audit.planning:view" },
       { name: "Independence & Objectivity", href: "/internal-audit/independence", icon: ShieldCheck, permission: "audit.independence:view" },
       { name: "Report", href: "/internal-audit/report", icon: FileOutput, permission: "audit.reports:view" },
+      { name: "Feedback Survey", href: "/internal-audit/feedback-survey", icon: ClipboardCheck, permission: "audit.fieldwork:view" },
       { name: "Document Library", href: "/internal-audit/document-library", icon: FolderOpen, permission: "audit.documents:view" },
       { name: "Audit Settings", href: "/internal-audit/settings", icon: Settings2, permission: "audit.settings:view" },
     ],

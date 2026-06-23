@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, Send, Save, Loader2, CheckCircle2, Trash2 } from "lucide-react";
+import { Mail, Send, Save, Loader2, CheckCircle2, Trash2, Plus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatLocalDate } from "@/lib/utils";
 
@@ -102,6 +102,11 @@ export default function AuditAnnouncement({
   const [saving, setSaving] = useState<boolean>(false);
   const [sending, setSending] = useState<boolean>(false);
   const [confirmSend, setConfirmSend] = useState<boolean>(false);
+
+  // External (non-IA-user) recipient entry
+  const [showExternal, setShowExternal] = useState<boolean>(false);
+  const [extName, setExtName] = useState<string>("");
+  const [extEmail, setExtEmail] = useState<string>("");
 
   const baseUrl = `/api/internal-audit/engagements/${engagementId}/announcement`;
 
@@ -200,6 +205,23 @@ export default function AuditAnnouncement({
   const removeRecipientAt = (idx: number) =>
     setForm((p) => ({ ...p, recipients: p.recipients.filter((_, i) => i !== idx) }));
 
+  // Add an external recipient (not an IA user) by name + email, deduped by email.
+  const addExternalRecipient = () => {
+    const email = extEmail.trim();
+    const name = extName.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error(t("Enter a valid email address"));
+      return;
+    }
+    setForm((p) => {
+      if (p.recipients.some((r) => r.email.toLowerCase() === email.toLowerCase())) return p;
+      return { ...p, recipients: [...p.recipients, { name, email }] };
+    });
+    setExtName("");
+    setExtEmail("");
+    setShowExternal(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -277,7 +299,15 @@ export default function AuditAnnouncement({
           {editable ? (
             <>
               <div>
-                <Label>{t("Recipients")}</Label>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <Label>{t("Recipients")}</Label>
+                  {!showExternal && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => setShowExternal(true)}>
+                      <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                      {t("Add External Recipient")}
+                    </Button>
+                  )}
+                </div>
                 <Select value="" onValueChange={addRecipientFromUser}>
                   <SelectTrigger>
                     <SelectValue placeholder={t("Select recipient")} />
@@ -300,6 +330,40 @@ export default function AuditAnnouncement({
                     )}
                   </SelectContent>
                 </Select>
+                {showExternal && (
+                  <div className="mt-2 flex flex-col sm:flex-row gap-2 sm:items-center rounded-md border border-slate-200 p-2">
+                    <Input
+                      value={extName}
+                      onChange={(e) => setExtName(e.target.value)}
+                      placeholder={t("Recipient Name")}
+                      className="sm:flex-1"
+                    />
+                    <Input
+                      type="email"
+                      value={extEmail}
+                      onChange={(e) => setExtEmail(e.target.value)}
+                      placeholder={t("Email address")}
+                      className="sm:flex-1"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button type="button" size="sm" onClick={addExternalRecipient}>
+                        {t("Add")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowExternal(false);
+                          setExtName("");
+                          setExtEmail("");
+                        }}
+                      >
+                        {t("Cancel")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {form.recipients.length === 0 ? (
                   <p className="text-xs text-slate-400 mt-2">
                     {t("Select one or more recipients; their email is added automatically.")}

@@ -39,10 +39,20 @@ export const POST = withAuth(
           auditableEntityId: body.auditableEntityId || null,
           riskId: body.riskId || null,
           auditType: body.auditType || null,
+          auditCategory: body.auditCategory || null,
           plannedQuarter: body.plannedQuarter || null,
           assignedAuditorId: body.assignedAuditorId || null,
-          residualScore: body.residualScore ?? null,
+          auditorInChargeId: body.auditorInChargeId || null,
+          residualScore:
+            body.residualScore === "" || body.residualScore === null || body.residualScore === undefined
+              ? null
+              : Number(body.residualScore),
           riskLevel: body.riskLevel || null,
+          proposedPeriodical: body.proposedPeriodical || null,
+          estimatedHours:
+            body.estimatedHours === "" || body.estimatedHours === null || body.estimatedHours === undefined
+              ? null
+              : Number(body.estimatedHours),
           priorityRank: (maxRank._max.priorityRank ?? 0) + 1,
           notes: body.notes || null,
         },

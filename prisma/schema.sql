@@ -1,4 +1,4 @@
-﻿-- CreateEnum
+-- CreateEnum
 CREATE TYPE "PlanTier" AS ENUM ('BASIC', 'MEDIUM', 'PRO');
 
 -- CreateEnum
@@ -2726,6 +2726,25 @@ CREATE TABLE "AuditProgram" (
 );
 
 -- CreateTable
+CREATE TABLE "AuditFeedbackSurvey" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "engagementId" TEXT NOT NULL,
+    "responses" TEXT,
+    "comments" TEXT,
+    "customRows" TEXT,
+    "overallSatisfaction" INTEGER,
+    "didWell" TEXT,
+    "improvements" TEXT,
+    "createdById" TEXT,
+    "updatedById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuditFeedbackSurvey_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "InternalAuditDocument" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -2812,6 +2831,7 @@ CREATE TABLE "AuditStrategicPlanItem" (
     "residualScore" INTEGER,
     "riskLevel" TEXT,
     "priorityRank" INTEGER,
+    "reasonForScheduling" TEXT,
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -2834,6 +2854,7 @@ CREATE TABLE "AuditOperationalPlan" (
     "approvalDocData" BYTEA,
     "approvedAt" TIMESTAMP(3),
     "createdById" TEXT,
+    "quarterPlans" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -2868,10 +2889,14 @@ CREATE TABLE "AuditOperationalPlanItem" (
     "auditableEntityId" TEXT,
     "riskId" TEXT,
     "auditType" TEXT,
+    "auditCategory" TEXT,
     "plannedQuarter" TEXT,
     "assignedAuditorId" TEXT,
+    "auditorInChargeId" TEXT,
     "residualScore" INTEGER,
     "riskLevel" TEXT,
+    "proposedPeriodical" TEXT,
+    "estimatedHours" INTEGER,
     "priorityRank" INTEGER,
     "notes" TEXT,
     "engagementId" TEXT,
@@ -5364,6 +5389,12 @@ CREATE UNIQUE INDEX "AuditProgram_engagementId_key" ON "AuditProgram"("engagemen
 
 -- CreateIndex
 CREATE INDEX "AuditProgram_customerAccountId_idx" ON "AuditProgram"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditFeedbackSurvey_engagementId_key" ON "AuditFeedbackSurvey"("engagementId");
+
+-- CreateIndex
+CREATE INDEX "AuditFeedbackSurvey_customerAccountId_idx" ON "AuditFeedbackSurvey"("customerAccountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "InternalAuditDocument_documentCode_key" ON "InternalAuditDocument"("documentCode");
