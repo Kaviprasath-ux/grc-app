@@ -121,6 +121,9 @@ interface QuestionnaireTemplate {
   templateCategory: string;
   imageUrl: string | null;
   masterQuestionLinks: TemplateQuestion[];
+  // JSON-encoded array of TPRMOnboardingQuestion ids that gate this
+  // template's suggestion. See computeSuggestedTemplateIds below.
+  vendorProfileQuestionIds?: string | null;
 }
 
 // ── Constants ──────────────────────────────────────────
@@ -834,6 +837,45 @@ export default function RMInventoryPage() {
     return `${t("The inherent risk of this service is")} ${levelWord}. ${t("A due-diligence assessment is required before onboarding this vendor.")}`;
   };
 
+  // Suggested-template logic — see bo-inventory/page.tsx for the
+  // canonical comment. Same logic copy used here so the RM-side dialog
+  // matches BO behaviour. A template is suggested iff EITHER it has no
+  // gating onboarding-question IDs OR the vendor answered "Yes" to at
+  // least one of them.
+  const computeSuggestedTemplateIds = (
+    vendor: Vendor | null,
+    templates: QuestionnaireTemplate[]
+  ): string[] => {
+    const answers: Record<string, string> = (() => {
+      if (!vendor?.onboardingAnswers) return {};
+      try {
+        const parsed = JSON.parse(vendor.onboardingAnswers);
+        return (parsed && typeof parsed === "object") ? (parsed as Record<string, string>) : {};
+      } catch {
+        return {};
+      }
+    })();
+    const yesQuestionIds = new Set(
+      Object.entries(answers)
+        .filter(([, v]) => String(v).trim().toLowerCase() === "yes")
+        .map(([k]) => k)
+    );
+    return templates
+      .filter((t) => t.templateName)
+      .filter((tpl) => {
+        let gateIds: string[] = [];
+        if (tpl.vendorProfileQuestionIds) {
+          try {
+            const parsed = JSON.parse(tpl.vendorProfileQuestionIds);
+            if (Array.isArray(parsed)) gateIds = parsed.filter((x) => typeof x === "string");
+          } catch { /* malformed JSON → treat as universal */ }
+        }
+        if (gateIds.length === 0) return true;
+        return gateIds.some((qid) => yesQuestionIds.has(qid));
+      })
+      .map((tpl) => tpl.id);
+  };
+
   const handleCheckRiskRating = async () => {
     if (!createdVendorId) return;
     setShowSuccessPopup(false);
@@ -846,14 +888,16 @@ export default function RMInventoryPage() {
         fetch(`/api/tprm/vendors/${createdVendorId}`),
         fetch("/api/tprm/master-data/questionnaires"),
       ]);
+      let fetchedVendor: Vendor | null = null;
       if (vendorRes.ok) {
-        const vendor = await vendorRes.json();
-        setRiskRatingVendor(vendor);
+        fetchedVendor = await vendorRes.json();
+        setRiskRatingVendor(fetchedVendor);
       }
       if (templatesRes.ok) {
         const templates: QuestionnaireTemplate[] = await templatesRes.json();
-        setRawQuestionnaireTemplates(templates.filter((t) => t.templateName));
-        setSelectedTemplateIds(templates.filter((t) => t.templateName).map((t) => t.id));
+        const named = templates.filter((t) => t.templateName);
+        setRawQuestionnaireTemplates(named);
+        setSelectedTemplateIds(computeSuggestedTemplateIds(fetchedVendor, named));
       }
     } catch {
       toast({ title: t("Failed to fetch vendor data"), variant: "destructive" });
@@ -923,11 +967,16 @@ export default function RMInventoryPage() {
         fetch(`/api/tprm/vendors/${vendor.id}`),
         fetch("/api/tprm/master-data/questionnaires"),
       ]);
-      if (vendorRes.ok) setRiskRatingVendor(await vendorRes.json());
+      let fetchedVendor: Vendor | null = null;
+      if (vendorRes.ok) {
+        fetchedVendor = await vendorRes.json();
+        setRiskRatingVendor(fetchedVendor);
+      }
       if (templatesRes.ok) {
         const templates: QuestionnaireTemplate[] = await templatesRes.json();
-        setRawQuestionnaireTemplates(templates.filter((tpl) => tpl.templateName));
-        setSelectedTemplateIds(templates.filter((tpl) => tpl.templateName).map((tpl) => tpl.id));
+        const named = templates.filter((tpl) => tpl.templateName);
+        setRawQuestionnaireTemplates(named);
+        setSelectedTemplateIds(computeSuggestedTemplateIds(fetchedVendor, named));
       }
     } catch {
       toast({ title: t("Failed to fetch vendor data"), variant: "destructive" });
