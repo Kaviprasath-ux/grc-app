@@ -56,9 +56,12 @@ export const GET = withAuth(
       >();
 
       for (const r of responses) {
-        // Effective status: assessor override wins, AI score is the fallback.
-        const effStatus = r.assessorStatus || r.poStatus;
-        if (effStatus !== "Unsatisfactory") continue;
+        // A finding only counts on the dashboard once the assessor has
+        // confirmed it. The AI's poStatus alone (set automatically on AM
+        // submission) is a pre-screen, not a verdict — counting it here
+        // would make issues "pop up" before the assessor has even opened
+        // the assessment, which is exactly what users have reported.
+        if (r.assessorStatus !== "Unsatisfactory") continue;
 
         const v = r.assessment?.vendor;
         if (!v?.id) continue;
@@ -67,6 +70,9 @@ export const GET = withAuth(
         if (!vendorMap.has(key)) {
           vendorMap.set(key, { vendor: v.name, vendorId: v.id, high: 0, medium: 0, low: 0 });
         }
+        // Severity follows the assessor's verdict; poSeverity is only a
+        // fallback if the assessor confirmed Unsatisfactory but didn't
+        // re-set the severity (older flows leave it inherited from AI).
         const bucket = bucketOf(r.assessorSeverity || r.poSeverity);
         if (!bucket) continue;
         vendorMap.get(key)![bucket]++;

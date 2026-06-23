@@ -95,12 +95,18 @@ export const POST = withAuth(
       // Auto-create or find Account Manager user from vendor's account manager details.
       // This is best-effort: a failure here must NOT block assessment creation.
       let accountManagerUserId: string | null = null;
+      // Cache the vendor's VRR so we can derive the assessment's due date below
+      // without re-fetching. Filled inside the AM auto-provision branch when
+      // we already query the vendor; left null otherwise (e.g. body.vendorId
+      // missing — assessment creation would fail anyway).
+      let vendorVrr: string | null = null;
       if (body.vendorId) {
         try {
           const vendor = await prisma.tPRMVendor.findUnique({
             where: { id: body.vendorId },
-            select: { accountManagerName: true, accountManagerEmail: true, password: true },
+            select: { accountManagerName: true, accountManagerEmail: true, password: true, vrr: true },
           });
+          vendorVrr = vendor?.vrr ?? null;
 
           if (vendor?.accountManagerName && vendor?.accountManagerEmail) {
             const amName = vendor.accountManagerName.split("; ")[0];
@@ -163,6 +169,43 @@ export const POST = withAuth(
         }
       }
 
+      // Derive the assessment's due date from the customer's Control Center
+      // settings: assessment.createdAt + TPRMConfiguration.dueDate{VRR-Band}
+      // days. If the body provides a dueDate explicitly, honour it; otherwise
+      // compute from config. Falls back to schema defaults (30 days) when no
+      // TPRMConfiguration row exists yet, so brand-new tenants still get a
+      // sensible due date instead of null.
+      let computedDueDate: Date | null = body.dueDate ? new Date(body.dueDate) : null;
+      if (!computedDueDate) {
+        try {
+          const cfg = await prisma.tPRMConfiguration.findUnique({
+            where: { customerAccountId },
+            select: {
+              dueDateCritical: true,
+              dueDateHigh: true,
+              dueDateModerate: true,
+              dueDateLow: true,
+              dueDateNominal: true,
+            },
+          });
+          const days = (() => {
+            const band = (vendorVrr || "").toLowerCase();
+            if (band === "critical") return cfg?.dueDateCritical ?? 30;
+            if (band === "high") return cfg?.dueDateHigh ?? 30;
+            if (band === "moderate" || band === "medium") return cfg?.dueDateModerate ?? 30;
+            if (band === "low") return cfg?.dueDateLow ?? 30;
+            if (band === "nominal") return cfg?.dueDateNominal ?? 30;
+            // Unknown / unrated vendor: fall back to the most permissive band
+            // (Nominal) so the assessment still gets a date rather than null.
+            return cfg?.dueDateNominal ?? 30;
+          })();
+          computedDueDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+        } catch (cfgErr) {
+          console.error("TPRM assessment: failed to compute due date from config:", cfgErr);
+          computedDueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        }
+      }
+
       const assessment = await prisma.tPRMAssessment.create({
         data: {
           customerAccountId,
@@ -180,6 +223,7 @@ export const POST = withAuth(
           approverId: body.approverId,
           questionnaireTemplate: body.questionnaireTemplate,
           approverComment: body.approverComment,
+          dueDate: computedDueDate,
         },
         include: {
           vendor: { select: { id: true, name: true, vendorCode: true } },
