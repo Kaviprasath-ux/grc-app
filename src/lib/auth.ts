@@ -107,7 +107,7 @@ async function buildAuthUser(dbUser: {
   customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isInternalAuditEnabled: boolean; isTechnicalEvidenceEnabled: boolean; isQpostComplianceEnabled: boolean } | null;
   auditHeadId: string | null;
   userRoles: { moduleCode: string | null; role: { id: string; name: string } }[];
-}, extraRoles?: string[]) {
+}, extraRoles?: string[], extraRoleModules?: Array<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE">) {
   const roleNames = dbUser.userRoles.map(ur => ur.role.name);
   if (extraRoles) roleNames.push(...extraRoles.filter(r => !roleNames.includes(r)));
   const effectiveRoles = roleNames.length > 0 ? roleNames : ['Contributor'];
@@ -116,11 +116,21 @@ async function buildAuthUser(dbUser: {
   // Phase 5b.1: distinct module codes the user holds at least one role in.
   // Drives the workspace picker (subscription ∩ has-role). System roles
   // (moduleCode=null) are excluded — they don't anchor to any module.
+  //
+  // extraRoleModules is the auto-provision companion to extraRoles. Callers
+  // pass it when ensureTprmUserRole has just inserted a UserRole row that
+  // isn't reflected in the cached dbUser.userRoles array — without it, the
+  // first-login JWT sees roleModules=[] and the layout gate redirects to
+  // /select-module ("no active workspaces"). Second login works because
+  // the DB row is found this time.
   const validModules = new Set<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE">();
   for (const ur of dbUser.userRoles) {
     if (ur.moduleCode === "GRC" || ur.moduleCode === "TPRM" || ur.moduleCode === "INTERNAL_AUDIT" || ur.moduleCode === "TECHNICAL_EVIDENCE") {
       validModules.add(ur.moduleCode);
     }
+  }
+  if (extraRoleModules) {
+    for (const m of extraRoleModules) validModules.add(m);
   }
   const roleModules = Array.from(validModules);
 
@@ -264,16 +274,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         console.log('[AUTH] Login successful for:', user.userName);
 
-        // Auto-repair: ensure TPRM users have their system role assigned
+        // Auto-repair: ensure TPRM users have their system role assigned.
+        // When ensureTprmUserRole inserts a fresh UserRole row, the cached
+        // user.userRoles array doesn't reflect it — so we also tell
+        // buildAuthUser to add "TPRM" to roleModules. Without this companion
+        // hint, first login produced an empty availableModules and the
+        // layout gate kicked the user to /select-module ("no workspaces"),
+        // and only the second login succeeded.
         const existingRoleNames = user.userRoles.map(ur => ur.role.name);
         const tprmSystemRole = user.tprmRole ? TPRM_ROLE_TO_SYSTEM_ROLE[user.tprmRole] : null;
         let extraRoles: string[] | undefined;
+        let extraRoleModules: Array<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"> | undefined;
         if (tprmSystemRole && !existingRoleNames.includes(tprmSystemRole)) {
           await ensureTprmUserRole(user.id, user.tprmRole, existingRoleNames);
           extraRoles = [tprmSystemRole];
+          extraRoleModules = ["TPRM"];
         }
 
-        return await buildAuthUser(user, extraRoles);
+        return await buildAuthUser(user, extraRoles, extraRoleModules);
         } catch (error) {
           console.error('[AUTH] Error during authentication:', error);
           return null;
@@ -391,15 +409,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             });
 
             if (dbUser) {
-              // Auto-repair TPRM role for OAuth users too
+              // Auto-repair TPRM role for OAuth users too — same race fix
+              // as the credentials path. The companion extraRoleModules
+              // makes sure the freshly-provisioned UserRole's TPRM module
+              // is reflected in roleModules on the FIRST login.
               const oauthRoleNames = dbUser.userRoles.map(ur => ur.role.name);
               const oauthTprmSystemRole = dbUser.tprmRole ? TPRM_ROLE_TO_SYSTEM_ROLE[dbUser.tprmRole] : null;
               let oauthExtraRoles: string[] | undefined;
+              let oauthExtraRoleModules: Array<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"> | undefined;
               if (oauthTprmSystemRole && !oauthRoleNames.includes(oauthTprmSystemRole)) {
                 await ensureTprmUserRole(dbUser.id, dbUser.tprmRole, oauthRoleNames);
                 oauthExtraRoles = [oauthTprmSystemRole];
+                oauthExtraRoleModules = ["TPRM"];
               }
-              const authUser = await buildAuthUser(dbUser, oauthExtraRoles);
+              const authUser = await buildAuthUser(dbUser, oauthExtraRoles, oauthExtraRoleModules);
               token.id = authUser.id; // Critical: override OAuth provider ID with DB user ID
               token.role = authUser.role;
               token.department = authUser.department;
