@@ -305,6 +305,7 @@ export const navigation: NavItem[] = [
       { name: "Strategic Plan", href: "/internal-audit/strategic-plan", icon: CalendarRange, permission: "audit.strategic-plan:view" },
       { name: "Operational Plan", href: "/internal-audit/operational-plan", icon: CalendarClock, permission: "audit.operational-plan:view" },
       { name: "Audit Engagement", href: "/internal-audit/audit-engagement", icon: Calendar, permission: "audit.planning:view" },
+      { name: "Independence & Objectivity", href: "/internal-audit/independence", icon: ShieldCheck, permission: "audit.independence:view" },
       { name: "Report", href: "/internal-audit/report", icon: FileOutput, permission: "audit.reports:view" },
       { name: "Document Library", href: "/internal-audit/document-library", icon: FolderOpen, permission: "audit.documents:view" },
       { name: "Audit Settings", href: "/internal-audit/settings", icon: Settings2, permission: "audit.settings:view" },

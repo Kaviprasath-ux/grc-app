@@ -3578,6 +3578,45 @@ model AuditReport {
   @@index([customerAccountId])
 }
 
+// Internal Audit — Independence & Objectivity declarations (per IIA Global
+// Internal Audit Standards). One row per declaration; `type` distinguishes
+// the Independence Declaration from the Objectivity Declaration.
+model AuditDeclaration {
+  id                String   @id @default(cuid())
+  // Multi-tenant + Audit Head isolation (stored as scalars; filtered via
+  // getTenantFilter / getAuditHeadFilter)
+  customerAccountId String
+  auditHeadId       String?
+  declarationCode   String // Auto-generated DEC-0001
+  // "Independence" | "Objectivity"
+  type              String
+  // Declarant (audit team member making the declaration)
+  declarantId       String?
+  declarantName     String?
+  position          String?
+  department        String? // Independence form only
+  engagement        String? // Audit Engagement / Project / Assignment (free text)
+  declarationDate   DateTime?
+  // Result/assessment:
+  //   Independence: "Confirmed" | "PotentialImpairment"
+  //   Objectivity:  "NoThreats"  | "PotentialThreat"
+  result            String?
+  explanation       String?
+  employeeSignature String? // typed name as digital signature
+  // Review / approval (Chief Audit Executive / Audit Manager)
+  reviewedById      String?
+  reviewerName      String?
+  reviewerSignature String?
+  reviewedDate      DateTime?
+  // "Draft" | "Submitted" | "Reviewed"
+  status            String   @default("Draft")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([customerAccountId, declarationCode])
+  @@index([customerAccountId])
+}
+
 // ==================== INTERNAL AUDIT - FINDINGS & CAPA ====================
 
 // Internal Audit Finding (linked to engagement, separate from general AuditFinding)

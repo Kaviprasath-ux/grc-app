@@ -19,8 +19,18 @@ Audit Universe → Risk Register → Risk Assessment / Heatmap →
 Strategic Plan → Operational (Annual) Plan → Engagements →
 Engagement Workflow (Announcement → APM → Opening Meeting → Audit Program →
 Fieldwork → Findings → Findings Discussion → Closing Meeting)
-→ Report (sidebar) → Follow-up / CAPA (sidebar) → Automated Monitoring
+→ Independence & Objectivity (sidebar) → Report (sidebar)
+→ Follow-up / CAPA (sidebar) → Automated Monitoring
 ```
+
+**Independence & Objectivity** (`/internal-audit/independence`, resource
+`audit.independence`): auditor **Independence Declaration** and **Objectivity
+Declaration** forms aligned to the IIA Global Internal Audit Standards. Audit
+team members record declarant info, fixed declaration statements, a result
+(Confirmed / Potential impairment, or No threats / Potential threat) with
+explanation, and a typed signature; an Audit Head / Manager reviews and signs
+off (status Draft → Submitted → Reviewed). Stored in the `AuditDeclaration`
+model (`type` = Independence | Objectivity), tenant + audit-head isolated.
 
 All pages are available in **English, Arabic (RTL), and Latvian**.
 
@@ -129,6 +139,7 @@ Legend: **F** = Full (view/create/edit/delete, plus approve where applicable) ·
 | **Strategic Plan** | **F (create)** | **V** | V | — | — | — | — | — |
 | **Operational Plan** | F | **F** | **V** | — | — | — | — | — |
 | Audit Planning (Engagements) | F | F | F | V | — | — | — | — |
+| **Independence & Objectivity** | **F** | **F** | **V/C/E** | **V** | — | — | — | — |
 | Fieldwork | F | F | F | V | **V/E** _(dept)_ | — | — | — |
 | Findings / CAPA Tracking | F | F | F | V | **V/E** _(dept)_ | — | — | — |
 | Reports | F | F | F | V | **V** _(dept)_ | — | — | — |
