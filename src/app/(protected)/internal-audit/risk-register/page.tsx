@@ -3246,15 +3246,15 @@ export default function RiskRegisterPage() {
                         const match = sorted.find(r => score >= r.lowValue && (r.highValue === null || score <= r.highValue));
                         if (match) {
                           const lbl = match.label.toLowerCase();
-                          if (lbl === "extreme") return "bg-blue-600";
-                          if (lbl === "high") return "bg-red-400";
-                          if (lbl === "medium") return "bg-amber-300";
-                          return "bg-emerald-200";
+                          if (lbl === "extreme") return "bg-red-800";
+                          if (lbl === "high") return "bg-red-500";
+                          if (lbl === "medium") return "bg-orange-400";
+                          return "bg-green-500";
                         }
                       }
-                      if (score >= 15) return "bg-blue-600";
-                      if (score >= 8) return "bg-red-400";
-                      return "bg-emerald-200";
+                      if (score >= 15) return "bg-red-800";
+                      if (score >= 8) return "bg-red-500";
+                      return "bg-green-500";
                     };
 
                     const uniqueLabels = Array.from(
@@ -3306,13 +3306,13 @@ export default function RiskRegisterPage() {
                             <p className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] mb-1">{t("Zone")}</p>
                             {uniqueLabels.length > 0 ? uniqueLabels.map((lbl) => {
                               const l = lbl.toLowerCase();
-                              const color = l === "extreme" ? "bg-blue-600" : l === "high" ? "bg-red-400" : l === "medium" ? "bg-amber-300" : "bg-emerald-200";
+                              const color = l === "extreme" ? "bg-red-800" : l === "high" ? "bg-red-500" : l === "medium" ? "bg-orange-400" : "bg-green-500";
                               return <div key={lbl} className="flex items-center gap-2"><div className={`w-3 h-3 rounded flex-shrink-0 ${color}`} />{lbl}</div>;
                             }) : (
                               <>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-red-400 flex-shrink-0" />{t("High")}</div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-amber-300 flex-shrink-0" />{t("Medium")}</div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-emerald-200 flex-shrink-0" />{t("Low")}</div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-red-500 flex-shrink-0" />{t("High")}</div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-orange-400 flex-shrink-0" />{t("Medium")}</div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-green-500 flex-shrink-0" />{t("Low")}</div>
                               </>
                             )}
                             <div className="mt-3 flex items-center gap-2">
