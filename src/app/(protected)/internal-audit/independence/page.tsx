@@ -105,6 +105,7 @@ export default function IndependencePage() {
 
   const [loading, setLoading] = useState(true);
   const [declarations, setDeclarations] = useState<Declaration[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
 
@@ -129,6 +130,18 @@ export default function IndependencePage() {
 
   useEffect(() => {
     load();
+    // Department list — same source as the rest of the Internal Audit platform.
+    (async () => {
+      try {
+        const res = await fetch("/api/departments");
+        if (res.ok) {
+          const data = await res.json();
+          setDepartments(Array.isArray(data) ? data.map((d: { id: string; name: string }) => ({ id: d.id, name: d.name })) : []);
+        }
+      } catch {
+        // non-blocking — the field simply shows no options
+      }
+    })();
   }, [load]);
 
   const openNew = () => {
@@ -395,7 +408,18 @@ export default function IndependencePage() {
               {form.type === "Independence" && (
                 <div>
                   <Label className="text-xs text-slate-500">{t("Department")}</Label>
-                  <Input className="mt-1" value={form.department} disabled={readOnly} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} />
+                  <Select value={form.department} onValueChange={(v) => setForm((p) => ({ ...p, department: v }))} disabled={readOnly}>
+                    <SelectTrigger className="bg-white mt-1"><SelectValue placeholder={t("Select department")} /></SelectTrigger>
+                    <SelectContent>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      ))}
+                      {/* Preserve a previously-saved value that is no longer in the list */}
+                      {form.department && !departments.some((d) => d.name === form.department) && (
+                        <SelectItem value={form.department}>{form.department}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
               <div>

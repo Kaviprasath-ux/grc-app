@@ -299,6 +299,7 @@ export const navigation: NavItem[] = [
     children: [
       { name: "Customer Accounts", href: "/internal-audit/account-overview", icon: LayoutDashboard, permission: "audit.account-overview:view" },
       { name: "Dashboard", href: "/internal-audit/dashboard", icon: LayoutDashboard, permission: "audit.dashboard:view" },
+      { name: "Independence & Objectivity", href: "/internal-audit/independence", icon: ShieldCheck, permission: "audit.independence:view" },
       { name: "Audit Universe", href: "/internal-audit/audit-universe", icon: Network, permission: "audit.auditables:view" },
       { name: "Audit Charter", href: "/internal-audit/audit-charter", icon: FileText, permission: "audit.charter:view" },
       { name: "Risk Identification", href: "/internal-audit/risk-identification", icon: Brain, permission: "audit.risk-identification:view" },
@@ -306,7 +307,6 @@ export const navigation: NavItem[] = [
       { name: "Strategic Plan", href: "/internal-audit/strategic-plan", icon: CalendarRange, permission: "audit.strategic-plan:view" },
       { name: "Operational Plan", href: "/internal-audit/operational-plan", icon: CalendarClock, permission: "audit.operational-plan:view" },
       { name: "Audit Engagement", href: "/internal-audit/audit-engagement", icon: Calendar, permission: "audit.planning:view" },
-      { name: "Independence & Objectivity", href: "/internal-audit/independence", icon: ShieldCheck, permission: "audit.independence:view" },
       { name: "Report", href: "/internal-audit/report", icon: FileOutput, permission: "audit.reports:view" },
       { name: "Feedback Survey", href: "/internal-audit/feedback-survey", icon: ClipboardCheck, permission: "audit.fieldwork:view" },
       { name: "Document Library", href: "/internal-audit/document-library", icon: FolderOpen, permission: "audit.documents:view" },
