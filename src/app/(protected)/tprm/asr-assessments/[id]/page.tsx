@@ -1474,7 +1474,13 @@ export default function ASRAssessmentDetailPage() {
             <CardContent className="space-y-4">
               {selectedQ ? (() => {
                 const vendorAnswer = (selectedResp?.response || "").toString().toLowerCase().replace(/[\s_-]/g, "");
-                const aiNotApplicable = vendorAnswer === "yes" || vendorAnswer === "na" || vendorAnswer === "notapplicable";
+                // AI validates Yes answers (verifies the vendor's claim
+                // against uploaded evidence). It skips No (auto-Unsatisfactory
+                // from the master question's templates) and NA (auto-
+                // Not_Applicable). The earlier code had the predicate flipped
+                // so the AI Review panel was hidden on the exact answers it
+                // should have been showing for.
+                const aiNotApplicable = vendorAnswer === "no" || vendorAnswer === "na" || vendorAnswer === "notapplicable";
                 const hasAssessorOverride = Boolean(
                   selectedResp?.assessorStatus ||
                   selectedResp?.assessorIssue ||
@@ -1487,7 +1493,7 @@ export default function ASRAssessmentDetailPage() {
                 if (aiNotApplicable && !hasAssessorOverride) {
                   return (
                     <p className="text-sm text-muted-foreground text-center py-6">
-                      {t("AI review is not required when the vendor answered Yes or N/A.")}
+                      {t("AI review is not required when the vendor answered No or N/A.")}
                     </p>
                   );
                 }
