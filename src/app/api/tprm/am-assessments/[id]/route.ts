@@ -103,12 +103,25 @@ export const GET = withAuth(
           }));
       }
 
-      // Load domains for this customer
-      const domains = await prisma.tPRMDomain.findMany({
-        where: { customerAccountId, isActive: true },
-        orderBy: { sortOrder: 'asc' },
-        select: { id: true, name: true },
-      });
+      // Load ONLY the domains referenced by this assessment's questions —
+      // previously the route loaded every active domain in the tenant,
+      // which leaked unrelated domains into the AM's domain filter when
+      // a template didn't cover them. Filtering by the ids actually
+      // present on the question set keeps the dropdown honest.
+      const usedDomainIds = Array.from(
+        new Set(
+          (questions as Array<{ domainId: string | null }>)
+            .map((q) => q.domainId)
+            .filter((id): id is string => Boolean(id))
+        )
+      );
+      const domains = usedDomainIds.length === 0
+        ? []
+        : await prisma.tPRMDomain.findMany({
+            where: { customerAccountId, isActive: true, id: { in: usedDomainIds } },
+            orderBy: { sortOrder: 'asc' },
+            select: { id: true, name: true },
+          });
 
       return NextResponse.json({ assessment, questions, domains });
     } catch (error) {
