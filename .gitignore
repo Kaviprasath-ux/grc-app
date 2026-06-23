@@ -122,3 +122,9 @@ __pycache__/
 
 # Security scan output (generated artifacts)
 /scan-results/
+
+# Local-only TPRM document drafts and their generator scripts —
+# kept on disk for editing but not tracked in git.
+/docs/platform-docs/TPRM/
+/scripts/generate-tprm-solution-design.py
+/scripts/generate-tprm-sow.py
