@@ -107,6 +107,7 @@ export const RESOURCES = {
   'audit.account-overview': '/internal-audit/account-overview',
   'audit.dashboard': '/internal-audit/dashboard',
   'audit.auditables': '/internal-audit/audit-universe',
+  'audit.charter': '/internal-audit/audit-charter',
   'audit.risk-identification': '/internal-audit/risk-identification',
   'audit.risk-register': '/internal-audit/risk-register',
   'audit.strategic-plan': '/internal-audit/strategic-plan',
@@ -429,6 +430,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   AuditHead: [
     { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.charter', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.process', actions: ['*'], scope: 'all' },
@@ -451,6 +453,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   AuditManager: [
     { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.charter', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.process', actions: ['*'], scope: 'all' },
@@ -473,6 +476,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   AuditUser: [
     // NO audit.dashboard - only AuditHead and Auditor have dashboard access
     { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
+    { resource: 'audit.charter', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
     { resource: 'audit.process', actions: ['view'], scope: 'all' },
@@ -490,6 +494,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   Auditor: [
     { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.charter', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.process', actions: ['*'], scope: 'all' },

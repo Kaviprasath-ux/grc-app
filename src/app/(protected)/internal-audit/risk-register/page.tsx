@@ -254,6 +254,7 @@ interface InternalAuditRiskDetail {
   residualLikelihood: number | null;
   residualImpact: number | null;
   residualScore: number | null;
+  assessmentResidualScore: number | null;
   riskLevel: string | null;
   assessmentStatus: string | null;
   creationDate: string;
@@ -1217,43 +1218,29 @@ export default function RiskRegisterPage() {
 
   const openAssessmentWizard = (risk: InternalAuditRisk) => {
     const autoCE = getMaxControlEffectiveness(risk);
-    const saved = typeof window !== "undefined" ? localStorage.getItem(`ia-assess-${risk.id}`) : null;
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSingleAssessmentRow(parsed.row ?? {
-          strategicImpact: risk.strategicImpact?.toString() ?? "",
-          financialImpact: risk.financialImpact?.toString() ?? "",
-          complianceRisk: risk.complianceRisk?.toString() ?? "",
-          operationalRisk: risk.operationalRisk?.toString() ?? "",
-          itDataRisk: risk.itDataRisk?.toString() ?? "",
-          assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
-          controlEffectivenessScore: autoCE,
-        });
-        setAssessmentStep(parsed.step ?? 1);
-      } catch {
-        setSingleAssessmentRow({
-          strategicImpact: risk.strategicImpact?.toString() ?? "",
-          financialImpact: risk.financialImpact?.toString() ?? "",
-          complianceRisk: risk.complianceRisk?.toString() ?? "",
-          operationalRisk: risk.operationalRisk?.toString() ?? "",
-          itDataRisk: risk.itDataRisk?.toString() ?? "",
-          assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
-          controlEffectivenessScore: autoCE,
-        });
+    const isReAssess = risk.assessmentStatus === "Assessed";
+
+    if (isReAssess) {
+      // Re-assessment: always start fresh — clear any in-progress localStorage state
+      if (typeof window !== "undefined") localStorage.removeItem(`ia-assess-${risk.id}`);
+      setSingleAssessmentRow({ ...BLANK_ASSESSMENT_ROW, controlEffectivenessScore: autoCE });
+      setAssessmentStep(1);
+    } else {
+      // First-time assess: resume from localStorage if an in-progress session exists
+      const saved = typeof window !== "undefined" ? localStorage.getItem(`ia-assess-${risk.id}`) : null;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setSingleAssessmentRow(parsed.row ?? { ...BLANK_ASSESSMENT_ROW, controlEffectivenessScore: autoCE });
+          setAssessmentStep(parsed.step ?? 1);
+        } catch {
+          setSingleAssessmentRow({ ...BLANK_ASSESSMENT_ROW, controlEffectivenessScore: autoCE });
+          setAssessmentStep(1);
+        }
+      } else {
+        setSingleAssessmentRow({ ...BLANK_ASSESSMENT_ROW, controlEffectivenessScore: autoCE });
         setAssessmentStep(1);
       }
-    } else {
-      setSingleAssessmentRow({
-        strategicImpact: risk.strategicImpact?.toString() ?? "",
-        financialImpact: risk.financialImpact?.toString() ?? "",
-        complianceRisk: risk.complianceRisk?.toString() ?? "",
-        operationalRisk: risk.operationalRisk?.toString() ?? "",
-        itDataRisk: risk.itDataRisk?.toString() ?? "",
-        assessmentLikelihood: risk.assessmentLikelihood?.toString() ?? "",
-        controlEffectivenessScore: autoCE,
-      });
-      setAssessmentStep(1);
     }
     setSelectedAssessmentRisk(risk);
     setAssessmentDialogOpen(true);
@@ -3180,42 +3167,20 @@ export default function RiskRegisterPage() {
                 {/* Risk Assessment Grid */}
                 <section>
                   <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Risk Assessment")}</h3>
-                  <div className="grid grid-cols-2 gap-5">
-                    {/* Inherent Risk */}
-                    <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
-                      <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-4">{t("Inherent Risk")}</h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center">
-                          <label className="block text-xs text-amber-600 mb-1">{t("Likelihood")}</label>
-                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentLikelihood ?? "-"}</p>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-xs text-amber-600 mb-1">{t("Impact")}</label>
-                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentImpact ?? "-"}</p>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-xs text-amber-600 mb-1">{t("Score")}</label>
-                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentScore ?? "-"}</p>
-                        </div>
+                  <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
+                    <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-4">{t("Inherent Risk")}</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <label className="block text-xs text-amber-600 mb-1">{t("Likelihood")}</label>
+                        <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentLikelihood ?? "-"}</p>
                       </div>
-                    </div>
-
-                    {/* Residual Risk */}
-                    <div className="bg-emerald-50 rounded-xl p-5 border border-emerald-100">
-                      <h4 className="text-xs font-semibold text-emerald-800 uppercase tracking-wide mb-4">{t("Residual Risk")}</h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center">
-                          <label className="block text-xs text-emerald-600 mb-1">{t("Likelihood")}</label>
-                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualLikelihood ?? "-"}</p>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-xs text-emerald-600 mb-1">{t("Impact")}</label>
-                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualImpact ?? "-"}</p>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-xs text-emerald-600 mb-1">{t("Score")}</label>
-                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualScore ?? "-"}</p>
-                        </div>
+                      <div className="text-center">
+                        <label className="block text-xs text-amber-600 mb-1">{t("Impact")}</label>
+                        <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentImpact ?? "-"}</p>
+                      </div>
+                      <div className="text-center">
+                        <label className="block text-xs text-amber-600 mb-1">{t("Score")}</label>
+                        <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentScore ?? "-"}</p>
                       </div>
                     </div>
                   </div>
@@ -3265,6 +3230,12 @@ export default function RiskRegisterPage() {
                       ).values()
                     );
 
+                    const calcScore = (p: number, i: number) =>
+                      applyCalcMethod(p, i, scoringConfig?.probabilityImpactCalcType || "Product of all");
+
+                    const rL = viewingRisk.residualLikelihood;
+                    const rI = viewingRisk.residualImpact;
+
                     return (
                       <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-100">
                         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">{t("Risk Heat Map")}</h4>
@@ -3277,16 +3248,40 @@ export default function RiskRegisterPage() {
                                   <span className="w-5 text-right text-xs text-slate-400">{imp.value}</span>
                                   {probValues.map((prob) => {
                                     const isInherent = viewingRisk.inherentLikelihood === prob.value && viewingRisk.inherentImpact === imp.value;
+                                    const isResidual = rL != null && rI != null && rL === prob.value && rI === imp.value;
+                                    const hasBoth = isInherent && isResidual;
                                     return (
-                                      <div key={prob.id} className={`w-9 h-9 rounded flex flex-col items-center justify-center ${getCellColor(prob.value, imp.value)}`} title={`P:${prob.value} I:${imp.value}`}>
-                                        {isInherent && (
+                                      <div
+                                        key={prob.id}
+                                        className={`w-9 h-9 rounded flex flex-col items-center justify-center gap-0 ${getCellColor(prob.value, imp.value)}`}
+                                        title={`P:${prob.value} I:${imp.value}`}
+                                      >
+                                        {hasBoth ? (
+                                          // Both markers on same cell — stack them small
+                                          <>
+                                            <div className="flex items-center gap-0.5">
+                                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900 ring-1 ring-white" />
+                                              <div className="w-1.5 h-1.5 rounded-full bg-white ring-1 ring-slate-900" />
+                                            </div>
+                                            <span className="text-[9px] font-bold text-white leading-none mt-0.5 drop-shadow">
+                                              {calcScore(prob.value, imp.value)}
+                                            </span>
+                                          </>
+                                        ) : isInherent ? (
                                           <>
                                             <div className="w-2 h-2 rounded-full bg-slate-900 ring-1 ring-white mb-0.5" />
                                             <span className="text-[10px] font-bold text-slate-900 leading-none">
-                                              {applyCalcMethod(prob.value, imp.value, scoringConfig?.probabilityImpactCalcType || "Product of all")}
+                                              {calcScore(prob.value, imp.value)}
                                             </span>
                                           </>
-                                        )}
+                                        ) : isResidual ? (
+                                          <>
+                                            <div className="w-2 h-2 rounded-full bg-white ring-1 ring-slate-900 mb-0.5" />
+                                            <span className="text-[10px] font-bold text-white leading-none drop-shadow-sm">
+                                              {viewingRisk.assessmentResidualScore ?? viewingRisk.residualScore ?? calcScore(prob.value, imp.value)}
+                                            </span>
+                                          </>
+                                        ) : null}
                                       </div>
                                     );
                                   })}
@@ -3318,6 +3313,10 @@ export default function RiskRegisterPage() {
                             <div className="mt-3 flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-slate-900 ring-2 ring-white flex-shrink-0" />
                               {t("Inherent")}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-white ring-2 ring-slate-900 flex-shrink-0" />
+                              {t("Residual")}
                             </div>
                           </div>
                         </div>

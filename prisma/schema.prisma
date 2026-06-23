@@ -179,6 +179,7 @@ model CustomerAccount {
   // Support ticketing relations
   supportTickets                SupportTicket[]
   supportRoutingRules           SupportRoutingRule[]
+  auditCharter                  AuditCharter?
 }
 
 // Subscription Plan for Customer Accounts (legacy limits-based, kept for existing enforcement code)
@@ -6186,4 +6187,25 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([requestIp, createdAt])
+}
+
+// ============================================================
+// AUDIT CHARTER
+// ============================================================
+
+// One charter per tenant. Content is the parsed block structure (JSON array).
+// fieldValues maps field IDs to the values the user has saved.
+model AuditCharter {
+  id                   String          @id @default(cuid())
+  customerAccountId    String          @unique
+  originalFileName     String?
+  content              Json            @default("[]")
+  fieldValues          Json            @default("{}")
+  uploadedAt           DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  signedCopyFileName   String?
+  signedCopyData       Bytes?
+  signedCopyMimeType   String?
+  signedCopyUploadedAt DateTime?
+  customerAccount      CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
 }
