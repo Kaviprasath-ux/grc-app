@@ -12,10 +12,15 @@ interface Vendor {
   id: string;
   name: string;
   vendorCode: string;
-  vendorRiskRating: string | null;
+  // VRR (Vendor Risk Rating) — the API returns this as `vrr`, not the
+  // longer `vendorRiskRating` the old type used. The mismatch was silent
+  // because TypeScript can't see API response shapes — it just made the
+  // Risk Rating badge never render.
+  vrr: string | null;
   status: string;
   serviceCategory: string | null;
   contactEmail: string | null;
+  accountManagerEmail: string | null;
   contactPhone: string | null;
 }
 
@@ -135,13 +140,9 @@ export default function AsrInventoryPage() {
                     onClick={() => toggleVendor(vendor.id)}
                     className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
                   >
-                    <span className="font-medium">
+                    <span className="font-medium flex items-center gap-2">
                       {vendor.name}
-                      {vendor.vendorRiskRating && (
-                        <span className="text-muted-foreground ltr:ml-2 rtl:mr-2">
-                          - {t(vendor.vendorRiskRating)}
-                        </span>
-                      )}
+                      {vendor.vrr && getRiskBadge(vendor.vrr, t)}
                     </span>
                     {isExpanded ? (
                       <Minus className="h-4 w-4 text-muted-foreground" />
@@ -162,15 +163,15 @@ export default function AsrInventoryPage() {
                         </div>
                         <div>
                           <span className="text-muted-foreground">{t("Risk Rating")}:</span>
-                          <p className="mt-1">{getRiskBadge(vendor.vendorRiskRating, t)}</p>
+                          <p className="mt-1">{getRiskBadge(vendor.vrr, t)}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">{t("Status")}:</span>
                           <p className="font-medium">{vendor.status ? t(vendor.status) : "-"}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">{t("Email")}:</span>
-                          <p className="font-medium">{vendor.contactEmail || "-"}</p>
+                          <span className="text-muted-foreground">{t("Account Manager Email")}:</span>
+                          <p className="font-medium break-all">{vendor.accountManagerEmail || vendor.contactEmail || "-"}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">{t("Phone")}:</span>
