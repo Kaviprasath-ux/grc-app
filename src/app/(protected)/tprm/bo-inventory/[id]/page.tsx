@@ -699,10 +699,13 @@ function ProfileRow({ label, value }: { label: string; value: string | null | un
   const isYes = v.toLowerCase() === "yes";
   const isNo = v.toLowerCase() === "no";
   const tone = isYes ? "text-green-600" : isNo ? "text-slate-500" : "text-slate-800";
+  // Match InfoRow's layout: the colon prefixes the value rather than
+  // trailing the label. That way colons (and therefore values) line up
+  // in the same column regardless of label length.
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-sm text-slate-400 min-w-[180px] flex-shrink-0">{label} :</span>
-      <span className={`text-sm font-medium ${tone}`}>{v || "—"}</span>
+      <span className="text-sm text-slate-400 min-w-[180px] flex-shrink-0">{label}</span>
+      <span className={`text-sm font-medium ${tone}`}>: {v || "—"}</span>
     </div>
   );
 }

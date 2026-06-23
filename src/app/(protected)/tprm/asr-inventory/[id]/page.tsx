@@ -364,10 +364,11 @@ function ProfileRow({ label, value }: { label: string; value: string | null | un
   const isYes = v.toLowerCase() === "yes";
   const isNo = v.toLowerCase() === "no";
   const tone = isYes ? "text-green-600" : isNo ? "text-slate-500" : "text-slate-800";
+  // Match InfoRow: colon prefixes the value so colons / values share a column.
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-sm text-slate-400 min-w-[180px] flex-shrink-0">{label} :</span>
-      <span className={`text-sm font-medium ${tone}`}>{v || "—"}</span>
+      <span className="text-sm text-slate-400 min-w-[180px] flex-shrink-0">{label}</span>
+      <span className={`text-sm font-medium ${tone}`}>: {v || "—"}</span>
     </div>
   );
 }
