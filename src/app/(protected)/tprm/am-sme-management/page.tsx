@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -62,10 +61,14 @@ const EMPTY_FORM: FormData = {
 export default function AMSmeManagementPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { data: session } = useSession();
   const { canCreate, canEdit, canDelete } = usePermissions("tprm.am-sme-management");
 
   const [smes, setSmes] = useState<SME[]>([]);
+  // The AM's vendor name(s) — resolved server-side by matching the AM's
+  // email against TPRMVendor.accountManagerEmail. Shown in the Add SME
+  // dialog because an SME belongs to the vendor's org, not to the
+  // outsourcer that runs the platform.
+  const [vendorNames, setVendorNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
@@ -91,6 +94,7 @@ export default function AMSmeManagementPage() {
       if (!res.ok) throw new Error("Failed");
       const json = await res.json();
       setSmes(json.data || []);
+      setVendorNames(Array.isArray(json.vendorNames) ? json.vendorNames : []);
     } catch {
       toast({ title: t("Error"), description: t("Failed to load SMEs"), variant: "destructive" });
     } finally {
@@ -374,16 +378,15 @@ export default function AMSmeManagementPage() {
               <Label>{t("Active")}</Label>
               <Switch checked={form.isActive} onCheckedChange={v => setForm(p => ({ ...p, isActive: v }))} />
             </div>
-            {(() => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const companyName = String((session?.user as any)?.customerAccountName || "");
-              return companyName ? (
-                <div>
-                  <Label>{t("Company")}</Label>
-                  <Input value={companyName} disabled />
-                </div>
-              ) : null;
-            })()}
+            {/* Vendor name(s) — SMEs belong to the vendor's org, not to the
+                outsourcer running the platform. If the AM is mapped to more
+                than one vendor (rare), all are joined with ", ". */}
+            {vendorNames.length > 0 && (
+              <div>
+                <Label>{vendorNames.length > 1 ? t("Vendors") : t("Vendor")}</Label>
+                <Input value={vendorNames.join(", ")} disabled />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Cancel")}</Button>
