@@ -255,6 +255,12 @@ interface InternalAuditRiskDetail {
   residualImpact: number | null;
   residualScore: number | null;
   assessmentResidualScore: number | null;
+  assessmentLikelihood: number | null;
+  strategicImpact: number | null;
+  financialImpact: number | null;
+  complianceRisk: number | null;
+  operationalRisk: number | null;
+  itDataRisk: number | null;
   riskLevel: string | null;
   assessmentStatus: string | null;
   creationDate: string;
@@ -1250,7 +1256,7 @@ export default function RiskRegisterPage() {
     if (!selectedAssessmentRisk) return;
     setSavingAssessment(true);
     const row = singleAssessmentRow;
-    const preCalcScore = calcScoreFromSettings(row);
+    const preCalcScore = calcAssessmentScore(row);
     try {
       const res = await fetch(`/api/internal-audit/risks/${selectedAssessmentRisk.id}/assess`, {
         method: "PATCH",
@@ -1270,6 +1276,11 @@ export default function RiskRegisterPage() {
         if (typeof window !== "undefined") localStorage.removeItem(`ia-assess-${selectedAssessmentRisk.id}`);
         toast({ title: t("Success"), description: t("Risk assessed successfully") });
         fetchRisks();
+        // Refresh the view modal data so the heat map reflects the new assessment score
+        if (viewingRisk?.id === selectedAssessmentRisk.id) {
+          const refreshed = await fetch(`/api/internal-audit/risks/${selectedAssessmentRisk.id}`);
+          if (refreshed.ok) setViewingRisk(await refreshed.json());
+        }
         setAssessmentDialogOpen(false);
         setSelectedAssessmentRisk(null);
         setSingleAssessmentRow(BLANK_ASSESSMENT_ROW);
@@ -1459,15 +1470,7 @@ export default function RiskRegisterPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
         <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openAIAuditSelection}
-            className="col-span-2 sm:col-span-1 bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-          >
-            <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("AI Audit")}
-          </Button>
+
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
@@ -3206,35 +3209,35 @@ export default function RiskRegisterPage() {
 
                     const getCellColor = (pVal: number, iVal: number) => {
                       const score = applyCalcMethod(pVal, iVal, scoringConfig?.probabilityImpactCalcType || "Product of all");
-                      if (scoringRanges.length > 0) {
-                        const sorted = [...scoringRanges].sort((a, b) => b.lowValue - a.lowValue);
-                        const match = sorted.find(r => score >= r.lowValue && (r.highValue === null || score <= r.highValue));
-                        if (match) {
-                          const lbl = match.label.toLowerCase();
-                          if (lbl === "extreme") return "bg-red-800";
-                          if (lbl === "high") return "bg-red-500";
-                          if (lbl === "medium") return "bg-orange-400";
-                          return "bg-green-500";
-                        }
-                      }
-                      if (score >= 15) return "bg-red-800";
-                      if (score >= 8) return "bg-red-500";
+                      if (score >= 19) return "bg-red-500";
+                      if (score >= 9) return "bg-orange-400";
                       return "bg-green-500";
                     };
 
-                    const uniqueLabels = Array.from(
-                      new Map(
-                        [...scoringRanges]
-                          .sort((a, b) => b.lowValue - a.lowValue)
-                          .map(r => [r.label.toLowerCase(), r.label])
-                      ).values()
-                    );
 
                     const calcScore = (p: number, i: number) =>
                       applyCalcMethod(p, i, scoringConfig?.probabilityImpactCalcType || "Product of all");
 
-                    const rL = viewingRisk.residualLikelihood;
-                    const rI = viewingRisk.residualImpact;
+                    // Residual marker: after assessment, derive grid position from assessmentLikelihood
+                    // and back-calculate effective impact from assessmentResidualScore / assessmentLikelihood.
+                    // This ensures score 9.60 with likelihood 3 → position (3,3) not (1,3).
+                    let rL: number | null = viewingRisk.residualLikelihood;
+                    let rI: number | null = viewingRisk.residualImpact;
+
+                    if (
+                      viewingRisk.assessmentStatus === "Assessed" &&
+                      viewingRisk.assessmentLikelihood != null &&
+                      viewingRisk.assessmentLikelihood > 0 &&
+                      viewingRisk.assessmentResidualScore != null &&
+                      viewingRisk.assessmentResidualScore > 0
+                    ) {
+                      const rawImpact = viewingRisk.assessmentResidualScore / viewingRisk.assessmentLikelihood;
+                      const closestImpact = impactValues.reduce((closest, imp) =>
+                        Math.abs(imp.value - rawImpact) < Math.abs(closest.value - rawImpact) ? imp : closest
+                      , impactValues[0]);
+                      rL = viewingRisk.assessmentLikelihood;
+                      rI = closestImpact.value;
+                    }
 
                     return (
                       <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-100">
@@ -3278,7 +3281,7 @@ export default function RiskRegisterPage() {
                                           <>
                                             <div className="w-2 h-2 rounded-full bg-white ring-1 ring-slate-900 mb-0.5" />
                                             <span className="text-[10px] font-bold text-white leading-none drop-shadow-sm">
-                                              {viewingRisk.assessmentResidualScore ?? viewingRisk.residualScore ?? calcScore(prob.value, imp.value)}
+                                              {viewingRisk.assessmentResidualScore?.toFixed(2) ?? viewingRisk.residualScore ?? calcScore(prob.value, imp.value)}
                                             </span>
                                           </>
                                         ) : null}
@@ -3299,17 +3302,11 @@ export default function RiskRegisterPage() {
                           {/* Legend */}
                           <div className="flex flex-col gap-2 text-xs text-slate-600 min-w-[90px]">
                             <p className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] mb-1">{t("Zone")}</p>
-                            {uniqueLabels.length > 0 ? uniqueLabels.map((lbl) => {
-                              const l = lbl.toLowerCase();
-                              const color = l === "extreme" ? "bg-red-800" : l === "high" ? "bg-red-500" : l === "medium" ? "bg-orange-400" : "bg-green-500";
-                              return <div key={lbl} className="flex items-center gap-2"><div className={`w-3 h-3 rounded flex-shrink-0 ${color}`} />{lbl}</div>;
-                            }) : (
-                              <>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-red-500 flex-shrink-0" />{t("High")}</div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-orange-400 flex-shrink-0" />{t("Medium")}</div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-green-500 flex-shrink-0" />{t("Low")}</div>
-                              </>
-                            )}
+                            <>
+                              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-red-500 flex-shrink-0" />{t("High")}</div>
+                              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-orange-400 flex-shrink-0" />{t("Medium")}</div>
+                              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-green-500 flex-shrink-0" />{t("Low")}</div>
+                            </>
                             <div className="mt-3 flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-slate-900 ring-2 ring-white flex-shrink-0" />
                               {t("Inherent")}
