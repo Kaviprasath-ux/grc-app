@@ -394,7 +394,10 @@ export default function AsrAssessmentFactoryPage() {
 
   const filteredRows = activeReport?.rows.filter(r => {
     if (statusFilter === "all") return true;
-    return r.complianceStatus.toLowerCase().includes(statusFilter.toLowerCase());
+    // Strict equality (case-insensitive). Was using .includes(), which
+    // matched "Unsatisfactory" when the filter was "Satisfactory"
+    // because "unsatisfactory" contains "satisfactory" as a substring.
+    return (r.complianceStatus || "").trim().toLowerCase() === statusFilter.trim().toLowerCase();
   }) || [];
 
   const uniqueStatuses = activeReport
