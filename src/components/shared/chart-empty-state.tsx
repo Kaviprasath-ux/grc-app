@@ -40,15 +40,26 @@ export function ChartEmptyState({ variant, height = 300, label }: Props) {
 }
 
 function PieSkeleton() {
-  // Three faint wedges + a small inner ring so the silhouette reads as
-  // a pie/donut chart at a glance.
+  // Three solid donut segments rendered as stroked arcs. Using stroke
+  // (not filled wedges) keeps the inner cutout transparent so the card
+  // background — which is not pure white in every theme — shows through
+  // naturally.
+  //
+  // Each arc covers 1/3 of the circumference (2πr ≈ 251) with a small
+  // gap between segments. Rotated -90° so the first segment starts at
+  // 12 o'clock like a real pie chart.
+  const r = 40;
+  const circ = 2 * Math.PI * r; // ≈ 251.3
+  const seg = circ / 3;
+  const gap = 4;
+  const dash = `${seg - gap} ${circ - (seg - gap)}`;
   return (
     <svg width="220" height="220" viewBox="0 0 120 120" aria-hidden="true">
-      <circle cx="60" cy="60" r="48" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 3" />
-      <path d="M60 60 L60 12 A48 48 0 0 1 102 84 Z" fill="currentColor" opacity="0.12" />
-      <path d="M60 60 L102 84 A48 48 0 0 1 24 78 Z" fill="currentColor" opacity="0.18" />
-      <path d="M60 60 L24 78 A48 48 0 0 1 60 12 Z" fill="currentColor" opacity="0.08" />
-      <circle cx="60" cy="60" r="14" fill="white" />
+      <g transform="rotate(-90 60 60)">
+        <circle cx="60" cy="60" r={r} fill="none" stroke="currentColor" strokeWidth="16" opacity="0.30" strokeDasharray={dash} strokeDashoffset={0} />
+        <circle cx="60" cy="60" r={r} fill="none" stroke="currentColor" strokeWidth="16" opacity="0.22" strokeDasharray={dash} strokeDashoffset={-seg} />
+        <circle cx="60" cy="60" r={r} fill="none" stroke="currentColor" strokeWidth="16" opacity="0.14" strokeDasharray={dash} strokeDashoffset={-2 * seg} />
+      </g>
     </svg>
   );
 }
