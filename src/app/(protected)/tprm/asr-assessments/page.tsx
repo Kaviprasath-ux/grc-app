@@ -25,7 +25,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Eye, RotateCcw, Home, ChevronRight, UserPlus } from "lucide-react";
+import { Loader2, Eye, RotateCcw, Home, ChevronRight, UserPlus, MessageSquare } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useHasRole } from "@/hooks/usePermissions";
 import { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
@@ -691,11 +692,36 @@ export default function AsrAssessmentsPage() {
           ? [...myQueueColumns.slice(0, -1), {
               accessorKey: "approverComment",
               header: t("Approver Comment"),
-              cell: ({ row }: { row: { getValue: (key: string) => string } }) => (
-                <span className="text-sm truncate max-w-[200px] inline-block">
-                  {row.getValue("approverComment") || "-"}
-                </span>
-              ),
+              cell: ({ row }: { row: { getValue: (key: string) => string } }) => {
+                const comment = row.getValue("approverComment") || "";
+                if (!comment) {
+                  return <span className="text-sm text-muted-foreground">-</span>;
+                }
+                return (
+                  <div className="flex items-center gap-2 max-w-[260px]">
+                    <span className="text-sm truncate flex-1">{comment}</span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 flex-shrink-0"
+                          title={t("View full comment")}
+                          aria-label={t("View full comment")}
+                        >
+                          <MessageSquare className="h-4 w-4 text-primary" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" className="w-80">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                          {t("Approver Comment")}
+                        </p>
+                        <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{comment}</p>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                );
+              },
             } as ColumnDef<AssessmentItem>, myQueueColumns[myQueueColumns.length - 1]]
           : myQueueColumns;
       case "due-diligence":
