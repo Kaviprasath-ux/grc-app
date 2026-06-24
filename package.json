@@ -13,6 +13,7 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed-bts": "npx tsx prisma/seed-customer-bts.ts",
     "db:seed-artifacts": "npx tsx prisma/seed-artifacts.ts",
+    "db:seed-gias": "npx tsx scripts/seed-gias-standards.ts",
     "db:reset": "npx prisma migrate reset --force",
     "db:migrate-audit-head": "npx tsx prisma/migrate-audit-head-data.ts",
     "test:e2e": "playwright test",

@@ -5910,7 +5910,7 @@ model ChatbotKBArticle {
   content      String   @db.Text // concatenated: question + answer + steps + notes
   embedding    Float[] // 1536-dim vector from text-embedding-3-small
   isPublished  Boolean  @default(true) // unpublished articles are excluded from search
-  source       String   @default("seed") // "seed" | "manual" (authored in the KB screen)
+  source       String   @default("seed") // "seed" (help articles) | "manual" (authored in the KB screen) | "document" (ingested regulation, e.g. GIAS 2024)
   updatedById  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
