@@ -179,6 +179,23 @@ export default function AsrAssessmentFactoryPage() {
 
   const handleGenerateReport = async () => {
     if (!templateFile) return;
+
+    // Pre-flight size check. Vercel serverless routes cap request
+    // bodies at ~4.5MB, so a multi-PDF artifact bundle is the silent
+    // killer behind "the dialog just waits forever then disappears".
+    // Surface the limit upfront with a clear error rather than letting
+    // the proxy reject the upload after a minute of waiting.
+    const MAX_TOTAL_BYTES = 4 * 1024 * 1024; // 4 MB practical ceiling
+    const totalBytes = (templateFile.size || 0) + artifactFiles.reduce((s, f) => s + (f.size || 0), 0);
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      toast({
+        title: t("Files too large"),
+        description: `${t("The combined upload is")} ${(totalBytes / 1024 / 1024).toFixed(1)} MB. ${t("Please keep the template + artifacts under 4 MB total, or split into multiple runs.")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setGenerating(true);
     setJobStatus(t("Parsing template..."));
     try {
@@ -526,8 +543,8 @@ export default function AsrAssessmentFactoryPage() {
         </div>
 
         {/* Import dialog (also available from report view) */}
-        <Dialog open={importOpen} onOpenChange={setImportOpen}>
-          <DialogContent className="!max-w-lg">
+        <Dialog open={importOpen} onOpenChange={(open) => { if (generating && !open) return; setImportOpen(open); }}>
+          <DialogContent className="!max-w-lg" onPointerDownOutside={(e) => { if (generating) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (generating) e.preventDefault(); }}>
             <DialogHeader>
               <DialogTitle>{importStep === 1 ? t("Import Template") : t("Upload Artifacts")}</DialogTitle>
             </DialogHeader>

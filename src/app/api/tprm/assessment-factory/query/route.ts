@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
 
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 /**
  * POST /api/tprm/assessment-factory/query
  * Proxies to Python backend POST /api/query

@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
 
+// Multi-PDF artifact uploads + the Python backend's own processing
+// time can easily push past the default 10s serverless cap. Keep the
+// Node runtime (formData() needs it) and raise the wall-clock limit
+// so the ingest call has room to complete on multi-doc payloads.
+export const runtime = 'nodejs';
+export const maxDuration = 300;
+
 /**
  * POST /api/tprm/assessment-factory
  * Proxies to RunPod POST /api/factory_ingest
