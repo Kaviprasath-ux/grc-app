@@ -37,6 +37,26 @@ export const POST = withAuthOnly(
         return NextResponse.json({ error: "questionId is required" }, { status: 400 });
       }
 
+      // Server-side write guard for SMEs (mirrors the onboarding
+      // responses route). Offboard responses have the same delegation
+      // model; without this an SME could POST to any questionId on the
+      // offboard assessment.
+      const isSME = session.roles.includes('TPRMSME');
+      const isAM = session.roles.includes('AccountManager') || session.roles.includes('CustomerAdministrator') || session.roles.includes('GRCAdministrator');
+      if (isSME && !isAM) {
+        const existing = await prisma.tPRMOffboardResponse.findUnique({
+          where: { assessmentId_questionId: { assessmentId, questionId } },
+          select: { isDelegated: true, delegatedToId: true },
+        });
+        const isDelegatee = existing?.isDelegated && existing.delegatedToId === session.id;
+        if (!isDelegatee) {
+          return NextResponse.json(
+            { error: 'You can only edit questions that have been delegated to you.' },
+            { status: 403 },
+          );
+        }
+      }
+
       // Upsert the response
       const updated = await prisma.tPRMOffboardResponse.upsert({
         where: {
@@ -103,6 +123,31 @@ export const PATCH = withAuthOnly(
         return NextResponse.json({ error: "responses array is required" }, { status: 400 });
       }
 
+      // Server-side write guard for SMEs (mirrors POST). Reject the
+      // whole batch if any question isn't delegated to the SME.
+      const isSME = session.roles.includes('TPRMSME');
+      const isAM = session.roles.includes('AccountManager') || session.roles.includes('CustomerAdministrator') || session.roles.includes('GRCAdministrator');
+      if (isSME && !isAM) {
+        const questionIds = responses.map((r) => r.questionId).filter(Boolean);
+        const allowed = await prisma.tPRMOffboardResponse.findMany({
+          where: {
+            assessmentId,
+            questionId: { in: questionIds },
+            isDelegated: true,
+            delegatedToId: session.id,
+          },
+          select: { questionId: true },
+        });
+        const allowedSet = new Set(allowed.map((r) => r.questionId));
+        const blocked = questionIds.filter((q) => !allowedSet.has(q));
+        if (blocked.length > 0) {
+          return NextResponse.json(
+            { error: `${blocked.length} question(s) are not delegated to you.` },
+            { status: 403 },
+          );
+        }
+      }
+
       for (const resp of responses) {
         await prisma.tPRMOffboardResponse.upsert({
           where: {
@@ -163,6 +208,23 @@ export const PUT = withAuthOnly(
 
       if (!questionId || !file) {
         return NextResponse.json({ error: "questionId and file are required" }, { status: 400 });
+      }
+
+      // SME write guard for artifact upload — same shape as POST.
+      const isSME = session.roles.includes('TPRMSME');
+      const isAM = session.roles.includes('AccountManager') || session.roles.includes('CustomerAdministrator') || session.roles.includes('GRCAdministrator');
+      if (isSME && !isAM) {
+        const existing = await prisma.tPRMOffboardResponse.findUnique({
+          where: { assessmentId_questionId: { assessmentId, questionId } },
+          select: { isDelegated: true, delegatedToId: true },
+        });
+        const isDelegatee = existing?.isDelegated && existing.delegatedToId === session.id;
+        if (!isDelegatee) {
+          return NextResponse.json(
+            { error: 'You can only attach files to questions that have been delegated to you.' },
+            { status: 403 },
+          );
+        }
       }
 
       const subDir = `tprm/offboard/${assessmentId}`;

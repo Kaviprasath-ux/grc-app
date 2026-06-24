@@ -78,7 +78,23 @@ export async function GET(req: NextRequest) {
           where: { customerAccountId: customer.id },
         });
 
-        // 3. Find Completed assessments that haven't triggered a reassessment yet
+        // 3. Find Completed assessments that haven't triggered a reassessment yet.
+        //
+        // PRE-EXISTING DEAD CRON: this cron has been a no-op since the
+        // approval workflow was introduced. Two filters block every
+        // row:
+        //   - status: 'Completed' is never written by any current
+        //     code path; the assessor 'complete' action writes
+        //     'Reviewed' and the approver 'approve' action writes
+        //     'Approved'.
+        //   - completionDate: { not: null } never matches because
+        //     nothing in the codebase sets `assessment.completionDate`.
+        // Fixing this properly needs a product call (which terminal
+        // state should trigger reassessment? which date should be
+        // the anchor?) — and a backfill check, because flipping the
+        // filter could suddenly fire reassessments for every approved
+        // vendor since the beginning of time. Left as-is here to
+        // avoid that incident; tracked separately.
         const eligibleAssessments = await prisma.tPRMAssessment.findMany({
           where: {
             customerAccountId: customer.id,

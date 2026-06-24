@@ -923,11 +923,18 @@ export default function ASRAssessmentDetailPage() {
         + `<span style="display:inline-block;height:100%;background:#22c55e;width:${(lowCount / totalSev) * 100}%"></span>`
       : `<span style="display:inline-block;height:100%;background:#e5e7eb;width:100%"></span>`;
 
+    // PDF badge fallback: when no verdict is set (downloading a report
+    // before approve), don't render an orange Deficient-colored badge
+    // with empty text — show neutral grey + "Pending" so the report is
+    // honest about its draft status.
     const resultBadgeColor = reportResult === "Satisfactory"
       ? "#15803d"
       : reportResult === "Unsatisfactory"
         ? "#b91c1c"
-        : "#c2410c";
+        : reportResult === "Deficient"
+          ? "#c2410c"
+          : "#6b7280";
+    const resultBadgeText = reportResult || t("Pending");
 
     const html = `<!DOCTYPE html>
 <html>
@@ -976,7 +983,7 @@ export default function ASRAssessmentDetailPage() {
 
   <p class="summary">
     <strong>${t("Third Party Risk Management Team conducted a due diligence review of")} ${assessment.vendor.name} ${t("from")} ${submissionDate} ${t("till")} ${todayFmt}. ${t("The control environment was found to be")}:</strong>
-    <span class="result-badge" style="background:${resultBadgeColor}">${t(reportResult)}</span>
+    <span class="result-badge" style="background:${resultBadgeColor}">${t(resultBadgeText)}</span>
   </p>
   ${monitoringScores ? `<div class="scores">
     <div>${t("Overall Cybersecurity Score")} : ${monitoringScores.overallScore != null ? Math.round(monitoringScores.overallScore) : ""}</div>
@@ -1902,9 +1909,12 @@ export default function ASRAssessmentDetailPage() {
                   <Badge className={
                     reportResult === "Satisfactory" ? "bg-green-100 text-green-700 border-green-300" :
                     reportResult === "Unsatisfactory" ? "bg-red-100 text-red-700 border-red-300" :
-                    "bg-orange-100 text-orange-700 border-orange-300"
+                    reportResult === "Deficient" ? "bg-orange-100 text-orange-700 border-orange-300" :
+                    // Defensive: legacy Approved records without a stored
+                    // assessmentResult — show neutral, not Deficient-orange.
+                    "bg-slate-100 text-slate-700 border-slate-300"
                   }>
-                    {t(reportResult)}
+                    {reportResult ? t(reportResult) : t("Pending")}
                   </Badge>
                 ) : (
                   ["Satisfactory", "Unsatisfactory", "Deficient"].map(opt => (

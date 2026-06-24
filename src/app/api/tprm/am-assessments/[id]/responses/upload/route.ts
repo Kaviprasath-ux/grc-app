@@ -23,6 +23,27 @@ export const POST = withAuth(
         return NextResponse.json({ error: 'File is required' }, { status: 400 });
       }
 
+      // Server-side write guard for SMEs. The page now shows every
+      // question to SMEs (for context), so without this an SME could
+      // POST an artifact for any questionId — same gap as the JSON
+      // responses route, here it shows up as upload-spoofing rather
+      // than answer-spoofing.
+      const isSME = session.roles.includes('TPRMSME');
+      const isAM = session.roles.includes('AccountManager') || session.roles.includes('CustomerAdministrator') || session.roles.includes('GRCAdministrator');
+      if (isSME && !isAM && questionId) {
+        const existing = await prisma.tPRMAssessmentResponse.findUnique({
+          where: { assessmentId_questionId: { assessmentId, questionId } },
+          select: { isDelegated: true, delegatedToId: true },
+        });
+        const isDelegatee = existing?.isDelegated && existing.delegatedToId === session.id;
+        if (!isDelegatee) {
+          return NextResponse.json(
+            { error: 'You can only attach files to questions that have been delegated to you.' },
+            { status: 403 },
+          );
+        }
+      }
+
       // Create upload directory
       const uploadDir = path.join(process.cwd(), 'uploads', 'tprm', 'assessments', assessmentId);
       await mkdir(uploadDir, { recursive: true });
