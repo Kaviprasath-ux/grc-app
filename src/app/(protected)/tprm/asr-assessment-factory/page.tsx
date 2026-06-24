@@ -197,8 +197,17 @@ export default function AsrAssessmentFactoryPage() {
       return;
     }
 
-    // Zero-byte artifacts confuse the Python ingest backend (it 500s
-    // mid-pipeline with no useful error). Catch them upfront.
+    // Zero-byte files confuse the Python ingest backend (it 500s
+    // mid-pipeline with no useful error). Catch the template and every
+    // artifact upfront.
+    if ((templateFile.size || 0) === 0) {
+      toast({
+        title: t("Empty file"),
+        description: `"${templateFile.name}" ${t("is empty (0 bytes). Please re-attach or remove it.")}`,
+        variant: "destructive",
+      });
+      return;
+    }
     const emptyArtifact = artifactFiles.find((f) => (f.size || 0) === 0);
     if (emptyArtifact) {
       toast({
@@ -834,8 +843,8 @@ export default function AsrAssessmentFactoryPage() {
       </Dialog>
 
       {/* Import Template Dialog */}
-      <Dialog open={importOpen} onOpenChange={setImportOpen}>
-        <DialogContent className="!max-w-lg">
+      <Dialog open={importOpen} onOpenChange={(open) => { if (generating && !open) return; setImportOpen(open); }}>
+        <DialogContent className="!max-w-lg" showCloseButton={!generating} onPointerDownOutside={(e) => { if (generating) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (generating) e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>{importStep === 1 ? t("Import Template") : t("Upload Artifacts")}</DialogTitle>
           </DialogHeader>

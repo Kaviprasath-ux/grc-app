@@ -140,11 +140,22 @@ export const POST = withAuth(
       //                    not proceed until issues are remediated and the
       //                    assessment is re-run)
       if (action === 'approve') {
-        const result = (body.assessmentResult as string | undefined) || null;
+        // Prefer the body's verdict, but fall back to what was already
+        // persisted on the assessment (set by send_to_approver) so the
+        // approver isn't required to re-submit the same value.
+        const persistedResult = (
+          await prisma.tPRMAssessment.findUnique({
+            where: { id },
+            select: { assessmentResult: true },
+          })
+        )?.assessmentResult ?? null;
+        const result = (body.assessmentResult as string | undefined) || persistedResult || null;
         const nextVendorStatus =
           result === 'Deficient' ? 'Onboarding'
           : (result === 'Satisfactory' || result === 'Unsatisfactory') ? 'Onboarded'
-          : 'Onboarded'; // fallback when assessor saved no verdict
+          // No verdict at all — don't silently clear the vendor; leave
+          // them in Onboarding until someone records an outcome.
+          : 'Onboarding';
         await prisma.tPRMVendor.update({
           where: { id: assessment.vendorId },
           data: { status: nextVendorStatus },

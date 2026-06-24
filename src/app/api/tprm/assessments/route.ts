@@ -169,15 +169,20 @@ export const POST = withAuth(
         }
       }
 
-      // Derive the assessment's due date from the customer's Control Center
-      // settings: assessment.createdAt + TPRMConfiguration.dueDate{VRR-Band}
-      // days. If the body provides a dueDate explicitly, honour it; otherwise
-      // compute from config. Falls back to schema defaults (30 days) when no
-      // TPRMConfiguration row exists yet, so brand-new tenants still get a
-      // sensible due date instead of null.
-      // Honour explicit dueDate from the caller, but reject empty
-       // strings / unparseable values that would otherwise become
-       // Invalid Date in the DB column.
+      // Derive the assessment's due date from the customer's Control
+      // Center settings: now + TPRMConfiguration.dueDate{VRR-Band}
+      // days. (Same instant as createdAt for a new row, within ms.)
+      //
+      // - body.dueDate is honoured if it parses to a valid Date;
+      //   empty strings and unparseable values silently fall through
+      //   to the config-based calc rather than persisting Invalid
+      //   Date in the column.
+      // - Missing TPRMConfiguration row → schema defaults (30 days
+      //   per band), so brand-new tenants still get a due date.
+      // - Unknown / unrated vendor VRR → Nominal band as a fallback.
+      //   Whether Nominal is the *most permissive* band depends on
+      //   tenant config (Nominal could be set to 7 days), so the
+      //   default may not always be the longest grace.
       let computedDueDate: Date | null = null;
       if (body.dueDate) {
         const parsed = new Date(body.dueDate);
@@ -204,8 +209,8 @@ export const POST = withAuth(
             if (band === "moderate" || band === "medium") return cfg?.dueDateModerate ?? 30;
             if (band === "low") return cfg?.dueDateLow ?? 30;
             if (band === "nominal") return cfg?.dueDateNominal ?? 30;
-            // Unknown / unrated vendor: fall back to the most permissive band
-            // (Nominal) so the assessment still gets a date rather than null.
+            // Unknown / unrated vendor: fall back to Nominal so the
+            // assessment still gets a date rather than null.
             return cfg?.dueDateNominal ?? 30;
           })();
           computedDueDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
