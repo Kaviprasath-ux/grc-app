@@ -741,7 +741,10 @@ export default function ASRAssessmentDetailPage() {
       const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send_to_approver", approverId: selectedApproverId }),
+        // Persist the assessor's Sat/Unsat/Deficient choice with the
+        // hand-off so the approver opens onto the assessor's verdict
+        // instead of the "Satisfactory" default.
+        body: JSON.stringify({ action: "send_to_approver", approverId: selectedApproverId, assessmentResult: reportResult }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -1888,6 +1891,15 @@ export default function ASRAssessmentDetailPage() {
                   ))
                 )}
               </div>
+
+              {/* Verdict-specific narrative — adapts to the assessor's
+                  selection so the report reads as a real conclusion
+                  rather than a static template. */}
+              <p className="text-sm leading-relaxed pl-2 italic text-muted-foreground">
+                {reportResult === "Satisfactory" && t("The vendor's control environment is satisfactory and aligns with the organization's risk appetite. No further remediation is required at this time; the vendor is approved to proceed.")}
+                {reportResult === "Unsatisfactory" && t("The vendor's control environment is unsatisfactory. The findings listed below must be remediated within the timelines provided before the engagement can be considered low risk.")}
+                {reportResult === "Deficient" && t("The vendor's control environment is deficient and presents material risk. Immediate corrective action is required, and the engagement should not proceed until the high-severity findings are addressed.")}
+              </p>
 
               {/* Monitoring Scores — only shown if monitoring data exists */}
               {monitoringScores && (

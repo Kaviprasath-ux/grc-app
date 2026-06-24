@@ -56,12 +56,22 @@ export const POST = withAuth(
         updateData.status = 'In-Progress(approver)';
         updateData.approverId = approverId;
         updateData.assessorCompletionDate = new Date();
+        // Carry the assessor's overall verdict into the next stage so
+        // the approver inherits it. Previously this only got written on
+        // 'approve', so the approver loaded a blank result and the UI
+        // defaulted to "Satisfactory".
+        if (body.assessmentResult) {
+          updateData.assessmentResult = body.assessmentResult;
+        }
         // Look up approver name for log
         const approverUser = await prisma.user.findUnique({ where: { id: approverId }, select: { fullName: true } });
         logMessage = `Assessment sent to approver ${approverUser?.fullName || approverId} by ${session.name || session.email}`;
       } else if (action === 'complete') {
         updateData.status = 'Reviewed';
         updateData.assessorCompletionDate = new Date();
+        if (body.assessmentResult) {
+          updateData.assessmentResult = body.assessmentResult;
+        }
         logMessage = 'Assessment marked as Reviewed by assessor';
       } else if (action === 'approve') {
         updateData.status = 'Approved';
@@ -107,11 +117,30 @@ export const POST = withAuth(
         });
       }
 
-      // When approved, set vendor status to Inactive and create issue remediations
+      // When approved, advance the vendor's onboarding state based on
+      // the overall verdict and create issue remediations from any
+      // response-level Unsatisfactory findings.
+      //
+      // Vendor.status follows the documented lifecycle
+      // (Onboarding → Onboarded → Offboarding → Offboarded). Setting
+      // 'Inactive' here (the prior behaviour) was off-spec for the
+      // schema and broke the downstream Active-vendor filters.
+      //
+      // Workflow per result:
+      //   Satisfactory   → Onboarded (cleared, no concerns)
+      //   Unsatisfactory → Onboarded (cleared, but remediations track open findings)
+      //   Deficient      → Onboarding kept (vendor is NOT cleared; engagement must
+      //                    not proceed until issues are remediated and the
+      //                    assessment is re-run)
       if (action === 'approve') {
+        const result = (body.assessmentResult as string | undefined) || null;
+        const nextVendorStatus =
+          result === 'Deficient' ? 'Onboarding'
+          : (result === 'Satisfactory' || result === 'Unsatisfactory') ? 'Onboarded'
+          : 'Onboarded'; // fallback when assessor saved no verdict
         await prisma.tPRMVendor.update({
           where: { id: assessment.vendorId },
-          data: { status: 'Inactive' },
+          data: { status: nextVendorStatus },
         });
 
         // Load cadence/remediation config to calculate due dates
