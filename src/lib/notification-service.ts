@@ -2268,27 +2268,37 @@ class NotificationService {
   }
 
   /**
-   * Notify when SME has a pending assignment.
+   * Notify an SME that an AM has delegated one or more questions to
+   * them on a vendor assessment.
+   *
+   * The link points at the AM/vendor side of the assessment
+   * (`/tprm/am-assessments/...`) — the prior implementation linked to
+   * the assessor side, which SMEs can't access. actorId is now the AM
+   * (not 'system') so the self-notification guard works correctly.
    */
   async notifyTPRMSMEAssignmentPending(params: {
     customerAccountId: string;
+    actorId: string;
     recipientId: string;
     assessmentId: string;
     assessmentCode: string;
+    vendorName?: string;
     channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
-      actorId: 'system',
+      actorId: params.actorId,
       recipientId: params.recipientId,
       event: NOTIFICATION_EVENTS.TPRM_SME_ASSIGNMENT_PENDING,
-      title: 'Pending SME assignment',
-      message: `You have a pending SME assignment on assessment ${params.assessmentCode}.`,
+      title: 'Question(s) assigned to you',
+      message: params.vendorName
+        ? `You've been assigned question(s) on assessment ${params.assessmentCode} for vendor ${params.vendorName}.`
+        : `You've been assigned question(s) on assessment ${params.assessmentCode}.`,
       relatedEntityType: 'assessment',
       relatedEntityId: params.assessmentId,
-      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      link: `/tprm/am-assessments/${params.assessmentId}`,
       channels: params.channels,
-      metadata: { entityName: params.assessmentCode },
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
     });
   }
 

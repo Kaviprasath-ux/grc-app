@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -93,6 +94,26 @@ export const POST = withAuth(
         });
       }
 
+      // Notify SME when an AM explicitly delegates a question. The
+      // body sends both isDelegated:true and delegatedToId only when
+      // the AM clicks "Assign SME" in the question dialog; ordinary
+      // response saves don't include these, so we don't re-notify on
+      // every keystroke save.
+      if (isDelegated === true && delegatedToId && delegatedToId !== session.id) {
+        const vendor = await prisma.tPRMVendor.findUnique({
+          where: { id: assessment.vendorId },
+          select: { name: true },
+        });
+        void notificationService.notifyTPRMSMEAssignmentPending({
+          customerAccountId,
+          actorId: session.id,
+          recipientId: delegatedToId,
+          assessmentId,
+          assessmentCode: assessment.assessmentCode,
+          vendorName: vendor?.name,
+        });
+      }
+
       return NextResponse.json(result, { status: 201 });
     } catch (error) {
       console.error('AM Responses POST error:', error);
@@ -115,8 +136,17 @@ export const PATCH = withAuth(
         return NextResponse.json({ error: 'responses array is required' }, { status: 400 });
       }
 
+      // Collect every SME a question is being delegated to in this
+      // batch. We notify each SME once at the end rather than per
+      // question, so assigning 19 questions to one SME doesn't fan
+      // out into 19 inbox entries.
+      const delegatedSmeIds = new Set<string>();
+
       const results = [];
       for (const r of responses) {
+        if (r.isDelegated === true && r.delegatedToId && r.delegatedToId !== session.id) {
+          delegatedSmeIds.add(r.delegatedToId as string);
+        }
         const result = await prisma.tPRMAssessmentResponse.upsert({
           where: {
             assessmentId_questionId: { assessmentId, questionId: r.questionId },
@@ -150,6 +180,25 @@ export const PATCH = withAuth(
           },
         });
         results.push(result);
+      }
+
+      if (delegatedSmeIds.size > 0) {
+        const assessmentForNotif = await prisma.tPRMAssessment.findUnique({
+          where: { id: assessmentId },
+          select: { assessmentCode: true, vendor: { select: { name: true } } },
+        });
+        if (assessmentForNotif) {
+          for (const smeId of delegatedSmeIds) {
+            void notificationService.notifyTPRMSMEAssignmentPending({
+              customerAccountId,
+              actorId: session.id,
+              recipientId: smeId,
+              assessmentId,
+              assessmentCode: assessmentForNotif.assessmentCode,
+              vendorName: assessmentForNotif.vendor?.name,
+            });
+          }
+        }
       }
 
       return NextResponse.json({ data: results });
