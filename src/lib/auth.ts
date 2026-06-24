@@ -291,6 +291,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           extraRoleModules = ["TPRM"];
         }
 
+        // Record the credentials-path login. The SSO path already
+        // updates this in signIn(); without doing it here too, the
+        // Last Login column stayed blank for every username/password
+        // user (which is most TPRM AMs/SMEs/admins).
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() },
+        }).catch((err) => {
+          // Non-fatal — login shouldn't fail just because we couldn't
+          // record the timestamp.
+          console.error('[AUTH] Failed to update lastLogin:', err);
+        });
+
         return await buildAuthUser(user, extraRoles, extraRoleModules);
         } catch (error) {
           console.error('[AUTH] Error during authentication:', error);
