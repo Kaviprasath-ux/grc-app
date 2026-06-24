@@ -180,17 +180,18 @@ export default function AsrAssessmentFactoryPage() {
   const handleGenerateReport = async () => {
     if (!templateFile) return;
 
-    // Pre-flight size check. Vercel serverless routes cap request
-    // bodies at ~4.5MB, so a multi-PDF artifact bundle is the silent
-    // killer behind "the dialog just waits forever then disappears".
-    // Surface the limit upfront with a clear error rather than letting
-    // the proxy reject the upload after a minute of waiting.
-    const MAX_TOTAL_BYTES = 4 * 1024 * 1024; // 4 MB practical ceiling
+    // Pre-flight size check. The DO App Platform / proxy / Python
+    // ingest backend collectively choke on very large multipart
+    // bundles — beyond a certain point the polling spins forever
+    // and the user just sees the dialog hang. Cap at 25 MB total,
+    // which comfortably handles a template + several PDFs while
+    // staying inside typical reverse-proxy limits.
+    const MAX_TOTAL_BYTES = 25 * 1024 * 1024;
     const totalBytes = (templateFile.size || 0) + artifactFiles.reduce((s, f) => s + (f.size || 0), 0);
     if (totalBytes > MAX_TOTAL_BYTES) {
       toast({
         title: t("Files too large"),
-        description: `${t("The combined upload is")} ${(totalBytes / 1024 / 1024).toFixed(1)} MB. ${t("Please keep the template + artifacts under 4 MB total, or split into multiple runs.")}`,
+        description: `${t("The combined upload is")} ${(totalBytes / 1024 / 1024).toFixed(1)} MB. ${t("Please keep the template + artifacts under 25 MB total, or split into multiple runs.")}`,
         variant: "destructive",
       });
       return;
