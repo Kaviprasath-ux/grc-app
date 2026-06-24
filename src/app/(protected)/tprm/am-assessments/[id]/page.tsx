@@ -632,17 +632,19 @@ export default function AMResponseQuestionnairePage() {
     }
   };
 
-  // Filter questions by domain and mode
+  // Filter questions by domain and mode. SMEs now see every question
+  // by default (so they have full assessment context); the
+  // "assigned-to-me" filter is an opt-in narrowing for the questions
+  // they're explicitly responsible for.
   const filteredQuestions = translatedQuestions.filter(q => {
-    // SME users only see questions assigned to them
-    if (isSME && currentUserId) {
-      const resp = responses[q.id];
-      if (!resp?.isDelegated || resp?.delegatedToId !== currentUserId) return false;
-    }
     if (selectedDomain !== "all" && q.domainId !== selectedDomain) return false;
     if (filterMode === "mandatory-attachments" && !q.mandatoryAttachment) return false;
     if (filterMode === "flagged" && !responses[q.id]?.isFlagged) return false;
     if (filterMode === "unanswered" && responses[q.id]?.response) return false;
+    if (filterMode === "assigned-to-me") {
+      const resp = responses[q.id];
+      if (!resp?.isDelegated || resp?.delegatedToId !== currentUserId) return false;
+    }
     return true;
   });
 
@@ -848,6 +850,9 @@ export default function AMResponseQuestionnairePage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("All Questions")}</SelectItem>
+              {isSME && (
+                <SelectItem value="assigned-to-me">{t("Assigned to me")}</SelectItem>
+              )}
               <SelectItem value="mandatory-attachments">{t("Mandatory Attachments")}</SelectItem>
               <SelectItem value="flagged">{t("Flagged")}</SelectItem>
               <SelectItem value="unanswered">{t("Unanswered")}</SelectItem>
@@ -861,7 +866,9 @@ export default function AMResponseQuestionnairePage() {
         {filteredQuestions.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center text-muted-foreground">
-              {isSME ? t("No questions have been assigned to you yet") : t("No questions match the selected filters")}
+              {isSME && filterMode === "assigned-to-me"
+                ? t("No questions have been assigned to you yet")
+                : t("No questions match the selected filters")}
             </CardContent>
           </Card>
         ) : (
