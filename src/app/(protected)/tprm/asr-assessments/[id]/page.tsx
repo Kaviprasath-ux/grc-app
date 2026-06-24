@@ -1161,12 +1161,21 @@ export default function ASRAssessmentDetailPage() {
             .map(domain => {
               const domainResps = flatQuestions.filter(fq => fq.domainId === domain.id);
               const total = domainResps.length;
-              const unsat = domainResps.filter(fq => {
+              let sat = 0;
+              let unsat = 0;
+              for (const fq of domainResps) {
                 const r = responses[fq.question.id];
-                return r && (r.assessorStatus || r.poStatus || '').toLowerCase() === "unsatisfactory";
-              }).length;
-              const pct = total > 0 ? Math.round((unsat / total) * 100) : 0;
-              return { domain, total, pct };
+                const effStatus = (r?.assessorStatus || r?.poStatus || "").toLowerCase();
+                if (effStatus === "satisfactory") sat++;
+                else if (effStatus === "unsatisfactory") unsat++;
+              }
+              const satPct = total > 0 ? (sat / total) * 100 : 0;
+              const unsatPct = total > 0 ? (unsat / total) * 100 : 0;
+              // "Compliance" reads sat-of-evaluated, not sat-of-total —
+              // unanswered/N-A questions shouldn't drag the score down.
+              const evaluated = sat + unsat;
+              const compliancePct = evaluated > 0 ? Math.round((sat / evaluated) * 100) : 0;
+              return { domain, total, satPct, unsatPct, compliancePct };
             })
             .filter(d => d.total > 0);
 
@@ -1179,15 +1188,28 @@ export default function ASRAssessmentDetailPage() {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {domainsWithQuestions.map(({ domain, pct }) => (
+                    {domainsWithQuestions.map(({ domain, satPct, unsatPct, compliancePct }) => (
                       <div key={domain.id} className="flex items-center gap-3">
                         <span className="w-48 text-sm truncate" title={domain.name}>{domain.name}</span>
-                        <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
-                          <div className="h-full bg-red-400 rounded" style={{ width: `${pct}%` }} />
+                        <div className="flex-1 h-6 bg-muted rounded overflow-hidden flex">
+                          <div className="h-full bg-teal-500" style={{ width: `${satPct}%` }} title={`${t("Satisfactory")}: ${Math.round(satPct)}%`} />
+                          <div className="h-full bg-red-400" style={{ width: `${unsatPct}%` }} title={`${t("Unsatisfactory")}: ${Math.round(unsatPct)}%`} />
                         </div>
-                        <span className="text-sm font-medium w-12 text-right">{pct}%</span>
+                        <span className="text-sm font-medium w-12 text-right">{compliancePct}%</span>
                       </div>
                     ))}
+                    {/* Legend */}
+                    <div className="flex items-center gap-4 pt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-sm bg-teal-500" />
+                        <span>{t("Satisfactory")}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-sm bg-red-400" />
+                        <span>{t("Unsatisfactory")}</span>
+                      </div>
+                      <span className="ml-auto">{t("% column shows compliance (satisfactory of evaluated)")}</span>
+                    </div>
                   </div>
                 )}
               </CardContent>
