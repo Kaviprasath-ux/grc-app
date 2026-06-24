@@ -779,18 +779,6 @@ export default function RiskRegisterPage() {
     return a * b; // Product of all (default)
   };
 
-  const calculateInherentScore = () => {
-    const likelihood = formData.inherentLikelihood ? parseInt(formData.inherentLikelihood) : 0;
-    const impact = formData.inherentImpact ? parseInt(formData.inherentImpact) : 0;
-    return applyCalcMethod(likelihood, impact, scoringConfig?.probabilityImpactCalcType || "Product of all");
-  };
-
-  const calculateResidualScore = () => {
-    const likelihood = formData.residualLikelihood ? parseInt(formData.residualLikelihood) : 0;
-    const impact = formData.residualImpact ? parseInt(formData.residualImpact) : 0;
-    return applyCalcMethod(likelihood, impact, scoringConfig?.probabilityImpactCalcType || "Product of all");
-  };
-
   // File upload handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -882,26 +870,6 @@ export default function RiskRegisterPage() {
       errors.riskDescription = t("Risk description is required");
     }
 
-    // Validation: Inherent Likelihood
-    if (!formData.inherentLikelihood) {
-      errors.inherentLikelihood = t("Inherent likelihood is required");
-    }
-
-    // Validation: Inherent Impact
-    if (!formData.inherentImpact) {
-      errors.inherentImpact = t("Inherent impact is required");
-    }
-
-    // Validation: Residual Likelihood
-    if (!formData.residualLikelihood) {
-      errors.residualLikelihood = t("Residual likelihood is required");
-    }
-
-    // Validation: Residual Impact
-    if (!formData.residualImpact) {
-      errors.residualImpact = t("Residual impact is required");
-    }
-
     // Validation: Category
     if (!formData.categoryId) {
       errors.categoryId = t("Risk category is required");
@@ -917,21 +885,18 @@ export default function RiskRegisterPage() {
     setFieldErrors({});
     setSaving(true);
     try {
-      const inherentScore = calculateInherentScore();
-      const residualScore = calculateResidualScore();
-
       const response = await fetch("/api/internal-audit/risks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           riskId: formData.riskId || null,
-          inherentLikelihood: formData.inherentLikelihood ? parseInt(formData.inherentLikelihood) : null,
-          inherentImpact: formData.inherentImpact ? parseInt(formData.inherentImpact) : null,
-          inherentScore: inherentScore || null,
-          residualLikelihood: formData.residualLikelihood ? parseInt(formData.residualLikelihood) : null,
-          residualImpact: formData.residualImpact ? parseInt(formData.residualImpact) : null,
-          residualScore: residualScore || null,
+          inherentLikelihood: null,
+          inherentImpact: null,
+          inherentScore: null,
+          residualLikelihood: null,
+          residualImpact: null,
+          residualScore: null,
           departmentId: formData.departmentId || null,
           categoryId: formData.categoryId || null,
           subCategoryId: formData.subCategoryId || null,
@@ -994,26 +959,6 @@ export default function RiskRegisterPage() {
       errors.riskDescription = t("Risk description is required");
     }
 
-    // Validation: Inherent Likelihood
-    if (!formData.inherentLikelihood) {
-      errors.inherentLikelihood = t("Inherent likelihood is required");
-    }
-
-    // Validation: Inherent Impact
-    if (!formData.inherentImpact) {
-      errors.inherentImpact = t("Inherent impact is required");
-    }
-
-    // Validation: Residual Likelihood
-    if (!formData.residualLikelihood) {
-      errors.residualLikelihood = t("Residual likelihood is required");
-    }
-
-    // Validation: Residual Impact
-    if (!formData.residualImpact) {
-      errors.residualImpact = t("Residual impact is required");
-    }
-
     // Validation: Category
     if (!formData.categoryId) {
       errors.categoryId = t("Risk category is required");
@@ -1029,20 +974,17 @@ export default function RiskRegisterPage() {
     setFieldErrors({});
     setSaving(true);
     try {
-      const inherentScore = calculateInherentScore();
-      const residualScore = calculateResidualScore();
-
       const response = await fetch(`/api/internal-audit/risks/${editingRisk.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          inherentLikelihood: formData.inherentLikelihood ? parseInt(formData.inherentLikelihood) : null,
-          inherentImpact: formData.inherentImpact ? parseInt(formData.inherentImpact) : null,
-          inherentScore: inherentScore || null,
-          residualLikelihood: formData.residualLikelihood ? parseInt(formData.residualLikelihood) : null,
-          residualImpact: formData.residualImpact ? parseInt(formData.residualImpact) : null,
-          residualScore: residualScore || null,
+          inherentLikelihood: null,
+          inherentImpact: null,
+          inherentScore: null,
+          residualLikelihood: null,
+          residualImpact: null,
+          residualScore: null,
           departmentId: formData.departmentId || null,
           categoryId: formData.categoryId || null,
           subCategoryId: formData.subCategoryId || null,
@@ -1568,7 +1510,12 @@ export default function RiskRegisterPage() {
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{tDept(risk.departmentId) || risk.department?.name || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(risk.creationDate)}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{tCat(risk.categoryId) || risk.category?.name || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.inherentScore ?? "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{(() => {
+                    const iL = risk.assessmentLikelihood;
+                    const dims = [risk.strategicImpact, risk.financialImpact, risk.complianceRisk, risk.operationalRisk, risk.itDataRisk].filter((v): v is number => v != null);
+                    const iI = dims.length > 0 ? Math.max(...dims) : null;
+                    return iL != null && iI != null ? iL * iI : "-";
+                  })()}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">
                     {risk.assessmentStatus === "Assessed" && risk.assessmentResidualScore != null
                       ? risk.assessmentResidualScore.toFixed(2)
@@ -2276,61 +2223,6 @@ export default function RiskRegisterPage() {
                 </div>
               </div>
 
-              {/* Inherent Risk Assessment */}
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Inherent Risk Assessment")}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={formData.inherentLikelihood}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, inherentLikelihood: value });
-                        if (fieldErrors.inherentLikelihood) {
-                          setFieldErrors({ ...fieldErrors, inherentLikelihood: "" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentLikelihood ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select likelihood")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {[1,2,3,4,5].map(v => (
-                          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldErrors.inherentLikelihood && (
-                      <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentLikelihood}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={formData.inherentImpact}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, inherentImpact: value });
-                        if (fieldErrors.inherentImpact) {
-                          setFieldErrors({ ...fieldErrors, inherentImpact: "" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentImpact ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select impact")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {[1,2,3,4,5].map(v => (
-                          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldErrors.inherentImpact && (
-                      <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentImpact}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {/* Risk Drivers & Consequences */}
               <div className="space-y-4">
                 <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Risk Drivers & Consequences")}</h3>
@@ -2430,61 +2322,6 @@ export default function RiskRegisterPage() {
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
-
-              {/* Residual Risk Assessment */}
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Residual Risk Assessment")}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={formData.residualLikelihood}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, residualLikelihood: value });
-                        if (fieldErrors.residualLikelihood) {
-                          setFieldErrors({ ...fieldErrors, residualLikelihood: "" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualLikelihood ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select likelihood")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {[1,2,3,4,5].map(v => (
-                          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldErrors.residualLikelihood && (
-                      <p className="text-red-500 text-xs mt-1">{fieldErrors.residualLikelihood}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={formData.residualImpact}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, residualImpact: value });
-                        if (fieldErrors.residualImpact) {
-                          setFieldErrors({ ...fieldErrors, residualImpact: "" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualImpact ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select impact")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {[1,2,3,4,5].map(v => (
-                          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldErrors.residualImpact && (
-                      <p className="text-red-500 text-xs mt-1">{fieldErrors.residualImpact}</p>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -2802,29 +2639,6 @@ export default function RiskRegisterPage() {
                   </div>
                 </div>
 
-                {/* Inherent Risk Assessment — read-only in Edit */}
-                <div className="space-y-4">
-                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Inherent Risk Assessment")}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-500">{t("Likelihood")}</Label>
-                      <div className="mt-1.5 w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
-                        {translatedProbabilities.find(p => p.value.toString() === formData.inherentLikelihood)
-                          ? `${translatedProbabilities.find(p => p.value.toString() === formData.inherentLikelihood)!.label} (${formData.inherentLikelihood})`
-                          : formData.inherentLikelihood || "–"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-500">{t("Impact")}</Label>
-                      <div className="mt-1.5 w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
-                        {translatedImpacts.find(i => i.value.toString() === formData.inherentImpact)
-                          ? `${translatedImpacts.find(i => i.value.toString() === formData.inherentImpact)!.label} (${formData.inherentImpact})`
-                          : formData.inherentImpact || "–"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Risk Drivers & Consequences */}
                 <div className="space-y-4">
                   <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Risk Drivers & Consequences")}</h3>
@@ -2924,29 +2738,6 @@ export default function RiskRegisterPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                {/* Residual Risk Assessment — read-only in Edit */}
-                <div className="space-y-4">
-                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Residual Risk Assessment")}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-500">{t("Likelihood")}</Label>
-                      <div className="mt-1.5 w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
-                        {translatedProbabilities.find(p => p.value.toString() === formData.residualLikelihood)
-                          ? `${translatedProbabilities.find(p => p.value.toString() === formData.residualLikelihood)!.label} (${formData.residualLikelihood})`
-                          : formData.residualLikelihood || "–"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-500">{t("Impact")}</Label>
-                      <div className="mt-1.5 w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700">
-                        {translatedImpacts.find(i => i.value.toString() === formData.residualImpact)
-                          ? `${translatedImpacts.find(i => i.value.toString() === formData.residualImpact)!.label} (${formData.residualImpact})`
-                          : formData.residualImpact || "–"}
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -3170,23 +2961,37 @@ export default function RiskRegisterPage() {
                 {/* Risk Assessment Grid */}
                 <section>
                   <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Risk Assessment")}</h3>
-                  <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
-                    <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-4">{t("Inherent Risk")}</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <label className="block text-xs text-amber-600 mb-1">{t("Likelihood")}</label>
-                        <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentLikelihood ?? "-"}</p>
+                  {(() => {
+                    const iL = viewingRisk.assessmentLikelihood;
+                    const impactDims = [
+                      viewingRisk.strategicImpact,
+                      viewingRisk.financialImpact,
+                      viewingRisk.complianceRisk,
+                      viewingRisk.operationalRisk,
+                      viewingRisk.itDataRisk,
+                    ].filter((v): v is number => v != null);
+                    const iI = impactDims.length > 0 ? Math.max(...impactDims) : null;
+                    const iScore = iL != null && iI != null ? iL * iI : null;
+                    return (
+                      <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
+                        <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-4">{t("Inherent Risk")}</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <label className="block text-xs text-amber-600 mb-1">{t("Likelihood")}</label>
+                            <p className="text-2xl font-bold text-amber-900">{iL ?? "-"}</p>
+                          </div>
+                          <div className="text-center">
+                            <label className="block text-xs text-amber-600 mb-1">{t("Impact")}</label>
+                            <p className="text-2xl font-bold text-amber-900">{iI ?? "-"}</p>
+                          </div>
+                          <div className="text-center">
+                            <label className="block text-xs text-amber-600 mb-1">{t("Score")}</label>
+                            <p className="text-2xl font-bold text-amber-900">{iScore ?? "-"}</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <label className="block text-xs text-amber-600 mb-1">{t("Impact")}</label>
-                        <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentImpact ?? "-"}</p>
-                      </div>
-                      <div className="text-center">
-                        <label className="block text-xs text-amber-600 mb-1">{t("Score")}</label>
-                        <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentScore ?? "-"}</p>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Heat Map — only shown once the risk assessment is completed */}
                   {(() => {
@@ -3218,9 +3023,18 @@ export default function RiskRegisterPage() {
                     const calcScore = (p: number, i: number) =>
                       applyCalcMethod(p, i, scoringConfig?.probabilityImpactCalcType || "Product of all");
 
-                    // Residual marker: after assessment, derive grid position from assessmentLikelihood
-                    // and back-calculate effective impact from assessmentResidualScore / assessmentLikelihood.
-                    // This ensures score 9.60 with likelihood 3 → position (3,3) not (1,3).
+                    // Inherent marker: assessmentLikelihood × max(impact dimensions)
+                    const iDims = [
+                      viewingRisk.strategicImpact,
+                      viewingRisk.financialImpact,
+                      viewingRisk.complianceRisk,
+                      viewingRisk.operationalRisk,
+                      viewingRisk.itDataRisk,
+                    ].filter((v): v is number => v != null);
+                    const iHL: number | null = viewingRisk.assessmentLikelihood ?? null;
+                    const iHI: number | null = iDims.length > 0 ? Math.max(...iDims) : null;
+
+                    // Residual marker: assessmentLikelihood + back-calculate impact from assessmentResidualScore
                     let rL: number | null = viewingRisk.residualLikelihood;
                     let rI: number | null = viewingRisk.residualImpact;
 
@@ -3250,7 +3064,7 @@ export default function RiskRegisterPage() {
                                 <div key={imp.id} className="flex items-center gap-1 mb-1">
                                   <span className="w-5 text-right text-xs text-slate-400">{imp.value}</span>
                                   {probValues.map((prob) => {
-                                    const isInherent = viewingRisk.inherentLikelihood === prob.value && viewingRisk.inherentImpact === imp.value;
+                                    const isInherent = iHL != null && iHI != null && iHL === prob.value && iHI === imp.value;
                                     const isResidual = rL != null && rI != null && rL === prob.value && rI === imp.value;
                                     const hasBoth = isInherent && isResidual;
                                     return (
