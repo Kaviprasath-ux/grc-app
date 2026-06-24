@@ -124,21 +124,26 @@ export const POST = withAuth(
         });
       }
 
-      // When approved, advance the vendor's onboarding state based on
-      // the overall verdict and create issue remediations from any
-      // response-level Unsatisfactory findings.
+      // When approved, advance the vendor's lifecycle and create
+      // issue remediations from any response-level Unsatisfactory
+      // findings.
       //
-      // Vendor.status follows the documented lifecycle
-      // (Onboarding → Onboarded → Offboarding → Offboarded). Setting
-      // 'Inactive' here (the prior behaviour) was off-spec for the
-      // schema and broke the downstream Active-vendor filters.
+      // Vendor lifecycle in this codebase is broader than the schema
+      // comment suggests: in addition to Onboarding/Onboarded/
+      // Offboarding/Offboarded, the contract-upload flow relies on
+      // "Inactive" as the "cleared-but-not-yet-contracted" state (the
+      // /vendors/[id]/contract route flips Inactive → Active on
+      // contract upload, and the inventory pages only render the
+      // "Add Contract" button when status === "Inactive"). Setting
+      // the wrong value on approve silently hides the Add-Contract
+      // button — a real bug raised after the previous comment-based
+      // refactor; reverting to match the contract flow.
       //
       // Workflow per result:
-      //   Satisfactory   → Onboarded (cleared, no concerns)
-      //   Unsatisfactory → Onboarded (cleared, but remediations track open findings)
-      //   Deficient      → Onboarding kept (vendor is NOT cleared; engagement must
-      //                    not proceed until issues are remediated and the
-      //                    assessment is re-run)
+      //   Satisfactory   → Inactive (cleared, contract upload will activate)
+      //   Unsatisfactory → Inactive (cleared with remediations, contract still allowed)
+      //   Deficient      → Onboarding kept (NOT cleared; engagement
+      //                    must not proceed until issues remediated)
       if (action === 'approve') {
         // Prefer the body's verdict, but fall back to what was already
         // persisted on the assessment (set by send_to_approver) so the
@@ -152,7 +157,7 @@ export const POST = withAuth(
         const result = (body.assessmentResult as string | undefined) || persistedResult || null;
         const nextVendorStatus =
           result === 'Deficient' ? 'Onboarding'
-          : (result === 'Satisfactory' || result === 'Unsatisfactory') ? 'Onboarded'
+          : (result === 'Satisfactory' || result === 'Unsatisfactory') ? 'Inactive'
           // No verdict at all — don't silently clear the vendor; leave
           // them in Onboarding until someone records an outcome.
           : 'Onboarding';
@@ -252,17 +257,43 @@ export const POST = withAuth(
 
         let newIssueCount = 0;
         if (issueData.length > 0) {
-          // Remove duplicates: skip if remediation already exists for this assessment+questionNo
+          // Re-approval after a return cycle is now common: the
+          // assessor may have edited severity/issue/risk/recommendation
+          // text on the second pass. Existing remediations get UPDATED
+          // (severity, text, due date) instead of being silently skipped
+          // by a questionNo dedup. Only brand-new ones get a new
+          // ISS-* code.
           const existingRems = await prisma.tPRMIssueRemediation.findMany({
             where: { customerAccountId, assessmentId: id },
-            select: { questionNo: true },
+            select: { id: true, questionNo: true, status: true },
           });
-          const existingQNos = new Set(existingRems.map(r => r.questionNo));
-          const newIssueData = issueData.filter(d => !existingQNos.has(d.questionNo));
+          const existingByQNo = new Map(existingRems.map((r) => [r.questionNo, r]));
+
+          const updates = issueData.filter((d) => existingByQNo.has(d.questionNo));
+          const newIssueData = issueData.filter((d) => !existingByQNo.has(d.questionNo));
           newIssueCount = newIssueData.length;
 
+          // Refresh existing remediations that aren't already closed —
+          // don't reopen Closed/Satisfied items, just keep the
+          // assessor's latest verdict on still-open ones.
+          for (const d of updates) {
+            const existing = existingByQNo.get(d.questionNo)!;
+            if (existing.status === 'Closed' || existing.status === 'Satisfied') continue;
+            await prisma.tPRMIssueRemediation.update({
+              where: { id: existing.id },
+              data: {
+                severity: d.severity,
+                issue: d.issue,
+                risk: d.risk,
+                recommendation: d.recommendation,
+                description: d.description,
+                dueDate: d.dueDate,
+              },
+            });
+          }
+
           if (newIssueData.length === 0) {
-            console.log(`[ASR] All ${issueData.length} remediations already exist for assessment ${id}, skipping`);
+            console.log(`[ASR] ${updates.length} remediation(s) refreshed; no new ones to create for assessment ${id}`);
           } else {
           // Get the last issue code number for this customer
           const lastIssue = await prisma.tPRMIssueRemediation.findFirst({

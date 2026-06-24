@@ -278,7 +278,12 @@ export default function ASRAssessmentDetailPage() {
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsScope, setLogsScope] = useState<"assessment" | "question">("assessment");
   const [reportOpen, setReportOpen] = useState(false);
-  const [reportResult, setReportResult] = useState<string>("Satisfactory");
+  // Start unselected, not pre-selected to "Satisfactory". Pre-selecting
+  // risked an approver clicking Approve in one go and silently shipping
+  // the wrong verdict — the bug the verdict-carry-over fix tried to
+  // address from a different angle. The assessor's prior verdict is
+  // applied from the assessment record in loadAssessment() below.
+  const [reportResult, setReportResult] = useState<string>("");
 
   // Override form
   const [overrideStatus, setOverrideStatus] = useState<string>("");
@@ -654,6 +659,18 @@ export default function ASRAssessmentDetailPage() {
   // ── Approve (Approver role) ───────────────────────────────────────────
 
   const handleApprove = async () => {
+    // Require an explicit verdict before approving. Without this,
+    // an approver could one-click "Approve" with no Sat/Unsat/Deficient
+    // selected and silently ship the assessor's last persisted value
+    // (or nothing).
+    if (!reportResult) {
+      toast({
+        title: t("Verdict required"),
+        description: t("Please select Satisfactory, Unsatisfactory, or Deficient before approving."),
+        variant: "destructive",
+      });
+      return;
+    }
     // Validate clarifications before approving
     const ok = await checkOpenClarifications();
     if (!ok) return;
@@ -736,6 +753,17 @@ export default function ASRAssessmentDetailPage() {
 
   const handleSendToApprover = async () => {
     if (!selectedApproverId) return;
+    // Match handleApprove: require a verdict before handing off to the
+    // approver, otherwise the approver inherits no value and is back
+    // to staring at an empty radio.
+    if (!reportResult) {
+      toast({
+        title: t("Verdict required"),
+        description: t("Please select Satisfactory, Unsatisfactory, or Deficient before sending to the approver."),
+        variant: "destructive",
+      });
+      return;
+    }
     setSendingToApprover(true);
     try {
       const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/complete`, {
@@ -1899,6 +1927,7 @@ export default function ASRAssessmentDetailPage() {
                   selection so the report reads as a real conclusion
                   rather than a static template. */}
               <p className="text-sm leading-relaxed pl-2 italic text-muted-foreground">
+                {!reportResult && t("Select Satisfactory, Unsatisfactory, or Deficient to record your conclusion.")}
                 {reportResult === "Satisfactory" && t("The vendor's control environment is satisfactory and aligns with the organization's risk appetite. No further remediation is required at this time; the vendor is approved to proceed.")}
                 {reportResult === "Unsatisfactory" && t("The vendor's control environment is unsatisfactory. The findings listed below must be remediated within the timelines provided before the engagement can be considered low risk.")}
                 {reportResult === "Deficient" && t("The vendor's control environment is deficient and presents material risk. Immediate corrective action is required, and the engagement should not proceed until the high-severity findings are addressed.")}
