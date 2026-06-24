@@ -53,6 +53,28 @@ export const POST = withAuth(
         return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
       }
 
+      // Server-side write guard for SMEs. After the page now shows
+      // every question to SMEs (for context), a logged-in SME could
+      // POST a response to any questionId in the assessment because
+      // there's no role-level gate. Restrict SMEs to the questions
+      // they are explicitly delegated. AM/AccountManager/admin paths
+      // are unaffected.
+      const isSME = session.roles.includes('TPRMSME');
+      const isAM = session.roles.includes('AccountManager') || session.roles.includes('CustomerAdministrator') || session.roles.includes('GRCAdministrator');
+      if (isSME && !isAM) {
+        const existing = await prisma.tPRMAssessmentResponse.findUnique({
+          where: { assessmentId_questionId: { assessmentId, questionId } },
+          select: { delegatedToId: true, isDelegated: true },
+        });
+        const isDelegatee = existing?.isDelegated && existing.delegatedToId === session.id;
+        if (!isDelegatee) {
+          return NextResponse.json(
+            { error: 'You can only edit questions that have been delegated to you.' },
+            { status: 403 },
+          );
+        }
+      }
+
       const result = await prisma.tPRMAssessmentResponse.upsert({
         where: {
           assessmentId_questionId: { assessmentId, questionId },
@@ -134,6 +156,33 @@ export const PATCH = withAuth(
 
       if (!Array.isArray(responses)) {
         return NextResponse.json({ error: 'responses array is required' }, { status: 400 });
+      }
+
+      // Server-side write guard for SMEs (mirrors the POST path).
+      // Without this, an SME could PATCH-bulk responses for questions
+      // not delegated to them. Restrict the batch to the SME's
+      // delegated questions for SME-only sessions.
+      const isSME = session.roles.includes('TPRMSME');
+      const isAM = session.roles.includes('AccountManager') || session.roles.includes('CustomerAdministrator') || session.roles.includes('GRCAdministrator');
+      if (isSME && !isAM) {
+        const questionIds = responses.map((r) => r.questionId).filter(Boolean);
+        const allowed = await prisma.tPRMAssessmentResponse.findMany({
+          where: {
+            assessmentId,
+            questionId: { in: questionIds },
+            isDelegated: true,
+            delegatedToId: session.id,
+          },
+          select: { questionId: true },
+        });
+        const allowedSet = new Set(allowed.map((r) => r.questionId));
+        const blocked = questionIds.filter((q) => !allowedSet.has(q));
+        if (blocked.length > 0) {
+          return NextResponse.json(
+            { error: `${blocked.length} question(s) are not delegated to you.` },
+            { status: 403 },
+          );
+        }
       }
 
       // Collect every SME a question is being delegated to in this

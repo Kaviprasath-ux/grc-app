@@ -1172,13 +1172,16 @@ export default function ASRAssessmentDetailPage() {
                 if (effStatus === "satisfactory") sat++;
                 else if (effStatus === "unsatisfactory") unsat++;
               }
-              const satPct = total > 0 ? (sat / total) * 100 : 0;
-              const unsatPct = total > 0 ? (unsat / total) * 100 : 0;
-              // "Compliance" reads sat-of-evaluated, not sat-of-total —
-              // unanswered/N-A questions shouldn't drag the score down.
+              // Bar widths and the compliance % share the same
+              // denominator so a "100%" label always matches a
+              // visually full teal bar. "Compliance" intentionally
+              // reads sat-of-evaluated, not sat-of-total —
+              // unanswered/NA questions shouldn't drag the score down.
               const evaluated = sat + unsat;
+              const satPct = evaluated > 0 ? (sat / evaluated) * 100 : 0;
+              const unsatPct = evaluated > 0 ? (unsat / evaluated) * 100 : 0;
               const compliancePct = evaluated > 0 ? Math.round((sat / evaluated) * 100) : 0;
-              return { domain, total, satPct, unsatPct, compliancePct };
+              return { domain, total, evaluated, satPct, unsatPct, compliancePct };
             })
             .filter(d => d.total > 0);
 

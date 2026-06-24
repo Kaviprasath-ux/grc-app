@@ -76,7 +76,14 @@ export const POST = withAuth(
       } else if (action === 'approve') {
         updateData.status = 'Approved';
         updateData.approvalDate = new Date();
-        updateData.assessmentResult = body.assessmentResult || null;
+        // Consistent with send_to_approver / complete: only update the
+        // verdict when the caller explicitly provides one. Prior code
+        // wiped to null on empty, which would clobber the verdict the
+        // assessor set earlier in send_to_approver — leaving the
+        // Approved row with no recorded result.
+        if (body.assessmentResult) {
+          updateData.assessmentResult = body.assessmentResult;
+        }
         logMessage = `Assessment approved by ${session.name || session.email}`;
       } else if (action === 'return_to_assessor') {
         updateData.status = 'Returned';

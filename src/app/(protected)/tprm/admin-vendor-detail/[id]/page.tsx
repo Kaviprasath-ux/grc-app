@@ -356,12 +356,32 @@ function OnboardingAnswerRows({ vendor, t }: { vendor: VendorDetail; t: (s: stri
   } catch { /* ignore */ }
 
   const rows: { id: string; label: string; value: string; indent: boolean }[] = [];
+  // Track which answer IDs we've matched against the active question
+  // catalogue so we can still surface orphaned answers (where the
+  // question was deactivated after the vendor onboarded). Without
+  // this, the admin would silently see fewer answers than the BO
+  // actually recorded.
+  const matched = new Set<string>();
   for (const pq of vendor.onboardingQuestions || []) {
     const pAns = answers[pq.id];
-    if (pAns) rows.push({ id: pq.id, label: pq.title, value: pAns, indent: false });
+    if (pAns) {
+      rows.push({ id: pq.id, label: pq.title, value: pAns, indent: false });
+      matched.add(pq.id);
+    }
     for (const child of pq.children || []) {
       const cAns = answers[child.id];
-      if (cAns) rows.push({ id: child.id, label: child.title, value: cAns, indent: true });
+      if (cAns) {
+        rows.push({ id: child.id, label: child.title, value: cAns, indent: true });
+        matched.add(child.id);
+      }
+    }
+  }
+  // Surface any orphaned answers (question deleted/deactivated but
+  // answer remains on the vendor) with an "archived" suffix so the
+  // admin knows the response existed but the question is gone.
+  for (const [qid, ans] of Object.entries(answers)) {
+    if (!matched.has(qid) && ans) {
+      rows.push({ id: qid, label: t("Onboarding question (archived)"), value: ans, indent: false });
     }
   }
 

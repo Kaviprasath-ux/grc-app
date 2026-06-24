@@ -196,6 +196,18 @@ export default function AsrAssessmentFactoryPage() {
       return;
     }
 
+    // Zero-byte artifacts confuse the Python ingest backend (it 500s
+    // mid-pipeline with no useful error). Catch them upfront.
+    const emptyArtifact = artifactFiles.find((f) => (f.size || 0) === 0);
+    if (emptyArtifact) {
+      toast({
+        title: t("Empty file"),
+        description: `"${emptyArtifact.name}" ${t("is empty (0 bytes). Please re-attach or remove it.")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setGenerating(true);
     setJobStatus(t("Parsing template..."));
     try {
@@ -400,8 +412,20 @@ export default function AsrAssessmentFactoryPage() {
     return (r.complianceStatus || "").trim().toLowerCase() === statusFilter.trim().toLowerCase();
   }) || [];
 
+  // Dedupe statuses case-insensitively after trim, so backend
+  // inconsistencies like "Satisfactory" vs "satisfactory " don't show
+  // up as two separate filter options. Display value is the first
+  // canonical-cased seen.
   const uniqueStatuses = activeReport
-    ? [...new Set(activeReport.rows.map(r => r.complianceStatus).filter(Boolean))]
+    ? Array.from(
+        activeReport.rows.reduce((acc, r) => {
+          const raw = (r.complianceStatus || '').trim();
+          if (!raw) return acc;
+          const key = raw.toLowerCase();
+          if (!acc.has(key)) acc.set(key, raw);
+          return acc;
+        }, new Map<string, string>()).values()
+      )
     : [];
 
   // ── Report Results View ──────────────────────────
@@ -547,7 +571,7 @@ export default function AsrAssessmentFactoryPage() {
 
         {/* Import dialog (also available from report view) */}
         <Dialog open={importOpen} onOpenChange={(open) => { if (generating && !open) return; setImportOpen(open); }}>
-          <DialogContent className="!max-w-lg" onPointerDownOutside={(e) => { if (generating) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (generating) e.preventDefault(); }}>
+          <DialogContent className="!max-w-lg" showCloseButton={!generating} onPointerDownOutside={(e) => { if (generating) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (generating) e.preventDefault(); }}>
             <DialogHeader>
               <DialogTitle>{importStep === 1 ? t("Import Template") : t("Upload Artifacts")}</DialogTitle>
             </DialogHeader>

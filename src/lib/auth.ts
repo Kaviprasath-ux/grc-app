@@ -295,12 +295,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // updates this in signIn(); without doing it here too, the
         // Last Login column stayed blank for every username/password
         // user (which is most TPRM AMs/SMEs/admins).
-        await prisma.user.update({
+        //
+        // Fire-and-forget — login shouldn't pay a round-trip latency
+        // cost or fail on a non-essential stat write.
+        void prisma.user.update({
           where: { id: user.id },
           data: { lastLogin: new Date() },
         }).catch((err) => {
-          // Non-fatal — login shouldn't fail just because we couldn't
-          // record the timestamp.
           console.error('[AUTH] Failed to update lastLogin:', err);
         });
 

@@ -6,8 +6,9 @@ import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis'
 // time can easily push past the default 10s serverless cap. Keep the
 // Node runtime (formData() needs it) and raise the wall-clock limit
 // so the ingest call has room to complete on multi-doc payloads.
+// 60s is the Vercel Hobby tier ceiling — bump on Pro+ if needed.
 export const runtime = 'nodejs';
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 /**
  * POST /api/tprm/assessment-factory

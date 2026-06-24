@@ -175,7 +175,16 @@ export const POST = withAuth(
       // compute from config. Falls back to schema defaults (30 days) when no
       // TPRMConfiguration row exists yet, so brand-new tenants still get a
       // sensible due date instead of null.
-      let computedDueDate: Date | null = body.dueDate ? new Date(body.dueDate) : null;
+      // Honour explicit dueDate from the caller, but reject empty
+       // strings / unparseable values that would otherwise become
+       // Invalid Date in the DB column.
+      let computedDueDate: Date | null = null;
+      if (body.dueDate) {
+        const parsed = new Date(body.dueDate);
+        if (!isNaN(parsed.getTime())) {
+          computedDueDate = parsed;
+        }
+      }
       if (!computedDueDate) {
         try {
           const cfg = await prisma.tPRMConfiguration.findUnique({

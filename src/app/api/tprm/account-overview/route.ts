@@ -205,8 +205,12 @@ export const GET = withAuth(
           // within the same tenant.
           // SME linkage: each SME User has createdById pointing at the
           // AM that created them, so we fan out from the AM ids.
+          // Split on any common separator + whitespace. Users
+           // sometimes paste emails space- or newline-separated, and
+           // the prior /[;,]/ split would treat "a@x b@x" as a single
+           // string and resolve only the first AM.
           const amEmails = (vendor.accountManagerEmail || "")
-            .split(/[;,]/)
+            .split(/[;,\s\n]+/)
             .map((e) => e.trim().toLowerCase())
             .filter(Boolean);
 

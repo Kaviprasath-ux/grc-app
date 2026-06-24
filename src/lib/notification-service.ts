@@ -1754,7 +1754,7 @@ class NotificationService {
       message: `Remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} has been assigned to you for IT review.`,
       relatedEntityType: 'remediation',
       relatedEntityId: params.remediationId,
-      link: `/tprm/rm-issues`,
+      link: `/tprm/it-issues`,
       channels: params.channels,
       metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
     });
@@ -1810,7 +1810,7 @@ class NotificationService {
       message: `IT remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} has been approved.`,
       relatedEntityType: 'remediation',
       relatedEntityId: params.remediationId,
-      link: `/tprm/rm-issues`,
+      link: `/tprm/it-issues`,
       channels: params.channels,
       metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
     });
@@ -1841,7 +1841,7 @@ class NotificationService {
         : `IT remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} returned. Please revise.`,
       relatedEntityType: 'remediation',
       relatedEntityId: params.remediationId,
-      link: `/tprm/rm-issues`,
+      link: `/tprm/it-issues`,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
       metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle, reason: params.reason },
