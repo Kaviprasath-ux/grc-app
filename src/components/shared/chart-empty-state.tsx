@@ -34,7 +34,7 @@ export function ChartEmptyState({ variant, height = 300, label }: Props) {
         {variant === "bar" && <BarSkeleton />}
         {variant === "barVertical" && <BarVerticalSkeleton />}
       </div>
-      <p className="text-xs">{text}</p>
+      <p className="text-sm">{text}</p>
     </div>
   );
 }
@@ -43,7 +43,7 @@ function PieSkeleton() {
   // Three faint wedges + a small inner ring so the silhouette reads as
   // a pie/donut chart at a glance.
   return (
-    <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+    <svg width="220" height="220" viewBox="0 0 120 120" aria-hidden="true">
       <circle cx="60" cy="60" r="48" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 3" />
       <path d="M60 60 L60 12 A48 48 0 0 1 102 84 Z" fill="currentColor" opacity="0.12" />
       <path d="M60 60 L102 84 A48 48 0 0 1 24 78 Z" fill="currentColor" opacity="0.18" />
@@ -57,7 +57,7 @@ function BarSkeleton() {
   // Four horizontal bars of decreasing width — matches the Vendors /
   // Domains charts on the assessor dashboard.
   return (
-    <svg width="160" height="100" viewBox="0 0 160 100" aria-hidden="true">
+    <svg width="320" height="200" viewBox="0 0 160 100" aria-hidden="true">
       {[
         { y: 8, w: 140 },
         { y: 32, w: 100 },
@@ -72,7 +72,7 @@ function BarSkeleton() {
 
 function BarVerticalSkeleton() {
   return (
-    <svg width="160" height="100" viewBox="0 0 160 100" aria-hidden="true">
+    <svg width="280" height="180" viewBox="0 0 160 100" aria-hidden="true">
       {[
         { x: 8, h: 70 },
         { x: 44, h: 50 },
