@@ -45,6 +45,18 @@ or the View dialog) — a formal declaration document using the browser print
 dialog (no server dependency). Shared statement/result text lives in
 `src/lib/independence-declaration.ts` so the form and the printout never drift.
 
+**Audit Trail** (`/internal-audit/audit-trail`, resource `audit.audit-trail`): an
+immutable, append-only activity log. Each record captures User Name, User Role,
+Action (Create / Update / Delete / Approve / Login / Logout / …), Module/Entity,
+Record Identifier, and Date & Time. **Auto-captured** — `withAuth` records every
+successful mutating request (non-`view` action, 2xx) and NextAuth `events`
+record Login/Logout (`src/lib/audit-trail.ts`, model `AuditTrail`). **Scope**:
+standard users (`scope: own`) see only their own activity; Customer Admin and
+senior audit roles (`scope: all`) see all activity within their organization,
+with filters (User Name, User Role, Action Type, Module, Date range) + free-text
+search, sortable columns, and pagination. **Read-only** — the API exposes GET
+only (no create/update/delete), so logs cannot be modified or removed by users.
+
 All pages are available in **English, Arabic (RTL), and Latvian**.
 
 ---

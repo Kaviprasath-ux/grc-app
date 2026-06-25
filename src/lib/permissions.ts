@@ -121,6 +121,7 @@ export const RESOURCES = {
   'audit.settings': '/internal-audit/settings',
   'audit.risk-universe': '/internal-audit/risk-universe',
   'audit.process': '/internal-audit/organization/process',
+  'audit.audit-trail': '/internal-audit/audit-trail',
 
   // TPRM Internal IT Team resources
   'tprm.it-issues': '/tprm/it-issues',
@@ -406,6 +407,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.process', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     // CustomerAdmin can manage audit settings (types, categories, etc.) but NOT access User Management
     { resource: 'audit.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    // Audit Trail — CustomerAdmin sees ALL users' activity in the org (scope all)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'all' },
     // TPRM module — gated by moduleCode="TPRM" assignment + customer's isTprmAdded flag
     { resource: 'tprm.program-monitor', actions: ['view'], scope: 'all' },
     { resource: 'tprm.control-center', actions: ['*'], scope: 'all' },
@@ -445,6 +448,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.documents', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // Audit Trail — AuditHead sees only their OWN activity (only Customer Admin sees all)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
     { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
@@ -469,6 +474,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.documents', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // Audit Trail — AuditManager sees only their OWN activity (only Customer Admin sees all)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
     { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
@@ -486,6 +493,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.reports', actions: ['view'], scope: 'all' },
     { resource: 'audit.capa', actions: ['view'], scope: 'all' },
     { resource: 'audit.documents', actions: ['view'], scope: 'all' },
+    // Audit Trail — standard user sees only their OWN activity (scope own)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
   ],
 
@@ -509,6 +518,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.documents', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // Audit Trail — Auditor sees only their OWN activity (scope own)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
     { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
@@ -523,6 +534,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.fieldwork', actions: ['view', 'edit'], scope: 'department' },
     { resource: 'audit.reports', actions: ['view'], scope: 'department' },
     { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'department' },
+    // Audit Trail — Auditee sees only their OWN activity (scope own)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
   ],
 
   // Reviewer - Full CRUD same as CustomerAdministrator, but NO access to settings pages

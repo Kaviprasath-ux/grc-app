@@ -2745,6 +2745,23 @@ CREATE TABLE "AuditFeedbackSurvey" (
 );
 
 -- CreateTable
+CREATE TABLE "AuditTrail" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "userId" TEXT,
+    "userName" TEXT NOT NULL,
+    "userRole" TEXT,
+    "action" TEXT NOT NULL,
+    "module" TEXT NOT NULL,
+    "recordId" TEXT,
+    "description" TEXT,
+    "ipAddress" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuditTrail_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "InternalAuditDocument" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
@@ -5395,6 +5412,21 @@ CREATE UNIQUE INDEX "AuditFeedbackSurvey_engagementId_key" ON "AuditFeedbackSurv
 
 -- CreateIndex
 CREATE INDEX "AuditFeedbackSurvey_customerAccountId_idx" ON "AuditFeedbackSurvey"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_customerAccountId_idx" ON "AuditTrail"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_userId_idx" ON "AuditTrail"("userId");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_createdAt_idx" ON "AuditTrail"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_module_idx" ON "AuditTrail"("module");
+
+-- CreateIndex
+CREATE INDEX "AuditTrail_action_idx" ON "AuditTrail"("action");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "InternalAuditDocument_documentCode_key" ON "InternalAuditDocument"("documentCode");

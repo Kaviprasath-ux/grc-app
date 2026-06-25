@@ -3882,6 +3882,29 @@ model AuditFeedbackSurvey {
   @@index([customerAccountId])
 }
 
+// ==================== AUDIT TRAIL (activity log) ====================
+// Immutable, append-only record of significant user actions across the platform.
+// Written by recordAuditTrail() (src/lib/audit-trail.ts); never updated/deleted by users.
+model AuditTrail {
+  id                String   @id @default(cuid())
+  customerAccountId String? // tenant isolation
+  userId            String? // actor (null if user later deleted)
+  userName          String // snapshot of the actor's name at action time
+  userRole          String? // snapshot of the actor's role(s)
+  action            String // Create | Update | Delete | Submit | Approve | Reject | Login | Logout | View | Export ...
+  module            String // module / entity name (e.g. "Operational Plan")
+  recordId          String? // identifier of the affected record
+  description       String?  @db.Text // optional human-readable detail
+  ipAddress         String?
+  createdAt         DateTime @default(now())
+
+  @@index([customerAccountId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([module])
+  @@index([action])
+}
+
 // ==================== INTERNAL AUDIT - DOCUMENT LIBRARY ====================
 
 // Internal Audit Document (for document library)

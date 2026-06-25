@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import type { SubscriptionStatus, SubscriptionType } from "@prisma/client";
 import { expandRolePermissions, type UserPermission } from "@/lib/permissions";
 import { getAccessSnapshot } from "@/lib/module-access";
+import { recordAuditTrail } from "@/lib/audit-trail";
 
 // Shared query for loading user with all relations needed for session
 const userSelect = {
@@ -498,6 +499,75 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
       }
       return session;
+    },
+  },
+  events: {
+    // Audit Trail: capture authentication events.
+    async signIn({ user }) {
+      try {
+        const u = user as {
+          id?: string;
+          email?: string | null;
+          name?: string | null;
+          fullName?: string | null;
+          role?: string | null;
+          customerAccountId?: string | null;
+        };
+        let customerAccountId = u.customerAccountId ?? null;
+        let role = u.role ?? null;
+        let name = u.fullName || u.name || u.email || "Unknown";
+        if ((!customerAccountId || !role) && u.id) {
+          const db = await prisma.user
+            .findUnique({
+              where: { id: u.id },
+              select: { customerAccountId: true, fullName: true, role: true },
+            })
+            .catch(() => null);
+          if (db) {
+            customerAccountId = customerAccountId ?? db.customerAccountId ?? null;
+            role = role ?? db.role ?? null;
+            name = db.fullName || name;
+          }
+        }
+        await recordAuditTrail({
+          customerAccountId,
+          userId: u.id ?? null,
+          userName: name,
+          userRole: role,
+          action: "Login",
+          module: "Authentication",
+        });
+      } catch (error) {
+        console.error("[audit-trail] signIn event error:", error);
+      }
+    },
+    async signOut(message) {
+      try {
+        const token = (message as { token?: Record<string, unknown> }).token;
+        if (!token) return;
+        const userId = (token.id as string) || (token.sub as string) || null;
+        let name = (token.name as string) || (token.email as string) || "Unknown";
+        let role = (token.role as string) || null;
+        if (userId && (name === "Unknown" || !role)) {
+          const db = await prisma.user
+            .findUnique({ where: { id: userId }, select: { fullName: true, role: true } })
+            .catch(() => null);
+          if (db) {
+            name = db.fullName || name;
+            role = role || db.role;
+          }
+        }
+        await recordAuditTrail({
+          customerAccountId: (token.customerAccountId as string) ?? null,
+          userId,
+          userName: name,
+          userRole: role,
+          action: "Logout",
+          module: "Authentication",
+        });
+      } catch (error) {
+        console.error("[audit-trail] signOut event error:", error);
+      }
     },
   },
   session: {
