@@ -22,7 +22,10 @@ export const GET = withAuth(
           initiatedBy: { select: { id: true, fullName: true } },
           assessor: { select: { id: true, fullName: true } },
           approver: { select: { id: true, fullName: true } },
-          logs: { orderBy: { logDate: 'desc' }, take: 50 },
+          // No `take` cap — activity logs must persist for the life of
+          // the assessment. Prior cap of 50 silently dropped older
+          // entries on busy assessments.
+          logs: { orderBy: { logDate: 'desc' } },
           responses: {
             orderBy: { questionNo: 'asc' },
             include: {

@@ -42,7 +42,12 @@ export const GET = withAuth(
           initiatedBy: { select: { id: true, fullName: true } },
           assessor: { select: { id: true, fullName: true } },
           approver: { select: { id: true, fullName: true } },
-          logs: { orderBy: { logDate: 'desc' }, take: 100 },
+          // No `take` cap: activity logs are the audit trail of the
+          // assessment and must remain available for the lifetime of
+          // the assessment. Capping at 100 silently dropped the oldest
+          // entries (initiation, AM assignment, early submissions) the
+          // moment a busy assessment crossed that threshold.
+          logs: { orderBy: { logDate: 'desc' } },
           responses: { orderBy: { questionNo: 'asc' } },
         },
       });
