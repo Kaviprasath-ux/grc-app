@@ -13,6 +13,7 @@ import {
   Loader2,
   Search,
   CheckCircle2,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,10 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  DECLARATION_STATEMENTS as STATEMENTS,
+  DECLARATION_RESULTS as RESULTS,
+} from "@/lib/independence-declaration";
 
 interface Declaration {
   id: string;
@@ -54,34 +59,6 @@ interface Declaration {
   status: string;
   createdAt: string;
 }
-
-// Fixed declaration statements (from the IIA-aligned declaration forms).
-const STATEMENTS: Record<string, string[]> = {
-  Independence: [
-    "I have no personal, financial, or professional interests that could impair my independence.",
-    "I have not been involved in operational responsibilities related to the audited area during the past 12 months.",
-    "I have no close relationships with personnel working in the audited department that may affect my impartiality.",
-    "I will immediately disclose any situation that may arise which could affect my independence.",
-  ],
-  Objectivity: [
-    "I will conduct the audit without bias, conflict of interest, or undue influence.",
-    "My conclusions will be based solely on sufficient and appropriate audit evidence.",
-    "I will disclose any circumstances that may affect my professional judgment.",
-    "I will adhere to the Code of Ethics and Objectivity principles established by The Institute of Internal Auditors.",
-  ],
-};
-
-// Result options per type: value -> label
-const RESULTS: Record<string, { value: string; label: string }[]> = {
-  Independence: [
-    { value: "Confirmed", label: "I confirm full independence" },
-    { value: "PotentialImpairment", label: "Potential impairment exists" },
-  ],
-  Objectivity: [
-    { value: "NoThreats", label: "No threats to objectivity identified" },
-    { value: "PotentialThreat", label: "Potential threat identified" },
-  ],
-};
 
 const EMPTY = {
   type: "Independence",
@@ -353,6 +330,15 @@ export default function IndependencePage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" title={t("View")} onClick={() => openEdit(d, true)}>
                           <Search className="h-4 w-4 text-slate-400" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title={t("Print")}
+                          onClick={() => window.open(`/internal-audit/independence/${d.id}/print`, "_blank")}
+                        >
+                          <Printer className="h-4 w-4 text-slate-400" />
+                        </Button>
                         {canEdit && (
                           <Button variant="ghost" size="icon" className="h-8 w-8" title={t("Edit")} onClick={() => openEdit(d, false)}>
                             <Pencil className="h-4 w-4 text-slate-400" />
@@ -498,6 +484,21 @@ export default function IndependencePage() {
               </div>
             )}
           </div>
+
+          {readOnly && (
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("Close")}</Button>
+              {editingId && (
+                <Button
+                  className="bg-primary-600 hover:bg-primary-700"
+                  onClick={() => window.open(`/internal-audit/independence/${editingId}/print`, "_blank")}
+                >
+                  <Printer className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Print / Save as PDF")}
+                </Button>
+              )}
+            </DialogFooter>
+          )}
 
           {!readOnly && (
             <DialogFooter className="gap-2">

@@ -39,6 +39,11 @@ team members record declarant info, fixed declaration statements, a result
 explanation, and a typed signature; an Audit Head / Manager reviews and signs
 off (status Draft → Submitted → Reviewed). Stored in the `AuditDeclaration`
 model (`type` = Independence | Objectivity), tenant + audit-head isolated.
+Each declaration can be **printed / saved as PDF** via a dedicated print view
+(`/internal-audit/independence/[id]/print`, opened from the row **Print** action
+or the View dialog) — a formal declaration document using the browser print
+dialog (no server dependency). Shared statement/result text lives in
+`src/lib/independence-declaration.ts` so the form and the printout never drift.
 
 All pages are available in **English, Arabic (RTL), and Latvian**.
 
