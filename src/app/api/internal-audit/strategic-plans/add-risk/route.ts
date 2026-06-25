@@ -45,9 +45,16 @@ export const POST = withAuth(
       if (!risk) {
         return NextResponse.json({ error: "Risk not found" }, { status: 404 });
       }
-      if (risk.inherentScore == null || risk.residualScore == null) {
+      // A risk is plannable if the assessment wizard marked it Assessed (sets
+      // assessmentResidualScore) OR it carries the legacy inherent+residual scores.
+      const effectiveResidual =
+        risk.assessmentResidualScore != null
+          ? Math.round(risk.assessmentResidualScore)
+          : risk.residualScore;
+      const isAssessed = risk.assessmentStatus === "Assessed" || effectiveResidual != null;
+      if (!isAssessed) {
         return NextResponse.json(
-          { error: "Risk is not fully assessed (needs inherent and residual)." },
+          { error: "Risk is not fully assessed." },
           { status: 400 }
         );
       }
@@ -109,7 +116,7 @@ export const POST = withAuth(
                 ? body.reasonForScheduling.trim()
                 : null,
             notes: typeof body.notes === "string" && body.notes.trim() ? body.notes.trim() : null,
-            residualScore: risk.residualScore,
+            residualScore: effectiveResidual,
             riskLevel: risk.riskLevel,
             priorityRank: 1,
           },

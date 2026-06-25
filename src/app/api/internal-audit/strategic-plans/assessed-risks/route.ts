@@ -22,8 +22,13 @@ export const GET = withAuth(
         where: {
           ...tenantFilter,
           ...(auditHeadId ? { auditHeadId } : {}),
-          inherentScore: { not: null },
-          residualScore: { not: null },
+          // A risk counts as assessed if the assessment wizard marked it Assessed
+          // (sets assessmentResidualScore/assessmentStatus) OR it carries the
+          // legacy inherent+residual scores (older seeded data).
+          OR: [
+            { assessmentStatus: "Assessed" },
+            { AND: [{ inherentScore: { not: null } }, { residualScore: { not: null } }] },
+          ],
           ...(usedRiskIds.length ? { id: { notIn: usedRiskIds } } : {}),
         },
         select: {
@@ -32,10 +37,11 @@ export const GET = withAuth(
           riskName: true,
           inherentScore: true,
           residualScore: true,
+          assessmentResidualScore: true,
           riskLevel: true,
           department: { select: { id: true, name: true } },
         },
-        orderBy: [{ residualScore: "desc" }, { inherentScore: "desc" }],
+        orderBy: [{ assessmentResidualScore: "desc" }, { residualScore: "desc" }],
       });
 
       return NextResponse.json(
@@ -44,7 +50,8 @@ export const GET = withAuth(
           riskId: r.riskId,
           riskName: r.riskName,
           inherentScore: r.inherentScore,
-          residualScore: r.residualScore,
+          // Prefer the wizard's residual score; fall back to the legacy column.
+          residualScore: r.assessmentResidualScore ?? r.residualScore,
           riskLevel: r.riskLevel,
           departmentName: r.department?.name ?? null,
         }))
