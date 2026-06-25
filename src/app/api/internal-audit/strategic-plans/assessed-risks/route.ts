@@ -22,13 +22,10 @@ export const GET = withAuth(
         where: {
           ...tenantFilter,
           ...(auditHeadId ? { auditHeadId } : {}),
-          // A risk counts as assessed if the assessment wizard marked it Assessed
-          // (sets assessmentResidualScore/assessmentStatus) OR it carries the
-          // legacy inherent+residual scores (older seeded data).
-          OR: [
-            { assessmentStatus: "Assessed" },
-            { AND: [{ inherentScore: { not: null } }, { residualScore: { not: null } }] },
-          ],
+          // A risk only counts as assessed once the assessment wizard has been
+          // completed (assessmentStatus = "Assessed"). Legacy inherent/residual
+          // columns alone do NOT make a risk assessed.
+          assessmentStatus: "Assessed",
           ...(usedRiskIds.length ? { id: { notIn: usedRiskIds } } : {}),
         },
         select: {

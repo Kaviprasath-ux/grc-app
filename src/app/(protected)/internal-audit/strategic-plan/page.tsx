@@ -471,8 +471,6 @@ export default function StrategicPlanPage() {
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pl-5 rtl:pr-5">{t("Risk ID")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Department")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Inherent Score")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Residual Score")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Risk Level")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">{t("Actions")}</TableHead>
               </TableRow>
@@ -480,7 +478,7 @@ export default function StrategicPlanPage() {
             <TableBody>
               {filteredAssessedRisks.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-sm text-slate-400">
+                  <TableCell colSpan={5} className="text-center py-8 text-sm text-slate-400">
                     {assessedRisks.length === 0
                       ? t("No assessed risks available to plan")
                       : t("No risks match the selected risk level.")}
@@ -492,8 +490,6 @@ export default function StrategicPlanPage() {
                     <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{r.riskId}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{r.riskName}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{r.departmentName || "—"}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{r.inherentScore ?? "—"}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{r.residualScore ?? "—"}</TableCell>
                     <TableCell className="py-3">
                       {r.riskLevel ? (
                         <Badge className={statusColor(r.riskLevel)}>{r.riskLevel}</Badge>
@@ -618,10 +614,6 @@ export default function StrategicPlanPage() {
                 <div>
                   <span className="text-slate-500">{t("Department")}: </span>
                   {planDialogRisk.departmentName || "—"}
-                </div>
-                <div>
-                  <span className="text-slate-500">{t("Residual Score")}: </span>
-                  {planDialogRisk.residualScore ?? "—"}
                 </div>
               </div>
 

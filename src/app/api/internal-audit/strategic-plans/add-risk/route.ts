@@ -51,8 +51,8 @@ export const POST = withAuth(
         risk.assessmentResidualScore != null
           ? Math.round(risk.assessmentResidualScore)
           : risk.residualScore;
-      const isAssessed = risk.assessmentStatus === "Assessed" || effectiveResidual != null;
-      if (!isAssessed) {
+      // Only wizard-assessed risks (assessmentStatus = "Assessed") can be planned.
+      if (risk.assessmentStatus !== "Assessed") {
         return NextResponse.json(
           { error: "Risk is not fully assessed." },
           { status: 400 }
