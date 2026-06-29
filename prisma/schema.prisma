@@ -3263,6 +3263,11 @@ model AuditEngagement {
   // Findings communication strategy (Phase 4): Continuous (shared individually)
   // vs Aggregated (consolidated into the draft detailed report)
   reportingMode       String                     @default("Aggregated") // Continuous, Aggregated
+  // AI Findings Review (external Python API): overall roll-up summary for all
+  // findings (result.overall), the job id of the last run, and when it ran.
+  aiFindingsReviewOverall Json? // { overall_compliance_status, overall_confidence, total_findings, status_breakdown, evaluated_findings, compliance_rate_excluding_insufficient }
+  aiFindingsReviewJobId   String?
+  aiFindingsReviewedAt    DateTime?
   // Timestamps
   createdAt           DateTime                   @default(now())
   updatedAt           DateTime                   @updatedAt
@@ -3663,6 +3668,12 @@ model InternalAuditFinding {
   aiReviewApproved    Boolean             @default(false) // Has Audit Head approved the review?
   aiApprovedAt        DateTime? // When Audit Head approved
   aiApprovedBy        String? // Audit Head user ID who approved
+  // AI Findings Review (external Python API): per-finding compliance verdict
+  // returned by the findings_review job (result.findings[]). Distinct from the
+  // CAPA evidence review above (aiReviewStatus/aiReviewDescription).
+  aiFindingReview       Json? // { compliance_status, confidence, confidence_breakdown, reasoning_summary, evidence[], verification }
+  aiFindingReviewStatus String? // denormalized verdict for list badge: Compliant | Non-Compliant | Partially Compliant | Insufficient Evidence
+  aiFindingReviewedAt   DateTime?
   // Timestamps
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt

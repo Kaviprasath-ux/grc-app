@@ -1141,6 +1141,29 @@ const translations: [string, string, string][] = [
   ['Needs Attention', 'يحتاج اهتمام', 'Nepieciešama uzmanība'],
   ['Audit Committee, CFO, Controller, IT Head', 'لجنة التدقيق، المدير المالي، المراقب المالي، رئيس تقنية المعلومات', 'Revīzijas komiteja, CFO, kontrolieris, IT vadītājs'],
 
+  // INTERNAL AUDIT - AI FINDINGS REVIEW
+  ['AI Findings Review', 'مراجعة النتائج بالذكاء الاصطناعي', 'AI atzinumu pārskats'],
+  ['AI Finding Summary', 'ملخص النتائج بالذكاء الاصطناعي', 'AI atzinumu kopsavilkums'],
+  ['AI review in progress…', 'جاري إجراء المراجعة بالذكاء الاصطناعي…', 'Notiek AI pārskatīšana…'],
+  ['AI review completed', 'اكتملت المراجعة بالذكاء الاصطناعي', 'AI pārskatīšana pabeigta'],
+  ['Failed to run AI review', 'فشل تشغيل المراجعة بالذكاء الاصطناعي', 'Neizdevās palaist AI pārskatīšanu'],
+  ['No AI review has been run yet.', 'لم يتم تشغيل أي مراجعة بالذكاء الاصطناعي بعد.', 'AI pārskatīšana vēl nav veikta.'],
+  ["Evaluate all findings against the organization's policy documents.", 'تقييم جميع النتائج مقابل وثائق سياسات المؤسسة.', 'Novērtēt visus atzinumus pret organizācijas politikas dokumentiem.'],
+  ['Re-run AI Review', 'إعادة تشغيل المراجعة بالذكاء الاصطناعي', 'Atkārtot AI pārskatīšanu'],
+  ['Confidence', 'الثقة', 'Pārliecība'],
+  ['Total findings', 'إجمالي النتائج', 'Kopā atzinumi'],
+  ['Evaluated', 'تم تقييمها', 'Novērtēts'],
+  ['Compliance rate', 'معدل الامتثال', 'Atbilstības līmenis'],
+  ['Reviewed', 'تمت المراجعة', 'Pārskatīts'],
+  ['Reasoning', 'التحليل', 'Pamatojums'],
+  ['Verification', 'التحقق', 'Pārbaude'],
+  ['Evidence', 'الأدلة', 'Pierādījumi'],
+  ['Cited', 'مُستشهد به', 'Citēts'],
+  ['Compliant', 'ملتزم', 'Atbilstošs'],
+  ['Non-Compliant', 'غير ملتزم', 'Neatbilstošs'],
+  ['Partially Compliant', 'ملتزم جزئياً', 'Daļēji atbilstošs'],
+  ['Insufficient Evidence', 'أدلة غير كافية', 'Nepietiekami pierādījumi'],
+
   // ==========================================
   // AI FRAMEWORK DIALOG
   // ==========================================

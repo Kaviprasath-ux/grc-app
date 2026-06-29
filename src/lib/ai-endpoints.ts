@@ -68,6 +68,13 @@ export const AI_ENDPOINTS = {
   DOCUMENT_SEARCH: '/api/document_search',
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Internal Audit — Findings Review (async compliance review of findings)
+  // ─────────────────────────────────────────────────────────────────────────
+  FINDINGS_REVIEW: '/api/findings_review_async',
+  FINDINGS_REVIEW_STATUS: '/api/findings_review_status',
+  FINDINGS_REVIEW_RESULT: '/api/findings_review_result',
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Document Library Ingestion (simple_ingest)
   // ─────────────────────────────────────────────────────────────────────────
   SIMPLE_INGEST: '/api/simple_ingest',
@@ -135,6 +142,9 @@ export const ENDPOINT_NAMES: Record<string, string> = {
   [AI_ENDPOINTS.AUDIT_QUERY]: 'Audit Query',
   [AI_ENDPOINTS.SIMPLE_QUERY]: 'Simple Query',
   [AI_ENDPOINTS.DOCUMENT_SEARCH]: 'Document Search',
+  [AI_ENDPOINTS.FINDINGS_REVIEW]: 'Findings Review (Async)',
+  [AI_ENDPOINTS.FINDINGS_REVIEW_STATUS]: 'Findings Review Status',
+  [AI_ENDPOINTS.FINDINGS_REVIEW_RESULT]: 'Findings Review Result',
   [AI_ENDPOINTS.RISK_SUGGEST]: 'Risk Suggestion',
   [AI_ENDPOINTS.GENERATE_WORKPAPERS]: 'Workpapers Generation',
   [AI_ENDPOINTS.GENERATE_AUDIT_PLAN]: 'Audit Plan Generation',

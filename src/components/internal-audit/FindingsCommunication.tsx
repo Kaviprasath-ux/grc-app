@@ -32,6 +32,9 @@ import {
   Plus,
   Trash2,
   Download,
+  Sparkles,
+  ClipboardCheck,
+  FileText,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { confirm } from "@/components/ui/confirm";
@@ -52,6 +55,43 @@ interface FindingsResponse {
   findings: Finding[];
 }
 
+// ----- AI Findings Review (external Python API response shapes) -----
+interface AiOverall {
+  overall_compliance_status?: string;
+  overall_confidence?: number;
+  total_findings?: number;
+  status_breakdown?: Record<string, number>;
+  evaluated_findings?: number;
+  compliance_rate_excluding_insufficient?: number;
+}
+
+interface AiEvidence {
+  ref?: string;
+  file_name?: string;
+  page_label?: string;
+  excerpt?: string;
+  similarity_score?: number;
+  cited_in_decision?: boolean;
+}
+
+interface AiVerification {
+  supported?: boolean;
+  contradiction?: boolean;
+  notes?: string;
+  initial_status?: string;
+  final_status?: string;
+}
+
+interface AiFindingReview {
+  index?: number;
+  finding_title?: string;
+  compliance_status?: string;
+  confidence?: number;
+  reasoning_summary?: string;
+  evidence?: AiEvidence[];
+  verification?: AiVerification;
+}
+
 interface FindingsCommunicationProps {
   engagementId: string;
   canEdit: boolean;
@@ -70,6 +110,13 @@ export default function FindingsCommunication({
   const [savingMode, setSavingMode] = useState<boolean>(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyAll, setBusyAll] = useState<boolean>(false);
+
+  // ----- AI Findings Review -----
+  const [aiBusy, setAiBusy] = useState<boolean>(false);
+  const [aiOverall, setAiOverall] = useState<AiOverall | null>(null);
+  const [aiReviewedAt, setAiReviewedAt] = useState<string | null>(null);
+  const [aiReviews, setAiReviews] = useState<Record<string, AiFindingReview>>({});
+  const [reviewDialog, setReviewDialog] = useState<AiFindingReview | null>(null);
 
   // ----- Add Finding -----
   const [addOpen, setAddOpen] = useState<boolean>(false);
@@ -249,6 +296,66 @@ export default function FindingsCommunication({
     void loadFindings();
   }, [loadFindings]);
 
+  // Re-hydrate any saved AI Findings Review so the summary + per-finding
+  // verdicts survive a page reload.
+  const loadAiReview = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/internal-audit/engagements/${engagementId}/findings/ai-review`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) return;
+      const data: {
+        overall: AiOverall | null;
+        reviewedAt: string | null;
+        findings: Array<{ id: string; review: AiFindingReview | null }>;
+      } = await res.json();
+      setAiOverall(data.overall ?? null);
+      setAiReviewedAt(data.reviewedAt ?? null);
+      const map: Record<string, AiFindingReview> = {};
+      for (const f of data.findings || []) {
+        if (f.review) map[f.id] = f.review;
+      }
+      setAiReviews(map);
+    } catch {
+      /* non-fatal */
+    }
+  }, [engagementId]);
+
+  useEffect(() => {
+    void loadAiReview();
+  }, [loadAiReview]);
+
+  const handleRunAiReview = async () => {
+    setAiBusy(true);
+    try {
+      const res = await fetch(
+        `/api/internal-audit/engagements/${engagementId}/findings/ai-review`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data?.error || t("Failed to run AI review"));
+        return;
+      }
+      setAiOverall(data.overall ?? null);
+      setAiReviewedAt(data.reviewedAt ?? null);
+      const map: Record<string, AiFindingReview> = {};
+      for (const f of (data.findings || []) as Array<{
+        id: string | null;
+        review: AiFindingReview;
+      }>) {
+        if (f.id && f.review) map[f.id] = f.review;
+      }
+      setAiReviews(map);
+      toast.success(t("AI review completed"));
+    } catch {
+      toast.error(t("Failed to run AI review"));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const handleModeChange = async (mode: ReportingMode) => {
     if (mode === reportingMode) return;
     const previous = reportingMode;
@@ -371,6 +478,24 @@ export default function FindingsCommunication({
     }
   };
 
+  const complianceBadgeClass = (statusValue?: string): string => {
+    switch ((statusValue || "").toLowerCase()) {
+      case "compliant":
+        return "bg-green-100 text-green-700";
+      case "non-compliant":
+        return "bg-red-100 text-red-700";
+      case "partially compliant":
+        return "bg-amber-100 text-amber-700";
+      case "insufficient evidence":
+        return "bg-slate-200 text-slate-600";
+      default:
+        return "bg-slate-100 text-slate-600";
+    }
+  };
+
+  const formatPct = (value?: number): string =>
+    typeof value === "number" ? `${Math.round(value * 100)}%` : "—";
+
   const modeHelper =
     reportingMode === "Continuous"
       ? t(
@@ -451,6 +576,109 @@ export default function FindingsCommunication({
           </p>
         </CardContent>
       </Card>
+
+      {/* AI Findings Review */}
+      {findings.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-500" />
+              {t("AI Findings Review")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!aiOverall ? (
+              // Button — hidden once the review completes and the summary shows
+              <div className="flex flex-col items-start gap-2">
+                {canEdit ? (
+                  <Button onClick={handleRunAiReview} disabled={aiBusy}>
+                    {aiBusy ? (
+                      <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    )}
+                    {aiBusy ? t("AI review in progress…") : t("AI Finding Summary")}
+                  </Button>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    {t("No AI review has been run yet.")}
+                  </p>
+                )}
+                <p className="text-xs text-slate-400">
+                  {t(
+                    "Evaluate all findings against the organization's policy documents."
+                  )}
+                </p>
+              </div>
+            ) : (
+              // Overall summary card — shown in place of the button
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      className={complianceBadgeClass(
+                        aiOverall.overall_compliance_status
+                      )}
+                    >
+                      {t(aiOverall.overall_compliance_status || "—")}
+                    </Badge>
+                    <span className="text-sm text-slate-500">
+                      {t("Confidence")}: {formatPct(aiOverall.overall_confidence)}
+                    </span>
+                  </div>
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRunAiReview}
+                      disabled={aiBusy}
+                    >
+                      {aiBusy ? (
+                        <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                      )}
+                      {t("Re-run AI Review")}
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {Object.entries(aiOverall.status_breakdown || {}).map(
+                    ([label, count]) => (
+                      <div
+                        key={label}
+                        className="rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2"
+                      >
+                        <p className="text-xs text-slate-500">{t(label)}</p>
+                        <p className="text-lg font-semibold text-slate-800">
+                          {count}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500">
+                  <span>
+                    {t("Total findings")}: {aiOverall.total_findings ?? "—"}
+                  </span>
+                  <span>
+                    {t("Evaluated")}: {aiOverall.evaluated_findings ?? "—"}
+                  </span>
+                  <span>
+                    {t("Compliance rate")}:{" "}
+                    {formatPct(aiOverall.compliance_rate_excluding_insufficient)}
+                  </span>
+                  {aiReviewedAt && (
+                    <span>
+                      {t("Reviewed")}: {formatDate(aiReviewedAt)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Aggregated: add multiple findings inline (no separate page) */}
       {reportingMode === "Aggregated" && canEdit && (
@@ -679,6 +907,30 @@ export default function FindingsCommunication({
                       <p className="font-medium text-slate-700 break-words">
                         {f.finding}
                       </p>
+                      {aiReviews[f.id] && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <Badge
+                            className={complianceBadgeClass(
+                              aiReviews[f.id].compliance_status
+                            )}
+                          >
+                            {t(aiReviews[f.id].compliance_status || "—")}
+                          </Badge>
+                          <span className="text-xs text-slate-400">
+                            {t("Confidence")}:{" "}
+                            {formatPct(aiReviews[f.id].confidence)}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => setReviewDialog(aiReviews[f.id])}
+                          >
+                            <ClipboardCheck className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                            {t("Review")}
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     {reportingMode === "Continuous" && (
@@ -845,6 +1097,91 @@ export default function FindingsCommunication({
             <Button onClick={handleAddFinding} disabled={savingFinding}>
               {savingFinding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t("Add Finding")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Per-finding AI review dialog */}
+      <Dialog
+        open={!!reviewDialog}
+        onOpenChange={(open) => !open && setReviewDialog(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-500" />
+              {t("AI Review")}
+            </DialogTitle>
+          </DialogHeader>
+          {reviewDialog && (
+            <div className="space-y-4 py-2 text-sm">
+              <p className="font-medium text-slate-800">
+                {reviewDialog.finding_title}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  className={complianceBadgeClass(reviewDialog.compliance_status)}
+                >
+                  {t(reviewDialog.compliance_status || "—")}
+                </Badge>
+                <span className="text-slate-500">
+                  {t("Confidence")}: {formatPct(reviewDialog.confidence)}
+                </span>
+              </div>
+
+              {reviewDialog.reasoning_summary && (
+                <div>
+                  <Label className="text-slate-500">{t("Reasoning")}</Label>
+                  <p className="mt-1 text-slate-700">
+                    {reviewDialog.reasoning_summary}
+                  </p>
+                </div>
+              )}
+
+              {reviewDialog.verification?.notes && (
+                <div>
+                  <Label className="text-slate-500">
+                    {t("Verification")}
+                  </Label>
+                  <p className="mt-1 text-slate-700">
+                    {reviewDialog.verification.notes}
+                  </p>
+                </div>
+              )}
+
+              {Array.isArray(reviewDialog.evidence) &&
+                reviewDialog.evidence.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-slate-500">{t("Evidence")}</Label>
+                    {reviewDialog.evidence.map((ev, i) => (
+                      <div
+                        key={i}
+                        className="rounded-md border border-slate-200 bg-slate-50/60 p-3"
+                      >
+                        <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                          <FileText className="h-3.5 w-3.5" />
+                          <span className="font-medium">
+                            {ev.file_name || ev.ref || `E${i}`}
+                          </span>
+                          {ev.cited_in_decision && (
+                            <Badge className="bg-violet-100 text-violet-700 h-5">
+                              {t("Cited")}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-600 whitespace-pre-wrap">
+                          {ev.excerpt}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewDialog(null)}>
+              {t("Close")}
             </Button>
           </DialogFooter>
         </DialogContent>
