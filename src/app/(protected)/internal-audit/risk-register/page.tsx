@@ -367,6 +367,7 @@ export default function RiskRegisterPage() {
   const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
   const { data: translatedProbabilities } = useTranslatedData(probabilities, { modelName: 'AuditProbability' });
   const { data: translatedImpacts } = useTranslatedData(impacts, { modelName: 'AuditImpact' });
+  const { data: translatedIAProcesses } = useTranslatedData(iaProcesses, { modelName: 'InternalAuditProcess' });
 
   // Lookup helpers for translated names in table/view
   const tDept = (id: string | null) => translatedDepartments.find(d => d.id === id)?.name;
@@ -2254,9 +2255,9 @@ export default function RiskRegisterPage() {
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Processes")}</Label>
                   <div className="mt-1.5 border rounded-md bg-white max-h-40 overflow-y-auto p-2 space-y-1">
-                    {iaProcesses.length === 0 ? (
+                    {translatedIAProcesses.length === 0 ? (
                       <p className="text-xs text-slate-400 py-2 text-center">{t("No processes available")}</p>
-                    ) : iaProcesses.map(proc => {
+                    ) : translatedIAProcesses.map(proc => {
                       const isSelected = selectedProcessIds.includes(proc.id);
                       return (
                         <div

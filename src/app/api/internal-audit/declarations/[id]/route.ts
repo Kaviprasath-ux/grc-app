@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter, getCustomerAccountId } from '@/lib/api-auth';
+import { translateRecord } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -36,6 +37,7 @@ export const PATCH = withAuth(
       const body = await req.json();
       const tenantFilter = getTenantFilter(session);
       const auditHeadFilter = getAuditHeadFilter(session);
+      const customerAccountId = getCustomerAccountId(session);
 
       const existing = await prisma.auditDeclaration.findFirst({
         where: { id, ...tenantFilter, ...auditHeadFilter },
@@ -66,6 +68,11 @@ export const PATCH = withAuth(
       const declaration = await prisma.auditDeclaration.update({
         where: { id: existing.id },
         data,
+      });
+      void translateRecord(customerAccountId, 'AuditDeclaration', declaration.id, {
+        declarantName: declaration.declarantName || '',
+        position: declaration.position || '',
+        engagement: declaration.engagement || '',
       });
       return NextResponse.json(declaration);
     } catch (error) {

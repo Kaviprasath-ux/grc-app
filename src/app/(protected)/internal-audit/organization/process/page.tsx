@@ -151,6 +151,12 @@ export default function InternalAuditProcessPage() {
   const { data: translatedProcesses } = useTranslatedData(processes, {
     modelName: "InternalAuditProcess",
   });
+  const { data: translatedDepartments } = useTranslatedData(departments, {
+    modelName: "Department",
+  });
+  const { data: translatedCategories } = useTranslatedData(categories, {
+    modelName: "AuditCategory",
+  });
 
   useEffect(() => {
     void fetchAll();
@@ -450,7 +456,7 @@ export default function InternalAuditProcessPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("All Departments")}</SelectItem>
-            {departments.map((d) => (
+            {translatedDepartments.map((d) => (
               <SelectItem key={d.id} value={d.id}>
                 {d.name}
               </SelectItem>
@@ -525,13 +531,13 @@ export default function InternalAuditProcessPage() {
                       </span>
                     </td>
                     <td className="text-start py-3.5 text-sm text-slate-600">
-                      {p.category?.name || "-"}
+                      {p.categoryId ? (translatedCategories.find((c) => c.id === p.categoryId)?.name ?? p.category?.name ?? "-") : "-"}
                     </td>
                     <td className="text-start py-3.5 text-sm text-slate-600">
                       {auditHeadUsers.find((u) => u.id === p.processOwner)?.fullName || "-"}
                     </td>
                     <td className="text-start py-3.5 text-sm text-slate-600">
-                      {p.department?.name || "-"}
+                      {p.departmentId ? (translatedDepartments.find((d) => d.id === p.departmentId)?.name ?? p.department?.name ?? "-") : "-"}
                     </td>
                     {(canEdit || canDelete) && (
                       <td className="text-end py-3.5 pe-5">
@@ -628,7 +634,7 @@ export default function InternalAuditProcessPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("Select")}</SelectItem>
-                    {departments.map((d) => (
+                    {translatedDepartments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
                       </SelectItem>
@@ -657,7 +663,7 @@ export default function InternalAuditProcessPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("Select")}</SelectItem>
-                  {categories.map((c) => (
+                  {translatedCategories.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
                     </SelectItem>

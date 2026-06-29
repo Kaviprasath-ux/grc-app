@@ -50,6 +50,7 @@ export const GET = withAuth(
           // Prefer the wizard's residual score; fall back to the legacy column.
           residualScore: r.assessmentResidualScore ?? r.residualScore,
           riskLevel: r.riskLevel,
+          departmentId: r.department?.id ?? null,
           departmentName: r.department?.name ?? null,
         }))
       );

@@ -7,6 +7,7 @@ import {
   getCustomerAccountId,
   getAuditHeadId,
 } from '@/lib/api-auth';
+import { translateRecord } from '@/lib/translation-service';
 
 const TYPES = ['Independence', 'Objectivity'];
 
@@ -77,6 +78,11 @@ export const POST = withAuth(
           employeeSignature: body.employeeSignature || null,
           status: body.status === 'Submitted' ? 'Submitted' : 'Draft',
         },
+      });
+      void translateRecord(customerAccountId, 'AuditDeclaration', declaration.id, {
+        declarantName: declaration.declarantName || '',
+        position: declaration.position || '',
+        engagement: declaration.engagement || '',
       });
       return NextResponse.json(declaration, { status: 201 });
     } catch (error) {

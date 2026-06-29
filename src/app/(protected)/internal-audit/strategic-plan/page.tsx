@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface PlanItem {
   id: string;
@@ -77,6 +78,7 @@ interface AssessedRisk {
   inherentScore: number | null;
   residualScore: number | null;
   riskLevel: string | null;
+  departmentId: string | null;
   departmentName: string | null;
 }
 
@@ -170,11 +172,12 @@ export default function StrategicPlanPage() {
 
   // ----- Risk Assessment section (assessed risks not yet added to a plan) -----
   const [assessedRisks, setAssessedRisks] = useState<AssessedRisk[]>([]);
+  const { data: translatedAssessedRisks } = useTranslatedData(assessedRisks, { modelName: 'InternalAuditRisk' });
   const [riskLevelFilter, setRiskLevelFilter] = useState<string>("all");
   const filteredAssessedRisks =
     riskLevelFilter === "all"
-      ? assessedRisks
-      : assessedRisks.filter(
+      ? translatedAssessedRisks
+      : translatedAssessedRisks.filter(
           (r) => (r.riskLevel || "").toLowerCase() === riskLevelFilter.toLowerCase()
         );
 
@@ -188,6 +191,38 @@ export default function StrategicPlanPage() {
 
   // Audit types (from Audit Settings) for the Add Plan dialog dropdown.
   const [auditTypes, setAuditTypes] = useState<{ id: string; name: string }[]>([]);
+  const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
+  // Map original audit type name → translated name for table display
+  const auditTypeTranslationMap = useMemo(() => {
+    const map = new Map<string, string>();
+    auditTypes.forEach((at, i) => {
+      const translated = translatedAuditTypes[i];
+      if (translated) map.set(at.name, translated.name);
+    });
+    return map;
+  }, [auditTypes, translatedAuditTypes]);
+
+  // Department translation — build unique dept list from assessedRisks for lookup
+  const uniqueDepartments = useMemo(() => {
+    const seen = new Set<string>();
+    const depts: { id: string; name: string }[] = [];
+    for (const r of assessedRisks) {
+      if (r.departmentId && !seen.has(r.departmentId)) {
+        seen.add(r.departmentId);
+        depts.push({ id: r.departmentId, name: r.departmentName ?? "" });
+      }
+    }
+    return depts;
+  }, [assessedRisks]);
+  const { data: translatedDepartments } = useTranslatedData(uniqueDepartments, { modelName: 'Department' });
+  const deptNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    uniqueDepartments.forEach((d, i) => {
+      const translated = translatedDepartments[i];
+      if (translated) map.set(d.id, translated.name);
+    });
+    return map;
+  }, [uniqueDepartments, translatedDepartments]);
   useEffect(() => {
     (async () => {
       try {
@@ -489,10 +524,10 @@ export default function StrategicPlanPage() {
                   <TableRow key={r.id} className="border-b border-slate-100 last:border-0">
                     <TableCell className="py-3 text-sm font-medium text-slate-800 ltr:pl-5 rtl:pr-5">{r.riskId}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{r.riskName}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{r.departmentName || "—"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{r.departmentId ? (deptNameMap.get(r.departmentId) ?? r.departmentName) : r.departmentName || "—"}</TableCell>
                     <TableCell className="py-3">
                       {r.riskLevel ? (
-                        <Badge className={statusColor(r.riskLevel)}>{r.riskLevel}</Badge>
+                        <Badge className={statusColor(r.riskLevel)}>{t(r.riskLevel)}</Badge>
                       ) : (
                         "—"
                       )}
@@ -549,7 +584,7 @@ export default function StrategicPlanPage() {
                       <TableRow key={it.id} className="border-b border-slate-100 last:border-0">
                         <TableCell className="py-3 text-sm text-slate-700 ltr:pl-5 rtl:pr-5">{idx + 1}</TableCell>
                         <TableCell className="py-3 text-sm font-medium text-slate-800">{it.title}</TableCell>
-                        <TableCell className="py-3 text-sm text-slate-700">{it.auditType || "—"}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{it.auditType ? (auditTypeTranslationMap.get(it.auditType) ?? it.auditType) : "—"}</TableCell>
                         <TableCell className="py-3 text-sm text-slate-700">
                           {plan.durationYears} {t("Years")}
                         </TableCell>
@@ -605,7 +640,7 @@ export default function StrategicPlanPage() {
                 </div>
                 <div>
                   <span className="text-slate-500">{t("Risk Level")}: </span>
-                  {planDialogRisk.riskLevel || "—"}
+                  {planDialogRisk.riskLevel ? t(planDialogRisk.riskLevel) : "—"}
                 </div>
                 <div className="col-span-2">
                   <span className="text-slate-500">{t("Risk")}: </span>
@@ -613,7 +648,7 @@ export default function StrategicPlanPage() {
                 </div>
                 <div>
                   <span className="text-slate-500">{t("Department")}: </span>
-                  {planDialogRisk.departmentName || "—"}
+                  {planDialogRisk.departmentId ? (deptNameMap.get(planDialogRisk.departmentId) ?? planDialogRisk.departmentName) : planDialogRisk.departmentName || "—"}
                 </div>
               </div>
 
@@ -629,9 +664,9 @@ export default function StrategicPlanPage() {
                         {t("No audit types found")}
                       </div>
                     ) : (
-                      auditTypes.map((at) => (
+                      auditTypes.map((at, i) => (
                         <SelectItem key={at.id} value={at.name}>
-                          {at.name}
+                          {translatedAuditTypes[i]?.name ?? at.name}
                         </SelectItem>
                       ))
                     )}
@@ -857,11 +892,11 @@ export default function StrategicPlanPage() {
                                 <TableRow key={it.id}>
                                   <TableCell>{it.priorityRank ?? "—"}</TableCell>
                                   <TableCell className="font-medium">{it.title}</TableCell>
-                                  <TableCell>{it.auditType || "—"}</TableCell>
+                                  <TableCell>{it.auditType ? (auditTypeTranslationMap.get(it.auditType) ?? it.auditType) : "—"}</TableCell>
                                   <TableCell>
                                     {it.riskLevel ? (
                                       <Badge className={riskLevelColor(it.riskLevel)}>
-                                        {it.riskLevel}
+                                        {t(it.riskLevel)}
                                       </Badge>
                                     ) : (
                                       "—"

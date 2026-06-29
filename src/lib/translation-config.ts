@@ -69,6 +69,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'FieldworkEvidenceAttachment', fields: [{ name: 'fileName' }], priority: 4 },
   { modelName: 'FindingAttachment', fields: [{ name: 'fileName' }], priority: 4 },
   { modelName: 'InternalAuditDocument', fields: [{ name: 'name' }, { name: 'fileName' }], priority: 4 },
+  { modelName: 'AuditDeclaration', fields: [{ name: 'declarantName' }, { name: 'position' }, { name: 'engagement' }], priority: 4 },
   { modelName: 'AuditType', fields: [{ name: 'name' }], priority: 4 },
   { modelName: 'AuditCategory', fields: [{ name: 'name' }], priority: 4 },
   { modelName: 'AuditSubCategory', fields: [{ name: 'name' }], priority: 4 },

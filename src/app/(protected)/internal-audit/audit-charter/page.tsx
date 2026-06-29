@@ -272,7 +272,7 @@ function EditableFieldsPanel({
           return (
             <div key={id} className="flex flex-col gap-1">
               <label className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                {labelFromDefault(defaultValue)}
+                {t(labelFromDefault(defaultValue))}
               </label>
               {isMultiline ? (
                 <Textarea

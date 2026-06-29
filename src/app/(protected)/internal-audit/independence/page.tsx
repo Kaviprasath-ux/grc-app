@@ -37,6 +37,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
+  useTranslatedData,
+  triggerTranslation,
+} from "@/hooks/useTranslatedData";
+import {
   DECLARATION_STATEMENTS as STATEMENTS,
   DECLARATION_RESULTS as RESULTS,
 } from "@/lib/independence-declaration";
@@ -85,6 +89,13 @@ export default function IndependencePage() {
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+
+  const { data: translatedDeclarations } = useTranslatedData(declarations, {
+    modelName: "AuditDeclaration",
+  });
+  const { data: translatedDepartments } = useTranslatedData(departments, {
+    modelName: "Department",
+  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -169,6 +180,12 @@ export default function IndependencePage() {
         },
       );
       if (!res.ok) throw new Error();
+      const saved = await res.json();
+      triggerTranslation("AuditDeclaration", saved.id, {
+        declarantName: saved.declarantName || "",
+        position: saved.position || "",
+        engagement: saved.engagement || "",
+      });
       toast.success(t("Declaration saved"));
       setDialogOpen(false);
       await load();
@@ -214,7 +231,7 @@ export default function IndependencePage() {
     return found ? t(found.label) : value;
   };
 
-  const filtered = declarations.filter((d) => {
+  const filtered = translatedDeclarations.filter((d) => {
     const matchesType = typeFilter === "all" || d.type === typeFilter;
     const q = search.toLowerCase();
     const matchesSearch =
@@ -397,9 +414,10 @@ export default function IndependencePage() {
                   <Select value={form.department} onValueChange={(v) => setForm((p) => ({ ...p, department: v }))} disabled={readOnly}>
                     <SelectTrigger className="bg-white mt-1"><SelectValue placeholder={t("Select department")} /></SelectTrigger>
                     <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                      ))}
+                      {departments.map((d) => {
+                        const display = translatedDepartments.find((td) => td.id === d.id)?.name ?? d.name;
+                        return <SelectItem key={d.id} value={d.name}>{display}</SelectItem>;
+                      })}
                       {/* Preserve a previously-saved value that is no longer in the list */}
                       {form.department && !departments.some((d) => d.name === form.department) && (
                         <SelectItem value={form.department}>{form.department}</SelectItem>
