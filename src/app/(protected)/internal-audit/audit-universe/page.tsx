@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 import {
   Tooltip,
   TooltipContent,
@@ -38,6 +39,7 @@ interface ProcessItem {
   processCode: string | null;
   name: string;
   description: string | null;
+  departmentId: string | null;
   departmentName: string | null;
 }
 
@@ -46,6 +48,7 @@ interface RiskItem {
   riskId: string;
   riskName: string;
   description: string | null;
+  departmentId: string | null;
   departmentName: string | null;
   regulatoryRequirement: string | null;
 }
@@ -55,6 +58,7 @@ interface AuditItem {
   auditId: string;
   engagementTitle: string;
   description: string | null;
+  departmentId: string | null;
   departmentName: string | null;
   lastAuditDate: string | null;
   actualHours: number;
@@ -92,6 +96,57 @@ export default function AuditUniversePage() {
     data?.categories.forEach(cat => cat.audits.forEach(a => ids.add(a.id)));
     return ids;
   }, [data]);
+
+  // Flatten nested data for translation hooks
+  const flatCategories = useMemo(
+    () => data?.categories.map(c => ({ id: c.id, name: c.name })) ?? [],
+    [data]
+  );
+  const flatProcesses = useMemo(
+    () => data?.categories.flatMap(c => c.processes) ?? [],
+    [data]
+  );
+  const flatRisks = useMemo(
+    () => data?.categories.flatMap(c => c.risks) ?? [],
+    [data]
+  );
+
+  // Flatten unique departments across all entities
+  const flatDepartments = useMemo(() => {
+    const seen = new Set<string>();
+    const depts: { id: string; name: string }[] = [];
+    const add = (id: string | null, name: string | null) => {
+      if (id && name && !seen.has(id)) { seen.add(id); depts.push({ id, name }); }
+    };
+    data?.categories.forEach(c => {
+      c.processes.forEach(p => add(p.departmentId, p.departmentName));
+      c.risks.forEach(r => add(r.departmentId, r.departmentName));
+      c.audits.forEach(a => add(a.departmentId, a.departmentName));
+    });
+    return depts;
+  }, [data]);
+
+  const { data: translatedCategories } = useTranslatedData(flatCategories, { modelName: 'AuditCategory' });
+  const { data: translatedProcesses } = useTranslatedData(flatProcesses, { modelName: 'InternalAuditProcess' });
+  const { data: translatedRisks } = useTranslatedData(flatRisks, { modelName: 'InternalAuditRisk' });
+  const { data: translatedDepartments } = useTranslatedData(flatDepartments, { modelName: 'Department' });
+
+  const catNameMap = useMemo(
+    () => new Map(translatedCategories.map(c => [c.id, c.name])),
+    [translatedCategories]
+  );
+  const processMap = useMemo(
+    () => new Map(translatedProcesses.map(p => [p.id, p])),
+    [translatedProcesses]
+  );
+  const riskMap = useMemo(
+    () => new Map(translatedRisks.map(r => [r.id, r])),
+    [translatedRisks]
+  );
+  const deptNameMap = useMemo(
+    () => new Map(translatedDepartments.map(d => [d.id, d.name])),
+    [translatedDepartments]
+  );
 
   useEffect(() => {
     fetchAuditUniverse();
@@ -263,7 +318,7 @@ export default function AuditUniversePage() {
                       {/* Category node */}
                       <div className="bg-primary-50 border border-primary-200 text-primary-700 px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 mb-5 min-w-[160px] justify-center">
                         <Tag className="h-3.5 w-3.5" />
-                        {cat.name}
+                        {catNameMap.get(cat.id) ?? cat.name}
                       </div>
 
                       {/* Three sub-groups */}
@@ -286,7 +341,7 @@ export default function AuditUniversePage() {
                                 <div className="rounded-xl px-4 py-2.5 min-w-[130px] text-center border border-blue-100 bg-blue-50/50">
                                   <div className="flex items-center justify-center gap-1.5 mb-0.5">
                                     <Workflow className="h-3 w-3 text-blue-400" />
-                                    <span className="text-xs font-semibold text-slate-700 truncate max-w-[100px]">{p.name}</span>
+                                    <span className="text-xs font-semibold text-slate-700 truncate max-w-[100px]">{processMap.get(p.id)?.name ?? p.name}</span>
                                   </div>
                                   {p.processCode && (
                                     <div className="text-xs text-blue-400 font-mono">{p.processCode}</div>
@@ -312,7 +367,7 @@ export default function AuditUniversePage() {
                                 <div className="w-0.5 h-3 bg-slate-200" />
                                 <div className="rounded-xl px-4 py-2.5 min-w-[130px] text-center border border-amber-100 bg-amber-50/50">
                                   <div className="text-xs font-mono text-amber-500 mb-0.5">{r.riskId}</div>
-                                  <div className="text-xs font-medium text-slate-700 truncate max-w-[120px]">{r.riskName}</div>
+                                  <div className="text-xs font-medium text-slate-700 truncate max-w-[120px]">{riskMap.get(r.id)?.riskName ?? r.riskName}</div>
                                 </div>
                               </div>
                             ))}
@@ -418,7 +473,7 @@ export default function AuditUniversePage() {
                       <TableCell colSpan={7} className="py-2 pl-5">
                         <div className="flex items-center gap-2">
                           <Tag className="h-3.5 w-3.5 text-primary-500" />
-                          <span className="text-xs font-semibold text-primary-700 uppercase tracking-wider">{cat.name}</span>
+                          <span className="text-xs font-semibold text-primary-700 uppercase tracking-wider">{catNameMap.get(cat.id) ?? cat.name}</span>
                           <span className="text-xs text-primary-500">
                             ({cat.processes.length} {t("process(es)")}, {cat.risks.length} {t("risk(s)")}, {cat.audits.length} {t("audit(s)")})
                           </span>
@@ -431,15 +486,15 @@ export default function AuditUniversePage() {
                         <TableCell className="py-3 pl-8">
                           <div className="flex items-center gap-2">
                             <Workflow className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                            <span className="text-sm font-medium text-slate-800">{p.name}</span>
+                            <span className="text-sm font-medium text-slate-800">{processMap.get(p.id)?.name ?? p.name}</span>
                             {p.processCode && (
                               <span className="text-xs font-mono text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded shrink-0">{p.processCode}</span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-sm text-slate-600">{p.departmentName || <span className="text-slate-300">—</span>}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-600">{((p.departmentId ? deptNameMap.get(p.departmentId) : null) ?? p.departmentName) || <span className="text-slate-300">—</span>}</TableCell>
                         <TableCell className="py-3 text-sm text-slate-500 max-w-[200px]">
-                          <span className="line-clamp-2">{p.description || <span className="text-slate-300">—</span>}</span>
+                          <span className="line-clamp-2">{(processMap.get(p.id)?.description ?? p.description) || <span className="text-slate-300">—</span>}</span>
                         </TableCell>
                         <TableCell className="py-3 text-sm text-slate-400">—</TableCell>
                         <TableCell className="py-3 text-sm text-slate-400">—</TableCell>
@@ -453,11 +508,11 @@ export default function AuditUniversePage() {
                         <TableCell className="py-3 pl-8">
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                            <span className="text-sm font-medium text-slate-800">{r.riskName}</span>
+                            <span className="text-sm font-medium text-slate-800">{riskMap.get(r.id)?.riskName ?? r.riskName}</span>
                             <span className="text-xs font-mono text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">{r.riskId}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-sm text-slate-600">{r.departmentName || <span className="text-slate-300">—</span>}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-600">{((r.departmentId ? deptNameMap.get(r.departmentId) : null) ?? r.departmentName) || <span className="text-slate-300">—</span>}</TableCell>
                         <TableCell className="py-3 text-sm text-slate-500 max-w-[200px]">
                           <span className="line-clamp-2">{r.description || <span className="text-slate-300">—</span>}</span>
                         </TableCell>
@@ -483,7 +538,7 @@ export default function AuditUniversePage() {
                             <span className="text-xs font-mono text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded shrink-0">{a.auditId}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-sm text-slate-600">{a.departmentName || <span className="text-slate-300">—</span>}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-600">{((a.departmentId ? deptNameMap.get(a.departmentId) : null) ?? a.departmentName) || <span className="text-slate-300">—</span>}</TableCell>
                         <TableCell className="py-3 text-sm text-slate-500 max-w-[200px]">
                           <span className="line-clamp-2">{a.description || <span className="text-slate-300">—</span>}</span>
                         </TableCell>
