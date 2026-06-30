@@ -86,6 +86,7 @@ export const GET = withAuth(
           auditId: string;
           engagementTitle: string;
           description: string | null;
+          departmentId: string | null;
           departmentName: string | null;
           lastAuditDate: string | null;
           status: string;
