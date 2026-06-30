@@ -35,6 +35,9 @@ import {
   Sparkles,
   ClipboardCheck,
   FileText,
+  Pencil,
+  X,
+  Check,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { confirm } from "@/components/ui/confirm";
@@ -48,6 +51,14 @@ interface Finding {
   severity: string;
   status: string;
   sharedWithAuditeeAt: string | null;
+  criteria: string | null;
+  condition: string | null;
+  cause: string | null;
+  effect: string | null;
+  recommendation: string | null;
+  responsiblePerson: string | null;
+  responsiblePersonId: string | null;
+  targetDate: string | null;
 }
 
 interface FindingsResponse {
@@ -108,7 +119,6 @@ export default function FindingsCommunication({
   const [findings, setFindings] = useState<Finding[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [savingMode, setSavingMode] = useState<boolean>(false);
-  const [busyId, setBusyId] = useState<string | null>(null);
   const [busyAll, setBusyAll] = useState<boolean>(false);
 
   // ----- AI Findings Review -----
@@ -119,8 +129,6 @@ export default function FindingsCommunication({
   const [reviewDialog, setReviewDialog] = useState<AiFindingReview | null>(null);
 
   // ----- Add Finding -----
-  const [addOpen, setAddOpen] = useState<boolean>(false);
-  const [savingFinding, setSavingFinding] = useState<boolean>(false);
   const [persons, setPersons] = useState<Array<{ id: string; name: string }>>([]);
   const emptyFinding = {
     title: "",
@@ -134,15 +142,13 @@ export default function FindingsCommunication({
     status: "Open",
     targetDate: "",
   };
-  const [findingForm, setFindingForm] = useState(emptyFinding);
-  const setF = (k: keyof typeof emptyFinding, v: string) =>
-    setFindingForm((p) => ({ ...p, [k]: v }));
 
-  // ----- Aggregated: inline multi-row finding entry -----
+  // ----- Inline multi-row finding entry (editable rows on top of the table) -----
   type FindingRow = typeof emptyFinding;
-  const [bulkRows, setBulkRows] = useState<FindingRow[]>(() => [{ ...emptyFinding }]);
+  const [bulkRows, setBulkRows] = useState<FindingRow[]>([]);
   const [savingBulk, setSavingBulk] = useState<boolean>(false);
-  const addBulkRow = () => setBulkRows((p) => [...p, { ...emptyFinding }]);
+  // New editable rows are prepended so the latest appears on top of the table.
+  const addBulkRow = () => setBulkRows((p) => [{ ...emptyFinding }, ...p]);
   const updateBulkRow = (idx: number, k: keyof FindingRow, v: string) =>
     setBulkRows((p) => {
       const next = [...p];
@@ -151,6 +157,68 @@ export default function FindingsCommunication({
     });
   const removeBulkRow = (idx: number) =>
     setBulkRows((p) => p.filter((_, i) => i !== idx));
+
+  // ----- Inline edit of an existing (saved) finding -----
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<FindingRow>(emptyFinding);
+  const [savingEdit, setSavingEdit] = useState<boolean>(false);
+  const setEf = (k: keyof FindingRow, v: string) =>
+    setEditForm((p) => ({ ...p, [k]: v }));
+  const startEdit = (f: Finding) => {
+    setEditingId(f.id);
+    setEditForm({
+      title: f.finding || "",
+      severity: f.severity || "Medium",
+      status: f.status || "Open",
+      criteria: f.criteria || "",
+      condition: f.condition || "",
+      cause: f.cause || "",
+      effect: f.effect || "",
+      recommendation: f.recommendation || "",
+      responsiblePersonId: f.responsiblePersonId || "",
+      targetDate: f.targetDate ? f.targetDate.slice(0, 10) : "",
+    });
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm(emptyFinding);
+  };
+  const handleSaveEdit = async (f: Finding) => {
+    if (!editForm.title.trim()) {
+      toast.error(t("Finding title is required"));
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const res = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/findings/${f.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: editForm.title.trim(),
+            severity: editForm.severity || "Medium",
+            status: editForm.status || "Open",
+            criteria: editForm.criteria || null,
+            condition: editForm.condition || null,
+            cause: editForm.cause || null,
+            effect: editForm.effect || null,
+            recommendation: editForm.recommendation || null,
+            responsiblePersonId: editForm.responsiblePersonId || null,
+            targetDate: editForm.targetDate || null,
+          }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed");
+      toast.success(t("Finding updated successfully"));
+      cancelEdit();
+      await loadFindings();
+    } catch {
+      toast.error(t("Failed to update finding"));
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const postFinding = async (f: FindingRow) => {
     const res = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, {
@@ -186,7 +254,7 @@ export default function FindingsCommunication({
     try {
       for (const r of valid) await postFinding(r);
       toast.success(t("Finding added successfully"));
-      setBulkRows([{ ...emptyFinding }]);
+      setBulkRows([]);
       await loadFindings();
     } catch {
       toast.error(t("Failed to add finding"));
@@ -213,45 +281,6 @@ export default function FindingsCommunication({
       }
     })();
   }, []);
-
-  const handleAddFinding = async () => {
-    if (!findingForm.title.trim()) {
-      toast.error(t("Finding title is required"));
-      return;
-    }
-    if (!findingForm.responsiblePersonId) {
-      toast.error(t("Responsible person is required"));
-      return;
-    }
-    setSavingFinding(true);
-    try {
-      const res = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: findingForm.title.trim(),
-          severity: findingForm.severity || "Medium",
-          criteria: findingForm.criteria || null,
-          condition: findingForm.condition || null,
-          cause: findingForm.cause || null,
-          effect: findingForm.effect || null,
-          recommendation: findingForm.recommendation || null,
-          responsiblePersonId: findingForm.responsiblePersonId || null,
-          status: findingForm.status || "Open",
-          targetDate: findingForm.targetDate || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      toast.success(t("Finding added successfully"));
-      setAddOpen(false);
-      setFindingForm(emptyFinding);
-      await loadFindings();
-    } catch {
-      toast.error(t("Failed to add finding"));
-    } finally {
-      setSavingFinding(false);
-    }
-  };
 
   const formatDate = useCallback((iso: string | null): string => {
     if (!iso) return "—";
@@ -381,41 +410,6 @@ export default function FindingsCommunication({
     }
   };
 
-  const handleShare = async (finding: Finding) => {
-    setBusyId(finding.id);
-    try {
-      const res = await fetch(
-        `/api/internal-audit/findings/${finding.id}/share`,
-        { method: "POST" }
-      );
-      if (!res.ok) throw new Error("Failed");
-      toast.success(t("Finding shared with auditor"));
-      await loadFindings();
-    } catch {
-      toast.error(t("Failed to share finding"));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handleUnshare = async (finding: Finding) => {
-    if (!(await confirm({ title: t("Unshare Finding?"), description: t("This action cannot be undone.") }))) return;
-    setBusyId(finding.id);
-    try {
-      const res = await fetch(
-        `/api/internal-audit/findings/${finding.id}/share`,
-        { method: "DELETE" }
-      );
-      if (!res.ok) throw new Error("Failed");
-      toast.success(t("Finding unshared"));
-      await loadFindings();
-    } catch {
-      toast.error(t("Failed to unshare finding"));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
   const handleShareAll = async () => {
     setBusyAll(true);
     try {
@@ -535,12 +529,6 @@ export default function FindingsCommunication({
                 <Download className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                 {t("Export Excel")}
               </Button>
-              {canEdit && reportingMode === "Continuous" && (
-                <Button size="sm" onClick={() => setAddOpen(true)}>
-                  <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                  {t("Add Finding")}
-                </Button>
-              )}
             </div>
           </div>
         </CardHeader>
@@ -680,43 +668,53 @@ export default function FindingsCommunication({
         </Card>
       )}
 
-      {/* Aggregated: add multiple findings inline (no separate page) */}
-      {reportingMode === "Aggregated" && canEdit && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="text-base">{t("Add Findings")}</CardTitle>
+      {/* Findings table — editable new rows on top, saved findings read-only below */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base">{t("Findings")}</CardTitle>
+            {canEdit && (
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={addBulkRow}>
                   <Plus className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                  {t("Add Row")}
+                  {t("Add Finding")}
                 </Button>
                 {bulkRows.length > 0 && (
                   <Button size="sm" onClick={handleSaveBulk} disabled={savingBulk}>
                     {savingBulk && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    {t("Save Findings")}
+                    {t("Save")}
                   </Button>
                 )}
               </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {findings.length === 0 && bulkRows.length === 0 ? (
+            <div className="border border-dashed rounded-lg p-8 text-center text-sm text-slate-500">
+              <p>{t("No findings recorded yet.")}</p>
+              <p className="mt-1 text-xs text-slate-400">
+                {t("Use Add Finding to record an audit finding.")}
+              </p>
             </div>
-          </CardHeader>
-          <CardContent>
+          ) : (
             <div className="overflow-x-auto">
-              <table className="border-collapse text-sm">
+              <table className="border-collapse text-sm w-full">
                 <thead>
                   <tr className="bg-slate-50/60">
                     {[
-                      ["#", "w-8"],
-                      ["Finding Title *", "min-w-[170px]"],
-                      ["Severity", "min-w-[120px]"],
-                      ["Status", "min-w-[120px]"],
-                      ["Criteria (What should be)", "min-w-[170px]"],
-                      ["Condition (What is)", "min-w-[170px]"],
-                      ["Cause (Why it happened)", "min-w-[170px]"],
-                      ["Effect (The consequence)", "min-w-[170px]"],
-                      ["Recommendation", "min-w-[170px]"],
-                      ["Responsible Person *", "min-w-[150px]"],
-                      ["Target Date", "min-w-[150px]"],
+                      ["#", "w-16"],
+                      ["Finding Title", "min-w-[170px]"],
+                      ["Severity", "min-w-[110px]"],
+                      ["Status", "min-w-[110px]"],
+                      ["Criteria (What should be)", "min-w-[160px]"],
+                      ["Condition (What is)", "min-w-[160px]"],
+                      ["Cause (Why it happened)", "min-w-[160px]"],
+                      ["Effect (The consequence)", "min-w-[160px]"],
+                      ["Recommendation", "min-w-[160px]"],
+                      ["Responsible Person", "min-w-[140px]"],
+                      ["Target Date", "min-w-[130px]"],
+                      ["AI Review", "min-w-[150px]"],
                       ["", "w-10"],
                     ].map(([label, w], i) => (
                       <th
@@ -729,9 +727,10 @@ export default function FindingsCommunication({
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Editable, unsaved rows (newest on top) */}
                   {bulkRows.map((row, idx) => (
-                    <tr key={idx} className="border-t border-slate-100 align-top">
-                      <td className="py-1.5 px-1.5 text-slate-500">{idx + 1}</td>
+                    <tr key={`new-${idx}`} className="border-t border-slate-100 align-top bg-violet-50/30">
+                      <td className="py-1.5 px-1.5 text-xs text-violet-500 font-medium">{t("New")}</td>
                       <td className="py-1.5 px-1">
                         <Input
                           value={row.title}
@@ -763,7 +762,7 @@ export default function FindingsCommunication({
                         <td key={k} className="py-1.5 px-1">
                           <Textarea
                             rows={2}
-                            className="min-w-[170px] text-xs"
+                            className="min-w-[160px] text-xs"
                             value={row[k]}
                             onChange={(e) => updateBulkRow(idx, k, e.target.value)}
                           />
@@ -795,26 +794,205 @@ export default function FindingsCommunication({
                           onChange={(e) => updateBulkRow(idx, "targetDate", e.target.value)}
                         />
                       </td>
+                      <td className="py-1.5 px-1.5 text-xs text-slate-400">—</td>
                       <td className="py-1.5 px-1 text-center">
-                        {bulkRows.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-red-500"
-                            onClick={() => removeBulkRow(idx)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-red-500"
+                          onClick={() => removeBulkRow(idx)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
+
+                  {/* Saved findings — read-only, or editable when being edited */}
+                  {findings.map((f) => {
+                    const review = aiReviews[f.id];
+                    const personLabel =
+                      persons.find((p) => p.id === f.responsiblePersonId)?.name ||
+                      f.responsiblePerson ||
+                      "—";
+                    const aiReviewCell = review ? (
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge className={complianceBadgeClass(review.compliance_status)}>
+                          {t(review.compliance_status || "—")}
+                        </Badge>
+                        <span className="text-[11px] text-slate-400">
+                          {t("Confidence")}: {formatPct(review.confidence)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setReviewDialog(review)}
+                        >
+                          <ClipboardCheck className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
+                          {t("Review")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    );
+
+                    // ----- Editable row (this finding is being edited) -----
+                    if (editingId === f.id) {
+                      return (
+                        <tr key={f.id} className="border-t border-slate-100 align-top bg-amber-50/40">
+                          <td className="py-1.5 px-1.5 font-mono text-xs text-slate-500 whitespace-nowrap">
+                            {f.findingId}
+                          </td>
+                          <td className="py-1.5 px-1">
+                            <Input
+                              value={editForm.title}
+                              onChange={(e) => setEf("title", e.target.value)}
+                              placeholder={t("Enter finding title")}
+                            />
+                          </td>
+                          <td className="py-1.5 px-1">
+                            <Select value={editForm.severity} onValueChange={(v) => setEf("severity", v)}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {["Critical", "High", "Medium", "Low"].map((s) => (
+                                  <SelectItem key={s} value={s}>{t(s)}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="py-1.5 px-1">
+                            <Select value={editForm.status} onValueChange={(v) => setEf("status", v)}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {["Open", "In Progress", "Closed"].map((s) => (
+                                  <SelectItem key={s} value={s}>{t(s)}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          {(["criteria", "condition", "cause", "effect", "recommendation"] as Array<keyof FindingRow>).map((k) => (
+                            <td key={k} className="py-1.5 px-1">
+                              <Textarea
+                                rows={2}
+                                className="min-w-[160px] text-xs"
+                                value={editForm[k]}
+                                onChange={(e) => setEf(k, e.target.value)}
+                              />
+                            </td>
+                          ))}
+                          <td className="py-1.5 px-1">
+                            <Select
+                              value={editForm.responsiblePersonId}
+                              onValueChange={(v) => setEf("responsiblePersonId", v)}
+                            >
+                              <SelectTrigger><SelectValue placeholder={t("Select person")} /></SelectTrigger>
+                              <SelectContent>
+                                {persons.length === 0 ? (
+                                  <div className="px-2 py-3 text-xs text-slate-400 text-center">
+                                    {t("No users found")}
+                                  </div>
+                                ) : (
+                                  persons.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="py-1.5 px-1">
+                            <Input
+                              type="date"
+                              value={editForm.targetDate}
+                              onChange={(e) => setEf("targetDate", e.target.value)}
+                            />
+                          </td>
+                          <td className="py-1.5 px-1.5">{aiReviewCell}</td>
+                          <td className="py-1.5 px-1">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={savingEdit}
+                                onClick={() => handleSaveEdit(f)}
+                                title={t("Save")}
+                              >
+                                {savingEdit ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400"
+                                disabled={savingEdit}
+                                onClick={cancelEdit}
+                                title={t("Cancel")}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    // ----- Read-only row -----
+                    return (
+                      <tr key={f.id} className="border-t border-slate-100 align-top">
+                        <td className="py-2 px-1.5 font-mono text-xs text-slate-500 whitespace-nowrap">
+                          {f.findingId}
+                        </td>
+                        <td className="py-2 px-1.5 font-medium text-slate-700 break-words max-w-[220px]">
+                          {f.finding}
+                        </td>
+                        <td className="py-2 px-1.5">
+                          <Badge className={severityBadgeClass(f.severity)}>{t(f.severity)}</Badge>
+                        </td>
+                        <td className="py-2 px-1.5">
+                          <Badge className="bg-slate-100 text-slate-600">{t(f.status)}</Badge>
+                        </td>
+                        {([f.criteria, f.condition, f.cause, f.effect, f.recommendation]).map(
+                          (val, i) => (
+                            <td
+                              key={i}
+                              className="py-2 px-1.5 text-xs text-slate-600 align-top max-w-[220px]"
+                            >
+                              <div className="whitespace-pre-wrap break-words">{val || "—"}</div>
+                            </td>
+                          )
+                        )}
+                        <td className="py-2 px-1.5 text-xs text-slate-600 whitespace-nowrap">
+                          {personLabel}
+                        </td>
+                        <td className="py-2 px-1.5 text-xs text-slate-600 whitespace-nowrap">
+                          {formatDate(f.targetDate)}
+                        </td>
+                        <td className="py-2 px-1.5">{aiReviewCell}</td>
+                        <td className="py-2 px-1 text-center">
+                          {canEdit && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-700"
+                              onClick={() => startEdit(f)}
+                              title={t("Edit")}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Aggregated: consolidated draft report sharing */}
       {reportingMode === "Aggregated" && findings.length > 0 && (
@@ -874,233 +1052,6 @@ export default function FindingsCommunication({
           </CardContent>
         </Card>
       )}
-
-      {/* Findings list */}
-      {findings.length === 0 ? (
-        <div className="border border-dashed rounded-lg p-8 text-center text-sm text-slate-500">
-          <p>{t("No findings recorded yet.")}</p>
-          <p className="mt-1 text-xs text-slate-400">
-            {t("Use Add Finding to record an audit finding.")}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {findings.map((f) => {
-            const shared = !!f.sharedWithAuditeeAt;
-            const isBusy = busyId === f.id;
-            return (
-              <Card key={f.id} className="overflow-hidden">
-                <CardContent className="py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs text-slate-500">
-                          {f.findingId}
-                        </span>
-                        <Badge className={severityBadgeClass(f.severity)}>
-                          {t(f.severity)}
-                        </Badge>
-                        <Badge className="bg-slate-100 text-slate-600">
-                          {t(f.status)}
-                        </Badge>
-                      </div>
-                      <p className="font-medium text-slate-700 break-words">
-                        {f.finding}
-                      </p>
-                      {aiReviews[f.id] && (
-                        <div className="flex flex-wrap items-center gap-2 pt-1">
-                          <Badge
-                            className={complianceBadgeClass(
-                              aiReviews[f.id].compliance_status
-                            )}
-                          >
-                            {t(aiReviews[f.id].compliance_status || "—")}
-                          </Badge>
-                          <span className="text-xs text-slate-400">
-                            {t("Confidence")}:{" "}
-                            {formatPct(aiReviews[f.id].confidence)}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => setReviewDialog(aiReviews[f.id])}
-                          >
-                            <ClipboardCheck className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" />
-                            {t("Review")}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {reportingMode === "Continuous" && (
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        {shared ? (
-                          <>
-                            <Badge className="bg-green-100 text-green-700 flex items-center gap-1">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              {t("Shared")} · {formatDate(f.sharedWithAuditeeAt)}
-                            </Badge>
-                            {canEdit && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs text-slate-500"
-                                disabled={isBusy}
-                                onClick={() => handleUnshare(f)}
-                              >
-                                {isBusy ? (
-                                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                                ) : (
-                                  <Undo2 className="h-3.5 w-3.5 mr-1" />
-                                )}
-                                {t("Unshare")}
-                              </Button>
-                            )}
-                          </>
-                        ) : (
-                          canEdit && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={isBusy}
-                              onClick={() => handleShare(f)}
-                            >
-                              {isBusy ? (
-                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                              ) : (
-                                <Share2 className="h-4 w-4 mr-1" />
-                              )}
-                              {t("Share with auditor")}
-                            </Button>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Add Finding dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("Add Finding")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label>
-                {t("Finding Title")} <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                value={findingForm.title}
-                onChange={(e) => setF("title", e.target.value)}
-                placeholder={t("Enter finding title")}
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>{t("Severity")}</Label>
-                <Select value={findingForm.severity} onValueChange={(v) => setF("severity", v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["Critical", "High", "Medium", "Low"].map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {t(s)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>{t("Status")}</Label>
-                <Select value={findingForm.status} onValueChange={(v) => setF("status", v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["Open", "In Progress", "Closed"].map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {t(s)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {(
-              [
-                ["criteria", "Criteria (What should be)"],
-                ["condition", "Condition (What is)"],
-                ["cause", "Cause (Why it happened)"],
-                ["effect", "Effect (The consequence)"],
-                ["recommendation", "Recommendation"],
-              ] as Array<[keyof typeof emptyFinding, string]>
-            ).map(([key, label]) => (
-              <div key={key}>
-                <Label>{t(label)}</Label>
-                <Textarea
-                  rows={2}
-                  value={findingForm[key]}
-                  onChange={(e) => setF(key, e.target.value)}
-                  placeholder={t(`Enter ${key}`)}
-                />
-              </div>
-            ))}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>
-                  {t("Responsible Person")} <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={findingForm.responsiblePersonId}
-                  onValueChange={(v) => setF("responsiblePersonId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("Select person")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {persons.length === 0 ? (
-                      <div className="px-2 py-3 text-xs text-slate-400 text-center">
-                        {t("No users found")}
-                      </div>
-                    ) : (
-                      persons.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>{t("Target Date")}</Label>
-                <Input
-                  type="date"
-                  value={findingForm.targetDate}
-                  onChange={(e) => setF("targetDate", e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={savingFinding}>
-              {t("Cancel")}
-            </Button>
-            <Button onClick={handleAddFinding} disabled={savingFinding}>
-              {savingFinding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {t("Add Finding")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Per-finding AI review dialog */}
       <Dialog

@@ -1226,6 +1226,8 @@ const translations: [string, string, string][] = [
   ['No AI review has been run yet.', 'لم يتم تشغيل أي مراجعة بالذكاء الاصطناعي بعد.', 'AI pārskatīšana vēl nav veikta.'],
   ["Evaluate all findings against the organization's policy documents.", 'تقييم جميع النتائج مقابل وثائق سياسات المؤسسة.', 'Novērtēt visus atzinumus pret organizācijas politikas dokumentiem.'],
   ['Re-run AI Review', 'إعادة تشغيل المراجعة بالذكاء الاصطناعي', 'Atkārtot AI pārskatīšanu'],
+  ['Finding updated successfully', 'تم تحديث النتيجة بنجاح', 'Atzinums veiksmīgi atjaunināts'],
+  ['Failed to update finding', 'فشل تحديث النتيجة', 'Neizdevās atjaunināt atzinumu'],
   ['Confidence', 'الثقة', 'Pārliecība'],
   ['Total findings', 'إجمالي النتائج', 'Kopā atzinumi'],
   ['Evaluated', 'تم تقييمها', 'Novērtēts'],
