@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef, use, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatLocalDate } from "@/lib/utils";
@@ -478,6 +478,17 @@ export default function EditEngagementPage({ params }: PageProps) {
   const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
   const { data: translatedAuditors } = useTranslatedData(auditors, { modelName: 'User' });
   const { data: translatedAuditees } = useTranslatedData(auditees, { modelName: 'User' });
+  // Department-filtered user lists are fetched fresh on department change; translate
+  // them too so the auditor/auditee dropdowns show translated names.
+  const { data: translatedDeptAuditors } = useTranslatedData(deptAuditors, { modelName: 'User' });
+  const { data: translatedDeptAuditees } = useTranslatedData(deptAuditees, { modelName: 'User' });
+  const userNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    [...translatedAuditors, ...translatedAuditees, ...translatedDeptAuditors, ...translatedDeptAuditees]
+      .forEach(u => m.set(u.id, u.fullName));
+    return m;
+  }, [translatedAuditors, translatedAuditees, translatedDeptAuditors, translatedDeptAuditees]);
+  const tUserName = useCallback((u: User) => userNameMap.get(u.id) || u.fullName, [userNameMap]);
 
   if (loading) {
     return (
@@ -757,7 +768,7 @@ export default function EditEngagementPage({ params }: PageProps) {
             {t("Audit Manager")} <span className="text-red-500">*</span>
           </Label>
           <MultiSelect
-            options={(deptAuditors.length > 0 ? deptAuditors : translatedAuditors).map(u => ({ value: u.id, label: u.fullName }))}
+            options={(deptAuditors.length > 0 ? deptAuditors : translatedAuditors).map(u => ({ value: u.id, label: tUserName(u) }))}
             selected={formData.auditorIds}
             onChange={(val) => setFormData({ ...formData, auditorIds: val })}
             placeholder={t("Select Audit Manager")}
@@ -771,7 +782,7 @@ export default function EditEngagementPage({ params }: PageProps) {
         <div className="space-y-2">
           <Label className="text-slate-800">{t("Auditor")}</Label>
           <MultiSelect
-            options={(deptAuditees.length > 0 ? deptAuditees : translatedAuditees).map(u => ({ value: u.id, label: u.fullName }))}
+            options={(deptAuditees.length > 0 ? deptAuditees : translatedAuditees).map(u => ({ value: u.id, label: tUserName(u) }))}
             selected={formData.auditeeIds}
             onChange={(val) => setFormData({ ...formData, auditeeIds: val })}
             placeholder={t("Select Auditor")}
@@ -971,7 +982,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                             {auditors.length > 0 ? (
                               auditors.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
-                                  {user.fullName}
+                                  {tUserName(user)}
                                 </SelectItem>
                               ))
                             ) : (

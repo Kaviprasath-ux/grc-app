@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData } from "@/hooks/useTranslatedData";
 
 interface PlanItem {
   id: string;
@@ -48,6 +49,16 @@ export default function OperationalPlanListPage() {
 
   const [plans, setPlans] = useState<StrategicPlanRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Dynamic translation: overlay translated audit titles/types for the current locale.
+  const allItems = useMemo(() => plans.flatMap((p) => p.items || []), [plans]);
+  const { data: translatedItems } = useTranslatedData(allItems, { modelName: "AuditStrategicPlanItem" });
+  const itemMap = useMemo(() => {
+    const m = new Map<string, PlanItem>();
+    translatedItems.forEach((it) => m.set(it.id, it));
+    return m;
+  }, [translatedItems]);
+  const tItem = useCallback((it: PlanItem) => itemMap.get(it.id) ?? it, [itemMap]);
 
   useEffect(() => {
     (async () => {
@@ -121,15 +132,17 @@ export default function OperationalPlanListPage() {
                     </TableRow>
                   );
                 }
-                return rows.map(({ it, plan }, idx) => (
+                return rows.map(({ it, plan }, idx) => {
+                  const ti = tItem(it);
+                  return (
                   <TableRow
                     key={it.id}
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60 cursor-pointer"
                     onClick={() => open(plan.id)}
                   >
                     <TableCell className="py-3 text-sm text-slate-700 ltr:pl-5 rtl:pr-5">{idx + 1}</TableCell>
-                    <TableCell className="py-3 text-sm font-medium text-slate-800">{it.title}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700">{it.auditType || "—"}</TableCell>
+                    <TableCell className="py-3 text-sm font-medium text-slate-800">{ti.title}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{ti.auditType || "—"}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-700">{plan.durationYears} {t("Years")}</TableCell>
                     <TableCell className="py-3 ltr:pr-5 rtl:pl-5 ltr:text-right rtl:text-left">
                       <Button
@@ -146,7 +159,8 @@ export default function OperationalPlanListPage() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ));
+                  );
+                });
               })()}
             </TableBody>
           </Table>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,7 @@ import {
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { confirm } from "@/components/ui/confirm";
 
 interface OpItem {
@@ -197,6 +198,19 @@ export default function OperationalPlanDetailPage() {
       }
     })();
   }, []);
+
+  // Dynamic translation: overlay translated user-entered text for the current locale.
+  const { data: translatedSp } = useTranslatedRecord(selectedSp, { modelName: "AuditStrategicPlan" });
+  const allItems = useMemo(() => opPlans.flatMap((p) => p.items), [opPlans]);
+  const { data: translatedItems } = useTranslatedData(allItems, { modelName: "AuditOperationalPlanItem" });
+  const itemMap = useMemo(() => {
+    const m = new Map<string, OpItem>();
+    translatedItems.forEach((it) => m.set(it.id, it));
+    return m;
+  }, [translatedItems]);
+  const tItem = useCallback((it: OpItem) => itemMap.get(it.id) ?? it, [itemMap]);
+  const { data: translatedCategories } = useTranslatedData(categories, { modelName: "AuditCategory" });
+  const spTitle = translatedSp?.title || selectedSp?.title;
 
   const auditorName = (id: string | null) =>
     id ? auditors.find((a) => a.id === id)?.fullName || "—" : "—";
@@ -344,11 +358,13 @@ export default function OperationalPlanDetailPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {items.map((it, idx) => (
+          {items.map((it, idx) => {
+            const ti = tItem(it);
+            return (
             <TableRow key={it.id} className="border-b border-slate-100 last:border-0">
               <TableCell className="py-2.5 text-sm text-slate-700 ltr:pl-3 rtl:pr-3">{idx + 1}</TableCell>
-              <TableCell className="py-2.5 text-sm font-medium text-slate-800">{it.title}</TableCell>
-              <TableCell className="py-2.5 text-sm text-slate-700">{it.auditCategory || "—"}</TableCell>
+              <TableCell className="py-2.5 text-sm font-medium text-slate-800">{ti.title}</TableCell>
+              <TableCell className="py-2.5 text-sm text-slate-700">{ti.auditCategory || "—"}</TableCell>
               <TableCell className="py-2.5 text-sm text-slate-700 whitespace-nowrap">{auditorName(it.assignedAuditorId)}</TableCell>
               {canDelete && (
                 <TableCell className="py-2.5 ltr:pr-3 rtl:pl-3 ltr:text-right rtl:text-left">
@@ -363,7 +379,8 @@ export default function OperationalPlanDetailPage() {
                 </TableCell>
               )}
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </div>
@@ -501,6 +518,15 @@ export default function OperationalPlanDetailPage() {
         body: JSON.stringify(addForm),
       });
       if (!res.ok) throw new Error("Failed");
+      const created = await res.json();
+      // Generate translations (ar/lv/en) for the user-entered audit text.
+      if (created?.id) {
+        triggerTranslation("AuditOperationalPlanItem", created.id, {
+          title: created.title,
+          auditCategory: created.auditCategory,
+          notes: created.notes,
+        });
+      }
       toast.success(t("Audit added"));
       setAddTarget(null);
       setAddForm({ title: "", auditCategory: "", plannedQuarter: "", notes: "" });
@@ -609,7 +635,7 @@ export default function OperationalPlanDetailPage() {
           {t("Operational Plan")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
-        <span className="text-primary-700 font-medium">{selectedSp?.title || t("Operational Plan")}</span>
+        <span className="text-primary-700 font-medium">{spTitle || t("Operational Plan")}</span>
       </nav>
 
       {/* Header */}
@@ -622,7 +648,7 @@ export default function OperationalPlanDetailPage() {
           </Link>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
-              {selectedSp?.title || t("Operational Audit Plan")}
+              {spTitle || t("Operational Audit Plan")}
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">
               {t("Year-wise audit plans derived from a Strategic Plan")}
@@ -948,7 +974,7 @@ export default function OperationalPlanDetailPage() {
                   ) : (
                     categories.map((c) => (
                       <SelectItem key={c.id} value={c.name}>
-                        {c.name}
+                        {translatedCategories.find((tc) => tc.id === c.id)?.name || c.name}
                       </SelectItem>
                     ))
                   )}
@@ -986,15 +1012,17 @@ export default function OperationalPlanDetailPage() {
             {t("Assign an auditor to each audit. On plan approval, the audit is sent to that auditor.")}
           </p>
           <div className="space-y-3 mt-2">
-            {assignTarget?.items.map((it) => (
+            {assignTarget?.items.map((it) => {
+              const ti = tItem(it);
+              return (
               <div
                 key={it.id}
                 className="grid grid-cols-1 sm:grid-cols-[1fr_220px] sm:items-center gap-2 border rounded-md px-3 py-2"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{it.title}</p>
+                  <p className="text-sm font-medium truncate">{ti.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {[it.auditType, it.plannedQuarter].filter(Boolean).join(" · ") || "—"}
+                    {[ti.auditType, it.plannedQuarter].filter(Boolean).join(" · ") || "—"}
                   </p>
                 </div>
                 <Select
@@ -1016,7 +1044,8 @@ export default function OperationalPlanDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
-            ))}
+              );
+            })}
             {auditors.length === 0 && (
               <p className="text-xs text-amber-600">{t("No auditors found")}</p>
             )}

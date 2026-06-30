@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatLocalDate } from "@/lib/utils";
@@ -473,6 +473,34 @@ export default function AddEngagementPage() {
   const { data: translatedAuditRatings } = useTranslatedData(auditRatings, { modelName: 'AuditScoringRange' });
   const { data: translatedProcesses } = useTranslatedData(processes, { modelName: 'Process' });
 
+  // Translate per-department users (auditors/auditees) + global task auditors as a single User set.
+  const allUsers = useMemo(() => {
+    const users: User[] = [...globalAuditors];
+    Object.values(departmentData).forEach(d => { users.push(...d.auditors, ...d.auditees); });
+    return users;
+  }, [departmentData, globalAuditors]);
+  const { data: translatedUsers } = useTranslatedData(allUsers, { modelName: 'User' });
+  const userNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    translatedUsers.forEach(u => m.set(u.id, u.fullName));
+    return m;
+  }, [translatedUsers]);
+  const tUserName = useCallback((u: User) => userNameMap.get(u.id) || u.fullName, [userNameMap]);
+
+  // Translate per-department open risks.
+  const allRisks = useMemo(() => {
+    const risks: Risk[] = [];
+    Object.values(departmentData).forEach(d => { risks.push(...d.risks); });
+    return risks;
+  }, [departmentData]);
+  const { data: translatedRisks } = useTranslatedData(allRisks, { modelName: 'InternalAuditRisk' });
+  const riskNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    translatedRisks.forEach(r => m.set(r.id, r.riskName));
+    return m;
+  }, [translatedRisks]);
+  const tRiskName = useCallback((r: Risk) => riskNameMap.get(r.id) || r.riskName, [riskNameMap]);
+
   // Helper to get department name
   const getDeptName = useCallback((deptId: string) => {
     return translatedDepartments.find(d => d.id === deptId)?.name || departments.find(d => d.id === deptId)?.name || deptId;
@@ -629,7 +657,7 @@ export default function AddEngagementPage() {
                           {t("Audit Manager")} <span className="text-red-500">*</span>
                         </Label>
                         <MultiSelect
-                          options={data.auditors.map(u => ({ value: u.id, label: u.fullName }))}
+                          options={data.auditors.map(u => ({ value: u.id, label: tUserName(u) }))}
                           selected={config.auditorIds}
                           onChange={(val) => updateDepartmentConfig(deptId, 'auditorIds', val)}
                           placeholder={t("Select Audit Manager")}
@@ -643,7 +671,7 @@ export default function AddEngagementPage() {
                       <div className="space-y-2">
                         <Label className="text-gray-700 text-sm">{t("Auditor")}</Label>
                         <MultiSelect
-                          options={data.auditees.map(u => ({ value: u.id, label: u.fullName }))}
+                          options={data.auditees.map(u => ({ value: u.id, label: tUserName(u) }))}
                           selected={config.auditeeIds}
                           onChange={(val) => updateDepartmentConfig(deptId, 'auditeeIds', val)}
                           placeholder={t("Select Auditor")}
@@ -657,7 +685,7 @@ export default function AddEngagementPage() {
                       <div className="space-y-2 sm:col-span-2">
                         <Label className="text-gray-700 text-sm">{t("Link Open Risks in this Department")}</Label>
                         <MultiSelect
-                          options={data.risks.map(r => ({ value: r.id, label: `${r.riskId} - ${r.riskName}` }))}
+                          options={data.risks.map(r => ({ value: r.id, label: `${r.riskId} - ${tRiskName(r)}` }))}
                           selected={config.linkedRiskIds}
                           onChange={(val) => updateDepartmentConfig(deptId, 'linkedRiskIds', val)}
                           placeholder={t("Select Risk")}
@@ -942,7 +970,7 @@ export default function AddEngagementPage() {
                             {globalAuditors.length > 0 ? (
                               globalAuditors.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
-                                  {user.fullName}
+                                  {tUserName(user)}
                                 </SelectItem>
                               ))
                             ) : (

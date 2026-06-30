@@ -7,6 +7,7 @@ import {
   getAuditHeadId,
   resolveAuditHeadIdForCreate,
 } from "@/lib/api-auth";
+import { translateRecord } from "@/lib/translation-service";
 
 // GET operational plans for the tenant (Audit Head isolated).
 // Optional filters: strategicPlanId, year.
@@ -157,6 +158,14 @@ export const POST = withAuth(
           createdBy: { select: { id: true, fullName: true } },
         },
       });
+
+      // Generate translations (ar/lv/en) for the seeded audit items' user-entered text.
+      for (const it of plan.items) {
+        void translateRecord(customerAccountId, "AuditOperationalPlanItem", it.id, {
+          title: it.title ?? "",
+          auditType: it.auditType ?? "",
+        });
+      }
 
       return NextResponse.json(plan, { status: 201 });
     } catch (error) {

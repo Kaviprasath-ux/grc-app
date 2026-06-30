@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -323,6 +323,34 @@ export default function AuditPlanningPage() {
   const { data: translatedHistoricalRisks } = useTranslatedData(historicalRisks, { modelName: 'InternalAuditRisk' });
   const { data: translatedAuditors } = useTranslatedData(auditors, { modelName: 'User' });
   const { data: translatedAuditees } = useTranslatedData(auditees, { modelName: 'User' });
+
+  // Translate the per-department users + risks shown inside the engagement dialog
+  // (deptData is fetched per department and is separate from the global lists above).
+  const allDeptUsers = useMemo(() => {
+    const users: User[] = [];
+    Object.values(deptData).forEach(d => { users.push(...d.auditors, ...d.auditees); });
+    return users;
+  }, [deptData]);
+  const { data: translatedDeptUsers } = useTranslatedData(allDeptUsers, { modelName: 'User' });
+  const deptUserNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    translatedDeptUsers.forEach(u => m.set(u.id, u.fullName));
+    return m;
+  }, [translatedDeptUsers]);
+  const tDeptUserName = useCallback((u: User) => deptUserNameMap.get(u.id) || u.fullName, [deptUserNameMap]);
+
+  const allDeptRisks = useMemo(() => {
+    const r: Risk[] = [];
+    Object.values(deptData).forEach(d => { r.push(...d.risks); });
+    return r;
+  }, [deptData]);
+  const { data: translatedDeptRisks } = useTranslatedData(allDeptRisks, { modelName: 'InternalAuditRisk' });
+  const deptRiskNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    translatedDeptRisks.forEach(r => m.set(r.id, r.riskName));
+    return m;
+  }, [translatedDeptRisks]);
+  const tDeptRiskName = useCallback((r: Risk) => deptRiskNameMap.get(r.id) || r.riskName, [deptRiskNameMap]);
 
   // Planned audits (operational-plan items without an engagement), filtered to
   // match the active filters. Planned items are implicitly status "Planned".
@@ -1177,7 +1205,7 @@ export default function AuditPlanningPage() {
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium text-slate-600">{t("Audit Manager")} <span className="text-red-500">*</span></Label>
                       <MultiSelect
-                        options={data.auditors.map(u => ({ value: u.id, label: u.fullName }))}
+                        options={data.auditors.map(u => ({ value: u.id, label: tDeptUserName(u) }))}
                         selected={config.auditorIds}
                         onChange={(val) => updateDeptConfig(deptId, 'auditorIds', val)}
                         placeholder={t("Select Audit Manager")}
@@ -1187,7 +1215,7 @@ export default function AuditPlanningPage() {
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium text-slate-600">{t("Auditor")}</Label>
                       <MultiSelect
-                        options={data.auditees.map(u => ({ value: u.id, label: u.fullName }))}
+                        options={data.auditees.map(u => ({ value: u.id, label: tDeptUserName(u) }))}
                         selected={config.auditeeIds}
                         onChange={(val) => updateDeptConfig(deptId, 'auditeeIds', val)}
                         placeholder={t("Select Auditor")}
@@ -1197,7 +1225,7 @@ export default function AuditPlanningPage() {
                     <div className="space-y-1.5 sm:col-span-2">
                       <Label className="text-xs font-medium text-slate-600">{t("Link Open Risks in this Department")}</Label>
                       <MultiSelect
-                        options={data.risks.map(r => ({ value: r.id, label: `${r.riskId} - ${r.riskName}` }))}
+                        options={data.risks.map(r => ({ value: r.id, label: `${r.riskId} - ${tDeptRiskName(r)}` }))}
                         selected={config.linkedRiskIds}
                         onChange={(val) => updateDeptConfig(deptId, 'linkedRiskIds', val)}
                         placeholder={t("Select Risk")}
