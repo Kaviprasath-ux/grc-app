@@ -2674,6 +2674,8 @@ const translations: [string, string, string][] = [
   ['Try adjusting your search term', 'حاول تعديل مصطلح البحث', 'Mēģiniet mainīt meklēšanas terminu'],
   ['Items will appear here once linked to this framework', 'ستظهر العناصر هنا بمجرد ربطها بهذا الإطار', 'Elementi parādīsies šeit, kad tie tiks saistīti ar šo ietvaru'],
   ['No items', 'لا توجد عناصر', 'Nav elementu'],
+  ['1 risk selected', 'تم تحديد مخاطرة واحدة', '1 risks atlasīts'],
+  ['risks selected', 'مخاطر محددة', 'risks atlasīti'],
   ['Search by name, domain or assignee...', 'البحث بالاسم أو المجال أو المسؤول...', 'Meklēt pēc nosaukuma, domēna vai atbildīgā...'],
   ['Evidence Code', 'رمز الدليل', 'Pierādījuma kods'],
   ['No evidence matches your search', 'لا توجد أدلة تطابق بحثك', 'Neviens pierādījums neatbilst jūsu meklējumam'],

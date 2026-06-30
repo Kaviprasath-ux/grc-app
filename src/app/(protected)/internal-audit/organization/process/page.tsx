@@ -157,6 +157,9 @@ export default function InternalAuditProcessPage() {
   const { data: translatedCategories } = useTranslatedData(categories, {
     modelName: "AuditCategory",
   });
+  const { data: translatedRisks } = useTranslatedData(risks, {
+    modelName: "InternalAuditRisk",
+  });
 
   useEffect(() => {
     void fetchAll();
@@ -235,11 +238,11 @@ export default function InternalAuditProcessPage() {
 
   const riskOptions: MultiSelectOption[] = useMemo(
     () =>
-      risks.map((r) => ({
+      translatedRisks.map((r) => ({
         value: r.id,
         label: `${r.riskId} — ${r.riskName}`,
       })),
-    [risks]
+    [translatedRisks]
   );
 
 
