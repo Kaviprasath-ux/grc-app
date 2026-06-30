@@ -142,7 +142,6 @@ const translations: [string, string, string][] = [
   ['Context', 'السياق', 'Konteksts'],
   ['Users', 'المستخدمون', 'Lietotāji'],
   ['Process', 'العمليات', 'Process'],
-  ['Manage internal audit processes and link them to risks from the audit risk register.', 'إدارة عمليات التدقيق الداخلي وربطها بالمخاطر من سجل مخاطر التدقيق.', 'Pārvaldīt iekšējā audita procesus un sasaistīt tos ar riskiem no audita riska reģistra.'],
   ['Organization Settings', 'إعدادات المنظمة', 'Organizācijas iestatījumi'],
   ['Organization Wide', 'على مستوى المنظمة', 'Visā organizācijā'],
   ['Reports', 'التقارير', 'Atskaites'],
@@ -220,7 +219,7 @@ const translations: [string, string, string][] = [
   ['process(es)', 'عملية(ات)', 'process(-i)'],
   ['Audit Charter', 'ميثاق التدقيق', 'Audita harta'],
   ['Upload Signed Copy', 'رفع النسخة الموقعة', 'Augšupielādēt parakstītu kopiju'],
-  ['Download Word', 'تنزيل Word', 'Lejupielādēt Word'],
+  ['Download Word', 'تنزيل ملف وورد', 'Lejupielādēt Word'],
   ['Editable Fields', 'الحقول القابلة للتعديل', 'Rediģējamie lauki'],
   ['— changes apply throughout the document', '— تُطبَّق التغييرات في جميع أنحاء المستند', '— izmaiņas tiek piemērotas visā dokumentā'],
   ['Uploading…', 'جارٍ الرفع...', 'Augšupielādē...'],
@@ -231,6 +230,7 @@ const translations: [string, string, string][] = [
   ['Signed copy uploaded', 'تم رفع النسخة الموقعة', 'Parakstītā kopija augšupielādēta'],
   ['Failed to upload signed copy', 'فشل رفع النسخة الموقعة', 'Neizdevās augšupielādēt parakstītu kopiju'],
   ['Loading…', 'جارٍ التحميل...', 'Ielādē...'],
+  ['Translating…', 'جارٍ الترجمة...', 'Tulko...'],
   ['You have unsaved changes', 'لديك تغييرات غير محفوظة', 'Jums ir nesaglabātas izmaiņas'],
   ['Uploaded Signed Documents', 'المستندات الموقعة المرفوعة', 'Augšupielādētie parakstītie dokumenti'],
   ['View Signed Copy', 'عرض النسخة الموقعة', 'Skatīt parakstītu kopiju'],
@@ -316,10 +316,6 @@ const translations: [string, string, string][] = [
   ['Report generated — read only', 'تم إنشاء التقرير — للقراءة فقط', 'Ziņojums ģenerēts — tikai lasāms'],
   ['Feedback Survey', 'استبيان الملاحظات', 'Atsauksmju aptauja'],
   ['Audit Trail', 'سجل التدقيق', 'Audita pēdas'],
-  ['Reject', 'رفض', 'Noraidīt'],
-  ['Logout', 'تسجيل الخروج', 'Atteikties'],
-  ['Authentication', 'المصادقة', 'Autentifikācija'],
-  ['AuditUser', 'مستخدم التدقيق', 'Audita lietotājs'],
   ['Read-only log of all user activity across your organization.', 'سجل للقراءة فقط لجميع أنشطة المستخدمين في مؤسستك.', 'Tikai lasāms visu lietotāju darbību žurnāls jūsu organizācijā.'],
   ['Read-only log of your activity across the platform.', 'سجل للقراءة فقط لنشاطك عبر المنصة.', 'Tikai lasāms jūsu darbību žurnāls platformā.'],
   ['Search by user, module, action, record…', 'البحث حسب المستخدم أو الوحدة أو الإجراء أو السجل…', 'Meklēt pēc lietotāja, moduļa, darbības, ieraksta…'],
@@ -812,6 +808,7 @@ const translations: [string, string, string][] = [
   // ORGANIZATION - PROCESSES
   // ==========================================
   ['Processes', 'العمليات', 'Procesi'],
+  ['Manage internal audit processes and link them to risks from the audit risk register.', 'إدارة عمليات التدقيق الداخلي وربطها بالمخاطر من سجل مخاطر التدقيق.', 'Pārvaldiet iekšējā audita procesus un saistiet tos ar riskiem no audita risku reģistra.'],
   ['Capture a process owned by the internal audit team and link it to risks from the IA risk register.', 'التقاط عملية يملكها فريق التدقيق الداخلي وربطها بالمخاطر من سجل مخاطر التدقيق الداخلي.', 'Ievadiet procesu, kura īpašnieks ir iekšējā audita komanda, un saistiet to ar riskiem no IA risku reģistra.'],
   ['Select audit category', 'اختر فئة التدقيق', 'Izvēlieties audita kategoriju'],
   ['Please select a department to view available process owners.', 'يرجى تحديد قسم لعرض مالكي العمليات المتاحين.', 'Lūdzu, izvēlieties nodaļu, lai skatītu pieejamos procesa īpašniekus.'],
@@ -1043,7 +1040,6 @@ const translations: [string, string, string][] = [
   // INTERNAL AUDIT - SETTINGS MAIN PAGE
   ['Audit Category', 'فئة التدقيق', 'Audita kategorija'],
   ['Manage audit categories and classifications', 'إدارة فئات التدقيق وتصنيفاتها', 'Pārvaldīt audita kategorijas un klasifikācijas'],
-  ['Manage sub-categories linked to audit categories', 'إدارة الفئات الفرعية المرتبطة بفئات التدقيق', 'Pārvaldīt apakškategorijas, kas saistītas ar audita kategorijām'],
   ['Nature of Controls', 'طبيعة الضوابط', 'Kontroles veids'],
   ['Define control types and characteristics', 'تحديد أنواع الضوابط وخصائصها', 'Definēt kontroles tipus un raksturlielumus'],
   ['Risk Assessment Configuration', 'تكوين تقييم المخاطر', 'Risku novērtējuma konfigurācija'],
@@ -1226,8 +1222,6 @@ const translations: [string, string, string][] = [
   ['No AI review has been run yet.', 'لم يتم تشغيل أي مراجعة بالذكاء الاصطناعي بعد.', 'AI pārskatīšana vēl nav veikta.'],
   ["Evaluate all findings against the organization's policy documents.", 'تقييم جميع النتائج مقابل وثائق سياسات المؤسسة.', 'Novērtēt visus atzinumus pret organizācijas politikas dokumentiem.'],
   ['Re-run AI Review', 'إعادة تشغيل المراجعة بالذكاء الاصطناعي', 'Atkārtot AI pārskatīšanu'],
-  ['Finding updated successfully', 'تم تحديث النتيجة بنجاح', 'Atzinums veiksmīgi atjaunināts'],
-  ['Failed to update finding', 'فشل تحديث النتيجة', 'Neizdevās atjaunināt atzinumu'],
   ['Confidence', 'الثقة', 'Pārliecība'],
   ['Total findings', 'إجمالي النتائج', 'Kopā atzinumi'],
   ['Evaluated', 'تم تقييمها', 'Novērtēts'],
@@ -1236,8 +1230,6 @@ const translations: [string, string, string][] = [
   ['Reasoning', 'التحليل', 'Pamatojums'],
   ['Verification', 'التحقق', 'Pārbaude'],
   ['Cited', 'مُستشهد به', 'Citēts'],
-  ['Non-Compliant', 'غير ملتزم', 'Neatbilstošs'],
-  ['Partially Compliant', 'ملتزم جزئياً', 'Daļēji atbilstošs'],
   ['Insufficient Evidence', 'أدلة غير كافية', 'Nepietiekami pierādījumi'],
 
   // ==========================================
@@ -2374,6 +2366,8 @@ const translations: [string, string, string][] = [
   // Compliance Management Report page
   ['Compliance Management Report', 'تقرير إدارة الامتثال', 'Atbilstības vadības pārskats'],
   ['Downloading...', 'جاري التحميل...', 'Lejupielādē...'],
+  ['Partially Compliant', 'متوافق جزئياً', 'Daļēji atbilstošs'],
+  ['Non-Compliant', 'غير متوافق', 'Neatbilstošs'],
   ['No Controls', 'لا توجد ضوابط', 'Nav kontroles'],
   ['Requirements', 'المتطلبات', 'Prasības'],
   ['No frameworks found', 'لم يتم العثور على أطر', 'Ietvari nav atrasti'],

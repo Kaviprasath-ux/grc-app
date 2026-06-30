@@ -334,10 +334,12 @@ function SignedCopySection({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AuditCharterPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { canEdit } = usePermissions("audit.charter");
 
   const [charter, setCharter] = useState<CharterData | null>(null);
+  const [translatedBlocks, setTranslatedBlocks] = useState<CharterBlock[] | null>(null);
+  const [translating, setTranslating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -359,6 +361,30 @@ export default function AuditCharterPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  // ── Fetch translated blocks when locale changes ────────────────────────────
+  useEffect(() => {
+    if (!charter || locale === "en") {
+      setTranslatedBlocks(null);
+      return;
+    }
+    setTranslating(true);
+    fetch("/api/internal-audit/audit-charter/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
+    })
+      .then(async (r) => {
+        const res = await r.json() as { content?: CharterBlock[]; error?: string };
+        if (res.content) {
+          setTranslatedBlocks(res.content);
+        } else {
+          console.error("Charter translation returned no content:", res);
+        }
+      })
+      .catch((err) => console.error("Charter translation fetch failed:", err))
+      .finally(() => setTranslating(false));
+  }, [charter, locale]);
 
   // ── Field change ───────────────────────────────────────────────────────────
   const handleFieldChange = useCallback((id: string, val: string) => {
@@ -445,7 +471,7 @@ export default function AuditCharterPage() {
   }
 
   const readOnly = !canEdit;
-  const blocks = (charter?.content ?? []) as CharterBlock[];
+  const blocks = (translatedBlocks ?? charter?.content ?? []) as CharterBlock[];
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -455,9 +481,10 @@ export default function AuditCharterPage() {
           <FileText className="h-7 w-7 text-primary" />
           <div>
             <h1 className="text-2xl font-semibold">{t("Audit Charter")}</h1>
-            {charter?.originalFileName && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {charter.originalFileName}
+            {translating && (
+              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                {t("Translating…")}
               </p>
             )}
           </div>

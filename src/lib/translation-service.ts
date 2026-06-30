@@ -217,6 +217,19 @@ export async function translateSingleText(
   return result;
 }
 
+/**
+ * Translate an array of texts to a target locale in one batched parallel call.
+ * Returns translations in the same order; falls back to original on failure.
+ */
+export async function translateTexts(
+  texts: string[],
+  targetLocale: string
+): Promise<string[]> {
+  const p = getProvider();
+  if (!p.isConfigured() || texts.length === 0) return texts;
+  return p.translate(texts, targetLocale);
+}
+
 // ==================== HASH UTILITY ====================
 
 function hashText(text: string): string {
