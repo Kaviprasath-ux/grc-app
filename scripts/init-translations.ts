@@ -142,6 +142,7 @@ const translations: [string, string, string][] = [
   ['Context', 'السياق', 'Konteksts'],
   ['Users', 'المستخدمون', 'Lietotāji'],
   ['Process', 'العمليات', 'Process'],
+  ['Manage internal audit processes and link them to risks from the audit risk register.', 'إدارة عمليات التدقيق الداخلي وربطها بالمخاطر من سجل مخاطر التدقيق.', 'Pārvaldīt iekšējā audita procesus un sasaistīt tos ar riskiem no audita riska reģistra.'],
   ['Organization Settings', 'إعدادات المنظمة', 'Organizācijas iestatījumi'],
   ['Organization Wide', 'على مستوى المنظمة', 'Visā organizācijā'],
   ['Reports', 'التقارير', 'Atskaites'],
@@ -315,6 +316,10 @@ const translations: [string, string, string][] = [
   ['Report generated — read only', 'تم إنشاء التقرير — للقراءة فقط', 'Ziņojums ģenerēts — tikai lasāms'],
   ['Feedback Survey', 'استبيان الملاحظات', 'Atsauksmju aptauja'],
   ['Audit Trail', 'سجل التدقيق', 'Audita pēdas'],
+  ['Reject', 'رفض', 'Noraidīt'],
+  ['Logout', 'تسجيل الخروج', 'Atteikties'],
+  ['Authentication', 'المصادقة', 'Autentifikācija'],
+  ['AuditUser', 'مستخدم التدقيق', 'Audita lietotājs'],
   ['Read-only log of all user activity across your organization.', 'سجل للقراءة فقط لجميع أنشطة المستخدمين في مؤسستك.', 'Tikai lasāms visu lietotāju darbību žurnāls jūsu organizācijā.'],
   ['Read-only log of your activity across the platform.', 'سجل للقراءة فقط لنشاطك عبر المنصة.', 'Tikai lasāms jūsu darbību žurnāls platformā.'],
   ['Search by user, module, action, record…', 'البحث حسب المستخدم أو الوحدة أو الإجراء أو السجل…', 'Meklēt pēc lietotāja, moduļa, darbības, ieraksta…'],
@@ -807,7 +812,6 @@ const translations: [string, string, string][] = [
   // ORGANIZATION - PROCESSES
   // ==========================================
   ['Processes', 'العمليات', 'Procesi'],
-  ['Manage internal audit processes and link them to risks from the audit risk register.', 'إدارة عمليات التدقيق الداخلي وربطها بالمخاطر من سجل مخاطر التدقيق.', 'Pārvaldiet iekšējā audita procesus un saistiet tos ar riskiem no audita risku reģistra.'],
   ['Capture a process owned by the internal audit team and link it to risks from the IA risk register.', 'التقاط عملية يملكها فريق التدقيق الداخلي وربطها بالمخاطر من سجل مخاطر التدقيق الداخلي.', 'Ievadiet procesu, kura īpašnieks ir iekšējā audita komanda, un saistiet to ar riskiem no IA risku reģistra.'],
   ['Select audit category', 'اختر فئة التدقيق', 'Izvēlieties audita kategoriju'],
   ['Please select a department to view available process owners.', 'يرجى تحديد قسم لعرض مالكي العمليات المتاحين.', 'Lūdzu, izvēlieties nodaļu, lai skatītu pieejamos procesa īpašniekus.'],
@@ -1039,6 +1043,7 @@ const translations: [string, string, string][] = [
   // INTERNAL AUDIT - SETTINGS MAIN PAGE
   ['Audit Category', 'فئة التدقيق', 'Audita kategorija'],
   ['Manage audit categories and classifications', 'إدارة فئات التدقيق وتصنيفاتها', 'Pārvaldīt audita kategorijas un klasifikācijas'],
+  ['Manage sub-categories linked to audit categories', 'إدارة الفئات الفرعية المرتبطة بفئات التدقيق', 'Pārvaldīt apakškategorijas, kas saistītas ar audita kategorijām'],
   ['Nature of Controls', 'طبيعة الضوابط', 'Kontroles veids'],
   ['Define control types and characteristics', 'تحديد أنواع الضوابط وخصائصها', 'Definēt kontroles tipus un raksturlielumus'],
   ['Risk Assessment Configuration', 'تكوين تقييم المخاطر', 'Risku novērtējuma konfigurācija'],
@@ -1228,9 +1233,7 @@ const translations: [string, string, string][] = [
   ['Reviewed', 'تمت المراجعة', 'Pārskatīts'],
   ['Reasoning', 'التحليل', 'Pamatojums'],
   ['Verification', 'التحقق', 'Pārbaude'],
-  ['Evidence', 'الأدلة', 'Pierādījumi'],
   ['Cited', 'مُستشهد به', 'Citēts'],
-  ['Compliant', 'ملتزم', 'Atbilstošs'],
   ['Non-Compliant', 'غير ملتزم', 'Neatbilstošs'],
   ['Partially Compliant', 'ملتزم جزئياً', 'Daļēji atbilstošs'],
   ['Insufficient Evidence', 'أدلة غير كافية', 'Nepietiekami pierādījumi'],
@@ -2369,8 +2372,6 @@ const translations: [string, string, string][] = [
   // Compliance Management Report page
   ['Compliance Management Report', 'تقرير إدارة الامتثال', 'Atbilstības vadības pārskats'],
   ['Downloading...', 'جاري التحميل...', 'Lejupielādē...'],
-  ['Partially Compliant', 'متوافق جزئياً', 'Daļēji atbilstošs'],
-  ['Non-Compliant', 'غير متوافق', 'Neatbilstošs'],
   ['No Controls', 'لا توجد ضوابط', 'Nav kontroles'],
   ['Requirements', 'المتطلبات', 'Prasības'],
   ['No frameworks found', 'لم يتم العثور على أطر', 'Ietvari nav atrasti'],
@@ -3018,7 +3019,6 @@ const translations: [string, string, string][] = [
   ['Upload evidence files first', 'ارفع ملفات الأدلة أولاً', 'Vispirms augšupielādējiet pierādījumu failus'],
   ['AI is processing your evidence files. This may take a few minutes...', 'يقوم الذكاء الاصطناعي بمعالجة ملفات الأدلة الخاصة بك. قد يستغرق هذا بضع دقائق...', 'AI apstrādā jūsu pierādījumu failus. Tas var aizņemt dažas minūtes...'],
   ['AI processing failed:', 'فشلت معالجة الذكاء الاصطناعي:', 'AI apstrāde neizdevās:'],
-  ['AI review completed', 'اكتملت مراجعة الذكاء الاصطناعي', 'AI pārskatīšana pabeigta'],
   ['AI review in progress...', 'مراجعة الذكاء الاصطناعي جارية...', 'AI pārskatīšana norit...'],
   ['Evidence processed and ready for AI review', 'تمت معالجة الأدلة وهي جاهزة لمراجعة الذكاء الاصطناعي', 'Pierādījumi apstrādāti un gatavi AI pārskatīšanai'],
   ['AI Review Results', 'نتائج مراجعة الذكاء الاصطناعي', 'AI pārskatīšanas rezultāti'],
@@ -3028,7 +3028,6 @@ const translations: [string, string, string][] = [
   ['Severity', 'الخطورة', 'Smagums'],
   ['Control Assessment Details', 'تفاصيل تقييم الضوابط', 'Kontroles novērtējuma detaļas'],
   ['Control', 'الضابطة', 'Kontrole'],
-  ['Reviewed', 'تمت المراجعة', 'Pārskatīts'],
 
   // ==========================================
   // CIA RATING LABELS (lowercase/variants)
