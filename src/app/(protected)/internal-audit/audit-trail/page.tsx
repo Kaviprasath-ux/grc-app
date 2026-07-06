@@ -359,13 +359,13 @@ export default function AuditTrailPage() {
                       {(page - 1) * pageSize + idx + 1}
                     </TableCell>
                     <TableCell className="py-3 text-sm font-medium text-slate-800 whitespace-nowrap">{r.userName}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-600 whitespace-nowrap">{r.userRole || "—"}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-600 whitespace-nowrap">{r.userRole ? t(r.userRole) : "—"}</TableCell>
                     <TableCell className="py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${actionColor(r.action)}`}>
-                        {r.action}
+                        {t(r.action)}
                       </span>
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{r.module}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{t(r.module)}</TableCell>
                     <TableCell className="py-3 text-sm text-slate-600 whitespace-nowrap">{fmt(r.createdAt)}</TableCell>
                   </TableRow>
                 ))

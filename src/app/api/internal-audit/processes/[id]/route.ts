@@ -5,7 +5,7 @@ import {
   getCustomerAccountId,
   getAuditHeadId,
 } from '@/lib/api-auth';
-import { translateRecord } from '@/lib/translation-service';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -204,6 +204,12 @@ export const DELETE = withAuth(
       }
 
       await prisma.internalAuditProcess.delete({ where: { id } });
+
+      // Clean up dynamic translations for the deleted process.
+      if (customerAccountId) {
+        void deleteRecordTranslations(customerAccountId, 'InternalAuditProcess', id);
+      }
+
       return NextResponse.json({ success: true });
     } catch (error) {
       console.error('Error deleting internal audit process:', error);
