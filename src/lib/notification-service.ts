@@ -1037,6 +1037,73 @@ class NotificationService {
   }
 
   /**
+   * Notify a newly-onboarded customer's admin. Sends one welcome per enabled
+   * module, each scoped to that workspace so it reads e.g. "Welcome to TPRM
+   * Platform" and only appears once the user enters that platform. Falls back
+   * to a single generic welcome when no modules are provided.
+   */
+  async notifyCustomerOnboarded(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    customerName: string;
+    userName: string;
+    modules?: ModuleCode[];
+    channels?: NotificationChannel[];
+  }) {
+    const message = `Your organization "${params.customerName}" has been successfully onboarded. You are now the administrator for your account.`;
+    const moduleList = (params.modules ?? []).filter(
+      (m, i, arr) => arr.indexOf(m) === i, // de-dupe
+    );
+
+    // No resolvable modules — keep a single, workspace-agnostic welcome.
+    if (moduleList.length === 0) {
+      return this.send({
+        customerAccountId: params.customerAccountId,
+        actorId: params.actorId,
+        recipientId: params.recipientId,
+        event: NOTIFICATION_EVENTS.CUSTOMER_ONBOARDED,
+        title: 'Welcome',
+        message,
+        relatedEntityType: 'customerAccount',
+        relatedEntityId: params.customerAccountId,
+        link: '/dashboard',
+        metadata: {
+          entityName: params.customerName,
+          customerName: params.customerName,
+          userName: params.userName,
+        },
+        channels: params.channels,
+      });
+    }
+
+    // One welcome per platform the customer has enabled.
+    let last: Awaited<ReturnType<NotificationService['send']>> | undefined;
+    for (const m of moduleList) {
+      last = await this.send({
+        customerAccountId: params.customerAccountId,
+        actorId: params.actorId,
+        recipientId: params.recipientId,
+        event: NOTIFICATION_EVENTS.CUSTOMER_ONBOARDED,
+        title: `Welcome to ${MODULE_LABELS[m]} Platform`,
+        message,
+        module: m,
+        relatedEntityType: 'customerAccount',
+        relatedEntityId: params.customerAccountId,
+        link: getModuleHome(m),
+        metadata: {
+          entityName: params.customerName,
+          customerName: params.customerName,
+          userName: params.userName,
+          module: m,
+        },
+        channels: params.channels,
+      });
+    }
+    return last!;
+  }
+
+  /**
    * Notify when an issue is created from AI evidence review.
    * Triggered when AI identifies non-compliance during evidence review.
    */
