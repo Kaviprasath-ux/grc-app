@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedEmailTemplates } from "./seed-email-templates";
+import { seedTPRMEmailTemplates } from "./seed-tprm-email-templates";
 import { seedSubscriptionCatalog } from "./seed-subscription-catalog";
 
 const prisma = new PrismaClient();
@@ -134,6 +135,10 @@ async function main() {
   // ==================== SEED EMAIL TEMPLATES ====================
   await seedEmailTemplates();
   console.log("✅ Email templates seeded");
+
+  // ==================== SEED TPRM EMAIL TEMPLATES ====================
+  await seedTPRMEmailTemplates();
+  console.log("✅ TPRM email templates seeded");
 
   // ==================== SEED SUBSCRIPTION CATALOG ====================
   await seedSubscriptionCatalog(prisma);
