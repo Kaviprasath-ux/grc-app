@@ -122,16 +122,20 @@ export default function BOContractsPage() {
   const handleStartOffboarding = useCallback(async (vendor: Vendor) => {
     setActionLoading(vendor.id);
     try {
-      const res = await fetch(`/api/tprm/vendors/${vendor.id}`, {
-        method: "PATCH",
+      // Create the offboard assessment (this also sets the vendor status to
+      // "Offboarding" and generates the offboarding questionnaire) so it appears
+      // in the vendor's Offboarding section — a plain status update does not.
+      const res = await fetch("/api/tprm/offboard-assessments", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Offboarding" }),
+        body: JSON.stringify({ vendorId: vendor.id }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         toast({ title: t("Success"), description: t("Offboarding initiated for") + " " + vendor.name });
         fetchVendors();
       } else {
-        toast({ title: t("Error"), description: t("Failed to start offboarding"), variant: "destructive" });
+        toast({ title: t("Error"), description: data.error || t("Failed to start offboarding"), variant: "destructive" });
       }
     } catch {
       toast({ title: t("Error"), description: t("Failed to start offboarding"), variant: "destructive" });
