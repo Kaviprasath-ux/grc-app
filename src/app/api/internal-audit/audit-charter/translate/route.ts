@@ -21,7 +21,7 @@ export const POST = withAuth(
       if (!locale || locale === 'en') {
         return NextResponse.json({ error: 'Locale required (not en)' }, { status: 400 });
       }
-      if (!TARGET_LOCALES.includes(locale)) {
+      if (!(TARGET_LOCALES as readonly string[]).includes(locale)) {
         return NextResponse.json({ error: `Unsupported locale: ${locale}` }, { status: 400 });
       }
 
