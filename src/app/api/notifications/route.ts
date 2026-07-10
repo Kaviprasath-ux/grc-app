@@ -43,8 +43,9 @@ export const GET = withAuthOnly(async (req, context, session) => {
       ...moduleFilter,
     };
 
-    // Get notifications with pagination
-    const [notifications, total] = await Promise.all([
+    // Get notifications with pagination + the unread count in the SAME request,
+    // so the bell doesn't need a separate /unread-count round-trip per page.
+    const [notifications, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where: whereConditions,
         orderBy: { createdAt: 'desc' },
@@ -54,10 +55,19 @@ export const GET = withAuthOnly(async (req, context, session) => {
       prisma.notification.count({
         where: whereConditions,
       }),
+      prisma.notification.count({
+        where: {
+          ...tenantFilter,
+          userId: session.id,
+          isRead: false,
+          ...moduleFilter,
+        },
+      }),
     ]);
 
     return NextResponse.json({
       notifications,
+      unreadCount,
       pagination: {
         page,
         limit,

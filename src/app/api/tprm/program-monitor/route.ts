@@ -8,41 +8,42 @@ export const GET = withAuth(
     try {
       const tenantFilter = getTenantFilter(session, { globalAccess: session.roles.includes('GRCAdministrator') });
 
-      // Get assessment counts grouped by type
-      const assessmentCounts = await prisma.tPRMAssessment.groupBy({
-        by: ['assessmentType'],
-        where: { ...tenantFilter },
-        _count: { id: true },
-      });
+      // Run the three independent reads in parallel — one round-trip instead of
+      // three sequential ones (matters most against a remote DB).
+      const [assessmentCounts, vendorCounts, plans] = await Promise.all([
+        // Assessment counts grouped by type
+        prisma.tPRMAssessment.groupBy({
+          by: ['assessmentType'],
+          where: { ...tenantFilter },
+          _count: { id: true },
+        }),
+        // Vendor counts grouped by status
+        prisma.tPRMVendor.groupBy({
+          by: ['status'],
+          where: { ...tenantFilter },
+          _count: { id: true },
+        }),
+        // Active subscription plan limits
+        session.customerAccountId
+          ? prisma.subscriptionPlan.findMany({
+              where: {
+                customerAccountId: session.customerAccountId,
+                status: 'Active',
+              },
+              select: {
+                assessmentLimit: true,
+                vendorLimit: true,
+              },
+            })
+          : Promise.resolve([]),
+      ]);
 
-      // Get vendor counts grouped by status
-      const vendorCounts = await prisma.tPRMVendor.groupBy({
-        by: ['status'],
-        where: { ...tenantFilter },
-        _count: { id: true },
-      });
-
-      // Get subscription plan limits
+      // Sum limits across all active plans
       let assessmentLimit = 0;
       let vendorLimit = 0;
-
-      if (session.customerAccountId) {
-        const plans = await prisma.subscriptionPlan.findMany({
-          where: {
-            customerAccountId: session.customerAccountId,
-            status: 'Active',
-          },
-          select: {
-            assessmentLimit: true,
-            vendorLimit: true,
-          },
-        });
-
-        // Sum limits across all active plans
-        for (const plan of plans) {
-          assessmentLimit += plan.assessmentLimit || 0;
-          vendorLimit += plan.vendorLimit || 0;
-        }
+      for (const plan of plans) {
+        assessmentLimit += plan.assessmentLimit || 0;
+        vendorLimit += plan.vendorLimit || 0;
       }
 
       // Build assessment breakdown
