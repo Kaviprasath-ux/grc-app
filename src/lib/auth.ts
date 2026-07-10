@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import type { SubscriptionStatus, SubscriptionType } from "@prisma/client";
 import { expandRolePermissions, type UserPermission } from "@/lib/permissions";
 import { getAccessSnapshot } from "@/lib/module-access";
+import { inferModuleFromRoleName } from "@/lib/url-module-map";
 import { recordAuditTrail } from "@/lib/audit-trail";
 
 // Shared query for loading user with all relations needed for session
@@ -128,6 +129,14 @@ async function buildAuthUser(dbUser: {
   for (const ur of dbUser.userRoles) {
     if (ur.moduleCode === "GRC" || ur.moduleCode === "TPRM" || ur.moduleCode === "INTERNAL_AUDIT" || ur.moduleCode === "TECHNICAL_EVIDENCE") {
       validModules.add(ur.moduleCode);
+    } else if (ur.moduleCode == null) {
+      // Recover the workspace for older UserRole rows saved without a moduleCode
+      // by inferring it from the (single-platform) role name — otherwise the
+      // layout gate wrongly shows "Subscription Required" for a role the user
+      // actually holds. Still intersected with the subscription flag downstream,
+      // so this never grants access to an unsubscribed module.
+      const inferred = inferModuleFromRoleName(ur.role.name);
+      if (inferred) validModules.add(inferred);
     }
   }
   if (extraRoleModules) {
