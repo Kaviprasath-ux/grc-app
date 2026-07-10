@@ -64,6 +64,8 @@ model CustomerAccount {
   internalAuditCAPAs            InternalAuditCAPA[]
   auditReports                  AuditReport[]
   internalAuditDocuments        InternalAuditDocument[]
+  auditStrategicPlans           AuditStrategicPlan[]
+  auditOperationalPlans         AuditOperationalPlan[]
   governanceVaultDocuments      GovernanceVaultDocument[]
   subscriptionPlans             SubscriptionPlan[]
   // New subscription system (module-based)
@@ -99,6 +101,7 @@ model CustomerAccount {
   riskRanges                    RiskRange[]
   riskScoreConfigs              RiskScoreConfig[]
   auditCategories               AuditCategory[]
+  auditSubCategories            AuditSubCategory[]
   auditNatureOfControls         AuditNatureOfControl[]
   auditRiskFactors              AuditRiskFactor[]
   auditProbabilities            AuditProbability[]
@@ -173,6 +176,10 @@ model CustomerAccount {
   // Technical Evidence Integration relations
   integrationCredentials        IntegrationCredential[]
   technicalEvidenceCollections  TechnicalEvidenceCollection[]
+  // Support ticketing relations
+  supportTickets                SupportTicket[]
+  supportRoutingRules           SupportRoutingRule[]
+  auditCharter                  AuditCharter?
 }
 
 // Subscription Plan for Customer Accounts (legacy limits-based, kept for existing enforcement code)
@@ -682,6 +689,8 @@ model Department {
   qpostExceptions            QPostException[]
   qpostRequirementExceptions QPostRequirementException[]
   qpostKpis                  QPostKPI[]
+  // Support ticketing
+  supportTickets             SupportTicket[]
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
@@ -776,8 +785,13 @@ model User {
   ownedAuditCAPAs              InternalAuditCAPA[]           @relation("AuditHeadCAPAs")
   ownedAuditReports            AuditReport[]                 @relation("AuditHeadReports")
   ownedAuditDocuments          InternalAuditDocument[]       @relation("AuditHeadDocuments")
+  ownedStrategicPlans          AuditStrategicPlan[]          @relation("AuditHeadStrategicPlans")
+  createdStrategicPlans        AuditStrategicPlan[]          @relation("StrategicPlanCreatedBy")
+  ownedOperationalPlans        AuditOperationalPlan[]        @relation("AuditHeadOperationalPlans")
+  createdOperationalPlans      AuditOperationalPlan[]        @relation("OperationalPlanCreatedBy")
   // Audit Head owned settings (each Audit Head has their own settings)
   ownedCategories              AuditCategory[]               @relation("AuditHeadCategories")
+  auditSubCategories           AuditSubCategory[]            @relation("AuditHeadSubCategories")
   ownedNatureOfControls        AuditNatureOfControl[]        @relation("AuditHeadNatureOfControls")
   ownedRiskFactors             AuditRiskFactor[]             @relation("AuditHeadRiskFactors")
   ownedProbabilities           AuditProbability[]            @relation("AuditHeadProbabilities")
@@ -836,6 +850,13 @@ model User {
   contractDeletionReviews      TPRMContractDeletionRequest[] @relation("DeletionReviewedBy")
   // Technical Evidence relations
   technicalEvidenceCollections TechnicalEvidenceCollection[] @relation("TechEvidenceCollector")
+  // Support ticketing relations
+  assignedSupportTickets       SupportTicket[]               @relation("SupportTicketAssignee")
+  reportedSupportTickets       SupportTicket[]               @relation("SupportTicketReporter")
+  createdSupportTickets        SupportTicket[]               @relation("SupportTicketCreatedBy")
+  supportTicketComments        SupportTicketComment[]        @relation("SupportTicketCommentAuthor")
+  supportTicketActivities      SupportTicketActivity[]       @relation("SupportTicketActivityActor")
+  passwordResetTokens          PasswordResetToken[]
 
   // Multi-tenant: userId stays unique per customer (so each tenant can have
   // their own USR-001 sequence). userName and email are globally unique
@@ -2733,11 +2754,33 @@ model AuditCategory {
   name               String
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-  internalAuditRisks InternalAuditRisk[]
+  internalAuditRisks     InternalAuditRisk[]
+  subCategories          AuditSubCategory[]
+  internalAuditProcesses InternalAuditProcess[] @relation("InternalAuditProcessCategory")
+  engagements            AuditEngagement[]      @relation("EngagementAuditCategory")
 
   @@unique([customerAccountId, auditHeadId, name])
   @@index([customerAccountId])
   @@index([auditHeadId])
+}
+
+model AuditSubCategory {
+  id                 String              @id @default(cuid())
+  customerAccountId  String?
+  customerAccount    CustomerAccount?    @relation(fields: [customerAccountId], references: [id])
+  auditHeadId        String?
+  auditHead          User?               @relation("AuditHeadSubCategories", fields: [auditHeadId], references: [id])
+  name               String
+  categoryId         String
+  category           AuditCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  internalAuditRisks InternalAuditRisk[]
+
+  @@unique([customerAccountId, auditHeadId, categoryId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+  @@index([categoryId])
 }
 
 // Nature of Controls (e.g., Preventive, Detective, Corrective)
@@ -3015,8 +3058,11 @@ model InternalAuditProcess {
   processCode       String? // Auto-generated reference ID (IAP001, IAP002, ...)
   name              String
   description       String?
+  processOwner      String?
   departmentId      String?
   department        Department?                      @relation("InternalAuditProcessDepartment", fields: [departmentId], references: [id])
+  categoryId        String?
+  category          AuditCategory?                   @relation("InternalAuditProcessCategory", fields: [categoryId], references: [id])
   createdAt         DateTime                         @default(now())
   updatedAt         DateTime                         @updatedAt
   // Relations
@@ -3082,6 +3128,12 @@ model InternalAuditRisk {
   activity             String?
   categoryId           String?
   category             AuditCategory?             @relation(fields: [categoryId], references: [id])
+  subCategoryId        String?
+  subCategory          AuditSubCategory?          @relation(fields: [subCategoryId], references: [id])
+  riskDrivers          String?
+  riskConsequences     String?
+  relatedLawRegulation String?
+  controlsData         String?
   auditTypeId          String?
   auditType            AuditType?                 @relation(fields: [auditTypeId], references: [id])
   riskDescription      String?
@@ -3103,6 +3155,16 @@ model InternalAuditRisk {
   status               String                     @default("Open") // Open, Closed, Under Review
   evidenceFilePath     String?
   evidenceFileName     String?
+  // Risk Assessment (Initiate Risk Assessment workflow)
+  strategicImpact           Int?
+  financialImpact           Int?
+  complianceRisk            Int?
+  operationalRisk           Int?
+  itDataRisk                Int?
+  controlEffectivenessScore Int?   // 1=Very Ineffective 2=Ineffective 3=Moderately Effective 4=Effective 5=Highly Effective
+  assessmentStatus          String @default("Not Assessed") // "Not Assessed" | "Assessed"
+  assessmentLikelihood      Int?
+  assessmentResidualScore   Float?
   // Engagement link
   engagementId         String?
   engagement           AuditEngagement?           @relation(fields: [engagementId], references: [id])
@@ -3187,11 +3249,25 @@ model AuditEngagement {
   // Process relation
   processId           String?
   process             Process?                   @relation("EngagementProcess", fields: [processId], references: [id])
+  // Audit Category relation
+  auditCategoryId     String?
+  auditCategory       AuditCategory?             @relation("EngagementAuditCategory", fields: [auditCategoryId], references: [id])
   // Status
   status              String                     @default("Planned") // Planned, In Progress, Completed, Cancelled
   priority            String                     @default("Medium") // Low, Medium, High
   year                Int                        @default(2026)
   quarter             String? // Q1, Q2, Q3, Q4
+  // Engagement lifecycle workflow (Phase 2): current step + per-step status map
+  currentStage        String                     @default("announcement")
+  stageProgress       Json? // { [stageKey]: "completed" | "in_progress" }
+  // Findings communication strategy (Phase 4): Continuous (shared individually)
+  // vs Aggregated (consolidated into the draft detailed report)
+  reportingMode       String                     @default("Aggregated") // Continuous, Aggregated
+  // AI Findings Review (external Python API): overall roll-up summary for all
+  // findings (result.overall), the job id of the last run, and when it ran.
+  aiFindingsReviewOverall Json? // { overall_compliance_status, overall_confidence, total_findings, status_breakdown, evaluated_findings, compliance_rate_excluding_insufficient }
+  aiFindingsReviewJobId   String?
+  aiFindingsReviewedAt    DateTime?
   // Timestamps
   createdAt           DateTime                   @default(now())
   updatedAt           DateTime                   @updatedAt
@@ -3204,8 +3280,114 @@ model AuditEngagement {
   aiWorkpapers        AiWorkpaper[]
   tasks               AuditEngagementTask[]
   comments            EngagementComment[]
+  // Operational plan item this engagement was auto-generated from (if any)
+  sourcePlanItems     AuditOperationalPlanItem[] @relation("PlanItemEngagement")
+  // Minutes of Meeting records (opening / findings discussion / closing)
+  meetings            AuditEngagementMeeting[]   @relation("EngagementMeetings")
+  // Audit Planning Memorandum (one per engagement)
+  apm                 AuditEngagementAPM?        @relation("EngagementAPM")
+  // Formal audit announcement (one per engagement)
+  announcement        AuditEngagementAnnouncement? @relation("EngagementAnnouncement")
 
   @@unique([customerAccountId, auditId])
+  @@index([customerAccountId])
+}
+
+// Formal audit announcement / notification email (Phase 3).
+// One per engagement; the templated notification sent to management with the
+// preliminary information request (PBC) list.
+model AuditEngagementAnnouncement {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  engagementId      String          @unique
+  engagement        AuditEngagement @relation("EngagementAnnouncement", fields: [engagementId], references: [id], onDelete: Cascade)
+  recipientName     String?
+  recipientEmail    String?
+  additionalRecipients String? @db.Text // JSON array of { name, email } for extra recipients
+  subject           String?
+  body              String? // composed announcement email body
+  commenceDate      DateTime? // date the audit is scheduled to commence
+  status            String          @default("Draft") // Draft, Sent
+  sentAt            DateTime?
+  sentById          String?
+  sentByName        String?
+  createdById       String?
+  createdByName     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// Audit Planning Memorandum (APM) — engagement planning document (Phase 3).
+// One per engagement; captures scope, objectives, methodology and timeline,
+// with attached detailed audit-program documents.
+model AuditEngagementAPM {
+  id                String                         @id @default(cuid())
+  customerAccountId String
+  engagementId      String                         @unique
+  engagement        AuditEngagement                @relation("EngagementAPM", fields: [engagementId], references: [id], onDelete: Cascade)
+  scope             String?
+  objectives        String?
+  methodology       String?
+  timeline          String? // narrative timeline / milestones
+  // A. Audit Program Overview — JSON array of { auditTitle, department, period }
+  programOverview   String?                        @db.Text
+  // Full 17-section Audit Planning Memorandum — JSON of ApmContent (see src/lib/apm-template.ts)
+  content           String?                        @db.Text
+  startDate         DateTime?
+  endDate           DateTime?
+  status            String                         @default("Draft") // Draft, Finalized
+  createdById       String?
+  createdByName     String?
+  attachments       AuditEngagementAPMAttachment[]
+  createdAt         DateTime                       @default(now())
+  updatedAt         DateTime                       @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// Audit-program / supporting document attached to an APM.
+model AuditEngagementAPMAttachment {
+  id             String             @id @default(cuid())
+  apmId          String
+  apm            AuditEngagementAPM @relation(fields: [apmId], references: [id], onDelete: Cascade)
+  fileName       String
+  fileType       String?
+  fileSize       Int?
+  filePath       String
+  fileData       Bytes? // Store file binary for serverless (Vercel) compatibility — encrypted at rest
+  uploadedBy     String?
+  uploadedByName String?
+  uploadedAt     DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([apmId])
+}
+
+// Minutes of Meeting (MoM) for an engagement's lifecycle meetings.
+// Shared across Opening, Findings Discussion, and Closing meeting steps (Phase 3).
+model AuditEngagementMeeting {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  engagementId      String
+  engagement        AuditEngagement @relation("EngagementMeetings", fields: [engagementId], references: [id], onDelete: Cascade)
+  meetingType       String // "opening" | "discussion" | "closing"
+  title             String?
+  meetingDate       DateTime?
+  location          String?
+  attendees         String? // free-text or comma-separated list of attendees
+  agenda            String?
+  minutes           String? // the Minutes of Meeting body
+  decisions         String? // agreed action plans / decisions
+  status            String          @default("Draft") // Draft, Finalized
+  createdById       String?
+  createdByName     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([engagementId])
   @@index([customerAccountId])
 }
 
@@ -3361,13 +3543,25 @@ model AuditReport {
   title              String
   executiveSummary   String?
   scope              String?
+  scopeExclusions    String? // Exclusion from the scope of work
   objectives         String?
   methodology        String?
   observations       String?
   recommendations    String?
   managementResponse String?
   conclusion         String?
-  // Overall Result (Pass/Fail)
+  // Opinion (overall audit opinion / rating)
+  opinionRating      String? // Satisfactory, Needs Improvement, Unsatisfactory
+  opinionSummary     String? // Narrative opinion text
+  // Senior management messaging
+  topMessages        String? // Top messages for senior management
+  keyRisks           String? // Key risks (Operational/Financial/Compliance/Reputation)
+  summaryKeyFindings String? // Summary of Key Audit Findings
+  // Areas requiring management attention
+  mgmtAttentionImmediate   String? // Immediate Action
+  mgmtAttentionMediumTerm  String? // Medium-Term Improvement
+  followUp           String? // Follow up paragraph
+  // Overall Result (Pass/Fail) — legacy, retained for back-compat
   overallResult      String? // Pass, Fail
   // Status
   status             String          @default("Draft") // Draft, Review, Final, Published
@@ -3390,6 +3584,45 @@ model AuditReport {
   @@index([customerAccountId])
 }
 
+// Internal Audit — Independence & Objectivity declarations (per IIA Global
+// Internal Audit Standards). One row per declaration; `type` distinguishes
+// the Independence Declaration from the Objectivity Declaration.
+model AuditDeclaration {
+  id                String   @id @default(cuid())
+  // Multi-tenant + Audit Head isolation (stored as scalars; filtered via
+  // getTenantFilter / getAuditHeadFilter)
+  customerAccountId String
+  auditHeadId       String?
+  declarationCode   String // Auto-generated DEC-0001
+  // "Independence" | "Objectivity"
+  type              String
+  // Declarant (audit team member making the declaration)
+  declarantId       String?
+  declarantName     String?
+  position          String?
+  department        String? // Independence form only
+  engagement        String? // Audit Engagement / Project / Assignment (free text)
+  declarationDate   DateTime?
+  // Result/assessment:
+  //   Independence: "Confirmed" | "PotentialImpairment"
+  //   Objectivity:  "NoThreats"  | "PotentialThreat"
+  result            String?
+  explanation       String?
+  employeeSignature String? // typed name as digital signature
+  // Review / approval (Chief Audit Executive / Audit Manager)
+  reviewedById      String?
+  reviewerName      String?
+  reviewerSignature String?
+  reviewedDate      DateTime?
+  // "Draft" | "Submitted" | "Reviewed"
+  status            String   @default("Draft")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([customerAccountId, declarationCode])
+  @@index([customerAccountId])
+}
+
 // ==================== INTERNAL AUDIT - FINDINGS & CAPA ====================
 
 // Internal Audit Finding (linked to engagement, separate from general AuditFinding)
@@ -3408,6 +3641,8 @@ model InternalAuditFinding {
   finding             String
   description         String?
   severity            String              @default("Medium") // Low, Medium, High, Critical
+  // Finding type classification (report Definition of Finding Types)
+  findingType         String? // Absence of Control, Lack of Operational Effectiveness, Best Practices, Non-Compliance
   departmentId        String?
   department          Department?         @relation(fields: [departmentId], references: [id])
   responsiblePerson   String?
@@ -3424,6 +3659,8 @@ model InternalAuditFinding {
   closedDate          DateTime?
   // Status
   status              String              @default("Open") // Open, In Progress, Closed, Overdue, Under Review
+  // Continuous reporting (Phase 4): when this finding was shared with the auditee
+  sharedWithAuditeeAt DateTime?
   // AI Review fields
   aiReviewStatus      String? // "Satisfactory" | "Unsatisfactory" | null
   aiReviewDescription String? // AI-generated description
@@ -3431,6 +3668,12 @@ model InternalAuditFinding {
   aiReviewApproved    Boolean             @default(false) // Has Audit Head approved the review?
   aiApprovedAt        DateTime? // When Audit Head approved
   aiApprovedBy        String? // Audit Head user ID who approved
+  // AI Findings Review (external Python API): per-finding compliance verdict
+  // returned by the findings_review job (result.findings[]). Distinct from the
+  // CAPA evidence review above (aiReviewStatus/aiReviewDescription).
+  aiFindingReview       Json? // { compliance_status, confidence, confidence_breakdown, reasoning_summary, evidence[], verification }
+  aiFindingReviewStatus String? // denormalized verdict for list badge: Compliant | Non-Compliant | Partially Compliant | Insufficient Evidence
+  aiFindingReviewedAt   DateTime?
   // Timestamps
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
@@ -3490,6 +3733,189 @@ model InternalAuditCAPA {
   @@index([customerAccountId])
 }
 
+// Follow-up Meeting Form for the implementation of audit recommendations.
+// One per engagement. Header fields are scalar; attendees and the
+// recommendation-status grid are stored as JSON text (variable-length rows).
+model AuditFollowUpMeeting {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // Header / meeting metadata
+  meetingVenue      String?
+  history           String?
+  assignmentTitle   String?
+  auditTaskNumber   String?
+  department        String?
+  management        String?
+  // Repeatable sections, stored as JSON arrays
+  attendees         String?  @db.Text // JSON: [{ name, jobTitle, management, signature }]
+  recommendations   String?  @db.Text // JSON: [{ number, recommendation, official, implementationDate, implementationStatus, notes }]
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// Preliminary Observations / Findings Discussion Meeting form (workflow step 7).
+// One per engagement. Header fields are scalar; attendees, notes-discussed and
+// agreed-actions are stored as JSON text (variable-length rows).
+model AuditFindingsDiscussionMeeting {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // Header / meeting metadata
+  meetingVenue      String?
+  history           String?
+  assignmentTitle   String?
+  auditTaskNumber   String?
+  department        String?
+  management        String?
+  // Repeatable sections, stored as JSON arrays
+  attendees         String?  @db.Text // JSON: [{ name, jobTitle, management, signature }]
+  notesDiscussed    String?  @db.Text // JSON: [{ number, note, degreeOfRisk, managementResponse, proposedAction }]
+  agreedActions     String?  @db.Text // JSON: [{ number, procedure, official, implementationDate }]
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// Audit Task Closing Meeting Minutes form (workflow step 8).
+// One per engagement. Header fields are scalar; attendees and the
+// summary-of-audit-results grid are stored as JSON text.
+model AuditClosingMeeting {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // Header / meeting metadata
+  meetingVenue      String?
+  history           String?
+  assignmentTitle   String?
+  auditTaskNumber   String?
+  department        String?
+  management        String?
+  // Repeatable sections, stored as JSON arrays
+  attendees         String?  @db.Text // JSON: [{ name, jobTitle, management, signature }]
+  summaryOfResults  String?  @db.Text // JSON: [{ number, keyNote, degreeOfRisk, recommendation, managementResponse }]
+  decisionsTaken    String?  @db.Text // JSON: [{ implementationDate, official, decision }]
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// Audit Task Opening Meeting Minutes form (workflow step: Opening Meeting).
+// One per engagement. Header fields are scalar; objective is free text;
+// attendees, topics-discussed and agreed-actions are stored as JSON text.
+model AuditOpeningMeeting {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // Header / meeting metadata
+  meetingVenue      String?
+  history           String?
+  assignmentTitle   String?
+  auditTaskNumber   String?
+  department        String?
+  management        String?
+  // Objective of the meeting (free text)
+  objective         String?  @db.Text
+  // Repeatable sections, stored as JSON arrays
+  attendees         String?  @db.Text // JSON: [{ name, jobTitle, management, signature }]
+  topicsDiscussed   String?  @db.Text // JSON: [{ number, subject, details }]
+  agreedActions     String?  @db.Text // JSON: [{ number, actionRequired, official, implementationDate }]
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// Audit Program form (workflow step: Audit Program). One per engagement.
+// Header fields are scalar; instructions is free text; the detailed program
+// rows and the review/approval block are stored as JSON / scalar fields.
+model AuditProgram {
+  id                String   @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access validated through the parent engagement.
+  customerAccountId String
+  engagementId      String   @unique
+  // A. Audit Program Overview
+  auditTitle        String?
+  department        String?
+  period            String?
+  // B. Instructions (free text, default boilerplate)
+  instructions      String?  @db.Text
+  // C. Detailed audit program rows (JSON array of the 14-column rows)
+  rows              String?  @db.Text // JSON: [{ objective, processSubprocess, risk, control, controlType, testType, auditProcedure, samplingMethod, sampleSize, evidenceRequired, result, conclusion, exception, workingPaperRef }]
+  // D. Review & Approval
+  preparedBy        String?
+  preparedDate      String?
+  reviewedBy        String?
+  reviewedDate      String?
+  approvedBy        String?
+  approvedDate      String?
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// Internal Audit Engagement Feedback Survey (QAIP). One per engagement.
+// Ratings (5..1 / N/A) and section comments are stored as JSON.
+model AuditFeedbackSurvey {
+  id                  String   @id @default(cuid())
+  customerAccountId   String
+  engagementId        String   @unique
+  responses           String?  @db.Text // JSON: { [questionKey]: "5"|"4"|"3"|"2"|"1"|"NA" }
+  comments            String?  @db.Text // JSON: { [sectionKey]: "comment" }
+  customRows          String?  @db.Text // JSON: { [sectionKey]: [{ key, text }] } — user-added question rows
+  overallSatisfaction Int? // 1..5
+  didWell             String?  @db.Text
+  improvements        String?  @db.Text
+  createdById         String?
+  updatedById         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([customerAccountId])
+}
+
+// ==================== AUDIT TRAIL (activity log) ====================
+// Immutable, append-only record of significant user actions across the platform.
+// Written by recordAuditTrail() (src/lib/audit-trail.ts); never updated/deleted by users.
+model AuditTrail {
+  id                String   @id @default(cuid())
+  customerAccountId String? // tenant isolation
+  userId            String? // actor (null if user later deleted)
+  userName          String // snapshot of the actor's name at action time
+  userRole          String? // snapshot of the actor's role(s)
+  action            String // Create | Update | Delete | Submit | Approve | Reject | Login | Logout | View | Export ...
+  module            String // module / entity name (e.g. "Operational Plan")
+  recordId          String? // identifier of the affected record
+  description       String?  @db.Text // optional human-readable detail
+  ipAddress         String?
+  createdAt         DateTime @default(now())
+
+  @@index([customerAccountId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([module])
+  @@index([action])
+}
+
 // ==================== INTERNAL AUDIT - DOCUMENT LIBRARY ====================
 
 // Internal Audit Document (for document library)
@@ -3544,6 +3970,161 @@ model DocumentLibraryIngestJob {
 
   @@index([documentId])
   @@index([runpodJobId])
+}
+
+// ==================== INTERNAL AUDIT - STRATEGIC PLAN ====================
+
+// Strategic Audit Plan - multi-year (3/4/5) risk-based audit strategy.
+// Created by the Head of Audit, approved via manual sign-off (signed copy upload).
+model AuditStrategicPlan {
+  id                String                   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount          @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId       String?
+  auditHead         User?                    @relation("AuditHeadStrategicPlans", fields: [auditHeadId], references: [id])
+  planCode          String // Auto-generated SAP001, SAP002, etc.
+  title             String
+  description       String?
+  durationYears     Int                      @default(3) // 3, 4, or 5
+  startYear         Int // first calendar year covered by the plan
+  status            String                   @default("Draft") // Draft, Pending Approval, Approved
+  generatedFromRisk Boolean                  @default(false)
+  // Creator (Head of Audit)
+  createdById       String?
+  createdBy         User?                    @relation("StrategicPlanCreatedBy", fields: [createdById], references: [id])
+  // Approval — manual sign-off (no Minister login). Uploading the signed copy marks the plan Approved.
+  approvedByName    String? // Name of the approving authority (e.g. Minister) typed at approval
+  approvedAt        DateTime?
+  signedCopyPath    String?
+  signedCopyName    String?
+  signedCopyData    Bytes? // Store signed-copy binary for serverless (Vercel) compatibility
+  items             AuditStrategicPlanItem[]
+  operationalPlans  AuditOperationalPlan[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@unique([customerAccountId, planCode])
+  @@index([customerAccountId])
+}
+
+// A single planned audit within a strategic plan year.
+// Source-record ids (department/entity/risk) are stored loosely (no FK) plus a denormalized title.
+model AuditStrategicPlanItem {
+  id                String             @id @default(cuid())
+  strategicPlanId   String
+  strategicPlan     AuditStrategicPlan @relation(fields: [strategicPlanId], references: [id], onDelete: Cascade)
+  year              Int // calendar year this audit is scheduled in
+  title             String
+  departmentId      String?
+  auditableEntityId String?
+  riskId            String?
+  auditType         String?
+  // Risk-based ranking snapshot captured at generation time
+  residualScore     Int?
+  riskLevel         String?
+  priorityRank      Int?
+  reasonForScheduling String?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([strategicPlanId])
+}
+
+// ==================== INTERNAL AUDIT - OPERATIONAL (ANNUAL) PLAN ====================
+
+// Operational Audit Plan - one per year, derived from a Strategic Plan year.
+// The Head of Audit / Audit Manager can add or delete audits and upload approval documents.
+model AuditOperationalPlan {
+  id                String                     @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount            @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId       String?
+  auditHead         User?                      @relation("AuditHeadOperationalPlans", fields: [auditHeadId], references: [id])
+  // Parent strategic plan + the specific year this operational plan covers
+  strategicPlanId   String
+  strategicPlan     AuditStrategicPlan         @relation(fields: [strategicPlanId], references: [id], onDelete: Cascade)
+  year              Int
+  planCode          String // Auto-generated OAP001, OAP002, etc.
+  title             String
+  status            String                     @default("Draft") // Draft, Approved
+  // Approval document upload (annual plan sign-off)
+  approvalDocPath   String?
+  approvalDocName   String?
+  approvalDocData   Bytes? // Store approval-document binary for serverless compatibility
+  approvedAt        DateTime?
+  createdById       String?
+  createdBy         User?                      @relation("OperationalPlanCreatedBy", fields: [createdById], references: [id])
+  items             AuditOperationalPlanItem[]
+  quarterReports    AuditOperationalPlanQuarterReport[]
+  // Per-quarter Annual-Audit-Plan fields (JSON: { Q1: { residualScore, riskLevel,
+  // proposedPeriodical, estimatedHours, auditorInChargeId }, ... }).
+  quarterPlans      String?                    @db.Text
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([strategicPlanId, year])
+  @@unique([customerAccountId, planCode])
+  @@index([customerAccountId])
+}
+
+// Quarterly report document attached to an operational (annual) plan.
+// One per quarter (Q1-Q4); created on first upload via upsert on (plan, quarter).
+model AuditOperationalPlanQuarterReport {
+  id                String               @id @default(cuid())
+  // Multi-tenant scalar (filtered via getTenantFilter); access is validated through the parent plan.
+  customerAccountId String
+  operationalPlanId String
+  operationalPlan   AuditOperationalPlan @relation(fields: [operationalPlanId], references: [id], onDelete: Cascade)
+  quarter           String // Q1, Q2, Q3, Q4
+  status            String               @default("Submitted") // Submitted (a document is uploaded)
+  // Report document upload
+  reportDocPath     String?
+  reportDocName     String?
+  reportDocData     Bytes? // Store report-document binary for serverless compatibility (manually encrypted)
+  notes             String?
+  uploadedAt        DateTime?
+  uploadedById      String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@unique([operationalPlanId, quarter])
+  @@index([operationalPlanId])
+  @@index([customerAccountId])
+}
+
+// A single planned audit within an operational (annual) plan.
+model AuditOperationalPlanItem {
+  id                 String               @id @default(cuid())
+  operationalPlanId  String
+  operationalPlan    AuditOperationalPlan @relation(fields: [operationalPlanId], references: [id], onDelete: Cascade)
+  title              String
+  departmentId       String?
+  auditableEntityId  String?
+  riskId             String?
+  auditType          String?
+  auditCategory      String? // from Audit Settings categories
+  plannedQuarter     String? // Q1, Q2, Q3, Q4
+  assignedAuditorId  String? // Audit Manager
+  auditorInChargeId  String? // Auditor in Charge (Annual Audit Plan)
+  residualScore      Int? // Residual risk score
+  riskLevel          String? // Risk Classification
+  proposedPeriodical String? // Proposed Periodical (e.g. Annual, Quarterly)
+  estimatedHours     Int? // Estimated Hours
+  priorityRank       Int?
+  notes              String?
+  // Engagement auto-generated from this item on operational plan approval (idempotency + traceability)
+  engagementId       String?
+  engagement         AuditEngagement?     @relation("PlanItemEngagement", fields: [engagementId], references: [id], onDelete: SetNull)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([operationalPlanId])
+  @@index([engagementId])
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================
@@ -5359,8 +5940,12 @@ model ChatbotKBArticle {
   productScope String // "grc", "tprm", "audit", "both"
   roles        String[] // empty = all roles, ["AuditHead"] = restricted
   question     String   @db.Text
+  answer       String?  @db.Text // raw answer body (item 11 authoring); content stays the embedded text
   content      String   @db.Text // concatenated: question + answer + steps + notes
   embedding    Float[] // 1536-dim vector from text-embedding-3-small
+  isPublished  Boolean  @default(true) // unpublished articles are excluded from search
+  source       String   @default("seed") // "seed" (help articles) | "manual" (authored in the KB screen) | "document" (ingested regulation, e.g. GIAS 2024)
+  updatedById  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -5514,3 +6099,175 @@ model TechnicalEvidenceControlMapping {
 // ============================================================
 // TECHNICAL EVIDENCE INTEGRATIONS - END
 // ============================================================
+
+// ============================================================
+// SUPPORT TICKETING - START
+// ============================================================
+
+// A customer support ticket. Created manually from the support UI, or
+// automatically when the AI Help Chatbot cannot resolve a question.
+model SupportTicket {
+  id                String          @id @default(cuid())
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  ticketCode        String // Human-readable code: TKT-001, TKT-002
+
+  subject     String
+  description String? @db.Text
+
+  // Classification (item 2 — auto-tagging). Stored as String with inline
+  // allowed-values comments, matching the Finding/CAPA convention.
+  priority    String  @default("P3") // P1, P2, P3, P4
+  severity    String  @default("Medium") // Critical, High, Medium, Low
+  tier        String  @default("L1") // L1, L2, L3, L4 (team currently owning it)
+  status      String  @default("New") // New, Open, In Progress, Pending Customer, Resolved, Closed, Reopened
+  category    String? // PMS, OTA, Billing, Access, etc. (drives routing)
+  subcategory String?
+  channel     String  @default("InApp") // InApp, Chatbot, Email, WhatsApp, Phone
+
+  // Reporter (a logged-in platform user in v1; email kept for future external channels)
+  reporterId    String?
+  reporter      User?   @relation("SupportTicketReporter", fields: [reporterId], references: [id])
+  reporterName  String?
+  reporterEmail String?
+
+  // Assignment
+  assignedToId String?
+  assignedTo   User?       @relation("SupportTicketAssignee", fields: [assignedToId], references: [id])
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  // Chatbot escalation linkage (item 3)
+  originConversationId String?
+  botTranscript        String? @db.Text // JSON of the failed Q&A exchange
+  escalationReason     String? // low_confidence | max_exchanges | user_requested
+
+  // SLA timestamps + breach-alert dedupe state (consumed by the SLA cron)
+  acknowledgedAt      DateTime?
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+  firstResponseAt     DateTime?
+  slaAckDeadline      DateTime?
+  slaResolveDeadline  DateTime?
+  slaAckAlertedAt     DateTime? // last time an ack-SLA alert fired (avoid repeats)
+  slaResolveAlertedAt DateTime? // last time a resolve-SLA alert fired
+
+  // CSAT / NPS (item 13) — captured when the reporter rates a resolved ticket
+  csatScore       Int? // 1-5
+  csatComment     String?   @db.Text
+  csatSubmittedAt DateTime?
+
+  // External-channel linkage (item 15 — WhatsApp / Teams)
+  reporterPhone String?
+  externalRef   String? // provider message/thread id for reply correlation
+
+  createdById String?
+  createdBy   User?    @relation("SupportTicketCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  comments   SupportTicketComment[]
+  activities SupportTicketActivity[]
+
+  @@unique([customerAccountId, ticketCode])
+  @@index([customerAccountId])
+  @@index([customerAccountId, status])
+  @@index([customerAccountId, assignedToId])
+  @@index([customerAccountId, tier, status])
+  @@index([customerAccountId, externalRef])
+}
+
+// Replies and internal notes on a ticket (mirrors EngagementComment).
+model SupportTicketComment {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User          @relation("SupportTicketCommentAuthor", fields: [userId], references: [id])
+  comment    String        @db.Text
+  isInternal Boolean       @default(false) // internal note vs customer-visible reply
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+// Audit trail of state changes on a ticket (assignment, escalation, status).
+model SupportTicketActivity {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?         @relation("SupportTicketActivityActor", fields: [actorId], references: [id])
+  action    String // created | assigned | escalated | status_changed | priority_changed | commented
+  fromValue String?
+  toValue   String?
+  note      String?
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+// Per-tenant routing config powering the auto-tagging in item 2.
+model SupportRoutingRule {
+  id                    String          @id @default(cuid())
+  customerAccountId     String
+  customerAccount       CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  category              String // matches SupportTicket.category
+  defaultTier           String          @default("L1") // L1, L2, L3
+  defaultPriority       String          @default("P3") // P1, P2, P3, P4
+  assignToDepartmentId  String?
+  keywords              String?         @db.Text // JSON array; matches bump priority to P1
+  isActive              Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@unique([customerAccountId, category])
+  @@index([customerAccountId])
+}
+
+// ============================================================
+// SUPPORT TICKETING - END
+// ============================================================
+
+// ============================================================
+// SOC SELF-SERVICE PASSWORD RESET (item 14)
+// ============================================================
+
+// One-time password-reset request. The OTP is stored hashed (bcrypt). Rate
+// limiting and abuse detection query this table by requestIp + createdAt.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otpHash   String // bcrypt hash of the 6-digit OTP
+  expiresAt DateTime
+  attempts  Int       @default(0) // failed verify attempts (lock after N)
+  consumed  Boolean   @default(false)
+  consumedAt DateTime?
+  requestIp String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([requestIp, createdAt])
+}
+
+// ============================================================
+// AUDIT CHARTER
+// ============================================================
+
+// One charter per tenant. Content is the parsed block structure (JSON array).
+// fieldValues maps field IDs to the values the user has saved.
+model AuditCharter {
+  id                   String          @id @default(cuid())
+  customerAccountId    String          @unique
+  originalFileName     String?
+  content              Json            @default("[]")
+  fieldValues          Json            @default("{}")
+  uploadedAt           DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  signedCopyFileName   String?
+  signedCopyData       Bytes?
+  signedCopyMimeType   String?
+  signedCopyUploadedAt DateTime?
+  customerAccount      CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+}

@@ -104,6 +104,39 @@ TPRM Platform Team`,
     module: "tprm",
   },
   {
+    code: 'TPRM_AM_CREDENTIALS',
+    name: 'Account Manager Login Credentials',
+    description: 'Sent to a vendor Account Manager on onboarding with their login username, password, and link',
+    category: 'TPRM User Management',
+    subject: 'Your TPRM Account Manager Login – {vendorName}',
+    bodyHtml: createEmailHtml(
+      'Your TPRM Login Details',
+      colors.primary,
+      `<p style="${emailStyles.paragraph}">Dear {recipientName},</p>
+      <p style="${emailStyles.paragraph}">An Account Manager account has been created for you on the TPRM (Third-Party Risk Management) platform for vendor <strong>{vendorName}</strong>. Use the credentials below to log in and respond to assessments.</p>
+      <table style="${emailStyles.table}">
+        ${tableRow('Username', '{userName}')}
+        ${tableRow('Password', '{password}')}
+      </table>
+      <p style="${emailStyles.paragraph}">For your security, please log in and change your password after your first sign-in.</p>`,
+      'Log In to TPRM'
+    ),
+    bodyText: `Dear {recipientName},
+
+An Account Manager account has been created for you on the TPRM platform for vendor {vendorName}. Use the credentials below to log in and respond to assessments.
+
+Username: {userName}
+Password: {password}
+Login: {entityLink}
+
+For your security, please log in and change your password after your first sign-in.
+
+Best regards,
+TPRM Platform Team`,
+    placeholders: JSON.stringify(['recipientName', 'vendorName', 'userName', 'password', 'entityLink']),
+    module: "tprm",
+  },
+  {
     code: 'TPRM_RM_ACCOUNT_CREATED',
     name: 'RM Account Created Notice',
     description: 'Notification sent to admins when a new Relationship Manager account is created',

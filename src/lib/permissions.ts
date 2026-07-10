@@ -107,9 +107,13 @@ export const RESOURCES = {
   'audit.account-overview': '/internal-audit/account-overview',
   'audit.dashboard': '/internal-audit/dashboard',
   'audit.auditables': '/internal-audit/audit-universe',
+  'audit.charter': '/internal-audit/audit-charter',
   'audit.risk-identification': '/internal-audit/risk-identification',
   'audit.risk-register': '/internal-audit/risk-register',
-  'audit.planning': '/internal-audit/audit-planning',
+  'audit.strategic-plan': '/internal-audit/strategic-plan',
+  'audit.operational-plan': '/internal-audit/operational-plan',
+  'audit.planning': '/internal-audit/audit-engagement',
+  'audit.independence': '/internal-audit/independence',
   'audit.fieldwork': '/internal-audit/fieldwork',
   'audit.reports': '/internal-audit/report',
   'audit.capa': '/internal-audit/capa-tracking',
@@ -117,6 +121,7 @@ export const RESOURCES = {
   'audit.settings': '/internal-audit/settings',
   'audit.risk-universe': '/internal-audit/risk-universe',
   'audit.process': '/internal-audit/organization/process',
+  'audit.audit-trail': '/internal-audit/audit-trail',
 
   // TPRM Internal IT Team resources
   'tprm.it-issues': '/tprm/it-issues',
@@ -175,6 +180,13 @@ export const RESOURCES = {
   'tprm.asr-support': '/tprm/asr-support',
   'tprm.asr-factory-reports': '/tprm/asr-factory-reports',
   'tprm.factory-user-management': '/tprm/factory-user-management',
+
+  // Support Ticketing Module
+  'support.console': '/support/console',
+  'support.tickets': '/support/tickets',
+  'support.dashboard': '/support/dashboard',
+  'support.kb': '/support/kb',
+  'support.settings': '/support/settings',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -196,6 +208,10 @@ export const ROLES = {
   AuditUser: {
     name: 'AuditUser',
     description: 'Basic audit module access',
+  },
+  AuditManager: {
+    name: 'AuditManager',
+    description: 'Full Internal Audit access except creating Strategic Plans (view-only); can edit Operational Plans',
   },
   Auditor: {
     name: 'Auditor',
@@ -270,9 +286,49 @@ export const ROLES = {
     name: 'TPRMSME',
     description: 'Vendor-side Subject Matter Expert, responds to delegated assessment questions',
   },
+  // Support Ticketing roles (SOW tiered support: L1 -> L2 -> L3, plus manager)
+  SupportAgentL1: {
+    name: 'SupportAgentL1',
+    description: 'Level 1 support agent — handles and triages tickets assigned to them, escalates to L2',
+  },
+  SupportSpecialistL2: {
+    name: 'SupportSpecialistL2',
+    description: 'Level 2 functional/domain specialist — picks up escalations, full ticket access',
+  },
+  SupportEngineerL3: {
+    name: 'SupportEngineerL3',
+    description: 'Level 3 engineering support — resolves code/API/infra issues, full ticket access',
+  },
+  SupportManager: {
+    name: 'SupportManager',
+    description: 'Support manager — full ticket access, reassignment, and routing-rule settings',
+  },
 } as const;
 
 export type RoleName = keyof typeof ROLES;
+
+// ==================== ROLE DISPLAY LABELS ====================
+// Some roles are presented to users under a different name than their internal
+// key. The internal key (used in the DB, permission matrix, API auth checks,
+// and session expansion) MUST stay unchanged — only the user-facing label here.
+//
+// Internal Audit: the "Auditee" role is shown to users as "Auditor". The legacy
+// "Auditor" role is retired and hidden from assignment (see HIDDEN sets in
+// AssignRoleDialog and the role lists in organization/users), so there is no
+// label collision in any surface where roles are still selectable.
+export const ROLE_DISPLAY_OVERRIDES: Record<string, string> = {
+  Auditee: 'Auditor',
+};
+
+/**
+ * Returns the user-facing display name for a role key. Falls back to the key
+ * itself when no override exists. The returned string is an English phrase that
+ * callers should still pass through `t()` for i18n.
+ */
+export function getRoleDisplayName(role: string | null | undefined): string {
+  if (!role) return '';
+  return ROLE_DISPLAY_OVERRIDES[role] ?? role;
+}
 
 // ==================== ROLE PERMISSION MATRIX ====================
 // Defines what each role can do
@@ -351,6 +407,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.process', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     // CustomerAdmin can manage audit settings (types, categories, etc.) but NOT access User Management
     { resource: 'audit.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    // Audit Trail — CustomerAdmin sees ALL users' activity in the org (scope all)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'all' },
     // TPRM module — gated by moduleCode="TPRM" assignment + customer's isTprmAdded flag
     { resource: 'tprm.program-monitor', actions: ['view'], scope: 'all' },
     { resource: 'tprm.control-center', actions: ['*'], scope: 'all' },
@@ -362,6 +420,12 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.master-data', actions: ['*'], scope: 'all' },
     { resource: 'tprm.settings', actions: ['*'], scope: 'all' },
     { resource: 'tprm.support', actions: ['view'], scope: 'all' },
+    // Support Ticketing — customer admin manages the whole support function
+    { resource: 'support.console', actions: ['*'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['*'], scope: 'all' },
+    { resource: 'support.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'support.kb', actions: ['*'], scope: 'all' },
+    { resource: 'support.settings', actions: ['*'], scope: 'all' },
   ],
 
   // Audit Head - Full access to Internal Audit module EXCEPT Settings (view-only)
@@ -369,16 +433,49 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   AuditHead: [
     { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.charter', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.process', actions: ['*'], scope: 'all' },
+    // Strategic Plan: Head of Audit is the ONLY role that can create strategic plans
+    { resource: 'audit.strategic-plan', actions: ['*'], scope: 'all' },
+    { resource: 'audit.operational-plan', actions: ['*'], scope: 'all' },
     { resource: 'audit.planning', actions: ['*'], scope: 'all' },
+    { resource: 'audit.independence', actions: ['*'], scope: 'all' },
     { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
     { resource: 'audit.capa', actions: ['*'], scope: 'all' },
     { resource: 'audit.documents', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // Audit Trail — AuditHead sees only their OWN activity (only Customer Admin sees all)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' },
+  ],
+
+  // Audit Manager - Same as Head of Audit, EXCEPT cannot create Strategic Plans (view-only).
+  // Can fully edit Operational Plans. Per MOF requirements.
+  AuditManager: [
+    { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.charter', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
+    { resource: 'audit.process', actions: ['*'], scope: 'all' },
+    // Strategic Plan: VIEW ONLY (cannot create a new strategic audit plan)
+    { resource: 'audit.strategic-plan', actions: ['view'], scope: 'all' },
+    // Operational Plan: full edit access
+    { resource: 'audit.operational-plan', actions: ['*'], scope: 'all' },
+    { resource: 'audit.planning', actions: ['*'], scope: 'all' },
+    { resource: 'audit.independence', actions: ['*'], scope: 'all' },
+    { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
+    { resource: 'audit.reports', actions: ['*'], scope: 'all' },
+    { resource: 'audit.capa', actions: ['*'], scope: 'all' },
+    { resource: 'audit.documents', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
+    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // Audit Trail — AuditManager sees only their OWN activity (only Customer Admin sees all)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
     { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
@@ -386,14 +483,18 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   AuditUser: [
     // NO audit.dashboard - only AuditHead and Auditor have dashboard access
     { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
+    { resource: 'audit.charter', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
     { resource: 'audit.process', actions: ['view'], scope: 'all' },
     { resource: 'audit.planning', actions: ['view'], scope: 'all' },
+    { resource: 'audit.independence', actions: ['view'], scope: 'all' },
     { resource: 'audit.fieldwork', actions: ['view'], scope: 'all' },
     { resource: 'audit.reports', actions: ['view'], scope: 'all' },
     { resource: 'audit.capa', actions: ['view'], scope: 'all' },
     { resource: 'audit.documents', actions: ['view'], scope: 'all' },
+    // Audit Trail — standard user sees only their OWN activity (scope own)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
   ],
 
@@ -402,16 +503,23 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   Auditor: [
     { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.charter', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.process', actions: ['*'], scope: 'all' },
+    // Plans: Auditor can VIEW strategic & operational plans (per MOF: view all plans, download MoM)
+    { resource: 'audit.strategic-plan', actions: ['view'], scope: 'all' },
+    { resource: 'audit.operational-plan', actions: ['view'], scope: 'all' },
     { resource: 'audit.planning', actions: ['*'], scope: 'all' },
+    { resource: 'audit.independence', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
     { resource: 'audit.capa', actions: ['*'], scope: 'all' },
     { resource: 'audit.documents', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
+    // Audit Trail — Auditor sees only their OWN activity (scope own)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
     { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
@@ -426,6 +534,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.fieldwork', actions: ['view', 'edit'], scope: 'department' },
     { resource: 'audit.reports', actions: ['view'], scope: 'department' },
     { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'department' },
+    // Audit Trail — Auditee sees only their OWN activity (scope own)
+    { resource: 'audit.audit-trail', actions: ['view'], scope: 'own' },
   ],
 
   // Reviewer - Full CRUD same as CustomerAdministrator, but NO access to settings pages
@@ -718,6 +828,35 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'tprm.am-follow-ups', actions: ['*'], scope: 'all' },
     { resource: 'tprm.am-support', actions: ['*'], scope: 'all' },
     { resource: 'tprm.assessments', actions: ['view'], scope: 'all' },
+  ],
+
+  // ===== Support Ticketing roles =====
+  // L1 — works their own queue: sees the console and tickets, can create/edit
+  // but only the ones assigned to / reported by them (scope 'own').
+  SupportAgentL1: [
+    { resource: 'support.console', actions: ['view'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['view', 'create', 'edit'], scope: 'own' },
+    { resource: 'support.dashboard', actions: ['view'], scope: 'all' },
+  ],
+  // L2 — full ticket access across the tenant (handles escalations).
+  SupportSpecialistL2: [
+    { resource: 'support.console', actions: ['view'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'support.dashboard', actions: ['view'], scope: 'all' },
+  ],
+  // L3 — full ticket access; engineering tier.
+  SupportEngineerL3: [
+    { resource: 'support.console', actions: ['view'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'support.dashboard', actions: ['view'], scope: 'all' },
+  ],
+  // Manager — everything, including KB authoring, routing-rule settings and deletes.
+  SupportManager: [
+    { resource: 'support.console', actions: ['*'], scope: 'all' },
+    { resource: 'support.tickets', actions: ['*'], scope: 'all' },
+    { resource: 'support.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'support.kb', actions: ['*'], scope: 'all' },
+    { resource: 'support.settings', actions: ['*'], scope: 'all' },
   ],
 };
 

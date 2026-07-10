@@ -141,6 +141,9 @@ interface QuestionnaireTemplate {
   id: string; templateName: string; frameworkName: string | null;
   templateCategory: string; imageUrl: string | null;
   masterQuestionLinks: TemplateQuestion[];
+  // JSON-encoded array of TPRMOnboardingQuestion ids that gate this
+  // template's suggestion. See computeSuggestedTemplateIds below.
+  vendorProfileQuestionIds?: string | null;
 }
 
 // ==================== ONBOARD CONSTANTS ====================
@@ -416,7 +419,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showRiskRatingDialog, setShowRiskRatingDialog] = useState(false);
-  const [riskRatingVendor, setRiskRatingVendor] = useState<{ id: string; name: string; vrr: string | null } | null>(null);
+  const [riskRatingVendor, setRiskRatingVendor] = useState<{ id: string; name: string; vrr: string | null; onboardingAnswers: string | null } | null>(null);
   const [riskRatingLoading, setRiskRatingLoading] = useState(false);
   const [rawQuestionnaireTemplates, setRawQuestionnaireTemplates] = useState<QuestionnaireTemplate[]>([]);
   const { data: questionnaireTemplates } = useTranslatedData(rawQuestionnaireTemplates, { modelName: 'TPRMQuestionnaireTemplate' });
@@ -622,6 +625,43 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
     }
   };
 
+  // Suggested-template logic — see bo-inventory/page.tsx for the canonical
+  // comment. A template is suggested iff EITHER it has no gating onboarding
+  // question IDs OR the vendor answered "Yes" to at least one of them.
+  const computeSuggestedTemplateIds = (
+    vendor: { onboardingAnswers: string | null } | null,
+    templates: QuestionnaireTemplate[]
+  ): string[] => {
+    const answers: Record<string, string> = (() => {
+      if (!vendor?.onboardingAnswers) return {};
+      try {
+        const parsed = JSON.parse(vendor.onboardingAnswers);
+        return (parsed && typeof parsed === "object") ? (parsed as Record<string, string>) : {};
+      } catch {
+        return {};
+      }
+    })();
+    const yesIds = new Set(
+      Object.entries(answers)
+        .filter(([, v]) => String(v).trim().toLowerCase() === "yes")
+        .map(([k]) => k)
+    );
+    return templates
+      .filter((t) => t.templateName)
+      .filter((tpl) => {
+        let gateIds: string[] = [];
+        if (tpl.vendorProfileQuestionIds) {
+          try {
+            const parsed = JSON.parse(tpl.vendorProfileQuestionIds);
+            if (Array.isArray(parsed)) gateIds = parsed.filter((x) => typeof x === "string");
+          } catch { /* malformed JSON → treat as universal */ }
+        }
+        if (gateIds.length === 0) return true;
+        return gateIds.some((qid) => yesIds.has(qid));
+      })
+      .map((tpl) => tpl.id);
+  };
+
   const handleCheckRiskRating = async () => {
     if (!createdVendorId) return;
     setShowSuccessPopup(false);
@@ -633,11 +673,16 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
         fetch(`/api/tprm/vendors/${createdVendorId}`),
         fetch("/api/tprm/master-data/questionnaires"),
       ]);
-      if (vendorRes.ok) setRiskRatingVendor(await vendorRes.json());
+      let fetchedVendor: { id: string; name: string; vrr: string | null; onboardingAnswers: string | null } | null = null;
+      if (vendorRes.ok) {
+        fetchedVendor = await vendorRes.json();
+        setRiskRatingVendor(fetchedVendor);
+      }
       if (templatesRes.ok) {
         const templates: QuestionnaireTemplate[] = await templatesRes.json();
-        setRawQuestionnaireTemplates(templates.filter((tpl) => tpl.templateName));
-        setSelectedTemplateIds(templates.filter((tpl) => tpl.templateName).map((tpl) => tpl.id));
+        const named = templates.filter((tpl) => tpl.templateName);
+        setRawQuestionnaireTemplates(named);
+        setSelectedTemplateIds(computeSuggestedTemplateIds(fetchedVendor, named));
       }
     } catch {
       toast({ title: t("Failed to fetch vendor data"), variant: "destructive" });

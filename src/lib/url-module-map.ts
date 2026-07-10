@@ -148,3 +148,28 @@ export function moduleHomeForRoles(module: ModuleCode, roles: string[]): string 
   }
   return getModuleHome("GRC");
 }
+
+// Roles that belong to exactly one platform. Used to recover a workspace when a
+// UserRole row was saved without a moduleCode (older assignments) — otherwise
+// the layout gate wrongly shows "Subscription Required" for a role the user
+// actually holds. Cross-module / system roles (GRCAdministrator,
+// CustomerAdministrator, Reviewer, Contributor, …) are intentionally absent —
+// they anchor to GRC/base and don't need inference.
+const TPRM_ROLE_NAMES = new Set<string>([
+  "TPRMAdmin", "BusinessOwner", "RelationshipManager", "TPRMAssessor",
+  "TPRMApprover", "TPRMAuditor", "AccountManager", "TPRMSME",
+  "InternalITTeam", "FactoryAdmin", "FactoryAssessor",
+]);
+const INTERNAL_AUDIT_ROLE_NAMES = new Set<string>([
+  "AuditHead", "AuditManager", "Auditor", "AuditUser", "Auditee",
+]);
+
+/**
+ * Best-effort module for a single-platform role name. Returns null for
+ * cross-module / system / GRC roles (no inference needed — they map to GRC).
+ */
+export function inferModuleFromRoleName(roleName: string): ModuleCode | null {
+  if (TPRM_ROLE_NAMES.has(roleName)) return "TPRM";
+  if (INTERNAL_AUDIT_ROLE_NAMES.has(roleName)) return "INTERNAL_AUDIT";
+  return null;
+}

@@ -33,7 +33,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronRight, Home, Eye, ClipboardCheck, RotateCcw } from "lucide-react";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -76,6 +76,14 @@ interface Impact {
   id: string;
   label: string;
   value: number;
+}
+
+interface ScoringRange {
+  id: string;
+  label: string;
+  lowValue: number;
+  highValue: number | null;
+  calculationType: string;
 }
 
 interface UploadedFile {
@@ -123,13 +131,54 @@ interface InternalAuditRisk {
   department: Department | null;
   categoryId: string | null;
   category: AuditCategory | null;
+  auditTypeId?: string | null;
+  auditType?: { id: string; name: string } | null;
+  riskDrivers?: string | null;
+  controlsData?: string | null;
   creationDate: string;
   inherentScore: number | null;
   residualScore: number | null;
   riskLevel: string | null;
   status: string;
-  engagementId?: string | null; // Link to audit engagement/plan
+  engagementId?: string | null;
+  assessmentStatus: string;
+  strategicImpact: number | null;
+  financialImpact: number | null;
+  complianceRisk: number | null;
+  operationalRisk: number | null;
+  itDataRisk: number | null;
+  controlEffectivenessScore: number | null;
+  assessmentLikelihood: number | null;
+  assessmentResidualScore: number | null;
 }
+
+interface AssessmentRow {
+  strategicImpact: string;
+  financialImpact: string;
+  complianceRisk: string;
+  operationalRisk: string;
+  itDataRisk: string;
+  assessmentLikelihood: string;
+  controlEffectivenessScore: string;
+}
+
+const CE_LABELS: Record<string, string> = {
+  "1": "Very Ineffective",
+  "2": "Ineffective",
+  "3": "Moderately Effective",
+  "4": "Effective",
+  "5": "Highly Effective",
+};
+
+const BLANK_ASSESSMENT_ROW: AssessmentRow = {
+  strategicImpact: "",
+  financialImpact: "",
+  complianceRisk: "",
+  operationalRisk: "",
+  itDataRisk: "",
+  assessmentLikelihood: "",
+  controlEffectivenessScore: "",
+};
 
 const RISK_LEVEL_MAP: Record<string, string> = {
   Extreme: "critical",
@@ -159,6 +208,23 @@ interface FieldworkAuditPlanResponse {
   audit_plan: AuditPlanItem[];
 }
 
+interface AuditSubCategory {
+  id: string;
+  name: string;
+  categoryId: string;
+}
+
+interface IAProcess {
+  id: string;
+  processCode: string | null;
+  name: string;
+}
+
+interface RiskControl {
+  description: string;
+  effectiveness: string;
+}
+
 interface InternalAuditRiskDetail {
   id: string;
   riskId: string;
@@ -173,6 +239,13 @@ interface InternalAuditRiskDetail {
   category: { id: string; name: string } | null;
   auditTypeId: string | null;
   auditType: { id: string; name: string } | null;
+  subCategoryId: string | null;
+  subCategory: { id: string; name: string } | null;
+  riskDrivers: string | null;
+  riskConsequences: string | null;
+  relatedLawRegulation: string | null;
+  controlsData: string | null;
+  processLinks: Array<{ id: string; process: { id: string; name: string; processCode: string | null } }>;
   inherentLikelihood: number | null;
   inherentImpact: number | null;
   inherentScore: number | null;
@@ -181,7 +254,15 @@ interface InternalAuditRiskDetail {
   residualLikelihood: number | null;
   residualImpact: number | null;
   residualScore: number | null;
+  assessmentResidualScore: number | null;
+  assessmentLikelihood: number | null;
+  strategicImpact: number | null;
+  financialImpact: number | null;
+  complianceRisk: number | null;
+  operationalRisk: number | null;
+  itDataRisk: number | null;
   riskLevel: string | null;
+  assessmentStatus: string | null;
   creationDate: string;
   auditComment: string | null;
   status: string;
@@ -203,6 +284,7 @@ export default function RiskRegisterPage() {
   const [yearFilter, setYearFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [searchFilter, setSearchFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -255,14 +337,29 @@ export default function RiskRegisterPage() {
   const [viewingRisk, setViewingRisk] = useState<InternalAuditRiskDetail | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
 
+  // Assessment Wizard states
+  const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
+  const [selectedAssessmentRisk, setSelectedAssessmentRisk] = useState<InternalAuditRisk | null>(null);
+  const [assessmentStep, setAssessmentStep] = useState(1);
+  const [singleAssessmentRow, setSingleAssessmentRow] = useState<AssessmentRow>(BLANK_ASSESSMENT_ROW);
+  const [savingAssessment, setSavingAssessment] = useState(false);
+  const [inProgressRisks, setInProgressRisks] = useState<Set<string>>(new Set());
+  const [assessmentStepError, setAssessmentStepError] = useState<string>("");
+
   // Scoring config for calculation method
   const [scoringConfig, setScoringConfig] = useState<{ probabilityImpactCalcType: string; riskRatingCalcType: string } | null>(null);
 
   // Reference data for form
   const [categories, setCategories] = useState<AuditCategory[]>([]);
+  const [subCategories, setSubCategories] = useState<AuditSubCategory[]>([]);
+  const [iaProcesses, setIAProcesses] = useState<IAProcess[]>([]);
+  const [selectedProcessIds, setSelectedProcessIds] = useState<string[]>([]);
+  const [controls, setControls] = useState<RiskControl[]>([{ description: '', effectiveness: '' }]);
+
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
   const [probabilities, setProbabilities] = useState<Probability[]>([]);
   const [impacts, setImpacts] = useState<Impact[]>([]);
+  const [scoringRanges, setScoringRanges] = useState<ScoringRange[]>([]);
 
   // Translated reference data for dropdowns
   const { data: translatedDepartments } = useTranslatedData(departments, { modelName: 'Department' });
@@ -270,6 +367,7 @@ export default function RiskRegisterPage() {
   const { data: translatedAuditTypes } = useTranslatedData(auditTypes, { modelName: 'AuditType' });
   const { data: translatedProbabilities } = useTranslatedData(probabilities, { modelName: 'AuditProbability' });
   const { data: translatedImpacts } = useTranslatedData(impacts, { modelName: 'AuditImpact' });
+  const { data: translatedIAProcesses } = useTranslatedData(iaProcesses, { modelName: 'InternalAuditProcess' });
 
   // Lookup helpers for translated names in table/view
   const tDept = (id: string | null) => translatedDepartments.find(d => d.id === id)?.name;
@@ -299,6 +397,7 @@ export default function RiskRegisterPage() {
     subProcess: "",
     activity: "",
     categoryId: "",
+    subCategoryId: "",
     auditTypeId: "",
     inherentLikelihood: "",
     inherentImpact: "",
@@ -309,6 +408,9 @@ export default function RiskRegisterPage() {
     creationDate: new Date().toISOString().split("T")[0],
     auditComment: "",
     status: "Open",
+    riskDrivers: "",
+    riskConsequences: "",
+    relatedLawRegulation: "",
   };
   const [formData, setFormData] = useState(initialFormData);
 
@@ -323,11 +425,14 @@ export default function RiskRegisterPage() {
   const { data: translatedRisks } = useTranslatedData(risks, { modelName: 'InternalAuditRisk' });
 
   // Pagination calculations
-  const totalItems = translatedRisks.length;
+  const filteredRisks = statusFilter === "all"
+    ? translatedRisks
+    : translatedRisks.filter((r) => (r.assessmentStatus ?? "Not Assessed") === statusFilter);
+  const totalItems = filteredRisks.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalItems);
-  const paginatedRisks = translatedRisks.slice(startIndex, endIndex);
+  const paginatedRisks = filteredRisks.slice(startIndex, endIndex);
   const startItem = startIndex + 1;
   const endItem = endIndex;
 
@@ -341,6 +446,13 @@ export default function RiskRegisterPage() {
     fetchRisks();
     setCurrentPage(1);
   }, [yearFilter, departmentFilter, searchFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const inProgress = new Set<string>();
+    risks.forEach((r) => { if (localStorage.getItem(`ia-assess-${r.id}`)) inProgress.add(r.id); });
+    setInProgressRisks(inProgress);
+  }, [risks]);
 
   // Update edit form fields when translated data arrives
   useEffect(() => {
@@ -387,12 +499,15 @@ export default function RiskRegisterPage() {
 
   const fetchReferenceData = async () => {
     try {
-      const [catRes, typeRes, probRes, impactRes, configRes] = await Promise.all([
+      const [catRes, typeRes, probRes, impactRes, configRes, subCatRes, procRes, rangesRes] = await Promise.all([
         fetch("/api/internal-audit/categories"),
         fetch("/api/internal-audit/audit-types"),
         fetch("/api/internal-audit/probability"),
         fetch("/api/internal-audit/impact"),
         fetch("/api/internal-audit/scoring-config"),
+        fetch("/api/internal-audit/sub-categories"),
+        fetch("/api/internal-audit/ia-processes"),
+        fetch("/api/internal-audit/scoring-ranges"),
       ]);
 
       if (catRes.ok) setCategories(await catRes.json());
@@ -400,6 +515,9 @@ export default function RiskRegisterPage() {
       if (probRes.ok) setProbabilities(await probRes.json());
       if (impactRes.ok) setImpacts(await impactRes.json());
       if (configRes.ok) setScoringConfig(await configRes.json());
+      if (subCatRes.ok) setSubCategories(await subCatRes.json());
+      if (procRes.ok) setIAProcesses(await procRes.json());
+      if (rangesRes.ok) setScoringRanges(await rangesRes.json());
     } catch (error) {
       console.error("Failed to fetch reference data:", error);
     }
@@ -539,6 +657,8 @@ export default function RiskRegisterPage() {
   const openAddRiskModal = () => {
     setFormData(initialFormData);
     setUploadedFiles([]);
+    setSelectedProcessIds([]);
+    setControls([{ description: '', effectiveness: '' }]);
     setIsAddRiskOpen(true);
   };
 
@@ -546,6 +666,8 @@ export default function RiskRegisterPage() {
     setIsAddRiskOpen(false);
     setFormData(initialFormData);
     setUploadedFiles([]);
+    setSelectedProcessIds([]);
+    setControls([{ description: '', effectiveness: '' }]);
     setFieldErrors({});
   };
 
@@ -570,6 +692,7 @@ export default function RiskRegisterPage() {
           subProcess: data.subProcess || "",
           activity: data.activity || "",
           categoryId: data.categoryId || "",
+          subCategoryId: data.subCategoryId || "",
           auditTypeId: data.auditTypeId || "",
           inherentLikelihood: data.inherentLikelihood?.toString() || "",
           inherentImpact: data.inherentImpact?.toString() || "",
@@ -580,7 +703,17 @@ export default function RiskRegisterPage() {
           creationDate: data.creationDate ? data.creationDate.split("T")[0] : "",
           auditComment: data.auditComment || "",
           status: data.status || "Open",
+          riskDrivers: data.riskDrivers || "",
+          riskConsequences: data.riskConsequences || "",
+          relatedLawRegulation: data.relatedLawRegulation || "",
         });
+        setSelectedProcessIds(data.processLinks?.map((pl: { process: { id: string } }) => pl.process.id) || []);
+        try {
+          const ctrl = data.controlsData ? JSON.parse(data.controlsData) : [];
+          setControls(ctrl.length > 0 ? ctrl : [{ description: '', effectiveness: '' }]);
+        } catch {
+          setControls([{ description: '', effectiveness: '' }]);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch risk details:", error);
@@ -599,6 +732,8 @@ export default function RiskRegisterPage() {
     setEditingRisk(null);
     setRawEditRisk(null);
     setFormData(initialFormData);
+    setSelectedProcessIds([]);
+    setControls([{ description: '', effectiveness: '' }]);
     setFieldErrors({});
   };
 
@@ -643,18 +778,6 @@ export default function RiskRegisterPage() {
     if (method === "Addition of all") return a + b;
     if (method === "High of all") return Math.max(a, b);
     return a * b; // Product of all (default)
-  };
-
-  const calculateInherentScore = () => {
-    const likelihood = formData.inherentLikelihood ? parseInt(formData.inherentLikelihood) : 0;
-    const impact = formData.inherentImpact ? parseInt(formData.inherentImpact) : 0;
-    return applyCalcMethod(likelihood, impact, scoringConfig?.probabilityImpactCalcType || "Product of all");
-  };
-
-  const calculateResidualScore = () => {
-    const likelihood = formData.residualLikelihood ? parseInt(formData.residualLikelihood) : 0;
-    const impact = formData.residualImpact ? parseInt(formData.residualImpact) : 0;
-    return applyCalcMethod(likelihood, impact, scoringConfig?.probabilityImpactCalcType || "Product of all");
   };
 
   // File upload handlers
@@ -748,24 +871,9 @@ export default function RiskRegisterPage() {
       errors.riskDescription = t("Risk description is required");
     }
 
-    // Validation: Inherent Likelihood
-    if (!formData.inherentLikelihood) {
-      errors.inherentLikelihood = t("Inherent likelihood is required");
-    }
-
-    // Validation: Inherent Impact
-    if (!formData.inherentImpact) {
-      errors.inherentImpact = t("Inherent impact is required");
-    }
-
-    // Validation: Residual Likelihood
-    if (!formData.residualLikelihood) {
-      errors.residualLikelihood = t("Residual likelihood is required");
-    }
-
-    // Validation: Residual Impact
-    if (!formData.residualImpact) {
-      errors.residualImpact = t("Residual impact is required");
+    // Validation: Category
+    if (!formData.categoryId) {
+      errors.categoryId = t("Risk category is required");
     }
 
     // If there are validation errors, set them and stop
@@ -778,24 +886,27 @@ export default function RiskRegisterPage() {
     setFieldErrors({});
     setSaving(true);
     try {
-      const inherentScore = calculateInherentScore();
-      const residualScore = calculateResidualScore();
-
       const response = await fetch("/api/internal-audit/risks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           riskId: formData.riskId || null,
-          inherentLikelihood: formData.inherentLikelihood ? parseInt(formData.inherentLikelihood) : null,
-          inherentImpact: formData.inherentImpact ? parseInt(formData.inherentImpact) : null,
-          inherentScore: inherentScore || null,
-          residualLikelihood: formData.residualLikelihood ? parseInt(formData.residualLikelihood) : null,
-          residualImpact: formData.residualImpact ? parseInt(formData.residualImpact) : null,
-          residualScore: residualScore || null,
+          inherentLikelihood: null,
+          inherentImpact: null,
+          inherentScore: null,
+          residualLikelihood: null,
+          residualImpact: null,
+          residualScore: null,
           departmentId: formData.departmentId || null,
           categoryId: formData.categoryId || null,
+          subCategoryId: formData.subCategoryId || null,
           auditTypeId: formData.auditTypeId || null,
+          riskDrivers: formData.riskDrivers || null,
+          riskConsequences: formData.riskConsequences || null,
+          relatedLawRegulation: formData.relatedLawRegulation || null,
+          controlsData: JSON.stringify(controls.filter(c => c.description.trim())),
+          processIds: selectedProcessIds,
         }),
       });
 
@@ -849,24 +960,9 @@ export default function RiskRegisterPage() {
       errors.riskDescription = t("Risk description is required");
     }
 
-    // Validation: Inherent Likelihood
-    if (!formData.inherentLikelihood) {
-      errors.inherentLikelihood = t("Inherent likelihood is required");
-    }
-
-    // Validation: Inherent Impact
-    if (!formData.inherentImpact) {
-      errors.inherentImpact = t("Inherent impact is required");
-    }
-
-    // Validation: Residual Likelihood
-    if (!formData.residualLikelihood) {
-      errors.residualLikelihood = t("Residual likelihood is required");
-    }
-
-    // Validation: Residual Impact
-    if (!formData.residualImpact) {
-      errors.residualImpact = t("Residual impact is required");
+    // Validation: Category
+    if (!formData.categoryId) {
+      errors.categoryId = t("Risk category is required");
     }
 
     // If there are validation errors, set them and stop
@@ -879,23 +975,26 @@ export default function RiskRegisterPage() {
     setFieldErrors({});
     setSaving(true);
     try {
-      const inherentScore = calculateInherentScore();
-      const residualScore = calculateResidualScore();
-
       const response = await fetch(`/api/internal-audit/risks/${editingRisk.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          inherentLikelihood: formData.inherentLikelihood ? parseInt(formData.inherentLikelihood) : null,
-          inherentImpact: formData.inherentImpact ? parseInt(formData.inherentImpact) : null,
-          inherentScore: inherentScore || null,
-          residualLikelihood: formData.residualLikelihood ? parseInt(formData.residualLikelihood) : null,
-          residualImpact: formData.residualImpact ? parseInt(formData.residualImpact) : null,
-          residualScore: residualScore || null,
+          inherentLikelihood: null,
+          inherentImpact: null,
+          inherentScore: null,
+          residualLikelihood: null,
+          residualImpact: null,
+          residualScore: null,
           departmentId: formData.departmentId || null,
           categoryId: formData.categoryId || null,
+          subCategoryId: formData.subCategoryId || null,
           auditTypeId: formData.auditTypeId || null,
+          riskDrivers: formData.riskDrivers || null,
+          riskConsequences: formData.riskConsequences || null,
+          relatedLawRegulation: formData.relatedLawRegulation || null,
+          controlsData: JSON.stringify(controls.filter(c => c.description.trim())),
+          processIds: selectedProcessIds,
         }),
       });
 
@@ -973,6 +1072,22 @@ export default function RiskRegisterPage() {
     );
   };
 
+  // Computed sub-categories filtered by selected category
+  const filteredSubCategories = subCategories.filter(sc => sc.categoryId === formData.categoryId);
+
+  // Process multi-select toggle
+  const toggleProcess = (id: string) => {
+    setSelectedProcessIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  // Control management functions
+  const addControl = () => setControls(prev => [...prev, { description: '', effectiveness: '' }]);
+  const removeControl = (i: number) => setControls(prev => prev.filter((_, idx) => idx !== i));
+  const updateControl = (i: number, field: 'description' | 'effectiveness', val: string) =>
+    setControls(prev => prev.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
+
   const dateLocaleMap: Record<string, string> = { en: "en-US", ar: "ar-SA", lv: "lv-LV" };
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(dateLocaleMap[locale] || "en-US", {
@@ -980,6 +1095,145 @@ export default function RiskRegisterPage() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // ── Assessment Wizard helpers ────────────────────────────────────────────────
+  const calcAssessmentMeanImpact = (row: AssessmentRow): number => {
+    const vals = [
+      parseFloat(row.strategicImpact), parseFloat(row.financialImpact),
+      parseFloat(row.complianceRisk), parseFloat(row.operationalRisk), parseFloat(row.itDataRisk),
+    ];
+    return vals.reduce((acc, v) => acc + (isNaN(v) ? 0 : v), 0) / 5;
+  };
+
+  const calcAssessmentScore = (row: AssessmentRow): number => {
+    const meanP = parseFloat(row.assessmentLikelihood) || 0;
+    const meanI = calcAssessmentMeanImpact(row);
+    const ce = parseFloat(row.controlEffectivenessScore) || 0;
+    if (!meanP || !meanI || !ce) return 0;
+    return meanP * meanI * ((6 - ce) / 5);
+  };
+
+  const calcSettingsMeanProbability = (): number => {
+    if (probabilities.length === 0) return 0;
+    return probabilities.reduce((acc, p) => acc + p.value, 0) / probabilities.length;
+  };
+
+  const calcSettingsMeanImpact = (): number => {
+    if (impacts.length === 0) return 0;
+    return impacts.reduce((acc, i) => acc + i.value, 0) / impacts.length;
+  };
+
+  const calcScoreFromSettings = (row: AssessmentRow): number => {
+    const meanP = calcSettingsMeanProbability();
+    const meanI = calcSettingsMeanImpact();
+    const ce = parseFloat(row.controlEffectivenessScore) || 0;
+    if (!meanP || !meanI || !ce) return 0;
+    return meanP * meanI * ((6 - ce) / 5);
+  };
+
+  const deriveAssessmentRating = (score: number): { label: string; color: string } => {
+    if (score <= 0) return { label: "-", color: "" };
+    if (score >= 15) return { label: "Critical", color: "bg-risk-critical-bg text-risk-critical" };
+    if (score >= 10) return { label: "High", color: "bg-risk-high-bg text-risk-high" };
+    if (score >= 5) return { label: "Medium", color: "bg-risk-medium-bg text-risk-medium" };
+    return { label: "Low", color: "bg-risk-low-bg text-risk-low" };
+  };
+
+  const saveAssessmentProgress = (step: number, row: AssessmentRow, riskId: string) => {
+    if (typeof window !== "undefined")
+      localStorage.setItem(`ia-assess-${riskId}`, JSON.stringify({ step, row }));
+  };
+
+  const updateSingleAssessmentField = (field: keyof AssessmentRow, value: string) => {
+    setAssessmentStepError("");
+    setSingleAssessmentRow((prev) => {
+      const updated = { ...prev, [field]: value };
+      if (selectedAssessmentRisk) saveAssessmentProgress(assessmentStep, updated, selectedAssessmentRisk.id);
+      return updated;
+    });
+  };
+
+  const getMaxControlEffectiveness = (risk: InternalAuditRisk): string => {
+    try {
+      const controls: { description: string; effectiveness: string }[] = risk.controlsData
+        ? JSON.parse(risk.controlsData)
+        : [];
+      const nums = controls.map((c) => parseInt(c.effectiveness)).filter((n) => !isNaN(n) && n > 0);
+      if (nums.length > 0) return Math.max(...nums).toString();
+    } catch { /* */ }
+    return risk.controlEffectivenessScore?.toString() ?? "";
+  };
+
+  const openAssessmentWizard = (risk: InternalAuditRisk) => {
+    const autoCE = getMaxControlEffectiveness(risk);
+    const isReAssess = risk.assessmentStatus === "Assessed";
+
+    if (isReAssess) {
+      // Re-assessment: always start fresh — clear any in-progress localStorage state
+      if (typeof window !== "undefined") localStorage.removeItem(`ia-assess-${risk.id}`);
+      setSingleAssessmentRow({ ...BLANK_ASSESSMENT_ROW, controlEffectivenessScore: autoCE });
+      setAssessmentStep(1);
+    } else {
+      // First-time assess: resume from localStorage if an in-progress session exists
+      const saved = typeof window !== "undefined" ? localStorage.getItem(`ia-assess-${risk.id}`) : null;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setSingleAssessmentRow(parsed.row ?? { ...BLANK_ASSESSMENT_ROW, controlEffectivenessScore: autoCE });
+          setAssessmentStep(parsed.step ?? 1);
+        } catch {
+          setSingleAssessmentRow({ ...BLANK_ASSESSMENT_ROW, controlEffectivenessScore: autoCE });
+          setAssessmentStep(1);
+        }
+      } else {
+        setSingleAssessmentRow({ ...BLANK_ASSESSMENT_ROW, controlEffectivenessScore: autoCE });
+        setAssessmentStep(1);
+      }
+    }
+    setSelectedAssessmentRisk(risk);
+    setAssessmentDialogOpen(true);
+  };
+
+  const handleSaveAssessment = async () => {
+    if (!selectedAssessmentRisk) return;
+    setSavingAssessment(true);
+    const row = singleAssessmentRow;
+    const preCalcScore = calcAssessmentScore(row);
+    try {
+      const res = await fetch(`/api/internal-audit/risks/${selectedAssessmentRisk.id}/assess`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          strategicImpact: row.strategicImpact ? parseInt(row.strategicImpact) : null,
+          financialImpact: row.financialImpact ? parseInt(row.financialImpact) : null,
+          complianceRisk: row.complianceRisk ? parseInt(row.complianceRisk) : null,
+          operationalRisk: row.operationalRisk ? parseInt(row.operationalRisk) : null,
+          itDataRisk: row.itDataRisk ? parseInt(row.itDataRisk) : null,
+          assessmentLikelihood: row.assessmentLikelihood ? parseInt(row.assessmentLikelihood) : null,
+          controlEffectivenessScore: row.controlEffectivenessScore ? parseInt(row.controlEffectivenessScore) : null,
+          assessmentResidualScore: preCalcScore > 0 ? Math.round(preCalcScore * 100) / 100 : null,
+        }),
+      });
+      if (res.ok) {
+        if (typeof window !== "undefined") localStorage.removeItem(`ia-assess-${selectedAssessmentRisk.id}`);
+        toast({ title: t("Success"), description: t("Risk assessed successfully") });
+        fetchRisks();
+        // Refresh the view modal data so the heat map reflects the new assessment score
+        if (viewingRisk?.id === selectedAssessmentRisk.id) {
+          const refreshed = await fetch(`/api/internal-audit/risks/${selectedAssessmentRisk.id}`);
+          if (refreshed.ok) setViewingRisk(await refreshed.json());
+        }
+        setAssessmentDialogOpen(false);
+        setSelectedAssessmentRisk(null);
+        setSingleAssessmentRow(BLANK_ASSESSMENT_ROW);
+      } else {
+        toast({ title: t("Error"), description: t("Failed to save assessment"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to save assessment"), variant: "destructive" });
+    }
+    setSavingAssessment(false);
   };
 
   // AI Audit Selection - Filter risks for popup
@@ -1107,7 +1361,7 @@ export default function RiskRegisterPage() {
       toast({ title: t("Success"), description: t("Successfully added to Audit Planning!") });
 
       // Optionally navigate to audit planning
-      // router.push("/internal-audit/audit-planning");
+      // router.push("/internal-audit/audit-engagement");
     } catch (e) {
       console.error("Add to audit plan error:", e);
       toast({ title: t("Error"), description: t("Failed to add to audit plan"), variant: "destructive" });
@@ -1159,15 +1413,7 @@ export default function RiskRegisterPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">{t("Risk Register")}</h1>
         <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openAIAuditSelection}
-            className="col-span-2 sm:col-span-1 bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-          >
-            <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
-            {t("AI Audit")}
-          </Button>
+
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("Export")}
@@ -1229,6 +1475,16 @@ export default function RiskRegisterPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-full sm:w-[150px] h-9 text-sm bg-slate-50 border-slate-200">
+                <SelectValue placeholder={t("Status")} />
+              </SelectTrigger>
+              <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                <SelectItem value="all">{t("All Status")}</SelectItem>
+                <SelectItem value="Assessed">{t("Assessed")}</SelectItem>
+                <SelectItem value="Not Assessed">{t("Not Assessed")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -1243,7 +1499,7 @@ export default function RiskRegisterPage() {
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Inherent Score")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Residual Score")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[100px]">{t("Risk Level")}</TableHead>
-                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[90px]">{t("Status")}</TableHead>
+                <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap min-w-[110px]">{t("Status")}</TableHead>
                 <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap ltr:pr-5 rtl:pl-5 min-w-[90px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -1255,39 +1511,83 @@ export default function RiskRegisterPage() {
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{tDept(risk.departmentId) || risk.department?.name || "-"}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{formatDate(risk.creationDate)}</TableCell>
                   <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{tCat(risk.categoryId) || risk.category?.name || "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.inherentScore ?? "-"}</TableCell>
-                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{risk.residualScore ?? "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">{(() => {
+                    const iL = risk.assessmentLikelihood;
+                    const dims = [risk.strategicImpact, risk.financialImpact, risk.complianceRisk, risk.operationalRisk, risk.itDataRisk].filter((v): v is number => v != null);
+                    const iI = dims.length > 0 ? Math.max(...dims) : null;
+                    return iL != null && iI != null ? iL * iI : "-";
+                  })()}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 whitespace-nowrap">
+                    {risk.assessmentStatus === "Assessed" && risk.assessmentResidualScore != null
+                      ? risk.assessmentResidualScore.toFixed(2)
+                      : "-"}
+                  </TableCell>
                   <TableCell className="py-3 whitespace-nowrap">{getRiskLevelBadge(risk.riskLevel)}</TableCell>
-                  <TableCell className="py-3 whitespace-nowrap">{getStatusBadge(risk.status)}</TableCell>
+                  <TableCell className="py-3 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${risk.assessmentStatus === "Assessed" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                      {t(risk.assessmentStatus ?? "Not Assessed")}
+                    </span>
+                  </TableCell>
                   <TableCell className="py-3 ltr:pr-5 rtl:pl-5 whitespace-nowrap">
-                    {!isReadOnlyRole && (
-                      <div className="flex items-center justify-end gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                          onClick={() => openEditRiskModal(risk)}
-                          title={t("Edit")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
-                          onClick={() => openDeleteDialog(risk)}
-                          title={t("Delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-primary-600"
+                        onClick={() => openViewRiskModal(risk)}
+                        title={t("View")}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {(() => {
+                        const isAssessed = risk.assessmentStatus === "Assessed";
+                        const hasProgress = inProgressRisks.has(risk.id);
+                        return (
+                          <Button
+                            size="sm"
+                            variant={isAssessed ? "outline" : "default"}
+                            className={`h-7 px-2.5 text-xs font-medium ${isAssessed ? "border-slate-200 text-slate-600 hover:bg-slate-50" : "bg-[#7c3f2f] hover:bg-[#6a3528] text-white"}`}
+                            onClick={() => openAssessmentWizard(risk)}
+                          >
+                            {isAssessed ? (
+                              <><RotateCcw className="h-3 w-3 ltr:mr-1 rtl:ml-1" />{t("Re-assess")}</>
+                            ) : hasProgress ? (
+                              <><ClipboardCheck className="h-3 w-3 ltr:mr-1 rtl:ml-1" />{t("Resume")}</>
+                            ) : (
+                              <><ClipboardCheck className="h-3 w-3 ltr:mr-1 rtl:ml-1" />{t("Initiate Assessment")}</>
+                            )}
+                          </Button>
+                        );
+                      })()}
+                      {!isReadOnlyRole && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={() => openEditRiskModal(risk)}
+                            title={t("Edit")}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                            onClick={() => openDeleteDialog(risk)}
+                            title={t("Delete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
               {paginatedRisks.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center text-sm text-slate-500">
+                  <TableCell colSpan={11} className="h-24 text-center text-sm text-slate-500">
                     {isReadOnlyRole ? t("No risks found.") : t("No risks found. Click \"Add Risk\" to create your first risk.")}
                   </TableCell>
                 </TableRow>
@@ -1823,12 +2123,12 @@ export default function RiskRegisterPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-red-500">*</span></Label>
                     <Select
                       value={formData.categoryId}
                       onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                     >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.categoryId ? "border-red-500" : ""}`}>
                         <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -1836,6 +2136,24 @@ export default function RiskRegisterPage() {
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
                           </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldErrors.categoryId && <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryId}</p>}
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Sub-Category")}</Label>
+                    <Select
+                      value={formData.subCategoryId}
+                      onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
+                      disabled={!formData.categoryId}
+                    >
+                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectValue placeholder={formData.categoryId ? t("Select sub-category") : t("Select category first")} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                        {filteredSubCategories.map((sc) => (
+                          <SelectItem key={sc.id} value={sc.id}>{sc.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1906,152 +2224,119 @@ export default function RiskRegisterPage() {
                 </div>
               </div>
 
-              {/* Inherent Risk Assessment */}
+              {/* Risk Drivers & Consequences */}
               <div className="space-y-4">
-                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Inherent Risk Assessment")}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={formData.inherentLikelihood}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, inherentLikelihood: value });
-                        if (fieldErrors.inherentLikelihood) {
-                          setFieldErrors({ ...fieldErrors, inherentLikelihood: "" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentLikelihood ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select likelihood")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {translatedProbabilities.map((prob) => (
-                          <SelectItem key={prob.id} value={prob.value.toString()}>
-                            {prob.label} ({prob.value})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldErrors.inherentLikelihood && (
-                      <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentLikelihood}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={formData.inherentImpact}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, inherentImpact: value });
-                        if (fieldErrors.inherentImpact) {
-                          setFieldErrors({ ...fieldErrors, inherentImpact: "" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentImpact ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select impact")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {translatedImpacts.map((imp) => (
-                          <SelectItem key={imp.id} value={imp.value.toString()}>
-                            {imp.label} ({imp.value})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldErrors.inherentImpact && (
-                      <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentImpact}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Control Information */}
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Control Information")}</h3>
+                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Risk Drivers & Consequences")}</h3>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Control Description")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Risk Driver(s) / Cause(s)")}</Label>
                   <Textarea
-                    value={formData.controlDescription}
-                    onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
-                    placeholder={t("Enter control description")}
+                    value={formData.riskDrivers}
+                    onChange={(e) => setFormData({ ...formData, riskDrivers: e.target.value })}
+                    placeholder={t("Describe the root causes or drivers of this risk")}
                     className="mt-1.5 w-full bg-white"
-                    rows={3}
+                    rows={2}
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
-                  <Select
-                    value={formData.controlEffectiveness}
-                    onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
-                  >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder={t("Select effectiveness")} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                      <SelectItem value="Effective">{t("Effective")}</SelectItem>
-                      <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
-                      <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm font-medium text-slate-700">{t("Risk Consequence(s)")}</Label>
+                  <Textarea
+                    value={formData.riskConsequences}
+                    onChange={(e) => setFormData({ ...formData, riskConsequences: e.target.value })}
+                    placeholder={t("Describe the potential consequences of this risk")}
+                    className="mt-1.5 w-full bg-white"
+                    rows={2}
+                  />
                 </div>
               </div>
 
-              {/* Residual Risk Assessment */}
+              {/* Linked Processes */}
               <div className="space-y-4">
-                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Residual Risk Assessment")}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={formData.residualLikelihood}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, residualLikelihood: value });
-                        if (fieldErrors.residualLikelihood) {
-                          setFieldErrors({ ...fieldErrors, residualLikelihood: "" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualLikelihood ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select likelihood")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {translatedProbabilities.map((prob) => (
-                          <SelectItem key={prob.id} value={prob.value.toString()}>
-                            {prob.label} ({prob.value})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldErrors.residualLikelihood && (
-                      <p className="text-red-500 text-xs mt-1">{fieldErrors.residualLikelihood}</p>
-                    )}
+                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Linked Processes")}</h3>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Processes")}</Label>
+                  <div className="mt-1.5 border rounded-md bg-white max-h-40 overflow-y-auto p-2 space-y-1">
+                    {translatedIAProcesses.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-2 text-center">{t("No processes available")}</p>
+                    ) : translatedIAProcesses.map(proc => {
+                      const isSelected = selectedProcessIds.includes(proc.id);
+                      return (
+                        <div
+                          key={proc.id}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm transition-colors ${isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-slate-50'}`}
+                          onClick={() => toggleProcess(proc.id)}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary-600 border-primary-600' : 'border-slate-300'}`}>
+                            {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                          </div>
+                          <span>{proc.name}</span>
+                          {proc.processCode && <span className="text-xs text-slate-400">({proc.processCode})</span>}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={formData.residualImpact}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, residualImpact: value });
-                        if (fieldErrors.residualImpact) {
-                          setFieldErrors({ ...fieldErrors, residualImpact: "" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualImpact ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder={t("Select impact")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        {translatedImpacts.map((imp) => (
-                          <SelectItem key={imp.id} value={imp.value.toString()}>
-                            {imp.label} ({imp.value})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldErrors.residualImpact && (
-                      <p className="text-red-500 text-xs mt-1">{fieldErrors.residualImpact}</p>
-                    )}
-                  </div>
+                  {selectedProcessIds.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-1">{selectedProcessIds.length} {t("process(es) selected")}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Control Information — multi */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-semibold text-slate-800">{t("Control Information")}</h3>
+                  <Button type="button" variant="outline" size="sm" onClick={addControl} className="h-7 text-xs gap-1">
+                    <Plus className="h-3 w-3" /> {t("Add Control")}
+                  </Button>
+                </div>
+                <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                  {controls.map((ctrl, i) => (
+                    <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-3 relative">
+                      {controls.length > 1 && (
+                        <button type="button" onClick={() => removeControl(i)} className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">{t("Control Description")}{controls.length > 1 ? ` #${i + 1}` : ''}</Label>
+                        <Textarea
+                          value={ctrl.description}
+                          onChange={(e) => updateControl(i, 'description', e.target.value)}
+                          placeholder={t("Enter control description")}
+                          className="mt-1.5 w-full bg-white"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
+                        <Select value={ctrl.effectiveness} onValueChange={(v) => updateControl(i, 'effectiveness', v)}>
+                          <SelectTrigger className="mt-1.5 w-full bg-white">
+                            <SelectValue placeholder={t("Select effectiveness")} />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                            <SelectItem value="1">{t("1 – Very Ineffective")}</SelectItem>
+                            <SelectItem value="2">{t("2 – Ineffective")}</SelectItem>
+                            <SelectItem value="3">{t("3 – Moderately Effective")}</SelectItem>
+                            <SelectItem value="4">{t("4 – Effective")}</SelectItem>
+                            <SelectItem value="5">{t("5 – Highly Effective")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Related Law / Regulation / Policy Reference */}
+              <div className="space-y-4">
+                <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Related Law / Regulation / Policy Reference")}</h3>
+                <div>
+                  <Textarea
+                    value={formData.relatedLawRegulation}
+                    onChange={(e) => setFormData({ ...formData, relatedLawRegulation: e.target.value })}
+                    placeholder={t("Enter related laws, regulations, or policy references")}
+                    className="w-full bg-white"
+                    rows={2}
+                  />
                 </div>
               </div>
 
@@ -2254,12 +2539,12 @@ export default function RiskRegisterPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Category")} <span className="text-red-500">*</span></Label>
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                       >
-                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.categoryId ? "border-red-500" : ""}`}>
                           <SelectValue placeholder={t("Select category")} />
                         </SelectTrigger>
                         <SelectContent className="bg-white" position="popper" sideOffset={4}>
@@ -2267,6 +2552,24 @@ export default function RiskRegisterPage() {
                             <SelectItem key={cat.id} value={cat.id}>
                               {cat.name}
                             </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldErrors.categoryId && <p className="text-red-500 text-xs mt-1">{fieldErrors.categoryId}</p>}
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Sub-Category")}</Label>
+                      <Select
+                        value={formData.subCategoryId}
+                        onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
+                        disabled={!formData.categoryId}
+                      >
+                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                          <SelectValue placeholder={formData.categoryId ? t("Select sub-category") : t("Select category first")} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                          {filteredSubCategories.map((sc) => (
+                            <SelectItem key={sc.id} value={sc.id}>{sc.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -2337,152 +2640,119 @@ export default function RiskRegisterPage() {
                   </div>
                 </div>
 
-                {/* Inherent Risk Assessment */}
+                {/* Risk Drivers & Consequences */}
                 <div className="space-y-4">
-                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Inherent Risk Assessment")}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={formData.inherentLikelihood}
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, inherentLikelihood: value });
-                          if (fieldErrors.inherentLikelihood) {
-                            setFieldErrors({ ...fieldErrors, inherentLikelihood: "" });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentLikelihood ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select likelihood")} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {translatedProbabilities.map((prob) => (
-                            <SelectItem key={prob.id} value={prob.value.toString()}>
-                              {prob.label} ({prob.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldErrors.inherentLikelihood && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentLikelihood}</p>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={formData.inherentImpact}
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, inherentImpact: value });
-                          if (fieldErrors.inherentImpact) {
-                            setFieldErrors({ ...fieldErrors, inherentImpact: "" });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.inherentImpact ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select impact")} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {translatedImpacts.map((imp) => (
-                            <SelectItem key={imp.id} value={imp.value.toString()}>
-                              {imp.label} ({imp.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldErrors.inherentImpact && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors.inherentImpact}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Control Information */}
-                <div className="space-y-4">
-                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Control Information")}</h3>
+                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Risk Drivers & Consequences")}</h3>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Control Description")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Risk Driver(s) / Cause(s)")}</Label>
                     <Textarea
-                      value={formData.controlDescription}
-                      onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
-                      placeholder={t("Enter control description")}
+                      value={formData.riskDrivers}
+                      onChange={(e) => setFormData({ ...formData, riskDrivers: e.target.value })}
+                      placeholder={t("Describe the root causes or drivers of this risk")}
                       className="mt-1.5 w-full bg-white"
-                      rows={3}
+                      rows={2}
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
-                    <Select
-                      value={formData.controlEffectiveness}
-                      onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
-                    >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
-                        <SelectValue placeholder={t("Select effectiveness")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                        <SelectItem value="Effective">{t("Effective")}</SelectItem>
-                        <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
-                        <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-sm font-medium text-slate-700">{t("Risk Consequence(s)")}</Label>
+                    <Textarea
+                      value={formData.riskConsequences}
+                      onChange={(e) => setFormData({ ...formData, riskConsequences: e.target.value })}
+                      placeholder={t("Describe the potential consequences of this risk")}
+                      className="mt-1.5 w-full bg-white"
+                      rows={2}
+                    />
                   </div>
                 </div>
 
-                {/* Residual Risk Assessment */}
+                {/* Linked Processes */}
                 <div className="space-y-4">
-                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Residual Risk Assessment")}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Likelihood")} <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={formData.residualLikelihood}
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, residualLikelihood: value });
-                          if (fieldErrors.residualLikelihood) {
-                            setFieldErrors({ ...fieldErrors, residualLikelihood: "" });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualLikelihood ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select likelihood")} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {translatedProbabilities.map((prob) => (
-                            <SelectItem key={prob.id} value={prob.value.toString()}>
-                              {prob.label} ({prob.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldErrors.residualLikelihood && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors.residualLikelihood}</p>
-                      )}
+                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Linked Processes")}</h3>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Processes")}</Label>
+                    <div className="mt-1.5 border rounded-md bg-white max-h-40 overflow-y-auto p-2 space-y-1">
+                      {iaProcesses.length === 0 ? (
+                        <p className="text-xs text-slate-400 py-2 text-center">{t("No processes available")}</p>
+                      ) : iaProcesses.map(proc => {
+                        const isSelected = selectedProcessIds.includes(proc.id);
+                        return (
+                          <div
+                            key={proc.id}
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm transition-colors ${isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-slate-50'}`}
+                            onClick={() => toggleProcess(proc.id)}
+                          >
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary-600 border-primary-600' : 'border-slate-300'}`}>
+                              {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                            <span>{proc.name}</span>
+                            {proc.processCode && <span className="text-xs text-slate-400">({proc.processCode})</span>}
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Impact")} <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={formData.residualImpact}
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, residualImpact: value });
-                          if (fieldErrors.residualImpact) {
-                            setFieldErrors({ ...fieldErrors, residualImpact: "" });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className={`mt-1.5 w-full bg-white ${fieldErrors.residualImpact ? "border-red-500" : ""}`}>
-                          <SelectValue placeholder={t("Select impact")} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                          {translatedImpacts.map((imp) => (
-                            <SelectItem key={imp.id} value={imp.value.toString()}>
-                              {imp.label} ({imp.value})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {fieldErrors.residualImpact && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors.residualImpact}</p>
-                      )}
-                    </div>
+                    {selectedProcessIds.length > 0 && (
+                      <p className="text-xs text-slate-500 mt-1">{selectedProcessIds.length} {t("process(es) selected")}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Control Information — editable in Edit */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="text-base font-semibold text-slate-800">{t("Control Information")}</h3>
+                    <Button type="button" variant="outline" size="sm" onClick={addControl} className="h-7 text-xs gap-1">
+                      <Plus className="h-3 w-3" /> {t("Add Control")}
+                    </Button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
+                    {controls.map((ctrl, i) => (
+                      <div key={i} className="border border-slate-200 rounded-lg p-3 space-y-3 relative">
+                        {controls.length > 1 && (
+                          <button type="button" onClick={() => removeControl(i)} className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">{t("Control Description")}{controls.length > 1 ? ` #${i + 1}` : ''}</Label>
+                          <Textarea
+                            value={ctrl.description}
+                            onChange={(e) => updateControl(i, 'description', e.target.value)}
+                            placeholder={t("Enter control description")}
+                            className="mt-1.5 w-full bg-white"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">{t("Control Effectiveness")}</Label>
+                          <Select value={ctrl.effectiveness} onValueChange={(v) => updateControl(i, 'effectiveness', v)}>
+                            <SelectTrigger className="mt-1.5 w-full bg-white">
+                              <SelectValue placeholder={t("Select effectiveness")} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                              <SelectItem value="1">{t("1 – Very Ineffective")}</SelectItem>
+                              <SelectItem value="2">{t("2 – Ineffective")}</SelectItem>
+                              <SelectItem value="3">{t("3 – Moderately Effective")}</SelectItem>
+                              <SelectItem value="4">{t("4 – Effective")}</SelectItem>
+                              <SelectItem value="5">{t("5 – Highly Effective")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Related Law / Regulation / Policy Reference */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">{t("Related Law / Regulation / Policy Reference")}</h3>
+                  <div>
+                    <Textarea
+                      value={formData.relatedLawRegulation}
+                      onChange={(e) => setFormData({ ...formData, relatedLawRegulation: e.target.value })}
+                      placeholder={t("Enter related laws, regulations, or policy references")}
+                      className="w-full bg-white"
+                      rows={2}
+                    />
                   </div>
                 </div>
 
@@ -2660,6 +2930,10 @@ export default function RiskRegisterPage() {
                         <p className="text-sm text-slate-700">{tCat(viewingRisk.categoryId) || viewingRisk.category?.name || "-"}</p>
                       </div>
                       <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Sub-Category")}</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.subCategory?.name || "-"}</p>
+                      </div>
+                      <div>
                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Audit Type")}</label>
                         <p className="text-sm text-slate-700">{translatedAuditTypes.find(at => at.id === viewingRisk.auditTypeId)?.name || viewingRisk.auditType?.name || "-"}</p>
                       </div>
@@ -2688,45 +2962,179 @@ export default function RiskRegisterPage() {
                 {/* Risk Assessment Grid */}
                 <section>
                   <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Risk Assessment")}</h3>
-                  <div className="grid grid-cols-2 gap-5">
-                    {/* Inherent Risk */}
-                    <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
-                      <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-4">{t("Inherent Risk")}</h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center">
-                          <label className="block text-xs text-amber-600 mb-1">{t("Likelihood")}</label>
-                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentLikelihood ?? "-"}</p>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-xs text-amber-600 mb-1">{t("Impact")}</label>
-                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentImpact ?? "-"}</p>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-xs text-amber-600 mb-1">{t("Score")}</label>
-                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentScore ?? "-"}</p>
+                  {(() => {
+                    const iL = viewingRisk.assessmentLikelihood;
+                    const impactDims = [
+                      viewingRisk.strategicImpact,
+                      viewingRisk.financialImpact,
+                      viewingRisk.complianceRisk,
+                      viewingRisk.operationalRisk,
+                      viewingRisk.itDataRisk,
+                    ].filter((v): v is number => v != null);
+                    const iI = impactDims.length > 0 ? Math.max(...impactDims) : null;
+                    const iScore = iL != null && iI != null ? iL * iI : null;
+                    return (
+                      <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
+                        <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-4">{t("Inherent Risk")}</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <label className="block text-xs text-amber-600 mb-1">{t("Likelihood")}</label>
+                            <p className="text-2xl font-bold text-amber-900">{iL ?? "-"}</p>
+                          </div>
+                          <div className="text-center">
+                            <label className="block text-xs text-amber-600 mb-1">{t("Impact")}</label>
+                            <p className="text-2xl font-bold text-amber-900">{iI ?? "-"}</p>
+                          </div>
+                          <div className="text-center">
+                            <label className="block text-xs text-amber-600 mb-1">{t("Score")}</label>
+                            <p className="text-2xl font-bold text-amber-900">{iScore ?? "-"}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    );
+                  })()}
 
-                    {/* Residual Risk */}
-                    <div className="bg-emerald-50 rounded-xl p-5 border border-emerald-100">
-                      <h4 className="text-xs font-semibold text-emerald-800 uppercase tracking-wide mb-4">{t("Residual Risk")}</h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center">
-                          <label className="block text-xs text-emerald-600 mb-1">{t("Likelihood")}</label>
-                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualLikelihood ?? "-"}</p>
+                  {/* Heat Map — only shown once the risk assessment is completed */}
+                  {(() => {
+                    if (viewingRisk.assessmentStatus !== "Assessed") {
+                      return (
+                        <div className="mt-5 bg-slate-50 rounded-xl p-6 border border-dashed border-slate-200 text-center">
+                          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{t("Risk Heat Map")}</h4>
+                          <p className="text-sm text-slate-400">{t("Complete the risk assessment to view the heat map.")}</p>
                         </div>
-                        <div className="text-center">
-                          <label className="block text-xs text-emerald-600 mb-1">{t("Impact")}</label>
-                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualImpact ?? "-"}</p>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-xs text-emerald-600 mb-1">{t("Score")}</label>
-                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualScore ?? "-"}</p>
+                      );
+                    }
+
+                    const probValues = probabilities.length > 0
+                      ? [...probabilities].sort((a, b) => a.value - b.value)
+                      : [1,2,3,4,5].map(v => ({ id: String(v), label: String(v), value: v }));
+                    const impactValues = impacts.length > 0
+                      ? [...impacts].sort((a, b) => a.value - b.value)
+                      : [1,2,3,4,5].map(v => ({ id: String(v), label: String(v), value: v }));
+                    const impactRows = [...impactValues].reverse();
+
+                    const getCellColor = (pVal: number, iVal: number) => {
+                      const score = applyCalcMethod(pVal, iVal, scoringConfig?.probabilityImpactCalcType || "Product of all");
+                      if (score >= 19) return "bg-red-500";
+                      if (score >= 9) return "bg-orange-400";
+                      return "bg-green-500";
+                    };
+
+
+                    const calcScore = (p: number, i: number) =>
+                      applyCalcMethod(p, i, scoringConfig?.probabilityImpactCalcType || "Product of all");
+
+                    // Inherent marker: assessmentLikelihood × max(impact dimensions)
+                    const iDims = [
+                      viewingRisk.strategicImpact,
+                      viewingRisk.financialImpact,
+                      viewingRisk.complianceRisk,
+                      viewingRisk.operationalRisk,
+                      viewingRisk.itDataRisk,
+                    ].filter((v): v is number => v != null);
+                    const iHL: number | null = viewingRisk.assessmentLikelihood ?? null;
+                    const iHI: number | null = iDims.length > 0 ? Math.max(...iDims) : null;
+
+                    // Residual marker: assessmentLikelihood + back-calculate impact from assessmentResidualScore
+                    let rL: number | null = viewingRisk.residualLikelihood;
+                    let rI: number | null = viewingRisk.residualImpact;
+
+                    if (
+                      viewingRisk.assessmentStatus === "Assessed" &&
+                      viewingRisk.assessmentLikelihood != null &&
+                      viewingRisk.assessmentLikelihood > 0 &&
+                      viewingRisk.assessmentResidualScore != null &&
+                      viewingRisk.assessmentResidualScore > 0
+                    ) {
+                      const rawImpact = viewingRisk.assessmentResidualScore / viewingRisk.assessmentLikelihood;
+                      const closestImpact = impactValues.reduce((closest, imp) =>
+                        Math.abs(imp.value - rawImpact) < Math.abs(closest.value - rawImpact) ? imp : closest
+                      , impactValues[0]);
+                      rL = viewingRisk.assessmentLikelihood;
+                      rI = closestImpact.value;
+                    }
+
+                    return (
+                      <div className="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-100">
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">{t("Risk Heat Map")}</h4>
+                        <div className="flex gap-6 items-start">
+                          <div className="flex gap-2 items-center">
+                            <span className="text-xs text-slate-400 [writing-mode:vertical-rl] rotate-180 tracking-wider">{t("Impact")}</span>
+                            <div>
+                              {impactRows.map((imp) => (
+                                <div key={imp.id} className="flex items-center gap-1 mb-1">
+                                  <span className="w-5 text-right text-xs text-slate-400">{imp.value}</span>
+                                  {probValues.map((prob) => {
+                                    const isInherent = iHL != null && iHI != null && iHL === prob.value && iHI === imp.value;
+                                    const isResidual = rL != null && rI != null && rL === prob.value && rI === imp.value;
+                                    const hasBoth = isInherent && isResidual;
+                                    return (
+                                      <div
+                                        key={prob.id}
+                                        className={`w-9 h-9 rounded flex flex-col items-center justify-center gap-0 ${getCellColor(prob.value, imp.value)}`}
+                                        title={`P:${prob.value} I:${imp.value}`}
+                                      >
+                                        {hasBoth ? (
+                                          // Both markers on same cell — stack them small
+                                          <>
+                                            <div className="flex items-center gap-0.5">
+                                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900 ring-1 ring-white" />
+                                              <div className="w-1.5 h-1.5 rounded-full bg-white ring-1 ring-slate-900" />
+                                            </div>
+                                            <span className="text-[9px] font-bold text-white leading-none mt-0.5 drop-shadow">
+                                              {calcScore(prob.value, imp.value)}
+                                            </span>
+                                          </>
+                                        ) : isInherent ? (
+                                          <>
+                                            <div className="w-2 h-2 rounded-full bg-slate-900 ring-1 ring-white mb-0.5" />
+                                            <span className="text-[10px] font-bold text-slate-900 leading-none">
+                                              {calcScore(prob.value, imp.value)}
+                                            </span>
+                                          </>
+                                        ) : isResidual ? (
+                                          <>
+                                            <div className="w-2 h-2 rounded-full bg-white ring-1 ring-slate-900 mb-0.5" />
+                                            <span className="text-[10px] font-bold text-white leading-none drop-shadow-sm">
+                                              {viewingRisk.assessmentResidualScore?.toFixed(2) ?? viewingRisk.residualScore ?? calcScore(prob.value, imp.value)}
+                                            </span>
+                                          </>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                              <div className="flex items-center gap-1 mt-1">
+                                <span className="w-5" />
+                                {probValues.map((prob) => (
+                                  <span key={prob.id} className="w-9 text-center text-xs text-slate-400">{prob.value}</span>
+                                ))}
+                              </div>
+                              <div className="text-center text-xs text-slate-400 mt-1 tracking-wider">{t("Probability")}</div>
+                            </div>
+                          </div>
+                          {/* Legend */}
+                          <div className="flex flex-col gap-2 text-xs text-slate-600 min-w-[90px]">
+                            <p className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] mb-1">{t("Zone")}</p>
+                            <>
+                              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-red-500 flex-shrink-0" />{t("High")}</div>
+                              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-orange-400 flex-shrink-0" />{t("Medium")}</div>
+                              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-green-500 flex-shrink-0" />{t("Low")}</div>
+                            </>
+                            <div className="mt-3 flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-slate-900 ring-2 ring-white flex-shrink-0" />
+                              {t("Inherent")}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-white ring-2 ring-slate-900 flex-shrink-0" />
+                              {t("Residual")}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Risk Level Badge */}
                   <div className="mt-4 flex items-center justify-between bg-slate-50 rounded-lg px-5 py-3 border border-slate-100">
@@ -2735,22 +3143,93 @@ export default function RiskRegisterPage() {
                   </div>
                 </section>
 
+                {/* Risk Drivers & Consequences */}
+                {(viewingRisk.riskDrivers || viewingRisk.riskConsequences) && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Risk Drivers & Consequences")}</h3>
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 grid grid-cols-2 gap-6">
+                      {viewingRisk.riskDrivers && (
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Risk Driver(s) / Cause(s)")}</label>
+                          <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.riskDrivers}</p>
+                        </div>
+                      )}
+                      {viewingRisk.riskConsequences && (
+                        <div>
+                          <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Risk Consequence(s)")}</label>
+                          <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.riskConsequences}</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                {/* Linked Processes */}
+                {viewingRisk.processLinks && viewingRisk.processLinks.length > 0 && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Linked Processes")}</h3>
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                      <div className="flex flex-wrap gap-2">
+                        {viewingRisk.processLinks.map((pl: { process: { id: string; name: string; processCode?: string | null } }) => (
+                          <span key={pl.process.id} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-100">
+                            {pl.process.name}
+                            {pl.process.processCode && <span className="text-blue-400">({pl.process.processCode})</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                )}
+
                 {/* Control Information */}
                 <section>
                   <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Control Information")}</h3>
-                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Description")}</label>
-                        <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.controlDescription || "-"}</p>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Effectiveness")}</label>
-                        <p className="text-sm text-slate-700">{viewingRisk.controlEffectiveness ? t(viewingRisk.controlEffectiveness) : "-"}</p>
-                      </div>
-                    </div>
+                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 space-y-4">
+                    {(() => {
+                      let parsedControls: { description: string; effectiveness: string }[] = [];
+                      try { parsedControls = viewingRisk.controlsData ? JSON.parse(viewingRisk.controlsData) : []; } catch { /* */ }
+                      if (parsedControls.length > 0) {
+                        return parsedControls.map((ctrl, i) => (
+                          <div key={i} className={parsedControls.length > 1 ? "pb-4 border-b border-slate-200 last:border-0 last:pb-0" : ""}>
+                            {parsedControls.length > 1 && <p className="text-xs font-semibold text-slate-500 mb-2">{t("Control")} #{i + 1}</p>}
+                            <div className="grid grid-cols-2 gap-6">
+                              <div>
+                                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Description")}</label>
+                                <p className="text-sm text-slate-700 leading-relaxed">{ctrl.description || "-"}</p>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Effectiveness")}</label>
+                                <p className="text-sm text-slate-700">{ctrl.effectiveness ? t(ctrl.effectiveness) : "-"}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ));
+                      }
+                      return (
+                        <div className="grid grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Description")}</label>
+                            <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.controlDescription || "-"}</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">{t("Control Effectiveness")}</label>
+                            <p className="text-sm text-slate-700">{viewingRisk.controlEffectiveness ? t(viewingRisk.controlEffectiveness) : "-"}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </section>
+
+                {/* Related Law / Regulation / Policy Reference */}
+                {viewingRisk.relatedLawRegulation && (
+                  <section>
+                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">{t("Related Law / Regulation / Policy Reference")}</h3>
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                      <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.relatedLawRegulation}</p>
+                    </div>
+                  </section>
+                )}
 
                 {/* Status & Comments */}
                 <section>
@@ -2804,6 +3283,278 @@ export default function RiskRegisterPage() {
               </Button>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Assessment Wizard Dialog ─────────────────────────────────────────── */}
+      <Dialog
+        open={assessmentDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAssessmentDialogOpen(false);
+            setSelectedAssessmentRisk(null);
+            setSingleAssessmentRow(BLANK_ASSESSMENT_ROW);
+            setAssessmentStep(1);
+            setAssessmentStepError("");
+          }
+        }}
+      >
+        <DialogContent
+          className="max-w-[780px] w-full p-0 gap-0 overflow-hidden"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          {selectedAssessmentRisk && (() => {
+            const row = singleAssessmentRow;
+            const meanImpact = calcAssessmentMeanImpact(row);
+            const score = calcAssessmentScore(row);
+            const rating = deriveAssessmentRating(score);
+            const settingsMeanProbability = calcSettingsMeanProbability();
+            const settingsMeanImpact = calcSettingsMeanImpact();
+            const settingsScore = calcScoreFromSettings(row);
+            const settingsRating = deriveAssessmentRating(settingsScore);
+            const TOTAL_STEPS = 5;
+            const STEPS = [t("Risk Context"), t("Likelihood"), t("Impact"), t("Risk Rating"), t("Summary")];
+            const impactFields: { field: keyof AssessmentRow; label: string }[] = [
+              { field: "strategicImpact", label: t("Strategic Impact") },
+              { field: "financialImpact", label: t("Financial Impact") },
+              { field: "complianceRisk", label: t("Compliance Risk") },
+              { field: "operationalRisk", label: t("Operational Risk") },
+              { field: "itDataRisk", label: t("IT / Data Risk") },
+            ];
+            return (
+              <div className="flex flex-col" style={{ maxHeight: "90vh" }}>
+                {/* Header */}
+                <div className="px-8 pt-7 pb-5 flex-shrink-0">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold text-slate-800">{t("Risk Assessment")}</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {selectedAssessmentRisk.riskId} – {selectedAssessmentRisk.riskName}
+                  </p>
+                  {/* Step Progress */}
+                  <div className="flex items-start justify-between mt-6 mb-1">
+                    {STEPS.map((label, idx) => {
+                      const step = idx + 1;
+                      const isActive = step === assessmentStep;
+                      const isDone = step < assessmentStep;
+                      return (
+                        <div key={step} className="flex items-center flex-1">
+                          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${isActive ? "bg-[#7c3f2f] border-[#7c3f2f] text-white shadow-md" : isDone ? "bg-[#ead5c8] border-[#c4896e] text-[#7c3f2f]" : "bg-white border-[#e8d5cc] text-[#c4896e]"}`}>
+                              {step}
+                            </div>
+                            <span className={`text-[10px] font-medium text-center leading-tight whitespace-nowrap ${isActive ? "text-[#7c3f2f] font-semibold" : "text-slate-400"}`}>
+                              {label}
+                            </span>
+                          </div>
+                          {idx < STEPS.length - 1 && (
+                            <div className={`flex-1 h-px mx-2 mb-5 ${isDone ? "bg-[#c4896e]" : "bg-[#e8d5cc]"}`} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 flex-shrink-0" />
+
+                {/* Step Content */}
+                <div className="flex-1 overflow-y-auto px-8 py-6 min-h-[320px]">
+                  {/* Step 1: Risk Context */}
+                  {assessmentStep === 1 && (
+                    <div>
+                      <div className="flex items-baseline gap-3 mb-5 pb-4 border-b border-slate-100">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded bg-slate-100 text-xs font-mono font-semibold text-slate-600">{selectedAssessmentRisk.riskId}</span>
+                        <span className="text-xl font-bold text-slate-800">{selectedAssessmentRisk.riskName}</span>
+                      </div>
+                      <p className="text-[11px] font-semibold tracking-widest text-slate-400 uppercase mb-3">{t("RISK CONTEXT")}</p>
+                      <div className="divide-y divide-slate-100">
+                        <div className="flex items-center py-3 gap-4">
+                          <span className="w-28 text-sm text-slate-400 flex-shrink-0">{t("Category")}</span>
+                          <span className="flex-1 text-sm font-bold text-slate-800">{tCat(selectedAssessmentRisk.categoryId) || selectedAssessmentRisk.category?.name || "–"}</span>
+                          <span className="w-16 text-sm text-[#c4896e] flex-shrink-0 text-right">{t("Type")}</span>
+                          <span className="w-28 text-sm font-bold text-slate-800 text-right">{selectedAssessmentRisk.auditType?.name || "–"}</span>
+                        </div>
+                        <div className="flex items-center py-3 gap-4">
+                          <span className="w-28 text-sm text-slate-400 flex-shrink-0">{t("Owner")}</span>
+                          <span className="flex-1 text-sm font-bold text-slate-800">–</span>
+                          <span className="w-24 text-sm text-[#c4896e] flex-shrink-0 text-right">{t("Department")}</span>
+                          <span className="w-28 text-sm font-bold text-slate-800 text-right">{tDept(selectedAssessmentRisk.departmentId) || selectedAssessmentRisk.department?.name || "–"}</span>
+                        </div>
+                        <div className="flex items-center py-3 gap-4">
+                          <span className="w-28 text-sm text-slate-400 flex-shrink-0">{t("Risk Sources")}</span>
+                          <span className="flex-1 text-sm font-bold text-slate-800 text-right">{selectedAssessmentRisk.riskDrivers || selectedAssessmentRisk.riskDescription || "–"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: Likelihood */}
+                  {assessmentStep === 2 && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-widest text-slate-400 uppercase mb-3">{t("LIKELIHOOD")}</p>
+                      <p className="text-sm text-slate-500 mb-5">{t("Select the probability that this risk will occur based on historical data and current controls.")}</p>
+                      <div className="space-y-3">
+                        {[1, 2, 3, 4, 5].map((v) => {
+                          const selected = row.assessmentLikelihood === v.toString();
+                          return (
+                            <label key={v} className={`flex items-center gap-4 px-5 py-4 rounded-xl border-2 cursor-pointer transition-all ${selected ? "border-[#c4896e] bg-[#fdf6f2]" : "border-slate-200 bg-white hover:border-[#e8d5cc]"}`}>
+                              <input type="radio" name="ia-rr-likelihood" value={v.toString()} checked={selected} onChange={(e) => updateSingleAssessmentField("assessmentLikelihood", e.target.value)} className="accent-[#7c3f2f] w-4 h-4" />
+                              <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors ${selected ? "bg-[#7c3f2f] text-white" : "bg-slate-100 text-slate-600"}`}>{v}</span>
+                              <span className={`text-sm font-semibold ${selected ? "text-[#7c3f2f]" : "text-slate-700"}`}>{v}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 3: Impact */}
+                  {assessmentStep === 3 && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-widest text-slate-400 uppercase mb-3">{t("IMPACT")}</p>
+                      <p className="text-sm text-slate-500 mb-5">{t("Rate the impact across each dimension if this risk were to materialise.")}</p>
+                      <div className="space-y-5">
+                        {impactFields.map(({ field, label }) => (
+                          <div key={field}>
+                            <p className="text-sm font-semibold text-slate-700 mb-2">{label}</p>
+                            <div className="flex gap-2 flex-wrap">
+                              {[1, 2, 3, 4, 5].map((v) => (
+                                <button key={v} type="button" onClick={() => updateSingleAssessmentField(field, v.toString())}
+                                  className={`px-5 py-2.5 rounded-full text-sm font-semibold border-2 transition-all ${row[field] === v.toString() ? "bg-[#7c3f2f] border-[#7c3f2f] text-white shadow-sm" : "bg-white border-slate-200 text-slate-700 hover:border-[#c4896e]"}`}>
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 4: Risk Rating */}
+                  {assessmentStep === 4 && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-widest text-slate-400 uppercase mb-4">{t("RISK RATING")}</p>
+                      <div className="mb-6">
+                        <label className="text-sm font-semibold text-slate-700 block mb-1">{t("Control Effectiveness")}</label>
+                        <p className="text-xs text-slate-400 mb-3">1 = {t("Very Ineffective")} · 2 = {t("Ineffective")} · 3 = {t("Moderately Effective")} · 4 = {t("Effective")} · 5 = {t("Highly Effective")}</p>
+                        {row.controlEffectivenessScore ? (
+                          <div className="flex items-center gap-3 px-5 py-4 rounded-xl border-2 border-[#c4896e] bg-[#fdf6f2]">
+                            <span className="w-10 h-10 rounded-full bg-[#7c3f2f] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                              {row.controlEffectivenessScore}
+                            </span>
+                            <div>
+                              <p className="text-sm font-semibold text-[#7c3f2f]">{t(CE_LABELS[row.controlEffectivenessScore] ?? "")}</p>
+                              <p className="text-xs text-slate-400 mt-0.5">{t("Auto-populated from risk controls (highest value)")}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-xs text-amber-600 mb-2">{t("No control effectiveness set on this risk. Please select manually.")}</p>
+                            <div className="flex gap-2">
+                              {["1", "2", "3", "4", "5"].map((v) => (
+                                <button key={v} type="button" onClick={() => updateSingleAssessmentField("controlEffectivenessScore", v)}
+                                  className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${row.controlEffectivenessScore === v ? "bg-[#7c3f2f] border-[#7c3f2f] text-white" : "border-slate-200 text-slate-600 hover:border-[#c4896e] hover:bg-[#fdf6f2]"}`}>
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="bg-slate-50 rounded-2xl p-5 space-y-3">
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">{t("Mean Probability")}</span><span className="font-semibold text-slate-800">{settingsMeanProbability > 0 ? settingsMeanProbability.toFixed(2) : "–"}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">{t("Mean Impact")}</span><span className="font-semibold text-slate-800">{settingsMeanImpact > 0 ? settingsMeanImpact.toFixed(2) : "–"}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-slate-500">{t("Control Effectiveness")}</span><span className="font-semibold text-slate-800">{row.controlEffectivenessScore ? `${row.controlEffectivenessScore} – ${t(CE_LABELS[row.controlEffectivenessScore] ?? "")}` : "–"}</span></div>
+                        <div className="border-t border-slate-200 pt-3 flex justify-between"><span className="text-sm font-semibold text-slate-700">{t("Calculated Risk Score")}</span><span className="text-lg font-bold text-slate-900">{settingsScore > 0 ? settingsScore.toFixed(2) : "–"}</span></div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-semibold text-slate-700">{t("Risk Rating")}</span>
+                          {settingsRating.label !== "-" ? <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${settingsRating.color}`}>{t(settingsRating.label)}</span> : <span className="text-slate-400 text-sm">–</span>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 5: Summary */}
+                  {assessmentStep === 5 && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-widest text-slate-400 uppercase mb-4">{t("SUMMARY")}</p>
+                      <div className="bg-slate-50 rounded-2xl p-5 space-y-3 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-500">{t("Likelihood")}</span><span className="font-semibold text-slate-800">{row.assessmentLikelihood || "–"}</span></div>
+                        {impactFields.map(({ field, label }) => (
+                          <div key={field} className="flex justify-between"><span className="text-slate-500">{label}</span><span className="font-semibold text-slate-800">{row[field] || "–"}</span></div>
+                        ))}
+                        <div className="flex justify-between"><span className="text-slate-500">{t("Mean Impact")}</span><span className="font-semibold text-slate-800">{meanImpact > 0 ? meanImpact.toFixed(2) : "–"}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">{t("Control Effectiveness")}</span><span className="font-semibold text-slate-800">{row.controlEffectivenessScore ? `${row.controlEffectivenessScore} – ${t(CE_LABELS[row.controlEffectivenessScore] ?? "")}` : "–"}</span></div>
+                        <div className="border-t border-slate-200 pt-3 flex justify-between"><span className="font-semibold text-slate-700">{t("Risk Score")}</span><span className="text-lg font-bold text-slate-900">{score > 0 ? score.toFixed(2) : "–"}</span></div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-slate-700">{t("Risk Rating")}</span>
+                          {rating.label !== "-" ? <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${rating.color}`}>{t(rating.label)}</span> : <span className="text-slate-400">–</span>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-slate-100 bg-[#faf8f6] px-8 py-5 flex-shrink-0">
+                  {assessmentStepError && (
+                    <p className="text-xs text-red-600 mb-3 font-medium">{assessmentStepError}</p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#c4896e] font-semibold">{t("Step")} {assessmentStep} {t("of")} {TOTAL_STEPS}</span>
+                    <div className="flex gap-3">
+                      <Button variant="outline" className="border-slate-200 text-slate-600 px-6"
+                        onClick={() => {
+                          setAssessmentStepError("");
+                          if (assessmentStep > 1) {
+                            const prevStep = assessmentStep - 1;
+                            setAssessmentStep(prevStep);
+                            saveAssessmentProgress(prevStep, singleAssessmentRow, selectedAssessmentRisk.id);
+                          } else {
+                            setAssessmentDialogOpen(false);
+                          }
+                        }}>
+                        {assessmentStep > 1 ? t("Back") : t("Cancel")}
+                      </Button>
+                      {assessmentStep < TOTAL_STEPS ? (
+                        <Button className="bg-[#7c3f2f] hover:bg-[#6a3528] text-white px-6"
+                          onClick={() => {
+                            // Per-step validation
+                            if (assessmentStep === 2 && !row.assessmentLikelihood) {
+                              setAssessmentStepError(t("Please select a likelihood value before proceeding."));
+                              return;
+                            }
+                            if (assessmentStep === 3) {
+                              const missing = impactFields.filter(({ field }) => !row[field]);
+                              if (missing.length > 0) {
+                                setAssessmentStepError(t("Please rate all impact dimensions before proceeding."));
+                                return;
+                              }
+                            }
+                            if (assessmentStep === 4 && !row.controlEffectivenessScore) {
+                              setAssessmentStepError(t("Please select a control effectiveness score before proceeding."));
+                              return;
+                            }
+                            setAssessmentStepError("");
+                            const nextStep = assessmentStep + 1;
+                            setAssessmentStep(nextStep);
+                            saveAssessmentProgress(nextStep, singleAssessmentRow, selectedAssessmentRisk.id);
+                          }}>
+                          {t("Next")} <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button className="bg-[#7c3f2f] hover:bg-[#6a3528] text-white px-6" onClick={handleSaveAssessment} disabled={savingAssessment}>
+                          {savingAssessment ? <><Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />{t("Saving...")}</> : t("Save Assessment")}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

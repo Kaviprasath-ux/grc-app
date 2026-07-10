@@ -49,9 +49,18 @@ interface VendorDetail {
   pii: boolean;
   vendorCertification: string | null;
   businessJustification: string | null;
+  onboardingAnswers: string | null;
   customerAccount: { id: string; name: string };
   department: { id: string; name: string } | null;
   vendorDocuments: DocFile[];
+  onboardingQuestions?: OnboardingQuestion[];
+}
+
+interface OnboardingQuestion {
+  id: string;
+  title: string;
+  isActive: boolean;
+  children?: OnboardingQuestion[];
 }
 
 const VRR_COLORS: Record<string, string> = {
@@ -201,10 +210,7 @@ export default function AdminVendorDetailPage() {
               <InfoRow label={t("Contract Start")} value={formatDate(vendor.contractStartDate)} />
               <InfoRow label={t("Contract End")} value={formatDate(vendor.contractEndDate)} />
               <InfoRow label={t("Certification")} value={vendor.vendorCertification} />
-              <InfoRow label={t("Access to Network")} value={vendor.accessToNetwork ? "Yes" : "No"} />
-              <InfoRow label={t("Cloud")} value={vendor.cloud ? "Yes" : "No"} />
-              <InfoRow label={t("Access to Data")} value={vendor.accessToData ? "Yes" : "No"} />
-              <InfoRow label={t("PII")} value={vendor.pii ? "Yes" : "No"} />
+              <OnboardingAnswerRows vendor={vendor} t={t} />
             </div>
           </div>
         </CardContent>
@@ -333,5 +339,70 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
       <span className="text-sm text-slate-400 min-w-[160px] flex-shrink-0">{label}</span>
       <span className="text-sm font-medium text-slate-800">: {value || "—"}</span>
     </div>
+  );
+}
+
+// Renders the vendor's onboarding answers (Access to Network, Cloud, PII,
+// any tenant-custom questions, etc.) by joining the tenant's
+// TPRMOnboardingQuestion catalogue with vendor.onboardingAnswers (JSON
+// map of questionId → "Yes"/"No"/text). Falls back to the four legacy
+// boolean columns only if the vendor has no onboarding answers — those
+// columns are written by the legacy CustomerAdmin form path and stay
+// at `false` for vendors created through BO/RM onboarding.
+function OnboardingAnswerRows({ vendor, t }: { vendor: VendorDetail; t: (s: string) => string }) {
+  let answers: Record<string, string> = {};
+  try {
+    if (vendor.onboardingAnswers) answers = JSON.parse(vendor.onboardingAnswers);
+  } catch { /* ignore */ }
+
+  const rows: { id: string; label: string; value: string; indent: boolean }[] = [];
+  // Track which answer IDs we've matched against the active question
+  // catalogue so we can still surface orphaned answers (where the
+  // question was deactivated after the vendor onboarded). Without
+  // this, the admin would silently see fewer answers than the BO
+  // actually recorded.
+  const matched = new Set<string>();
+  for (const pq of vendor.onboardingQuestions || []) {
+    const pAns = answers[pq.id];
+    if (pAns) {
+      rows.push({ id: pq.id, label: pq.title, value: pAns, indent: false });
+      matched.add(pq.id);
+    }
+    for (const child of pq.children || []) {
+      const cAns = answers[child.id];
+      if (cAns) {
+        rows.push({ id: child.id, label: child.title, value: cAns, indent: true });
+        matched.add(child.id);
+      }
+    }
+  }
+  // Surface any orphaned answers (question deleted/deactivated but
+  // answer remains on the vendor) with an "archived" suffix so the
+  // admin knows the response existed but the question is gone.
+  for (const [qid, ans] of Object.entries(answers)) {
+    if (!matched.has(qid) && ans) {
+      rows.push({ id: qid, label: t("Onboarding question (archived)"), value: ans, indent: false });
+    }
+  }
+
+  if (rows.length === 0) {
+    return (
+      <>
+        <InfoRow label={t("Access to Network")} value={vendor.accessToNetwork ? "Yes" : "No"} />
+        <InfoRow label={t("Cloud")} value={vendor.cloud ? "Yes" : "No"} />
+        <InfoRow label={t("Access to Data")} value={vendor.accessToData ? "Yes" : "No"} />
+        <InfoRow label={t("PII")} value={vendor.pii ? "Yes" : "No"} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {rows.map((r) => (
+        <div key={r.id} className={r.indent ? "ltr:pl-4 rtl:pr-4" : ""}>
+          <InfoRow label={r.label} value={r.value} />
+        </div>
+      ))}
+    </>
   );
 }

@@ -9,7 +9,7 @@ import { AllUsersTab } from "@/components/shared/AllUsersTab";
 import { UserExistsConfirmDialog } from "@/components/shared/UserExistsConfirmDialog";
 import { AssignRoleDialog } from "@/components/shared/AssignRoleDialog";
 import { getModulesForRole, type ModuleCode } from "@/lib/role-module-map";
-import type { RoleName } from "@/lib/permissions";
+import { getRoleDisplayName, type RoleName } from "@/lib/permissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,15 +107,18 @@ interface User {
 const rolesByFunction: Record<string, string[]> = {
   Business: ["DepartmentReviewer", "DepartmentContributor"],
   Security: ["Reviewer"],
-  Audit: ["AuditHead", "Auditor", "Auditee"],
+  // "Auditee" is displayed as "Auditor" (see getRoleDisplayName). The legacy
+  // "Auditor" role is retired and no longer offered for new assignments.
+  Audit: ["AuditHead", "AuditManager", "Auditee"],
 };
 
 // All assignable roles for filtering (excludes GRCAdministrator)
 // Note: Contributor role is hidden/disabled - not available for filtering
+// Legacy "Auditor" is retired (hidden); "Auditee" is shown as "Auditor".
 const allUserRoles = [
   "CustomerAdministrator",
   "AuditHead",
-  "Auditor",
+  "AuditManager",
   "Auditee",
   "Reviewer",
   "DepartmentReviewer",
@@ -928,7 +931,7 @@ export default function UsersPage() {
     {
       accessorKey: "role",
       header: t("User Role"),
-      cell: ({ row }) => row.original.role || "-",
+      cell: ({ row }) => (row.original.role ? t(getRoleDisplayName(row.original.role)) : "-"),
     },
     {
       accessorKey: "isActive",
@@ -1332,7 +1335,7 @@ export default function UsersPage() {
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="all">{t("All Roles")}</SelectItem>
                     {allUserRoles.map((role) => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                      <SelectItem key={role} value={role}>{t(getRoleDisplayName(role))}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1607,7 +1610,7 @@ export default function UsersPage() {
                             <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                               {userForm.function && rolesByFunction[userForm.function]?.map((role) => (
                                 <SelectItem key={role} value={role}>
-                                  {role}
+                                  {t(getRoleDisplayName(role))}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1982,7 +1985,7 @@ export default function UsersPage() {
                           <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                             {editingUser.function && rolesByFunction[editingUser.function]?.map((role) => (
                               <SelectItem key={role} value={role}>
-                                {role}
+                                {t(getRoleDisplayName(role))}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -2298,7 +2301,7 @@ export default function UsersPage() {
               {/* Role */}
               <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start sm:items-center gap-1 sm:gap-4">
                 <Label className="sm:text-end text-slate-500">{t("User Role")}</Label>
-                <span className="text-sm text-slate-800">{viewingUser.role || "-"}</span>
+                <span className="text-sm text-slate-800">{viewingUser.role ? t(getRoleDisplayName(viewingUser.role)) : "-"}</span>
               </div>
 
               {/* Department */}

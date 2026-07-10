@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from '@/config/external-apis';
 
+// Multi-PDF artifact uploads + the Python backend's own processing
+// time can easily exceed short timeouts. Pin to Node runtime so
+// formData() works for multipart. maxDuration is a no-op on the DO
+// App Platform container (no fixed cap) but keeping it as a hint for
+// any future serverless target.
+export const runtime = 'nodejs';
+export const maxDuration = 300;
+
 /**
  * POST /api/tprm/assessment-factory
  * Proxies to RunPod POST /api/factory_ingest

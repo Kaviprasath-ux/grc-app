@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 /**
  * Global email-collision check for vendor Account Manager identities.
@@ -91,4 +92,82 @@ export async function validateAccountManagerEmails(
   }
 
   return { ok: true };
+}
+
+export interface ProvisionAMResult {
+  userId: string;
+  created: boolean;
+  fullName: string;
+}
+
+/**
+ * Ensure a login account exists for a vendor's Account Manager during vendor
+ * onboarding.
+ *
+ *  - Username = the AM email; password = the one the BO/RM set while onboarding
+ *    (hashed with bcrypt — no random generation).
+ *  - The AM's `AccountManager` UserRole is created (tagged moduleCode "TPRM") so
+ *    the account can log in and land in the TPRM workspace.
+ *  - Email is globally unique, so the lookup is app-wide: if an AM identity
+ *    already has an account anywhere (AM-to-AM reuse across vendors/customers),
+ *    it is returned as-is with `created: false` and the password is NOT changed.
+ *
+ * Returns `null` when the email is empty, or when the AM doesn't exist yet and no
+ * password was provided (can't create a login without one).
+ */
+export async function provisionAccountManagerUser(
+  customerAccountId: string,
+  params: { email: string | null | undefined; name?: string | null; password?: string | null },
+): Promise<ProvisionAMResult | null> {
+  const email = (params.email || "").split(";")[0].trim();
+  if (!email) return null;
+
+  // Email is @unique app-wide — look up without tenant scope so cross-customer
+  // AM reuse doesn't hit the unique constraint on create.
+  const existing = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true, fullName: true },
+  });
+  if (existing) {
+    return { userId: existing.id, created: false, fullName: existing.fullName };
+  }
+
+  if (!params.password) return null; // no password set during onboarding — can't create a login.
+
+  const hashedPassword = await bcrypt.hash(params.password, 10);
+  const userCount = await prisma.user.count({ where: { customerAccountId } });
+  const userId = `TPRM_${customerAccountId.substring(0, 6)}_${String(userCount + 1).padStart(3, "0")}`;
+
+  const fullName = (params.name || "").trim() || email;
+  const firstName = fullName.split(/\s+/)[0] || fullName;
+  const lastName = fullName.split(/\s+/).slice(1).join(" ") || "-";
+
+  const user = await prisma.user.create({
+    data: {
+      userId,
+      customerAccountId,
+      fullName,
+      firstName,
+      lastName,
+      email,
+      userName: email, // username = AM email, per spec
+      password: hashedPassword,
+      tprmRole: "Account Manager",
+      tprmFunctionCategory: "Account Manager",
+      isActive: true,
+    },
+    select: { id: true, fullName: true },
+  });
+
+  // Assign the AccountManager system role, tagged to the TPRM module.
+  const role = await prisma.role.upsert({
+    where: { name: "AccountManager" },
+    update: {},
+    create: { name: "AccountManager", description: "TPRM Account Manager role", isSystem: true },
+  });
+  await prisma.userRole.create({
+    data: { userId: user.id, roleId: role.id, moduleCode: "TPRM" },
+  });
+
+  return { userId: user.id, created: true, fullName: user.fullName };
 }

@@ -31,7 +31,26 @@ export const GET = withAuth<RouteContext>(
         return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
       }
 
-      return NextResponse.json(vendor);
+      // Onboarding questions live per-tenant. The admin profile page
+      // needs them to render the vendor's actual onboarding answers
+      // (instead of the four stale `accessToNetwork/cloud/...`
+      // booleans that the BO/RM flow never populates).
+      const onboardingQuestions = await prisma.tPRMOnboardingQuestion.findMany({
+        where: {
+          customerAccountId: vendor.customerAccountId,
+          isActive: true,
+          questionType: "Parent",
+        },
+        include: {
+          children: {
+            where: { isActive: true },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+        orderBy: { sortOrder: "asc" },
+      });
+
+      return NextResponse.json({ ...vendor, onboardingQuestions });
     } catch (error) {
       console.error("Error fetching admin vendor detail:", error);
       return NextResponse.json({ error: "Failed to fetch vendor" }, { status: 500 });

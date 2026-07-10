@@ -46,7 +46,27 @@ export const GET = withAuth(
         orderBy: { fullName: 'asc' },
       });
 
-      return NextResponse.json({ data: smes });
+      // Resolve the AM's vendor name(s) by matching their email against
+      // TPRMVendor.accountManagerEmail (semicolon-separated list, so a
+      // case-insensitive `contains` is the right query). The dialog uses
+      // this to display "Vendor" instead of the tenant name on the
+      // Company field — an SME belongs to a vendor, not to the outsourcer
+      // that runs the platform.
+      const amEmail = session.email || '';
+      const vendorNames: string[] = amEmail
+        ? (
+            await prisma.tPRMVendor.findMany({
+              where: {
+                customerAccountId,
+                accountManagerEmail: { contains: amEmail, mode: 'insensitive' },
+              },
+              select: { name: true },
+              orderBy: { name: 'asc' },
+            })
+          ).map((v) => v.name)
+        : [];
+
+      return NextResponse.json({ data: smes, vendorNames });
     } catch (error) {
       console.error('AM SME GET error:', error);
       return NextResponse.json({ error: 'Failed to fetch SMEs' }, { status: 500 });

@@ -122,6 +122,12 @@ interface QuestionnaireTemplate {
   templateCategory: string;
   imageUrl: string | null;
   masterQuestionLinks: TemplateQuestion[];
+  // JSON-encoded array of TPRMOnboardingQuestion ids that gate this
+  // template's suggestion. A vendor is suggested this template only if
+  // they answered "Yes" to at least one of these onboarding questions.
+  // null / "[]" means "no gating" — the template is a universal default
+  // (typically the catch-all "Default" / ISO template).
+  vendorProfileQuestionIds?: string | null;
 }
 
 // ── Constants ──────────────────────────────────────────
@@ -831,6 +837,54 @@ export default function BOInventoryPage() {
     return `${t("The inherent risk of this service is")} ${levelWord}. ${t("A due-diligence assessment is required before onboarding this vendor.")}`;
   };
 
+  // Suggested-template logic. A template is suggested for a vendor iff
+  // EITHER (a) it has no `vendorProfileQuestionIds` (it's a universal
+  // default such as the catch-all "Default" / ISO template) OR (b) the
+  // vendor answered "Yes" to at least one of the onboarding questions
+  // the template is gated on.
+  //
+  // Previously every template was always pre-selected, so "Cloud" was
+  // suggested for vendors who answered "No" to the cloud-usage onboarding
+  // question. The new check honours the gating that already exists on
+  // TPRMQuestionnaireTemplate.vendorProfileQuestionIds.
+  const computeSuggestedTemplateIds = (
+    vendor: Vendor | null,
+    templates: QuestionnaireTemplate[]
+  ): string[] => {
+    // Parse the vendor's onboarding answers into a "question id → answer" map.
+    const answers: Record<string, string> = (() => {
+      if (!vendor?.onboardingAnswers) return {};
+      try {
+        const parsed = JSON.parse(vendor.onboardingAnswers);
+        return (parsed && typeof parsed === "object") ? (parsed as Record<string, string>) : {};
+      } catch {
+        return {};
+      }
+    })();
+    const yesQuestionIds = new Set(
+      Object.entries(answers)
+        .filter(([, v]) => String(v).trim().toLowerCase() === "yes")
+        .map(([k]) => k)
+    );
+
+    return templates
+      .filter((t) => t.templateName)
+      .filter((tpl) => {
+        // Parse the template's gating list. Anything other than a non-empty
+        // array of strings is treated as "no gating" → universal default.
+        let gateIds: string[] = [];
+        if (tpl.vendorProfileQuestionIds) {
+          try {
+            const parsed = JSON.parse(tpl.vendorProfileQuestionIds);
+            if (Array.isArray(parsed)) gateIds = parsed.filter((x) => typeof x === "string");
+          } catch { /* ignore malformed JSON — treat as universal */ }
+        }
+        if (gateIds.length === 0) return true; // universal / Default catch-all
+        return gateIds.some((qid) => yesQuestionIds.has(qid));
+      })
+      .map((tpl) => tpl.id);
+  };
+
   const handleCheckRiskRating = async () => {
     if (!createdVendorId) return;
     setShowSuccessPopup(false);
@@ -843,14 +897,16 @@ export default function BOInventoryPage() {
         fetch(`/api/tprm/vendors/${createdVendorId}`),
         fetch("/api/tprm/master-data/questionnaires"),
       ]);
+      let fetchedVendor: Vendor | null = null;
       if (vendorRes.ok) {
-        const vendor = await vendorRes.json();
-        setRiskRatingVendor(vendor);
+        fetchedVendor = await vendorRes.json();
+        setRiskRatingVendor(fetchedVendor);
       }
       if (templatesRes.ok) {
         const templates: QuestionnaireTemplate[] = await templatesRes.json();
-        setRawQuestionnaireTemplates(templates.filter((t) => t.templateName));
-        setSelectedTemplateIds(templates.filter((t) => t.templateName).map((t) => t.id));
+        const named = templates.filter((t) => t.templateName);
+        setRawQuestionnaireTemplates(named);
+        setSelectedTemplateIds(computeSuggestedTemplateIds(fetchedVendor, named));
       }
     } catch {
       toast({ title: t("Failed to fetch vendor data"), variant: "destructive" });
@@ -876,11 +932,16 @@ export default function BOInventoryPage() {
         fetch(`/api/tprm/vendors/${vendor.id}`),
         fetch("/api/tprm/master-data/questionnaires"),
       ]);
-      if (vendorRes.ok) setRiskRatingVendor(await vendorRes.json());
+      let fetchedVendor: Vendor | null = null;
+      if (vendorRes.ok) {
+        fetchedVendor = await vendorRes.json();
+        setRiskRatingVendor(fetchedVendor);
+      }
       if (templatesRes.ok) {
         const templates: QuestionnaireTemplate[] = await templatesRes.json();
-        setRawQuestionnaireTemplates(templates.filter((tpl) => tpl.templateName));
-        setSelectedTemplateIds(templates.filter((tpl) => tpl.templateName).map((tpl) => tpl.id));
+        const named = templates.filter((tpl) => tpl.templateName);
+        setRawQuestionnaireTemplates(named);
+        setSelectedTemplateIds(computeSuggestedTemplateIds(fetchedVendor, named));
       }
     } catch {
       toast({ title: t("Failed to fetch vendor data"), variant: "destructive" });

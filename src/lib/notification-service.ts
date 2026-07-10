@@ -543,6 +543,16 @@ class NotificationService {
       [NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_APPROVED]: 'TPRM_CONTRACT_DELETION_APPROVED',
       [NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETION_REJECTED]: 'TPRM_CONTRACT_DELETION_REJECTED',
       [NOTIFICATION_EVENTS.TPRM_CONTRACT_DELETED_BY_ADMIN]: 'TPRM_CONTRACT_DELETED_BY_ADMIN',
+
+      // ===================== SUPPORT TICKETING =====================
+      // Inbox-only events — no email template; fall back to GENERIC if ever emailed.
+      [NOTIFICATION_EVENTS.SUPPORT_TICKET_CREATED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.SUPPORT_TICKET_ASSIGNED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.SUPPORT_TICKET_ESCALATED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.SUPPORT_TICKET_COMMENT_ADDED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.SUPPORT_TICKET_SLA_WARNING]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.SUPPORT_TICKET_SLA_BREACHED]: 'GENERIC_NOTIFICATION',
+      [NOTIFICATION_EVENTS.SECURITY_PASSWORD_RESET_ABUSE]: 'GENERIC_NOTIFICATION',
     };
 
     return templateMap[event] || 'GENERIC_NOTIFICATION';
@@ -1021,6 +1031,73 @@ class NotificationService {
         link: getModuleHome(m),
         channels: params.channels,
         metadata: { userName: params.userName, module: m },
+      });
+    }
+    return last!;
+  }
+
+  /**
+   * Notify a newly-onboarded customer's admin. Sends one welcome per enabled
+   * module, each scoped to that workspace so it reads e.g. "Welcome to TPRM
+   * Platform" and only appears once the user enters that platform. Falls back
+   * to a single generic welcome when no modules are provided.
+   */
+  async notifyCustomerOnboarded(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    customerName: string;
+    userName: string;
+    modules?: ModuleCode[];
+    channels?: NotificationChannel[];
+  }) {
+    const message = `Your organization "${params.customerName}" has been successfully onboarded. You are now the administrator for your account.`;
+    const moduleList = (params.modules ?? []).filter(
+      (m, i, arr) => arr.indexOf(m) === i, // de-dupe
+    );
+
+    // No resolvable modules — keep a single, workspace-agnostic welcome.
+    if (moduleList.length === 0) {
+      return this.send({
+        customerAccountId: params.customerAccountId,
+        actorId: params.actorId,
+        recipientId: params.recipientId,
+        event: NOTIFICATION_EVENTS.CUSTOMER_ONBOARDED,
+        title: 'Welcome',
+        message,
+        relatedEntityType: 'customerAccount',
+        relatedEntityId: params.customerAccountId,
+        link: '/dashboard',
+        metadata: {
+          entityName: params.customerName,
+          customerName: params.customerName,
+          userName: params.userName,
+        },
+        channels: params.channels,
+      });
+    }
+
+    // One welcome per platform the customer has enabled.
+    let last: Awaited<ReturnType<NotificationService['send']>> | undefined;
+    for (const m of moduleList) {
+      last = await this.send({
+        customerAccountId: params.customerAccountId,
+        actorId: params.actorId,
+        recipientId: params.recipientId,
+        event: NOTIFICATION_EVENTS.CUSTOMER_ONBOARDED,
+        title: `Welcome to ${MODULE_LABELS[m]} Platform`,
+        message,
+        module: m,
+        relatedEntityType: 'customerAccount',
+        relatedEntityId: params.customerAccountId,
+        link: getModuleHome(m),
+        metadata: {
+          entityName: params.customerName,
+          customerName: params.customerName,
+          userName: params.userName,
+          module: m,
+        },
+        channels: params.channels,
       });
     }
     return last!;
@@ -1744,7 +1821,7 @@ class NotificationService {
       message: `Remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} has been assigned to you for IT review.`,
       relatedEntityType: 'remediation',
       relatedEntityId: params.remediationId,
-      link: `/tprm/rm-issues`,
+      link: `/tprm/it-issues`,
       channels: params.channels,
       metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
     });
@@ -1800,7 +1877,7 @@ class NotificationService {
       message: `IT remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} has been approved.`,
       relatedEntityType: 'remediation',
       relatedEntityId: params.remediationId,
-      link: `/tprm/rm-issues`,
+      link: `/tprm/it-issues`,
       channels: params.channels,
       metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle },
     });
@@ -1831,7 +1908,7 @@ class NotificationService {
         : `IT remediation for ${params.vendorName} - ${params.questionTitle || params.issueCode} returned. Please revise.`,
       relatedEntityType: 'remediation',
       relatedEntityId: params.remediationId,
-      link: `/tprm/rm-issues`,
+      link: `/tprm/it-issues`,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       channels: params.channels,
       metadata: { entityName: params.issueCode, vendorName: params.vendorName, questionTitle: params.questionTitle, reason: params.reason },
@@ -2258,27 +2335,37 @@ class NotificationService {
   }
 
   /**
-   * Notify when SME has a pending assignment.
+   * Notify an SME that an AM has delegated one or more questions to
+   * them on a vendor assessment.
+   *
+   * The link points at the AM/vendor side of the assessment
+   * (`/tprm/am-assessments/...`) — the prior implementation linked to
+   * the assessor side, which SMEs can't access. actorId is now the AM
+   * (not 'system') so the self-notification guard works correctly.
    */
   async notifyTPRMSMEAssignmentPending(params: {
     customerAccountId: string;
+    actorId: string;
     recipientId: string;
     assessmentId: string;
     assessmentCode: string;
+    vendorName?: string;
     channels?: NotificationChannel[];
   }) {
     return this.send({
       customerAccountId: params.customerAccountId,
-      actorId: 'system',
+      actorId: params.actorId,
       recipientId: params.recipientId,
       event: NOTIFICATION_EVENTS.TPRM_SME_ASSIGNMENT_PENDING,
-      title: 'Pending SME assignment',
-      message: `You have a pending SME assignment on assessment ${params.assessmentCode}.`,
+      title: 'Question(s) assigned to you',
+      message: params.vendorName
+        ? `You've been assigned question(s) on assessment ${params.assessmentCode} for vendor ${params.vendorName}.`
+        : `You've been assigned question(s) on assessment ${params.assessmentCode}.`,
       relatedEntityType: 'assessment',
       relatedEntityId: params.assessmentId,
-      link: `/tprm/asr-assessments/${params.assessmentId}`,
+      link: `/tprm/am-assessments/${params.assessmentId}`,
       channels: params.channels,
-      metadata: { entityName: params.assessmentCode },
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName },
     });
   }
 

@@ -123,6 +123,6 @@ export const config = {
      * - /_next (Next.js internals)
      * - /favicon.ico, /logo*, /icons, etc. (static assets)
      */
-    "/((?!login|signup|api|_next|favicon\\.ico|logo|icons|uploads).*)",
+    "/((?!login|signup|forgot-password|api|_next|favicon\\.ico|logo|icons|uploads).*)",
   ],
 };

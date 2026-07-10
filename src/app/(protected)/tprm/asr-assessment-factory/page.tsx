@@ -179,6 +179,45 @@ export default function AsrAssessmentFactoryPage() {
 
   const handleGenerateReport = async () => {
     if (!templateFile) return;
+
+    // Pre-flight size check. The DO App Platform / proxy / Python
+    // ingest backend collectively choke on very large multipart
+    // bundles — beyond a certain point the polling spins forever
+    // and the user just sees the dialog hang. Cap at 25 MB total,
+    // which comfortably handles a template + several PDFs while
+    // staying inside typical reverse-proxy limits.
+    const MAX_TOTAL_BYTES = 25 * 1024 * 1024;
+    const totalBytes = (templateFile.size || 0) + artifactFiles.reduce((s, f) => s + (f.size || 0), 0);
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      toast({
+        title: t("Files too large"),
+        description: `${t("The combined upload is")} ${(totalBytes / 1024 / 1024).toFixed(1)} MB. ${t("Please keep the template + artifacts under 25 MB total, or split into multiple runs.")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Zero-byte files confuse the Python ingest backend (it 500s
+    // mid-pipeline with no useful error). Catch the template and every
+    // artifact upfront.
+    if ((templateFile.size || 0) === 0) {
+      toast({
+        title: t("Empty file"),
+        description: `"${templateFile.name}" ${t("is empty (0 bytes). Please re-attach or remove it.")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const emptyArtifact = artifactFiles.find((f) => (f.size || 0) === 0);
+    if (emptyArtifact) {
+      toast({
+        title: t("Empty file"),
+        description: `"${emptyArtifact.name}" ${t("is empty (0 bytes). Please re-attach or remove it.")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setGenerating(true);
     setJobStatus(t("Parsing template..."));
     try {
@@ -377,11 +416,26 @@ export default function AsrAssessmentFactoryPage() {
 
   const filteredRows = activeReport?.rows.filter(r => {
     if (statusFilter === "all") return true;
-    return r.complianceStatus.toLowerCase().includes(statusFilter.toLowerCase());
+    // Strict equality (case-insensitive). Was using .includes(), which
+    // matched "Unsatisfactory" when the filter was "Satisfactory"
+    // because "unsatisfactory" contains "satisfactory" as a substring.
+    return (r.complianceStatus || "").trim().toLowerCase() === statusFilter.trim().toLowerCase();
   }) || [];
 
+  // Dedupe statuses case-insensitively after trim, so backend
+  // inconsistencies like "Satisfactory" vs "satisfactory " don't show
+  // up as two separate filter options. Display value is the first
+  // canonical-cased seen.
   const uniqueStatuses = activeReport
-    ? [...new Set(activeReport.rows.map(r => r.complianceStatus).filter(Boolean))]
+    ? Array.from(
+        activeReport.rows.reduce((acc, r) => {
+          const raw = (r.complianceStatus || '').trim();
+          if (!raw) return acc;
+          const key = raw.toLowerCase();
+          if (!acc.has(key)) acc.set(key, raw);
+          return acc;
+        }, new Map<string, string>()).values()
+      )
     : [];
 
   // ── Report Results View ──────────────────────────
@@ -526,8 +580,8 @@ export default function AsrAssessmentFactoryPage() {
         </div>
 
         {/* Import dialog (also available from report view) */}
-        <Dialog open={importOpen} onOpenChange={setImportOpen}>
-          <DialogContent className="!max-w-lg">
+        <Dialog open={importOpen} onOpenChange={(open) => { if (generating && !open) return; setImportOpen(open); }}>
+          <DialogContent className="!max-w-lg" showCloseButton={!generating} onPointerDownOutside={(e) => { if (generating) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (generating) e.preventDefault(); }}>
             <DialogHeader>
               <DialogTitle>{importStep === 1 ? t("Import Template") : t("Upload Artifacts")}</DialogTitle>
             </DialogHeader>
@@ -789,8 +843,8 @@ export default function AsrAssessmentFactoryPage() {
       </Dialog>
 
       {/* Import Template Dialog */}
-      <Dialog open={importOpen} onOpenChange={setImportOpen}>
-        <DialogContent className="!max-w-lg">
+      <Dialog open={importOpen} onOpenChange={(open) => { if (generating && !open) return; setImportOpen(open); }}>
+        <DialogContent className="!max-w-lg" showCloseButton={!generating} onPointerDownOutside={(e) => { if (generating) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (generating) e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>{importStep === 1 ? t("Import Template") : t("Upload Artifacts")}</DialogTitle>
           </DialogHeader>

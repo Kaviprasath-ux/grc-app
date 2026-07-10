@@ -111,7 +111,8 @@ export const GET = withAuth(
           },
           assignedAuditor: {
             select: { id: true, fullName: true, firstName: true, lastName: true }
-          }
+          },
+          report: { select: { id: true } }
         },
         orderBy: { createdAt: 'desc' }
       });
@@ -155,6 +156,7 @@ async function createSingleEngagement(
     departmentId?: string;
     auditRating?: string;
     auditType?: string;
+    auditCategoryId?: string;
     auditorId?: string;
     auditeeId?: string;
     processId?: string;
@@ -172,7 +174,7 @@ async function createSingleEngagement(
 ) {
   const {
     auditId, engagementTitle, engagementObjective, engagementScope,
-    departmentId, auditRating, auditType, auditorId, auditeeId,
+    departmentId, auditRating, auditType, auditCategoryId, auditorId, auditeeId,
     processId, startDate, targetDate, initialObservation, relatedPolicies,
     plannedHours, linkedRiskIds, teamMemberIds, customerAccountId, auditHeadId,
   } = params;
@@ -186,6 +188,7 @@ async function createSingleEngagement(
       departmentId: (departmentId && departmentId.trim()) ? departmentId : null,
       auditRating: auditRating || null,
       auditType: auditType || 'Internal Audit',
+      auditCategoryId: (auditCategoryId && auditCategoryId.trim()) ? auditCategoryId : null,
       assignedAuditorId: (auditorId && auditorId.trim()) ? auditorId : null,
       auditeeId: (auditeeId && auditeeId.trim()) ? auditeeId : null,
       processId: (processId && processId.trim()) ? processId : null,
@@ -372,7 +375,7 @@ export const POST = withAuth(
       if (body.departments && Array.isArray(body.departments) && body.departments.length > 0) {
         const {
           engagementTitle, engagementObjective, engagementScope,
-          auditRating, auditType, processId,
+          auditRating, auditType, auditCategoryId, processId,
           startDate, targetDate, initialObservation, relatedPolicies,
           plannedHours, departments,
         } = body;
@@ -401,6 +404,7 @@ export const POST = withAuth(
             departmentId: dept.departmentId,
             auditRating,
             auditType,
+            auditCategoryId,
             auditorId: primaryAuditorId,
             auditeeId: primaryAuditeeId,
             processId,
@@ -424,7 +428,7 @@ export const POST = withAuth(
       // Legacy single-department mode
       const {
         engagementTitle, engagementObjective, engagementScope,
-        departmentId, linkedRiskIds, auditRating, auditType,
+        departmentId, linkedRiskIds, auditRating, auditType, auditCategoryId,
         auditorId, auditeeId, processId, startDate, targetDate,
         initialObservation, relatedPolicies, plannedHours,
       } = body;
@@ -437,6 +441,7 @@ export const POST = withAuth(
         departmentId,
         auditRating,
         auditType,
+        auditCategoryId,
         auditorId,
         auditeeId,
         processId,

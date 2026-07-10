@@ -36,6 +36,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Audit Planning page was renamed to Audit Engagement — redirect old page
+  // URLs (bookmarks) to the new path. API routes under /api/... are unchanged.
+  async redirects() {
+    return [
+      {
+        source: "/internal-audit/audit-planning",
+        destination: "/internal-audit/audit-engagement",
+        permanent: false,
+      },
+      {
+        source: "/internal-audit/audit-planning/:path*",
+        destination: "/internal-audit/audit-engagement/:path*",
+        permanent: false,
+      },
+    ];
+  },
   // Security headers applied to every response. CSP intentionally starts in
   // Report-Only mode so violations are logged but nothing breaks; once we've
   // observed a clean report log for a few days we can flip to enforcement.

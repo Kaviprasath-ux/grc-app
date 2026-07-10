@@ -27,7 +27,7 @@ import { useHasRole } from "@/hooks/usePermissions";
 import { useTranslatedRecord } from "@/hooks/useTranslatedData";
 import { useModule } from "@/contexts/ModuleContext";
 import { getModulesForRole } from "@/lib/role-module-map";
-import type { RoleName } from "@/lib/permissions";
+import { getRoleDisplayName, type RoleName } from "@/lib/permissions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -206,7 +206,7 @@ export function Header({ onMenuClick, sidebarCollapsed, onToggleSidebar, helpOpe
     // Prefer non-CustomerAdministrator (the specific role label is more useful)
     return matches.find((r) => r !== "CustomerAdministrator") || matches[0] || sessionRoles[0];
   })();
-  const rawRole = roleForModule
+  const rawRole = getRoleDisplayName(roleForModule)
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .trim();

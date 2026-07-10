@@ -41,6 +41,7 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
     agentMode,
     setAgentMode,
     confirmUpdate,
+    createTicketFromChat,
   } = useHelpChatbot({ isOpen, onOpenChange });
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -218,8 +219,11 @@ export function HelpChatbot({ isOpen, onOpenChange }: HelpChatbotProps) {
               pendingUpdateId={msg.pendingUpdateId}
               executed={msg.executed}
               confirmationResult={msg.confirmationResult}
+              escalationSuggested={msg.escalationSuggested}
+              escalatedTicketCode={msg.escalatedTicketCode}
               onSelectArticle={selectArticle}
               onConfirmUpdate={confirmUpdate}
+              onCreateTicket={createTicketFromChat}
               speakingId={speak.speakingId}
               isSpeaking={speak.isSpeaking}
               isLoadingSpeech={speak.isLoading}

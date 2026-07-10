@@ -28,7 +28,7 @@ export const POST = withAuth(
   async (req, context, session) => {
     try {
       const body = await req.json();
-      const { engagementId, overallResult } = body;
+      const { engagementId, opinionRating } = body;
       const tenantFilter = getTenantFilter(session);
       const customerAccountId = getCustomerAccountId(session);
       const auditHeadId = getAuditHeadId(session);
@@ -40,12 +40,11 @@ export const POST = withAuth(
         );
       }
 
-      if (!overallResult || !['Pass', 'Fail'].includes(overallResult)) {
-        return NextResponse.json(
-          { error: 'Overall result must be Pass or Fail' },
-          { status: 400 }
-        );
-      }
+      // Overall audit opinion. Defaults to "Satisfactory" when not supplied.
+      const RATINGS = ['Satisfactory', 'Needs Improvement', 'Unsatisfactory'];
+      const rating = RATINGS.includes(opinionRating) ? opinionRating : 'Satisfactory';
+      // Legacy Pass/Fail kept in sync for back-compat (Satisfactory => Pass).
+      const overallResult = rating === 'Satisfactory' ? 'Pass' : 'Fail';
 
       // Check if engagement exists and is completed
       const engagement = await prisma.auditEngagement.findFirst({
@@ -107,41 +106,54 @@ export const POST = withAuth(
         });
       };
 
-      const fieldworkPeriod = `${formatDate(engagement.actualStartDate || engagement.plannedStartDate)} to ${formatDate(engagement.actualEndDate || engagement.plannedEndDate)}`;
-
-      // Generate executive summary
-      const executiveSummary = `Internal Audit has completed the audit of ${engagement.engagementTitle}. The primary objective of this engagement was to assess the design and operating effectiveness of key internal controls over significant financial processes, including process, as well as IT general control areas supporting these functions.
-
-The audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing (ISPPIA). Our procedures included review of process documentation, walkthroughs, testing of key controls, and verification of transaction accuracy and authorization during the period under review.`;
-
-      // Generate overall result text
-      const overallResultText = `Based on the work performed, the key financial and IT controls appear to be ${overallResult}. ${
-        overallResult === 'Pass'
-          ? 'No significant control deficiencies or reportable findings were identified during this engagement.'
-          : 'Control deficiencies and reportable findings were identified during this engagement that require management attention.'
-      }
-
-We extend our appreciation to management and staff for their cooperation and support throughout the audit.`;
-
-      // Generate background
-      const background = `The integrity and reliability of financial and operational data are essential for informed decision-making. Robust internal controls over accounting cycles—such as revenue, expenditure, and treasury management—help mitigate risks of fraud, misstatement, and process inefficiencies.
-
-This audit was part of the Annual Internal Audit Plan for FY. Designed to provide independent assurance over key financial processes and IT control environments.`;
-
-      // Generate objective
-      const objectives = `To evaluate the effectiveness of the ${engagement.engagementTitle.toLowerCase()} within the organization.`;
-
-      // Generate scope
-      const scope = `This audit will cover the organizational structure, roles and responsibilities, decision-making processes, and compliance with relevant policies and regulations.`;
-
-      // Generate conclusion with placeholders for Audit process and target date
+      const departmentName = engagement.department?.name || 'the Department';
       const targetDate = formatDate(engagement.actualEndDate || engagement.plannedEndDate);
       const processName = engagement.process?.name || engagement.engagementTitle;
-      const conclusion = `Based on the audit procedures performed and the evidence obtained, Internal Audit concludes that the system of internal control over ${processName} as of the audit period.
 
-The control environment supports the integrity, accuracy, and reliability of the organization's financial data within the audited areas.
+      // ── Document-driven default section templates ──────────────────────────
+      // These mirror the standard Internal Audit Report structure. The Audit
+      // Head can edit any of them before finalizing.
 
-Accordingly, this audit engagement is formally closed as of ${targetDate}.`;
+      const executiveSummary = `The audit task on ${departmentName} was carried out as per the approved audit plan. This audit has been carried out in accordance with international internal audit standards, and aims to provide independent assurance about the effectiveness of governance, risk management and control.`;
+
+      const objectives = `The objective of the audit was to make sure:
+- Assessing the adequacy and effectiveness of controls, assessing risk management, verifying compliance with regulations and policies, and identifying opportunities for improvement.`;
+
+      const scope = `The scope of the audit included the audit of ${engagement.engagementTitle} through the use of a comprehensive work program prepared specifically for this purpose, where the scope of the audit included all areas under the umbrella of ${departmentName}. The Internal Audit Department relied in its audit on the analyses and discussions with the management officials and the available data and records provided. Using the methodology of the selected samples, the most important areas that were focused on (but not limited to):`;
+
+      const scopeExclusions = `The scope of work did not include:`;
+
+      const methodology = `A risk-based audit methodology was followed, including:
+- Understanding and analyzing processes
+- Testing the design of controls
+- Testing operational effectiveness
+- Using the sampling method
+- Analyzing the data (if applicable)`;
+
+      const opinionSummary = `The attached report clarifies the observations that were discovered during the audit process on ${engagement.engagementTitle}, which is generally ${rating}.`;
+
+      const recommendations = `In light of the observations made in the report, the Internal Audit Department recommends the following:
+1.
+2.`;
+
+      const topMessages = `- Substantial risks requiring immediate intervention (if any)
+- The need to strengthen the control and governance environment
+- Opportunities to improve operational efficiency`;
+
+      const keyRisks = `- Operational
+- Financial
+- Compliance
+- Reputation`;
+
+      const summaryKeyFindings = `1.
+2.`;
+
+      const mgmtAttentionImmediate = ``;
+      const mgmtAttentionMediumTerm = ``;
+
+      const followUp = `The Audit Department will follow up on the implementation of the recommendations and report periodically to senior management and the Audit Committee.`;
+
+      const conclusion = `Based on the audit procedures performed and the evidence obtained, Internal Audit concludes on the system of internal control over ${processName} as of the audit period. Accordingly, this audit engagement is formally closed as of ${targetDate}.`;
 
       // Create the report with tenant and audit head assignment
       const report = await prisma.auditReport.create({
@@ -150,10 +162,19 @@ Accordingly, this audit engagement is formally closed as of ${targetDate}.`;
           engagementId,
           title: engagement.engagementTitle,
           executiveSummary,
-          observations: overallResultText,
           scope,
+          scopeExclusions,
           objectives,
-          methodology: background,
+          methodology,
+          recommendations,
+          opinionRating: rating,
+          opinionSummary,
+          topMessages,
+          keyRisks,
+          summaryKeyFindings,
+          mgmtAttentionImmediate,
+          mgmtAttentionMediumTerm,
+          followUp,
           conclusion,
           overallResult,
           status: 'Draft',
@@ -164,7 +185,7 @@ Accordingly, this audit engagement is formally closed as of ${targetDate}.`;
       });
 
       // Fire-and-forget: translate report fields
-      if (customerAccountId) void translateRecord(customerAccountId, 'AuditReport', report.id, { title: report.title, executiveSummary: report.executiveSummary, observations: report.observations, scope: report.scope, objectives: report.objectives, methodology: report.methodology, conclusion: report.conclusion });
+      if (customerAccountId) void translateRecord(customerAccountId, 'AuditReport', report.id, { title: report.title, executiveSummary: report.executiveSummary, scope: report.scope, scopeExclusions: report.scopeExclusions, objectives: report.objectives, methodology: report.methodology, recommendations: report.recommendations, opinionSummary: report.opinionSummary, topMessages: report.topMessages, keyRisks: report.keyRisks, followUp: report.followUp, conclusion: report.conclusion });
 
       return NextResponse.json({
         report,

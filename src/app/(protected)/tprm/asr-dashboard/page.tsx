@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Loader2, Home, ChevronRight } from "lucide-react";
+import { ChartEmptyState } from "@/components/shared/chart-empty-state";
 import {
   BarChart,
   Bar,
@@ -288,9 +289,7 @@ export default function AsrDashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-              {t("No Data to Display")}
-            </div>
+            <ChartEmptyState variant="pie" />
           )}
         </div>
 
@@ -317,9 +316,7 @@ export default function AsrDashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-              {t("No Data to Display")}
-            </div>
+            <ChartEmptyState variant="pie" />
           )}
         </div>
       </div>
@@ -343,9 +340,7 @@ export default function AsrDashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-              {t("No Data to Display")}
-            </div>
+            <ChartEmptyState variant="bar" />
           )}
         </div>
 
@@ -367,9 +362,7 @@ export default function AsrDashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-              {t("No Data to Display")}
-            </div>
+            <ChartEmptyState variant="bar" />
           )}
         </div>
       </div>

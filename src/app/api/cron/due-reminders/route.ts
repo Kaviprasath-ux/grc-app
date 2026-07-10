@@ -434,6 +434,9 @@ export async function GET(req: NextRequest) {
         try {
           await notificationService.notifyTPRMSMEAssignmentPending({
             customerAccountId: resp.assessment.customerAccountId,
+            // Cron-triggered reminder: no real actor; sentinel keeps
+            // the self-notification guard satisfied.
+            actorId: 'system',
             recipientId: resp.delegatedToId!,
             assessmentId: resp.assessmentId,
             assessmentCode: resp.assessment.assessmentCode || '',

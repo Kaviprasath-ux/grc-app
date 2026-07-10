@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
+import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 import { isValidEmailFormat } from '@/lib/validations/email';
 import { translateRecord } from '@/lib/translation-service';
 import { ensureComplimentarySubscription, type ModuleCode } from '@/lib/customer-complimentary';
@@ -213,23 +213,23 @@ export async function POST(req: NextRequest) {
       console.error("[onboard] ensureComplimentarySubscription failed:", (e as Error).message);
     }
 
-    // Send CUSTOMER_ONBOARDED notification to the new customer admin user
+    // Send CUSTOMER_ONBOARDED notification to the new customer admin user —
+    // one welcome per enabled module so it reads e.g. "Welcome to TPRM Platform"
+    // (scoped to that workspace) instead of always "Welcome to GRC Platform".
     if (result.customerAccount.id && result.newUser.id && session.user?.id) {
-      await notificationService.send({
+      const welcomeModules: ModuleCode[] = [];
+      if (isGrcAdded !== false) welcomeModules.push("GRC");
+      if (isTprmAdded === true) welcomeModules.push("TPRM");
+      if (isInternalAuditEnabled === true) welcomeModules.push("INTERNAL_AUDIT");
+      if (isTechnicalEvidenceEnabled === true) welcomeModules.push("TECHNICAL_EVIDENCE");
+
+      await notificationService.notifyCustomerOnboarded({
         customerAccountId: result.customerAccount.id,
         actorId: session.user.id, // The GRCAdministrator who created the customer
         recipientId: result.newUser.id, // The new CustomerAdministrator
-        event: NOTIFICATION_EVENTS.CUSTOMER_ONBOARDED,
-        title: 'Welcome to GRC Platform',
-        message: `Your organization "${result.customerAccount.name}" has been successfully onboarded. You are now the administrator for your account.`,
-        relatedEntityType: 'customerAccount',
-        relatedEntityId: result.customerAccount.id,
-        link: '/dashboard',
-        metadata: {
-          entityName: result.customerAccount.name,
-          customerName: result.customerAccount.name,
-          userName: result.newUser.fullName,
-        },
+        customerName: result.customerAccount.name,
+        userName: result.newUser.fullName,
+        modules: welcomeModules,
         channels: [NOTIFICATION_CHANNELS.INBOX, NOTIFICATION_CHANNELS.EMAIL],
       });
     }

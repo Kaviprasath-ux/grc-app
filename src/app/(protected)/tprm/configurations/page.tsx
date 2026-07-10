@@ -2469,6 +2469,12 @@ function OffboardingSection() {
   const [editItem, setEditItem] = useState<OffboardingQuestion | null>(null);
   const [form, setForm] = useState({ title: "", question: "" });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  // Bulk-upload UI state. Mirrors the SimpleCrudSection pattern: a hidden
+  // file input fronted by a Bulk Upload button, plus a sibling Download
+  // Template button that emits an XLSX with the same columns the import
+  // expects.
+  const [importing, setImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const { data: translatedQuestions } = useTranslatedData(questions, { modelName: 'TPRMOffboardingQuestion' });
 
@@ -2546,6 +2552,91 @@ function OffboardingSection() {
     }
   };
 
+  // ── Bulk upload ────────────────────────────────────────────────────────
+  // Columns intentionally minimal: Title + Question. sequenceNo is
+  // auto-assigned by the POST handler in the order rows are imported,
+  // mirroring how the single-row Add flow assigns it.
+  const handleDownloadTemplate = async () => {
+    const { generateExcelTemplate } = await import("@/lib/excel-import");
+    const buffer = generateExcelTemplate(["Title", "Question"], "Offboarding Questions");
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "offboarding-questions-template.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleBulkImport = async (file: File) => {
+    setImporting(true);
+    try {
+      const { parseExcelFile } = await import("@/lib/excel-import");
+      const buffer = await file.arrayBuffer();
+      const result = parseExcelFile<{ Title: string; Question: string }>(buffer, [
+        { name: "Title", required: true, type: "string" },
+        { name: "Question", required: true, type: "string" },
+      ]);
+      if (!result.success) {
+        const firstErr = result.errors[0]?.message || t("Invalid file");
+        toast({ title: t("Error"), description: firstErr, variant: "destructive" });
+        return;
+      }
+      // De-duplicate within the sheet and against existing questions on
+      // the title field (case-insensitive). Same convention used by the
+      // SimpleCrudSection bulk import for service categories etc.
+      const existingLower = new Set(questions.map((q) => q.title.trim().toLowerCase()));
+      const seenTitles = new Set<string>();
+      const toCreate: { title: string; question: string }[] = [];
+      for (const row of result.data) {
+        const title = String(row.Title || "").trim();
+        const question = String(row.Question || "").trim();
+        if (!title || !question) continue;
+        const key = title.toLowerCase();
+        if (seenTitles.has(key) || existingLower.has(key)) continue;
+        seenTitles.add(key);
+        toCreate.push({ title, question });
+      }
+      if (toCreate.length === 0) {
+        toast({ title: t("Nothing to import"), description: t("All rows were empty or already exist") });
+        return;
+      }
+      let created = 0;
+      let failed = 0;
+      for (const row of toCreate) {
+        try {
+          const res = await fetch("/api/tprm/configurations/offboarding-questions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(row),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            triggerTranslation('TPRMOffboardingQuestion', data.id, { title: data.title, question: data.question });
+            created++;
+          } else {
+            failed++;
+          }
+        } catch {
+          failed++;
+        }
+      }
+      toast({
+        title: t("Import complete"),
+        description: `${created} ${t("created")}${failed ? `, ${failed} ${t("failed")}` : ""}`,
+      });
+      loadQuestions();
+      setTimeout(() => { clearTranslationCache(); loadQuestions(); }, 4000);
+    } catch {
+      toast({ title: t("Error"), description: t("Failed to import file"), variant: "destructive" });
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  };
+
   const columns: ColumnDef<OffboardingQuestion>[] = [
     {
       accessorKey: "sequenceNo",
@@ -2607,7 +2698,33 @@ function OffboardingSection() {
   return (
     <>
       {!isAuditor && (
-        <div className="flex ltr:justify-end rtl:justify-start mb-4">
+        <div className="flex ltr:justify-end rtl:justify-start gap-2 mb-4">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleBulkImport(file);
+            }}
+          />
+          <Button size="sm" variant="outline" onClick={handleDownloadTemplate}>
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Download Template")}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={importing}
+            onClick={() => importInputRef.current?.click()}
+          >
+            {importing ? (
+              <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            )}
+            {t("Bulk Upload")}
+          </Button>
           <Button size="sm" onClick={() => {
             setEditItem(null);
             setForm({ title: "", question: "" });

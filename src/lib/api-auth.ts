@@ -14,6 +14,7 @@ import {
   Action,
   Scope,
 } from '@/lib/permissions';
+import { recordAuditTrail, actionLabel, moduleLabel } from '@/lib/audit-trail';
 
 // ==================== TYPES ====================
 
@@ -60,6 +61,65 @@ export function unauthorized(message = 'Authentication required') {
 
 export function forbidden(message = 'Permission denied') {
   return NextResponse.json({ error: message }, { status: 403 });
+}
+
+// ==================== AUDIT TRAIL AUTO-CAPTURE ====================
+
+// Never auto-log these resources (the audit-trail reader itself, plus pure
+// auth/notification noise) to avoid recursion / clutter.
+const AUDIT_TRAIL_SKIP_RESOURCES = new Set(['audit.audit-trail']);
+
+// Fire-and-forget: append an audit-trail entry for a successful mutation.
+async function autoRecordMutation(
+  req: NextRequest,
+  context: { params?: Promise<unknown> },
+  user: AuthenticatedRequest['user'],
+  options: AuthOptions
+): Promise<void> {
+  try {
+    const resource = Array.isArray(options.resource) ? options.resource[0] : options.resource;
+    if (AUDIT_TRAIL_SKIP_RESOURCES.has(resource)) return;
+
+    // Best-effort record identifier from the route params (id, then any *Id).
+    let recordId: string | null = null;
+    try {
+      const params = (context?.params ? await context.params : {}) as Record<string, unknown>;
+      const idKey =
+        Object.keys(params).find((k) => k === 'id') ||
+        Object.keys(params).find((k) => /id$/i.test(k));
+      if (idKey && typeof params[idKey] === 'string') recordId = params[idKey] as string;
+    } catch {
+      /* params may be absent */
+    }
+
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      null;
+
+    // Derive a CRUD label primarily from the HTTP method (more reliable than the
+    // route's RBAC action, which is about permissions). Approvals keep their label.
+    const method = req.method.toUpperCase();
+    let label: string;
+    if (method === 'DELETE') label = 'Delete';
+    else if (options.action === 'approve') label = 'Approve';
+    else if (method === 'POST') label = 'Create';
+    else if (method === 'PUT' || method === 'PATCH') label = 'Update';
+    else label = actionLabel(options.action);
+
+    await recordAuditTrail({
+      customerAccountId: user.customerAccountId,
+      userId: user.id,
+      userName: user.name || user.email || 'Unknown',
+      userRole: (user.roles || []).join(', ') || null,
+      action: label,
+      module: moduleLabel(resource),
+      recordId,
+      ipAddress: ip,
+    });
+  } catch (error) {
+    console.error('[audit-trail] auto-capture error:', error);
+  }
 }
 
 // ==================== AUTH WRAPPER ====================
@@ -129,7 +189,18 @@ export function withAuth<T extends { params?: Promise<unknown> }>(
       };
 
       // Call the actual handler
-      return handler(req, context, authenticatedUser);
+      const response = await handler(req, context, authenticatedUser);
+
+      // Audit-trail auto-capture: log successful mutations (non-view actions).
+      if (
+        options.action !== 'view' &&
+        response.status >= 200 &&
+        response.status < 300
+      ) {
+        void autoRecordMutation(req, context, authenticatedUser, options);
+      }
+
+      return response;
     } catch (error) {
       console.error('Auth wrapper error:', error);
       return NextResponse.json(

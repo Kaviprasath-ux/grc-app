@@ -52,6 +52,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
+import { confirm } from "@/components/ui/confirm";
 
 interface FindingAttachment {
   id: string;
@@ -354,6 +355,7 @@ export default function CAPATrackingPage() {
 
   const handleDeleteAttachment = async (attachmentId: string) => {
     if (!findingToEdit) return;
+    if (!(await confirm({ title: t("Delete Attachment?"), description: t("This action cannot be undone.") }))) return;
 
     try {
       const response = await fetch(
@@ -522,6 +524,29 @@ export default function CAPATrackingPage() {
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
           {t("Corrective & Preventive Actions (CAPA)")}
         </h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (selectedDepartment && selectedDepartment !== "all") {
+              params.append("departmentId", selectedDepartment);
+            }
+            if (engagementStatusFilter) {
+              params.append("engagementStatus", engagementStatusFilter);
+            }
+            if (searchQuery.trim()) {
+              params.append("search", searchQuery.trim());
+            }
+            window.open(
+              `/api/internal-audit/capa-tracking/download?${params.toString()}`,
+              "_blank"
+            );
+          }}
+        >
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Implementation Recommendation Document")}
+        </Button>
       </div>
 
       {/* Table */}
@@ -882,7 +907,7 @@ export default function CAPATrackingPage() {
 
             {/* Auditee Comment */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
-              <Label className="text-slate-800 font-medium pt-2">{t("Auditee Comment")}</Label>
+              <Label className="text-slate-800 font-medium pt-2">{t("Auditor Comment")}</Label>
               <Textarea
                 value={(translatedViewFinding as Finding | null)?.auditeeComment || findingToView?.auditeeComment || ""}
                 readOnly
@@ -1122,7 +1147,7 @@ export default function CAPATrackingPage() {
 
             {/* Auditee's comments - EDITABLE for auditee */}
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-start gap-2 sm:gap-4">
-              <Label className="text-slate-800 font-medium pt-2">{t("Auditee")}<br/>{t("Comment")}</Label>
+              <Label className="text-slate-800 font-medium pt-2">{t("Auditor")}<br/>{t("Comment")}</Label>
               <Textarea
                 value={editForm.auditeeComment}
                 onChange={(e) =>

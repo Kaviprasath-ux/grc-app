@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedEmailTemplates } from "./seed-email-templates";
+import { seedTPRMEmailTemplates } from "./seed-tprm-email-templates";
 import { seedSubscriptionCatalog } from "./seed-subscription-catalog";
 
 const prisma = new PrismaClient();
@@ -70,6 +71,11 @@ async function main() {
     { name: "TPRMAssessor", description: "Assessor role in TPRM", isSystem: true },
     { name: "TPRMApprover", description: "Approver role in TPRM", isSystem: true },
     { name: "TPRMAuditor", description: "Auditor role in TPRM", isSystem: true },
+    // Support Ticketing roles
+    { name: "SupportAgentL1", description: "Level 1 support agent — handles assigned tickets, escalates to L2", isSystem: true },
+    { name: "SupportSpecialistL2", description: "Level 2 functional/domain specialist", isSystem: true },
+    { name: "SupportEngineerL3", description: "Level 3 engineering support", isSystem: true },
+    { name: "SupportManager", description: "Support manager — full ticket access and routing settings", isSystem: true },
   ];
 
   const createdRoles: { [key: string]: string } = {};
@@ -129,6 +135,10 @@ async function main() {
   // ==================== SEED EMAIL TEMPLATES ====================
   await seedEmailTemplates();
   console.log("✅ Email templates seeded");
+
+  // ==================== SEED TPRM EMAIL TEMPLATES ====================
+  await seedTPRMEmailTemplates();
+  console.log("✅ TPRM email templates seeded");
 
   // ==================== SEED SUBSCRIPTION CATALOG ====================
   await seedSubscriptionCatalog(prisma);

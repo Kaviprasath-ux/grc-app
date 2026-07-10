@@ -278,7 +278,12 @@ export default function ASRAssessmentDetailPage() {
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsScope, setLogsScope] = useState<"assessment" | "question">("assessment");
   const [reportOpen, setReportOpen] = useState(false);
-  const [reportResult, setReportResult] = useState<string>("Satisfactory");
+  // Start unselected, not pre-selected to "Satisfactory". Pre-selecting
+  // risked an approver clicking Approve in one go and silently shipping
+  // the wrong verdict — the bug the verdict-carry-over fix tried to
+  // address from a different angle. The assessor's prior verdict is
+  // applied from the assessment record in loadAssessment() below.
+  const [reportResult, setReportResult] = useState<string>("");
 
   // Override form
   const [overrideStatus, setOverrideStatus] = useState<string>("");
@@ -654,6 +659,18 @@ export default function ASRAssessmentDetailPage() {
   // ── Approve (Approver role) ───────────────────────────────────────────
 
   const handleApprove = async () => {
+    // Require an explicit verdict before approving. Without this,
+    // an approver could one-click "Approve" with no Sat/Unsat/Deficient
+    // selected and silently ship the assessor's last persisted value
+    // (or nothing).
+    if (!reportResult) {
+      toast({
+        title: t("Verdict required"),
+        description: t("Please select Satisfactory, Unsatisfactory, or Deficient before approving."),
+        variant: "destructive",
+      });
+      return;
+    }
     // Validate clarifications before approving
     const ok = await checkOpenClarifications();
     if (!ok) return;
@@ -736,12 +753,26 @@ export default function ASRAssessmentDetailPage() {
 
   const handleSendToApprover = async () => {
     if (!selectedApproverId) return;
+    // Match handleApprove: require a verdict before handing off to the
+    // approver, otherwise the approver inherits no value and is back
+    // to staring at an empty radio.
+    if (!reportResult) {
+      toast({
+        title: t("Verdict required"),
+        description: t("Please select Satisfactory, Unsatisfactory, or Deficient before sending to the approver."),
+        variant: "destructive",
+      });
+      return;
+    }
     setSendingToApprover(true);
     try {
       const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send_to_approver", approverId: selectedApproverId }),
+        // Persist the assessor's Sat/Unsat/Deficient choice with the
+        // hand-off so the approver opens onto the assessor's verdict
+        // instead of the "Satisfactory" default.
+        body: JSON.stringify({ action: "send_to_approver", approverId: selectedApproverId, assessmentResult: reportResult }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -892,11 +923,18 @@ export default function ASRAssessmentDetailPage() {
         + `<span style="display:inline-block;height:100%;background:#22c55e;width:${(lowCount / totalSev) * 100}%"></span>`
       : `<span style="display:inline-block;height:100%;background:#e5e7eb;width:100%"></span>`;
 
+    // PDF badge fallback: when no verdict is set (downloading a report
+    // before approve), don't render an orange Deficient-colored badge
+    // with empty text — show neutral grey + "Pending" so the report is
+    // honest about its draft status.
     const resultBadgeColor = reportResult === "Satisfactory"
       ? "#15803d"
       : reportResult === "Unsatisfactory"
         ? "#b91c1c"
-        : "#c2410c";
+        : reportResult === "Deficient"
+          ? "#c2410c"
+          : "#6b7280";
+    const resultBadgeText = reportResult || t("Pending");
 
     const html = `<!DOCTYPE html>
 <html>
@@ -945,7 +983,7 @@ export default function ASRAssessmentDetailPage() {
 
   <p class="summary">
     <strong>${t("Third Party Risk Management Team conducted a due diligence review of")} ${assessment.vendor.name} ${t("from")} ${submissionDate} ${t("till")} ${todayFmt}. ${t("The control environment was found to be")}:</strong>
-    <span class="result-badge" style="background:${resultBadgeColor}">${t(reportResult)}</span>
+    <span class="result-badge" style="background:${resultBadgeColor}">${t(resultBadgeText)}</span>
   </p>
   ${monitoringScores ? `<div class="scores">
     <div>${t("Overall Cybersecurity Score")} : ${monitoringScores.overallScore != null ? Math.round(monitoringScores.overallScore) : ""}</div>
@@ -1161,12 +1199,24 @@ export default function ASRAssessmentDetailPage() {
             .map(domain => {
               const domainResps = flatQuestions.filter(fq => fq.domainId === domain.id);
               const total = domainResps.length;
-              const unsat = domainResps.filter(fq => {
+              let sat = 0;
+              let unsat = 0;
+              for (const fq of domainResps) {
                 const r = responses[fq.question.id];
-                return r && (r.assessorStatus || r.poStatus || '').toLowerCase() === "unsatisfactory";
-              }).length;
-              const pct = total > 0 ? Math.round((unsat / total) * 100) : 0;
-              return { domain, total, pct };
+                const effStatus = (r?.assessorStatus || r?.poStatus || "").toLowerCase();
+                if (effStatus === "satisfactory") sat++;
+                else if (effStatus === "unsatisfactory") unsat++;
+              }
+              // Bar widths and the compliance % share the same
+              // denominator so a "100%" label always matches a
+              // visually full teal bar. "Compliance" intentionally
+              // reads sat-of-evaluated, not sat-of-total —
+              // unanswered/NA questions shouldn't drag the score down.
+              const evaluated = sat + unsat;
+              const satPct = evaluated > 0 ? (sat / evaluated) * 100 : 0;
+              const unsatPct = evaluated > 0 ? (unsat / evaluated) * 100 : 0;
+              const compliancePct = evaluated > 0 ? Math.round((sat / evaluated) * 100) : 0;
+              return { domain, total, evaluated, satPct, unsatPct, compliancePct };
             })
             .filter(d => d.total > 0);
 
@@ -1179,15 +1229,28 @@ export default function ASRAssessmentDetailPage() {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {domainsWithQuestions.map(({ domain, pct }) => (
+                    {domainsWithQuestions.map(({ domain, satPct, unsatPct, compliancePct }) => (
                       <div key={domain.id} className="flex items-center gap-3">
                         <span className="w-48 text-sm truncate" title={domain.name}>{domain.name}</span>
-                        <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
-                          <div className="h-full bg-red-400 rounded" style={{ width: `${pct}%` }} />
+                        <div className="flex-1 h-6 bg-muted rounded overflow-hidden flex">
+                          <div className="h-full bg-teal-500" style={{ width: `${satPct}%` }} title={`${t("Satisfactory")}: ${Math.round(satPct)}%`} />
+                          <div className="h-full bg-red-400" style={{ width: `${unsatPct}%` }} title={`${t("Unsatisfactory")}: ${Math.round(unsatPct)}%`} />
                         </div>
-                        <span className="text-sm font-medium w-12 text-right">{pct}%</span>
+                        <span className="text-sm font-medium w-12 text-right">{compliancePct}%</span>
                       </div>
                     ))}
+                    {/* Legend */}
+                    <div className="flex items-center gap-4 pt-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-sm bg-teal-500" />
+                        <span>{t("Satisfactory")}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-sm bg-red-400" />
+                        <span>{t("Unsatisfactory")}</span>
+                      </div>
+                      <span className="ml-auto">{t("% column shows compliance (satisfactory of evaluated)")}</span>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -1474,7 +1537,13 @@ export default function ASRAssessmentDetailPage() {
             <CardContent className="space-y-4">
               {selectedQ ? (() => {
                 const vendorAnswer = (selectedResp?.response || "").toString().toLowerCase().replace(/[\s_-]/g, "");
-                const aiNotApplicable = vendorAnswer === "yes" || vendorAnswer === "na" || vendorAnswer === "notapplicable";
+                // AI validates Yes answers (verifies the vendor's claim
+                // against uploaded evidence). It skips No (auto-Unsatisfactory
+                // from the master question's templates) and NA (auto-
+                // Not_Applicable). The earlier code had the predicate flipped
+                // so the AI Review panel was hidden on the exact answers it
+                // should have been showing for.
+                const aiNotApplicable = vendorAnswer === "no" || vendorAnswer === "na" || vendorAnswer === "notapplicable";
                 const hasAssessorOverride = Boolean(
                   selectedResp?.assessorStatus ||
                   selectedResp?.assessorIssue ||
@@ -1487,7 +1556,7 @@ export default function ASRAssessmentDetailPage() {
                 if (aiNotApplicable && !hasAssessorOverride) {
                   return (
                     <p className="text-sm text-muted-foreground text-center py-6">
-                      {t("AI review is not required when the vendor answered Yes or N/A.")}
+                      {t("AI review is not required when the vendor answered No or N/A.")}
                     </p>
                   );
                 }
@@ -1840,9 +1909,12 @@ export default function ASRAssessmentDetailPage() {
                   <Badge className={
                     reportResult === "Satisfactory" ? "bg-green-100 text-green-700 border-green-300" :
                     reportResult === "Unsatisfactory" ? "bg-red-100 text-red-700 border-red-300" :
-                    "bg-orange-100 text-orange-700 border-orange-300"
+                    reportResult === "Deficient" ? "bg-orange-100 text-orange-700 border-orange-300" :
+                    // Defensive: legacy Approved records without a stored
+                    // assessmentResult — show neutral, not Deficient-orange.
+                    "bg-slate-100 text-slate-700 border-slate-300"
                   }>
-                    {t(reportResult)}
+                    {reportResult ? t(reportResult) : t("Pending")}
                   </Badge>
                 ) : (
                   ["Satisfactory", "Unsatisfactory", "Deficient"].map(opt => (
@@ -1860,6 +1932,16 @@ export default function ASRAssessmentDetailPage() {
                   ))
                 )}
               </div>
+
+              {/* Verdict-specific narrative — adapts to the assessor's
+                  selection so the report reads as a real conclusion
+                  rather than a static template. */}
+              <p className="text-sm leading-relaxed pl-2 italic text-muted-foreground">
+                {!reportResult && t("Select Satisfactory, Unsatisfactory, or Deficient to record your conclusion.")}
+                {reportResult === "Satisfactory" && t("The vendor's control environment is satisfactory and aligns with the organization's risk appetite. No further remediation is required at this time; the vendor is approved to proceed.")}
+                {reportResult === "Unsatisfactory" && t("The vendor's control environment is unsatisfactory. The findings listed below must be remediated within the timelines provided before the engagement can be considered low risk.")}
+                {reportResult === "Deficient" && t("The vendor's control environment is deficient and presents material risk. Immediate corrective action is required, and the engagement should not proceed until the high-severity findings are addressed.")}
+              </p>
 
               {/* Monitoring Scores — only shown if monitoring data exists */}
               {monitoringScores && (

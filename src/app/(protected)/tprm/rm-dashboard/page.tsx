@@ -8,6 +8,7 @@ import { Home, ChevronRight, Loader2 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
+import { ChartEmptyState } from "@/components/shared/chart-empty-state";
 
 interface CriticalityItem {
   label: string;
@@ -138,9 +139,7 @@ export default function RMDashboardPage() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
-                <p>{t("No Data to Display")}</p>
-              </div>
+              <ChartEmptyState variant="barVertical" />
             )}
           </CardContent>
         </Card>
@@ -166,9 +165,7 @@ export default function RMDashboardPage() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
-                <p>{t("No Data to Display")}</p>
-              </div>
+              <ChartEmptyState variant="barVertical" />
             )}
           </CardContent>
         </Card>

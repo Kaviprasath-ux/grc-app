@@ -35,6 +35,7 @@ const JOBS: JobSpec[] = [
   { name: "remediation-reminders",  path: "/api/cron/remediation-reminders",  schedule: "0 8 * * *" },
   { name: "subscription-alerts",    path: "/api/cron/subscription-alerts",    schedule: "0 9 * * *" },
   { name: "plan-transitions",       path: "/api/cron/plan-transitions",       schedule: "0 1 * * *" },
+  { name: "ticket-sla",             path: "/api/cron/ticket-sla",             schedule: "*/15 * * * *" },
 ];
 
 let initialized = false;

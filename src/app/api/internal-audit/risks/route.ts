@@ -50,8 +50,14 @@ export const GET = withAuth(
           department: true,
           category: true,
           auditType: true,
+          subCategory: true,
+          processLinks: { include: { process: { select: { id: true, name: true, processCode: true } } } },
         },
-        orderBy: { createdAt: "desc" },
+        // Auto-sort by residual risk so the highest-priority risks appear at the top.
+        orderBy: [
+          { residualScore: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" },
+        ],
       });
 
       return NextResponse.json(risks);
@@ -170,7 +176,12 @@ export const POST = withAuth(
           subProcess: body.subProcess || null,
           activity: body.activity || null,
           categoryId: body.categoryId || null,
+          subCategoryId: body.subCategoryId || null,
           auditTypeId: body.auditTypeId || null,
+          riskDrivers: body.riskDrivers || null,
+          riskConsequences: body.riskConsequences || null,
+          relatedLawRegulation: body.relatedLawRegulation || null,
+          controlsData: body.controlsData || null,
           riskDescription: body.riskDescription || null,
           inherentLikelihood: body.inherentLikelihood ? parseInt(body.inherentLikelihood) : null,
           inherentImpact: body.inherentImpact ? parseInt(body.inherentImpact) : null,
@@ -191,8 +202,21 @@ export const POST = withAuth(
           department: true,
           category: true,
           auditType: true,
+          subCategory: true,
+          processLinks: { include: { process: { select: { id: true, name: true, processCode: true } } } },
         },
       });
+
+      // Create process links if provided
+      if (body.processIds && Array.isArray(body.processIds) && body.processIds.length > 0) {
+        await prisma.internalAuditProcessRisk.createMany({
+          data: body.processIds.map((processId: string) => ({
+            riskId: risk.id,
+            processId,
+          })),
+          skipDuplicates: true,
+        });
+      }
 
       if (customerAccountId) void translateRecord(customerAccountId, 'InternalAuditRisk', risk.id, { riskName: risk.riskName, riskDescription: risk.riskDescription });
 

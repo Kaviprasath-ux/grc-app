@@ -42,7 +42,12 @@ export const GET = withAuth(
           initiatedBy: { select: { id: true, fullName: true } },
           assessor: { select: { id: true, fullName: true } },
           approver: { select: { id: true, fullName: true } },
-          logs: { orderBy: { logDate: 'desc' }, take: 100 },
+          // No `take` cap: activity logs are the audit trail of the
+          // assessment and must remain available for the lifetime of
+          // the assessment. Capping at 100 silently dropped the oldest
+          // entries (initiation, AM assignment, early submissions) the
+          // moment a busy assessment crossed that threshold.
+          logs: { orderBy: { logDate: 'desc' } },
           responses: { orderBy: { questionNo: 'asc' } },
         },
       });
@@ -114,12 +119,27 @@ export const GET = withAuth(
           }));
       }
 
-      // Load domains
-      const domains = await prisma.tPRMDomain.findMany({
-        where: { customerAccountId: assessment.customerAccountId, isActive: true },
-        orderBy: { sortOrder: 'asc' },
-        select: { id: true, name: true },
-      });
+      // Load ONLY the domains referenced by this assessment's questions —
+      // previously the route loaded every active domain in the tenant,
+      // which leaked unrelated domains into the assessor's domain filter
+      // (e.g. when only the "Default" questionnaire was selected, all the
+      // tenant's other questionnaires' domains still appeared). Filtering
+      // by ids actually present on the question set keeps the dropdown
+      // honest. Symmetric with the AM-side route.
+      const usedDomainIds = Array.from(
+        new Set(
+          (questions as Array<{ domainId: string | null }>)
+            .map((q) => q.domainId)
+            .filter((id): id is string => Boolean(id))
+        )
+      );
+      const domains = usedDomainIds.length === 0
+        ? []
+        : await prisma.tPRMDomain.findMany({
+            where: { customerAccountId: assessment.customerAccountId, isActive: true, id: { in: usedDomainIds } },
+            orderBy: { sortOrder: 'asc' },
+            select: { id: true, name: true },
+          });
 
       // Compute summary stats from responses
       const resps = assessment.responses;

@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import type { SubscriptionStatus, SubscriptionType } from "@prisma/client";
 import { expandRolePermissions, type UserPermission } from "@/lib/permissions";
 import { getAccessSnapshot } from "@/lib/module-access";
+import { inferModuleFromRoleName } from "@/lib/url-module-map";
+import { recordAuditTrail } from "@/lib/audit-trail";
 
 // Shared query for loading user with all relations needed for session
 const userSelect = {
@@ -107,7 +109,7 @@ async function buildAuthUser(dbUser: {
   customerAccount: { id: string; code: string; name: string; isGrcAdded: boolean; isTprmAdded: boolean; isInternalAuditEnabled: boolean; isTechnicalEvidenceEnabled: boolean; isQpostComplianceEnabled: boolean } | null;
   auditHeadId: string | null;
   userRoles: { moduleCode: string | null; role: { id: string; name: string } }[];
-}, extraRoles?: string[]) {
+}, extraRoles?: string[], extraRoleModules?: Array<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE">) {
   const roleNames = dbUser.userRoles.map(ur => ur.role.name);
   if (extraRoles) roleNames.push(...extraRoles.filter(r => !roleNames.includes(r)));
   const effectiveRoles = roleNames.length > 0 ? roleNames : ['Contributor'];
@@ -116,11 +118,29 @@ async function buildAuthUser(dbUser: {
   // Phase 5b.1: distinct module codes the user holds at least one role in.
   // Drives the workspace picker (subscription ∩ has-role). System roles
   // (moduleCode=null) are excluded — they don't anchor to any module.
+  //
+  // extraRoleModules is the auto-provision companion to extraRoles. Callers
+  // pass it when ensureTprmUserRole has just inserted a UserRole row that
+  // isn't reflected in the cached dbUser.userRoles array — without it, the
+  // first-login JWT sees roleModules=[] and the layout gate redirects to
+  // /select-module ("no active workspaces"). Second login works because
+  // the DB row is found this time.
   const validModules = new Set<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE">();
   for (const ur of dbUser.userRoles) {
     if (ur.moduleCode === "GRC" || ur.moduleCode === "TPRM" || ur.moduleCode === "INTERNAL_AUDIT" || ur.moduleCode === "TECHNICAL_EVIDENCE") {
       validModules.add(ur.moduleCode);
+    } else if (ur.moduleCode == null) {
+      // Recover the workspace for older UserRole rows saved without a moduleCode
+      // by inferring it from the (single-platform) role name — otherwise the
+      // layout gate wrongly shows "Subscription Required" for a role the user
+      // actually holds. Still intersected with the subscription flag downstream,
+      // so this never grants access to an unsubscribed module.
+      const inferred = inferModuleFromRoleName(ur.role.name);
+      if (inferred) validModules.add(inferred);
     }
+  }
+  if (extraRoleModules) {
+    for (const m of extraRoleModules) validModules.add(m);
   }
   const roleModules = Array.from(validModules);
 
@@ -264,16 +284,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         console.log('[AUTH] Login successful for:', user.userName);
 
-        // Auto-repair: ensure TPRM users have their system role assigned
+        // Auto-repair: ensure TPRM users have their system role assigned.
+        // When ensureTprmUserRole inserts a fresh UserRole row, the cached
+        // user.userRoles array doesn't reflect it — so we also tell
+        // buildAuthUser to add "TPRM" to roleModules. Without this companion
+        // hint, first login produced an empty availableModules and the
+        // layout gate kicked the user to /select-module ("no workspaces"),
+        // and only the second login succeeded.
         const existingRoleNames = user.userRoles.map(ur => ur.role.name);
         const tprmSystemRole = user.tprmRole ? TPRM_ROLE_TO_SYSTEM_ROLE[user.tprmRole] : null;
         let extraRoles: string[] | undefined;
+        let extraRoleModules: Array<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"> | undefined;
         if (tprmSystemRole && !existingRoleNames.includes(tprmSystemRole)) {
           await ensureTprmUserRole(user.id, user.tprmRole, existingRoleNames);
           extraRoles = [tprmSystemRole];
+          extraRoleModules = ["TPRM"];
         }
 
-        return await buildAuthUser(user, extraRoles);
+        // Record the credentials-path login. The SSO path already
+        // updates this in signIn(); without doing it here too, the
+        // Last Login column stayed blank for every username/password
+        // user (which is most TPRM AMs/SMEs/admins).
+        //
+        // Fire-and-forget — login shouldn't pay a round-trip latency
+        // cost or fail on a non-essential stat write.
+        void prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() },
+        }).catch((err) => {
+          console.error('[AUTH] Failed to update lastLogin:', err);
+        });
+
+        return await buildAuthUser(user, extraRoles, extraRoleModules);
         } catch (error) {
           console.error('[AUTH] Error during authentication:', error);
           return null;
@@ -391,15 +433,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             });
 
             if (dbUser) {
-              // Auto-repair TPRM role for OAuth users too
+              // Auto-repair TPRM role for OAuth users too — same race fix
+              // as the credentials path. The companion extraRoleModules
+              // makes sure the freshly-provisioned UserRole's TPRM module
+              // is reflected in roleModules on the FIRST login.
               const oauthRoleNames = dbUser.userRoles.map(ur => ur.role.name);
               const oauthTprmSystemRole = dbUser.tprmRole ? TPRM_ROLE_TO_SYSTEM_ROLE[dbUser.tprmRole] : null;
               let oauthExtraRoles: string[] | undefined;
+              let oauthExtraRoleModules: Array<"GRC" | "TPRM" | "INTERNAL_AUDIT" | "TECHNICAL_EVIDENCE"> | undefined;
               if (oauthTprmSystemRole && !oauthRoleNames.includes(oauthTprmSystemRole)) {
                 await ensureTprmUserRole(dbUser.id, dbUser.tprmRole, oauthRoleNames);
                 oauthExtraRoles = [oauthTprmSystemRole];
+                oauthExtraRoleModules = ["TPRM"];
               }
-              const authUser = await buildAuthUser(dbUser, oauthExtraRoles);
+              const authUser = await buildAuthUser(dbUser, oauthExtraRoles, oauthExtraRoleModules);
               token.id = authUser.id; // Critical: override OAuth provider ID with DB user ID
               token.role = authUser.role;
               token.department = authUser.department;
@@ -461,6 +508,75 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
       }
       return session;
+    },
+  },
+  events: {
+    // Audit Trail: capture authentication events.
+    async signIn({ user }) {
+      try {
+        const u = user as {
+          id?: string;
+          email?: string | null;
+          name?: string | null;
+          fullName?: string | null;
+          role?: string | null;
+          customerAccountId?: string | null;
+        };
+        let customerAccountId = u.customerAccountId ?? null;
+        let role = u.role ?? null;
+        let name = u.fullName || u.name || u.email || "Unknown";
+        if ((!customerAccountId || !role) && u.id) {
+          const db = await prisma.user
+            .findUnique({
+              where: { id: u.id },
+              select: { customerAccountId: true, fullName: true, role: true },
+            })
+            .catch(() => null);
+          if (db) {
+            customerAccountId = customerAccountId ?? db.customerAccountId ?? null;
+            role = role ?? db.role ?? null;
+            name = db.fullName || name;
+          }
+        }
+        await recordAuditTrail({
+          customerAccountId,
+          userId: u.id ?? null,
+          userName: name,
+          userRole: role,
+          action: "Login",
+          module: "Authentication",
+        });
+      } catch (error) {
+        console.error("[audit-trail] signIn event error:", error);
+      }
+    },
+    async signOut(message) {
+      try {
+        const token = (message as { token?: Record<string, unknown> }).token;
+        if (!token) return;
+        const userId = (token.id as string) || (token.sub as string) || null;
+        let name = (token.name as string) || (token.email as string) || "Unknown";
+        let role = (token.role as string) || null;
+        if (userId && (name === "Unknown" || !role)) {
+          const db = await prisma.user
+            .findUnique({ where: { id: userId }, select: { fullName: true, role: true } })
+            .catch(() => null);
+          if (db) {
+            name = db.fullName || name;
+            role = role || db.role;
+          }
+        }
+        await recordAuditTrail({
+          customerAccountId: (token.customerAccountId as string) ?? null,
+          userId,
+          userName: name,
+          userRole: role,
+          action: "Logout",
+          module: "Authentication",
+        });
+      } catch (error) {
+        console.error("[audit-trail] signOut event error:", error);
+      }
     },
   },
   session: {

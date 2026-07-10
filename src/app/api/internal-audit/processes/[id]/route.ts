@@ -5,7 +5,7 @@ import {
   getCustomerAccountId,
   getAuditHeadId,
 } from '@/lib/api-auth';
-import { translateRecord } from '@/lib/translation-service';
+import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -27,6 +27,7 @@ export const GET = withAuth(
         },
         include: {
           department: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
           attachments: {
             select: {
               id: true,
@@ -81,13 +82,17 @@ export const PATCH = withAuth(
       const {
         name,
         description,
+        processOwner,
         departmentId,
         riskIds,
+        categoryId,
       }: {
         name?: string;
         description?: string | null;
+        processOwner?: string | null;
         departmentId?: string | null;
         riskIds?: string[];
+        categoryId?: string | null;
       } = body;
 
       if (name !== undefined && (!name || !name.trim())) {
@@ -119,7 +124,10 @@ export const PATCH = withAuth(
       if (name !== undefined) data.name = name.trim();
       if (description !== undefined)
         data.description = description?.toString().trim() || null;
+      if (processOwner !== undefined)
+        data.processOwner = processOwner?.toString().trim() || null;
       if (departmentId !== undefined) data.departmentId = departmentId || null;
+      if (categoryId !== undefined) data.categoryId = categoryId || null;
 
       const updated = await prisma.$transaction(async (tx) => {
         if (Array.isArray(riskIds)) {
@@ -140,6 +148,7 @@ export const PATCH = withAuth(
           data,
           include: {
             department: { select: { id: true, name: true } },
+            category: { select: { id: true, name: true } },
             attachments: {
               select: {
                 id: true,
@@ -195,6 +204,12 @@ export const DELETE = withAuth(
       }
 
       await prisma.internalAuditProcess.delete({ where: { id } });
+
+      // Clean up dynamic translations for the deleted process.
+      if (customerAccountId) {
+        void deleteRecordTranslations(customerAccountId, 'InternalAuditProcess', id);
+      }
+
       return NextResponse.json({ success: true });
     } catch (error) {
       console.error('Error deleting internal audit process:', error);

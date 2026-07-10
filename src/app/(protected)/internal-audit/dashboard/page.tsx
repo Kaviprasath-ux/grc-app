@@ -443,7 +443,7 @@ export default function InternalAuditDashboard() {
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Title")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Department")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Type")}</TableHead>
-                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Auditor")}</TableHead>
+                    <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Audit Manager")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 whitespace-nowrap">{t("Status")}</TableHead>
                     <TableHead className="text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pr-5 whitespace-nowrap">{t("Action")}</TableHead>
                   </TableRow>
@@ -607,7 +607,7 @@ export default function InternalAuditDashboard() {
                 <div className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-sm text-slate-500">{t("Auditor")}:</span>
+                    <span className="text-sm text-slate-500">{t("Audit Manager")}:</span>
                     <span className="text-sm font-medium text-slate-800">
                       {auditDetail.auditor?.name || t("Unassigned")}
                     </span>
@@ -1009,7 +1009,7 @@ export default function InternalAuditDashboard() {
               <TableHeader>
                 <TableRow className="h-11 border-b border-slate-100 bg-slate-50 hover:bg-slate-50">
                   <TableHead className="min-w-[200px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3 pl-5">{t("Audit Name")}</TableHead>
-                  <TableHead className="min-w-[150px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Auditor")}</TableHead>
+                  <TableHead className="min-w-[150px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t("Audit Manager")}</TableHead>
                   {MONTH_KEYS.map((month) => (
                     <TableHead key={month} className="text-center min-w-[60px] text-xs font-medium text-slate-500 uppercase tracking-wider py-3">{t(month)}</TableHead>
                   ))}

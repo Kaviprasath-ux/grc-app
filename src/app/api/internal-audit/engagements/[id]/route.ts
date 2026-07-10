@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter } from '@/lib/api-auth';
 import { notificationService, NOTIFICATION_CHANNELS } from '@/lib/notification-service';
 import { translateRecord, deleteRecordTranslations } from '@/lib/translation-service';
+import { ENGAGEMENT_STAGE_KEYS } from '@/lib/audit-engagement-stages';
 
 // GET /api/internal-audit/engagements/[id] - Get a single engagement
 // Uses audit.fieldwork:view to allow auditees to view engagement details
@@ -24,6 +25,7 @@ export const GET = withAuth(
           auditee: {
             select: { id: true, firstName: true, lastName: true, fullName: true }
           },
+          report: { select: { id: true } },
         }
       });
 
@@ -74,6 +76,7 @@ export const PUT = withAuth(
         departmentId,
         auditType,
         auditRating,
+        auditCategoryId,
         auditorId,
         auditeeId,
         startDate,
@@ -94,6 +97,7 @@ export const PUT = withAuth(
       if (departmentId !== undefined) updateData.departmentId = departmentId || null;
       if (auditType !== undefined) updateData.auditType = auditType;
       if (auditRating !== undefined) updateData.auditRating = auditRating;
+      if (auditCategoryId !== undefined) updateData.auditCategoryId = auditCategoryId || null;
       if (auditorId !== undefined) updateData.assignedAuditorId = auditorId || null;
       if (auditeeId !== undefined) updateData.auditeeId = auditeeId || null;
       if (startDate !== undefined) {
@@ -196,6 +200,34 @@ export const PATCH = withAuth(
       // If marking as completed, set actualEndDate if not already set
       if (body.status === 'Completed' && !existingEngagement.actualEndDate) {
         updateData.actualEndDate = new Date();
+      }
+
+      // Engagement lifecycle workflow (Phase 2) — validate stage key against the canonical list
+      if (body.currentStage !== undefined) {
+        if (!ENGAGEMENT_STAGE_KEYS.includes(body.currentStage)) {
+          return NextResponse.json({ error: 'Invalid stage key' }, { status: 400 });
+        }
+        updateData.currentStage = body.currentStage;
+      }
+
+      if (body.reportingMode !== undefined) {
+        if (body.reportingMode !== 'Continuous' && body.reportingMode !== 'Aggregated') {
+          return NextResponse.json({ error: 'Invalid reporting mode' }, { status: 400 });
+        }
+        updateData.reportingMode = body.reportingMode;
+      }
+
+      if (body.stageProgress !== undefined) {
+        // Keep only recognized stage keys with allowed statuses
+        const cleaned: Record<string, string> = {};
+        if (body.stageProgress && typeof body.stageProgress === 'object') {
+          for (const [k, v] of Object.entries(body.stageProgress as Record<string, unknown>)) {
+            if (ENGAGEMENT_STAGE_KEYS.includes(k) && (v === 'completed' || v === 'in_progress')) {
+              cleaned[k] = v;
+            }
+          }
+        }
+        updateData.stageProgress = cleaned;
       }
 
       const engagement = await prisma.auditEngagement.update({

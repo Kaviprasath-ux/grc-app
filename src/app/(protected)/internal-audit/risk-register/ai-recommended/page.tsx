@@ -178,7 +178,7 @@ export default function AIRecommendedRisksPage() {
       toast.success(t("Successfully added to Audit Planning!"));
 
       // Optionally navigate to audit planning
-      // router.push("/internal-audit/audit-planning");
+      // router.push("/internal-audit/audit-engagement");
     } catch (e) {
       console.error("Add to audit plan error:", e);
       toast.error(t("Failed to add to audit plan"));

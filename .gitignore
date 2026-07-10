@@ -100,6 +100,11 @@ src/app/api/debug-session/
 # pattern doesn't also swallow src/app/api/uploads/.../route.ts).
 /uploads/
 
+# Runtime-uploaded files under public/uploads (user data, not code).
+# Keep the logos dir, which holds a committed brand asset.
+/public/uploads/*
+!/public/uploads/logos/
+
 .env*.local
 inline-validation-changes.patch
 
@@ -117,3 +122,9 @@ __pycache__/
 
 # Security scan output (generated artifacts)
 /scan-results/
+
+# Local-only TPRM document drafts and their generator scripts —
+# kept on disk for editing but not tracked in git.
+/docs/platform-docs/TPRM/
+/scripts/generate-tprm-solution-design.py
+/scripts/generate-tprm-sow.py

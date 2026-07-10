@@ -12,6 +12,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
 } from "recharts";
+import { ChartEmptyState } from "@/components/shared/chart-empty-state";
 
 // ── Color Maps ──
 const ISSUE_STATUS_COLORS: Record<string, string> = {
@@ -226,7 +227,7 @@ export default function BODashboardPage() {
                 <Bar dataKey="low" stackId="a" fill={TOP5_COLORS.low} name="low" />
               </BarChart>
             </ResponsiveContainer>
-          ) : <EmptyChart t={t} />}
+          ) : <EmptyChart variant="bar" />}
         </ChartCard>
 
         <ChartCard title={t("Domains")} infoKey="top5Domains" onInfo={setInfoKey}>
@@ -243,7 +244,7 @@ export default function BODashboardPage() {
                 <Bar dataKey="low" stackId="a" fill={TOP5_COLORS.low} name="low" />
               </BarChart>
             </ResponsiveContainer>
-          ) : <EmptyChart t={t} />}
+          ) : <EmptyChart variant="bar" />}
         </ChartCard>
       </div>
 
@@ -280,10 +281,6 @@ function ChartCard({ title, infoKey, onInfo, children }: {
   );
 }
 
-function EmptyChart({ t }: { t: (s: string) => string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
-      <p className="text-sm">{t("No Data to Display")}</p>
-    </div>
-  );
+function EmptyChart({ variant = "pie" }: { t?: (s: string) => string; variant?: "pie" | "bar" }) {
+  return <ChartEmptyState variant={variant} height={280} />;
 }

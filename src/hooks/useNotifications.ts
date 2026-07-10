@@ -116,6 +116,9 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
       const data = await response.json();
       setNotifications(data.notifications);
       setPagination(data.pagination);
+      // The list endpoint now returns the unread count too, so we can update the
+      // badge from the same response instead of a separate /unread-count call.
+      if (typeof data.unreadCount === 'number') setUnreadCount(data.unreadCount);
     } catch (err) {
       // Silently handle - notifications may not be set up yet
       setNotifications([]);
@@ -222,11 +225,11 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
 
   // Refresh both notifications and count
   const refresh = useCallback(async () => {
-    await Promise.all([
-      fetchNotifications(),
-      fetchUnreadCount(),
-    ]);
-  }, [fetchNotifications, fetchUnreadCount]);
+    // fetchNotifications now returns the unread count in the same response, so a
+    // single request refreshes both the list and the badge (one fewer round-trip
+    // on every page load).
+    await fetchNotifications();
+  }, [fetchNotifications]);
 
   // Auto-fetch on mount
   useEffect(() => {

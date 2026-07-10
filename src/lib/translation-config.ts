@@ -69,14 +69,19 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'FieldworkEvidenceAttachment', fields: [{ name: 'fileName' }], priority: 4 },
   { modelName: 'FindingAttachment', fields: [{ name: 'fileName' }], priority: 4 },
   { modelName: 'InternalAuditDocument', fields: [{ name: 'name' }, { name: 'fileName' }], priority: 4 },
+  { modelName: 'AuditDeclaration', fields: [{ name: 'declarantName' }, { name: 'position' }, { name: 'engagement' }], priority: 4 },
   { modelName: 'AuditType', fields: [{ name: 'name' }], priority: 4 },
   { modelName: 'AuditCategory', fields: [{ name: 'name' }], priority: 4 },
+  { modelName: 'AuditSubCategory', fields: [{ name: 'name' }], priority: 4 },
   { modelName: 'AuditNatureOfControl', fields: [{ name: 'label' }], priority: 4 },
   { modelName: 'AuditPeriodicity', fields: [{ name: 'interval' }], priority: 4 },
   { modelName: 'AuditRiskFactor', fields: [{ name: 'label' }], priority: 4 },
   { modelName: 'AuditProbability', fields: [{ name: 'label' }], priority: 4 },
   { modelName: 'AuditImpact', fields: [{ name: 'label' }], priority: 4 },
   { modelName: 'AuditScoringRange', fields: [{ name: 'label' }], priority: 4 },
+  { modelName: 'AuditStrategicPlan', fields: [{ name: 'title' }], priority: 4 },
+  { modelName: 'AuditStrategicPlanItem', fields: [{ name: 'title' }, { name: 'auditType' }, { name: 'notes' }], priority: 4 },
+  { modelName: 'AuditOperationalPlanItem', fields: [{ name: 'title' }, { name: 'auditType' }, { name: 'auditCategory' }, { name: 'notes' }], priority: 4 },
 
   // Priority 5 — TPRM
   { modelName: 'TPRMVendor', fields: [{ name: 'name' }, { name: 'serviceCategory' }], priority: 5 },
@@ -127,6 +132,7 @@ export const TRANSLATABLE_MODELS: TranslatableModel[] = [
   { modelName: 'Service', fields: [{ name: 'title' }, { name: 'description' }, { name: 'serviceCategory' }, { name: 'serviceItem' }], priority: 5 },
   { modelName: 'Stakeholder', fields: [{ name: 'name' }], priority: 5 },
   { modelName: 'Issue', fields: [{ name: 'title' }, { name: 'description' }, { name: 'domain' }, { name: 'category' }], priority: 5 },
+  { modelName: 'SupportTicket', fields: [{ name: 'subject' }, { name: 'description' }], priority: 5 },
 
   // Priority 6 — Organization settings
   { modelName: 'OrganizationLocation', fields: [{ name: 'name' }], priority: 6 },

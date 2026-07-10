@@ -188,14 +188,61 @@ export const GET = withAuth(
 
           const vendor = await prisma.tPRMVendor.findUnique({
             where: { id: vendorId },
-            select: { customerAccountId: true, name: true },
+            select: { customerAccountId: true, name: true, accountManagerEmail: true },
           });
           if (!vendor) {
             return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
           }
 
+          // "Vendor Accounts" must be scoped to *this* vendor's
+          // Account Manager(s) and any SMEs they spawned — NOT every
+          // user in the outsourcer's tenant. Previously the query
+          // returned all tenant users, which lumped the customer's own
+          // BO/RM/Assessor accounts into the vendor's panel.
+          //
+          // AM linkage: TPRMVendor.accountManagerEmail is a semicolon-
+          // separated list. We resolve each to its User row by email
+          // within the same tenant.
+          // SME linkage: each SME User has createdById pointing at the
+          // AM that created them, so we fan out from the AM ids.
+          // Split on any common separator + whitespace. Users
+           // sometimes paste emails space- or newline-separated, and
+           // the prior /[;,]/ split would treat "a@x b@x" as a single
+           // string and resolve only the first AM.
+          const amEmails = (vendor.accountManagerEmail || "")
+            .split(/[;,\s\n]+/)
+            .map((e) => e.trim().toLowerCase())
+            .filter(Boolean);
+
+          let allowedUserIds: string[] = [];
+          if (amEmails.length > 0) {
+            const ams = await prisma.user.findMany({
+              where: {
+                customerAccountId: vendor.customerAccountId,
+                email: { in: amEmails, mode: "insensitive" },
+              },
+              select: { id: true },
+            });
+            const amIds = ams.map((u) => u.id);
+            const smes = amIds.length
+              ? await prisma.user.findMany({
+                  where: {
+                    customerAccountId: vendor.customerAccountId,
+                    createdById: { in: amIds },
+                    tprmRole: "SME",
+                  },
+                  select: { id: true },
+                })
+              : [];
+            allowedUserIds = [...amIds, ...smes.map((u) => u.id)];
+          }
+
+          if (allowedUserIds.length === 0) {
+            return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, hasMore: false } });
+          }
+
           const userWhere: Record<string, unknown> = {
-            customerAccountId: vendor.customerAccountId,
+            id: { in: allowedUserIds },
           };
           if (search) {
             userWhere.OR = [
@@ -227,7 +274,10 @@ export const GET = withAuth(
 
           const data = users.map((u) => ({
             id: u.id,
-            companyName: u.customerAccount?.name || "-",
+            // Show the *vendor* name, not the outsourcer tenant — these
+            // users are conceptually employees of the vendor, even
+            // though they live in the customer's tenant for auth.
+            companyName: vendor.name || "-",
             fullName: u.fullName,
             username: u.userName,
             email: u.email,

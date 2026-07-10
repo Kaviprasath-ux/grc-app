@@ -40,6 +40,7 @@ export const ENCRYPTED_FIELDS: Record<string, EncryptedFieldSpec[]> = {
   fieldworkEvidenceAttachment: [{ field: "fileData", type: "bytes" }],
   internalAuditDocument: [{ field: "fileData", type: "bytes" }],
   governanceTemplate: [{ field: "fileData", type: "bytes" }],
+  auditEngagementAPMAttachment: [{ field: "fileData", type: "bytes" }],
 };
 
 /**

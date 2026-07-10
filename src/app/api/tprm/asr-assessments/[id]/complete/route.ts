@@ -56,17 +56,34 @@ export const POST = withAuth(
         updateData.status = 'In-Progress(approver)';
         updateData.approverId = approverId;
         updateData.assessorCompletionDate = new Date();
+        // Carry the assessor's overall verdict into the next stage so
+        // the approver inherits it. Previously this only got written on
+        // 'approve', so the approver loaded a blank result and the UI
+        // defaulted to "Satisfactory".
+        if (body.assessmentResult) {
+          updateData.assessmentResult = body.assessmentResult;
+        }
         // Look up approver name for log
         const approverUser = await prisma.user.findUnique({ where: { id: approverId }, select: { fullName: true } });
         logMessage = `Assessment sent to approver ${approverUser?.fullName || approverId} by ${session.name || session.email}`;
       } else if (action === 'complete') {
         updateData.status = 'Reviewed';
         updateData.assessorCompletionDate = new Date();
+        if (body.assessmentResult) {
+          updateData.assessmentResult = body.assessmentResult;
+        }
         logMessage = 'Assessment marked as Reviewed by assessor';
       } else if (action === 'approve') {
         updateData.status = 'Approved';
         updateData.approvalDate = new Date();
-        updateData.assessmentResult = body.assessmentResult || null;
+        // Consistent with send_to_approver / complete: only update the
+        // verdict when the caller explicitly provides one. Prior code
+        // wiped to null on empty, which would clobber the verdict the
+        // assessor set earlier in send_to_approver — leaving the
+        // Approved row with no recorded result.
+        if (body.assessmentResult) {
+          updateData.assessmentResult = body.assessmentResult;
+        }
         logMessage = `Assessment approved by ${session.name || session.email}`;
       } else if (action === 'return_to_assessor') {
         updateData.status = 'Returned';
@@ -107,11 +124,46 @@ export const POST = withAuth(
         });
       }
 
-      // When approved, set vendor status to Inactive and create issue remediations
+      // When approved, advance the vendor's lifecycle and create
+      // issue remediations from any response-level Unsatisfactory
+      // findings.
+      //
+      // Vendor lifecycle in this codebase is broader than the schema
+      // comment suggests: in addition to Onboarding/Onboarded/
+      // Offboarding/Offboarded, the contract-upload flow relies on
+      // "Inactive" as the "cleared-but-not-yet-contracted" state (the
+      // /vendors/[id]/contract route flips Inactive → Active on
+      // contract upload, and the inventory pages only render the
+      // "Add Contract" button when status === "Inactive"). Setting
+      // the wrong value on approve silently hides the Add-Contract
+      // button — a real bug raised after the previous comment-based
+      // refactor; reverting to match the contract flow.
+      //
+      // Workflow per result:
+      //   Satisfactory   → Inactive (cleared, contract upload will activate)
+      //   Unsatisfactory → Inactive (cleared with remediations, contract still allowed)
+      //   Deficient      → Onboarding kept (NOT cleared; engagement
+      //                    must not proceed until issues remediated)
       if (action === 'approve') {
+        // Prefer the body's verdict, but fall back to what was already
+        // persisted on the assessment (set by send_to_approver) so the
+        // approver isn't required to re-submit the same value.
+        const persistedResult = (
+          await prisma.tPRMAssessment.findUnique({
+            where: { id },
+            select: { assessmentResult: true },
+          })
+        )?.assessmentResult ?? null;
+        const result = (body.assessmentResult as string | undefined) || persistedResult || null;
+        const nextVendorStatus =
+          result === 'Deficient' ? 'Onboarding'
+          : (result === 'Satisfactory' || result === 'Unsatisfactory') ? 'Inactive'
+          // No verdict at all — don't silently clear the vendor; leave
+          // them in Onboarding until someone records an outcome.
+          : 'Onboarding';
         await prisma.tPRMVendor.update({
           where: { id: assessment.vendorId },
-          data: { status: 'Inactive' },
+          data: { status: nextVendorStatus },
         });
 
         // Load cadence/remediation config to calculate due dates
@@ -205,17 +257,43 @@ export const POST = withAuth(
 
         let newIssueCount = 0;
         if (issueData.length > 0) {
-          // Remove duplicates: skip if remediation already exists for this assessment+questionNo
+          // Re-approval after a return cycle is now common: the
+          // assessor may have edited severity/issue/risk/recommendation
+          // text on the second pass. Existing remediations get UPDATED
+          // (severity, text, due date) instead of being silently skipped
+          // by a questionNo dedup. Only brand-new ones get a new
+          // ISS-* code.
           const existingRems = await prisma.tPRMIssueRemediation.findMany({
             where: { customerAccountId, assessmentId: id },
-            select: { questionNo: true },
+            select: { id: true, questionNo: true, status: true },
           });
-          const existingQNos = new Set(existingRems.map(r => r.questionNo));
-          const newIssueData = issueData.filter(d => !existingQNos.has(d.questionNo));
+          const existingByQNo = new Map(existingRems.map((r) => [r.questionNo, r]));
+
+          const updates = issueData.filter((d) => existingByQNo.has(d.questionNo));
+          const newIssueData = issueData.filter((d) => !existingByQNo.has(d.questionNo));
           newIssueCount = newIssueData.length;
 
+          // Refresh existing remediations that aren't already closed —
+          // don't reopen Closed/Satisfied items, just keep the
+          // assessor's latest verdict on still-open ones.
+          for (const d of updates) {
+            const existing = existingByQNo.get(d.questionNo)!;
+            if (existing.status === 'Closed' || existing.status === 'Satisfied') continue;
+            await prisma.tPRMIssueRemediation.update({
+              where: { id: existing.id },
+              data: {
+                severity: d.severity,
+                issue: d.issue,
+                risk: d.risk,
+                recommendation: d.recommendation,
+                description: d.description,
+                dueDate: d.dueDate,
+              },
+            });
+          }
+
           if (newIssueData.length === 0) {
-            console.log(`[ASR] All ${issueData.length} remediations already exist for assessment ${id}, skipping`);
+            console.log(`[ASR] ${updates.length} remediation(s) refreshed; no new ones to create for assessment ${id}`);
           } else {
           // Get the last issue code number for this customer
           const lastIssue = await prisma.tPRMIssueRemediation.findFirst({

@@ -31,6 +31,8 @@ import {
   Network,
   Brain,
   Calendar,
+  CalendarRange,
+  CalendarClock,
   Clipboard,
   FileOutput,
   FolderOpen,
@@ -43,6 +45,7 @@ import {
   Radar,
   Database,
   HelpCircle,
+  BookOpen,
   UserCog,
   FileBarChart,
   Factory,
@@ -164,7 +167,6 @@ export const navigation: NavItem[] = [
     name: "Organization",
     module: "INTERNAL_AUDIT",
     icon: Building2,
-    permission: "organization.profile:view",
     children: [
       { name: "Profile", href: "/internal-audit/organization/profile", icon: User, permission: "organization.profile:view" },
       { name: "Process", href: "/internal-audit/organization/process", icon: GitBranch, permission: "audit.process:view" },
@@ -297,19 +299,51 @@ export const navigation: NavItem[] = [
     children: [
       { name: "Customer Accounts", href: "/internal-audit/account-overview", icon: LayoutDashboard, permission: "audit.account-overview:view" },
       { name: "Dashboard", href: "/internal-audit/dashboard", icon: LayoutDashboard, permission: "audit.dashboard:view" },
+      { name: "Independence & Objectivity", href: "/internal-audit/independence", icon: ShieldCheck, permission: "audit.independence:view" },
+      { name: "Audit Charter", href: "/internal-audit/audit-charter", icon: FileText, permission: "audit.charter:view" },
       { name: "Audit Universe", href: "/internal-audit/audit-universe", icon: Network, permission: "audit.auditables:view" },
       { name: "Risk Identification", href: "/internal-audit/risk-identification", icon: Brain, permission: "audit.risk-identification:view" },
       { name: "RiskRegister", href: "/internal-audit/risk-register", icon: ClipboardList, permission: "audit.risk-register:view" },
-      { name: "Audit Planning", href: "/internal-audit/audit-planning", icon: Calendar, permission: "audit.planning:view" },
-      { name: "FieldWork", href: "/internal-audit/fieldwork", icon: Clipboard, permission: "audit.fieldwork:view" },
+      { name: "Strategic Plan", href: "/internal-audit/strategic-plan", icon: CalendarRange, permission: "audit.strategic-plan:view" },
+      { name: "Operational Plan", href: "/internal-audit/operational-plan", icon: CalendarClock, permission: "audit.operational-plan:view" },
+      { name: "Audit Engagement", href: "/internal-audit/audit-engagement", icon: Calendar, permission: "audit.planning:view" },
       { name: "Report", href: "/internal-audit/report", icon: FileOutput, permission: "audit.reports:view" },
-      { name: "CAPA Tracking", href: "/internal-audit/capa-tracking", icon: CheckSquare, permission: "audit.capa:view" },
+      { name: "Feedback Survey", href: "/internal-audit/feedback-survey", icon: ClipboardCheck, permission: "audit.fieldwork:view" },
       { name: "Document Library", href: "/internal-audit/document-library", icon: FolderOpen, permission: "audit.documents:view" },
+      { name: "Audit Trail", href: "/internal-audit/audit-trail", icon: Activity, permission: "audit.audit-trail:view" },
       { name: "Audit Settings", href: "/internal-audit/settings", icon: Settings2, permission: "audit.settings:view" },
-      { name: "Risk Universe", href: "/internal-audit/risk-universe", icon: CircleDot, permission: "audit.risk-universe:view" },
     ],
   },
   // ==================== End Internal Audit Section ====================
+
+  // ==================== Follow-up Section (Internal Audit module, separate parent menu) ====================
+  // Standalone top-level menu (sibling to Internal Audit). Hosts the Follow-up
+  // Meeting Form for tracking implementation of audit recommendations.
+  {
+    name: "Follow-up",
+    module: "INTERNAL_AUDIT",
+    href: "/internal-audit/follow-up",
+    icon: ListChecks,
+    permission: "audit.capa:view",
+  },
+  // ==================== End Follow-up Section ====================
+
+  // ==================== Support Ticketing Section ====================
+  // Hosted under the GRC workspace. Visible to CustomerAdministrator and the
+  // Support* roles. The "Need Help?" chatbot widget feeds tickets here.
+  {
+    name: "Support",
+    module: "GRC",
+    icon: HelpCircle,
+    children: [
+      { name: "Agent Console", href: "/support/console", icon: Inbox, permission: "support.console:view" },
+      { name: "All Tickets", href: "/support/tickets", icon: ClipboardList, permission: "support.tickets:view" },
+      { name: "Support Dashboard", href: "/support/dashboard", icon: BarChart3, permission: "support.dashboard:view" },
+      { name: "Knowledge Base", href: "/support/kb", icon: BookOpen, permission: "support.kb:view" },
+      { name: "Support Settings", href: "/support/settings", icon: Settings2, permission: "support.settings:view" },
+    ],
+  },
+  // ==================== End Support Ticketing Section ====================
 
   // ==================== TPRM Section ====================
   // Grouped under TPRM parent. Visible to CustomerAdministrator when isTprmAdded=true.

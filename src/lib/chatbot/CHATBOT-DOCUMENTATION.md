@@ -156,7 +156,7 @@ User Message
 
 | Phase | Feature | Status | Description |
 |-------|---------|--------|-------------|
-| Phase 2C | Document Q&A | Skipped | Answer from uploaded PDFs/policies (user deferred) |
+| Phase 2C | Document Q&A | Partial | Regulation ingested into the KB as audit-scoped chunks — see [Document Ingestion](#document-ingestion--global-internal-audit-standards-2024). General uploaded-PDF Q&A still deferred. |
 | Phase 3A | Streaming Responses | Planned | Token-by-token streaming for better UX |
 | Phase 3C | Admin KB Panel | Planned | UI for managing help articles + reseeding |
 | Phase 3D | User Feedback | Planned | Thumbs up/down on answers |
@@ -282,6 +282,42 @@ Each article contains:
 - `roles[]` — Checked against user's session roles
 
 **Storage:** `ChatbotKBArticle` table in PostgreSQL with `embedding Float[]` column.
+
+### Document Ingestion — Global Internal Audit Standards 2024
+
+Regulation/standards documents can be loaded into the same `ChatbotKBArticle`
+table so the chatbot answers from them through the existing RAG pipeline. The
+first such document is the IIA **Global Internal Audit Standards (2024)**,
+scoped to internal-audit users only.
+
+**Pipeline:**
+
+1. **Extract + chunk** (`scripts/extract-gias-standards.py`, PyMuPDF) — TOC-driven
+   segmentation into the canonical 5 Domains / 15 Principles / 52 Standards
+   (plus the Public-Sector supplement). Cross-references are ignored (only the
+   *next expected* heading id starts a section); footers/page numbers are
+   stripped; sections over ~6,000 chars split at "Considerations for
+   Implementation", then on paragraph boundaries, so every chunk stays under
+   the 8,000-char embed limit. Output → `scripts/data/gias-2024-standards.json`
+   (committed; 88 chunks).
+2. **Embed + seed** (`scripts/seed-gias-standards.ts`, `npm run db:seed-gias`) —
+   each chunk becomes a `ChatbotKBArticle` with `module="internal-audit"`,
+   `category="Global Internal Audit Standards 2024"`, **`productScope="audit"`**,
+   `roles=[]`, `source="document"`, and a stable `articleKey="gias-2024-..."`
+   (idempotent: existing `gias-2024-*` rows are cleared and re-inserted).
+
+**Scoping:** Because `searchKB()` filters by `productScope` *before* similarity,
+GRC-only and TPRM users never retrieve these chunks — they surface only for
+internal-audit users (verified: AuditHead retrieves them, a GRC-only Reviewer
+gets zero hits).
+
+**Re-seed safety:** `reseedKBEmbeddings()` (the admin force-reseed) now deletes
+only `source="seed"` help articles, preserving `source="document"` (ingested
+standards) and `source="manual"` (authored) articles.
+
+**Adding another document:** point `extract-gias-standards.py` at the new PDF (or
+write an equivalent chunker), then adapt the seeder's `KEY_PREFIX` / `category` /
+`productScope`. No schema changes required.
 
 ### Answer Generation
 

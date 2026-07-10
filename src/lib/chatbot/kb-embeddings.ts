@@ -120,10 +120,13 @@ export async function seedKBEmbeddings(): Promise<{ seeded: number; skipped: num
 }
 
 /**
- * Re-embed all articles (force update). Deletes existing and re-creates.
+ * Re-embed the help-article KB (force update). Deletes and re-creates only the
+ * seed-sourced help articles — authored articles (source "manual") and ingested
+ * documents such as the Global Internal Audit Standards (source "document",
+ * seeded via scripts/seed-gias-standards.ts) are preserved.
  */
 export async function reseedKBEmbeddings(): Promise<{ seeded: number }> {
-  await prisma.chatbotKBArticle.deleteMany({});
+  await prisma.chatbotKBArticle.deleteMany({ where: { source: "seed" } });
   const result = await seedKBEmbeddings();
   return { seeded: result.seeded };
 }
@@ -201,8 +204,9 @@ export async function searchKB(
   // 1. Embed the query
   const queryEmbedding = await generateEmbedding(query);
 
-  // 2. Fetch all KB articles
+  // 2. Fetch all published KB articles (authored articles can be unpublished)
   const articles = await prisma.chatbotKBArticle.findMany({
+    where: { isPublished: true },
     select: {
       articleKey: true,
       module: true,
