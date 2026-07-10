@@ -180,6 +180,18 @@ export default function AsrAssessmentFactoryPage() {
   const handleGenerateReport = async () => {
     if (!templateFile) return;
 
+    // Artifacts are mandatory — the AI needs supporting evidence to
+    // verify each questionnaire answer against. Without them the report
+    // would be generated with no basis, so block generation here.
+    if (artifactFiles.length === 0) {
+      toast({
+        title: t("Artifacts required"),
+        description: t("Please upload at least one supporting artifact before generating the report."),
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Pre-flight size check. The DO App Platform / proxy / Python
     // ingest backend collectively choke on very large multipart
     // bundles — beyond a certain point the polling spins forever
