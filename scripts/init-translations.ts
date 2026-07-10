@@ -5622,6 +5622,8 @@ const translations: [string, string, string][] = [
   ['Upload Artifacts', 'رفع المستندات', 'Augšupielādēt artefaktus'],
   ['Upload your spreadsheet with the populated questionnaire.', 'ارفع جدول البيانات مع الاستبيان المملوء.', 'Augšupielādējiet savu izklājlapu ar aizpildīto anketu.'],
   ['Upload all the respective artifacts as valid file types i.e., word, image, pdf.', 'ارفع جميع المستندات المعنية كأنواع ملفات صالحة مثل Word والصور وPDF.', 'Augšupielādējiet visus attiecīgos artefaktus kā derīgus failu tipus, t.i., Word, attēlus, PDF.'],
+  ['Artifacts required', 'المستندات مطلوبة', 'Nepieciešami artefakti'],
+  ['Please upload at least one supporting artifact before generating the report.', 'يرجى رفع مستند داعم واحد على الأقل قبل إنشاء التقرير.', 'Lūdzu, augšupielādējiet vismaz vienu pamatojošu artefaktu pirms pārskata ģenerēšanas.'],
   ['Sequence Number', 'الرقم التسلسلي', 'Secības numurs'],
   ['questions', 'الأسئلة', 'jautājumi'],
   ['Clear Filter', 'مسح الفلتر', 'Notīrīt filtru'],
