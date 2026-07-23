@@ -303,50 +303,81 @@ export default function AsrAssessmentFactoryPage() {
         await new Promise(r => setTimeout(r, 10000));
       }
 
-      // Step 4: Query each question against the AI
-      const rows: AssessmentRow[] = [];
+      // Step 4: Query each question against the AI.
+      //
+      // Prior implementation ran queries strictly sequentially with
+      // `await` inside a for-loop. For a 20-question template, each
+      // ~5-15s query added up to 3-5 minutes wall-clock in the best
+      // case, and a single hung query stalled every remaining
+      // question. We now:
+      //   - fan out with a concurrency cap (5 at a time) so the AI
+      //     backend isn't hammered but wall-clock drops ~5x.
+      //   - impose a per-query timeout via AbortController so a hung
+      //     backend can't wedge the whole report.
+      //   - retry once on a timeout / network error before giving up.
+      //   - track success/failure and surface it in the completion
+      //     toast instead of misleadingly reporting "N questions
+      //     processed" when most were actually empty.
       const questionsWithContent = parsedRows.filter(r => r.question?.trim());
+      const CONCURRENCY = 5;
+      const QUERY_TIMEOUT_MS = 90_000;
+      let completedCount = 0;
+      let successCount = 0;
 
-      for (let i = 0; i < questionsWithContent.length; i++) {
-        const row = questionsWithContent[i];
-        setJobStatus(`${t("Processing question")} ${i + 1}/${questionsWithContent.length}...`);
-
+      const queryOne = async (row: AssessmentRow, attempt = 0): Promise<AssessmentRow> => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), QUERY_TIMEOUT_MS);
         try {
           const queryRes = await fetch("/api/tprm/assessment-factory/query", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              question: row.question,
-              assessment_id: assessmentId,
-            }),
+            body: JSON.stringify({ question: row.question, assessment_id: assessmentId }),
+            signal: controller.signal,
           });
-
-          if (queryRes.ok) {
-            const ai = await queryRes.json();
-            const irr = ai.issue_risk_recommendation || {};
-            rows.push({
-              sequenceNumber: row.sequenceNumber,
-              domainName: row.domainName,
-              question: ai.question || row.question,
-              response: row.response,
-              comments: row.comments,
-              complianceStatus: ai.status ? ai.status.charAt(0).toUpperCase() + ai.status.slice(1) : "",
-              verifAISummary: ai.answer || "",
-              confidenceScore: ai.score != null ? Number(ai.score) * 100 : null,
-              verifAIPrompt: row.verifAIPrompt,
-              issue: irr.issue || "",
-              risk: irr.risk || "",
-              recommendation: irr.recommendation || "",
-            });
-          } else {
-            // If a single question fails, keep the original row without AI data
-            console.warn(`[Assessment Factory] Query failed for Q${i + 1}:`, await queryRes.text());
-            rows.push({ ...row, complianceStatus: "", verifAISummary: "", confidenceScore: null });
+          clearTimeout(timer);
+          if (!queryRes.ok) {
+            console.warn(`[Assessment Factory] Query failed for #${row.sequenceNumber}:`, await queryRes.text());
+            return { ...row, complianceStatus: "", verifAISummary: "", confidenceScore: null };
           }
+          const ai = await queryRes.json();
+          const irr = ai.issue_risk_recommendation || {};
+          successCount++;
+          return {
+            sequenceNumber: row.sequenceNumber,
+            domainName: row.domainName,
+            question: ai.question || row.question,
+            response: row.response,
+            comments: row.comments,
+            complianceStatus: ai.status ? ai.status.charAt(0).toUpperCase() + ai.status.slice(1) : "",
+            verifAISummary: ai.answer || "",
+            confidenceScore: ai.score != null ? Number(ai.score) * 100 : null,
+            verifAIPrompt: row.verifAIPrompt,
+            issue: irr.issue || "",
+            risk: irr.risk || "",
+            recommendation: irr.recommendation || "",
+          };
         } catch (qErr) {
-          console.warn(`[Assessment Factory] Query error for Q${i + 1}:`, qErr);
-          rows.push({ ...row, complianceStatus: "", verifAISummary: "", confidenceScore: null });
+          clearTimeout(timer);
+          const isAbort = qErr instanceof Error && qErr.name === "AbortError";
+          if (attempt === 0) {
+            console.warn(`[Assessment Factory] Retrying #${row.sequenceNumber} after ${isAbort ? "timeout" : "error"}`);
+            return queryOne(row, 1);
+          }
+          console.warn(`[Assessment Factory] Query error for #${row.sequenceNumber} after retry:`, qErr);
+          return { ...row, complianceStatus: "", verifAISummary: "", confidenceScore: null };
         }
+      };
+
+      // Run in fixed-size waves; simpler than a proper pool and enough
+      // for the numbers we see here (typically 20-60 questions).
+      const rows: AssessmentRow[] = [];
+      for (let i = 0; i < questionsWithContent.length; i += CONCURRENCY) {
+        const batch = questionsWithContent.slice(i, i + CONCURRENCY);
+        setJobStatus(`${t("Processing question")} ${Math.min(i + CONCURRENCY, questionsWithContent.length)}/${questionsWithContent.length}...`);
+        const batchResults = await Promise.all(batch.map((row) => queryOne(row)));
+        rows.push(...batchResults);
+        completedCount += batchResults.length;
+        setJobStatus(`${t("Processing question")} ${completedCount}/${questionsWithContent.length}...`);
       }
 
       // Add back any rows without questions (headers/empty rows)
@@ -368,7 +399,24 @@ export default function AsrAssessmentFactoryPage() {
       setReports(prev => [report, ...prev]);
       setActiveReport(report);
       setImportOpen(false);
-      toast({ title: t("Success"), description: `${rows.length} ${t("questions processed")}` });
+      // Honest completion toast: report only genuine AI answers, not
+      // rows that were added with empty data after a failed query.
+      // Otherwise a run where the AI backend was down still said
+      // "20 questions processed" while every row was blank.
+      if (successCount === questionsWithContent.length) {
+        toast({ title: t("Success"), description: `${successCount} ${t("questions processed")}` });
+      } else if (successCount === 0) {
+        toast({
+          title: t("Report generated with no AI results"),
+          description: t("The AI backend didn't return any answers. Check ingest diagnostics or retry with fewer / smaller artifacts."),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: t("Report generated with partial results"),
+          description: `${successCount} ${t("of")} ${questionsWithContent.length} ${t("questions returned AI answers; the remainder failed and were left blank.")}`,
+        });
+      }
     } catch (err) {
       console.error("[Assessment Factory] Error:", err);
       toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to generate report"), variant: "destructive" });
