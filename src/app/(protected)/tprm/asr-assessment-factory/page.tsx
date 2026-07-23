@@ -99,6 +99,16 @@ export default function AsrAssessmentFactoryPage() {
   const [dragOver, setDragOver] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [jobStatus, setJobStatus] = useState("");
+  // Backend-stuck detection state. The Python VerifAI backend has been
+  // seen sitting on "processing" for 5+ minutes on a single-file
+  // ingest with no diagnostics returned. When status hasn't advanced
+  // in a while we surface a copy-jobId link so support can look up
+  // the specific job on the backend side.
+  const [stallJobId, setStallJobId] = useState<string | null>(null);
+  const [stallCopied, setStallCopied] = useState(false);
+  // AbortController for the entire generation run — lets users
+  // cancel mid-run instead of waiting for the 10-min ingest timeout.
+  const abortRef = useRef<AbortController | null>(null);
 
   // Report state
   const [reports, setReports] = useState<AssessmentReport[]>([]);
@@ -231,7 +241,27 @@ export default function AsrAssessmentFactoryPage() {
     }
 
     setGenerating(true);
+    setStallJobId(null);
+    setStallCopied(false);
     setJobStatus(t("Parsing template..."));
+
+    // Fresh AbortController for this run; aborted by handleCancel or
+    // by unmount. Every fetch inside the run passes its signal so a
+    // cancel doesn't leave orphaned in-flight requests.
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+
+    // Cancellable sleep — resolves on timeout OR rejects on abort.
+    // Prevents cancel from having to wait up to 5s for the next
+    // poll tick.
+    const sleep = (ms: number) => new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, ms);
+      const onAbort = () => { clearTimeout(timer); reject(new DOMException("aborted", "AbortError")); };
+      if (signal.aborted) { clearTimeout(timer); return reject(new DOMException("aborted", "AbortError")); }
+      signal.addEventListener("abort", onAbort, { once: true });
+    });
+
     try {
       // Step 1: Parse the template locally to get question rows
       const parsedRows = await parseXlsRows(templateFile);
@@ -251,7 +281,7 @@ export default function AsrAssessmentFactoryPage() {
         formData.append("files", af);
       }
 
-      const ingestRes = await fetch("/api/tprm/assessment-factory", { method: "POST", body: formData });
+      const ingestRes = await fetch("/api/tprm/assessment-factory", { method: "POST", body: formData, signal });
       const ingestData = await ingestRes.json();
       if (!ingestRes.ok) {
         throw new Error(ingestData.error || "Failed to ingest files");
@@ -263,13 +293,23 @@ export default function AsrAssessmentFactoryPage() {
       if (jobId) {
         setJobStatus(t("Waiting for AI to process documents..."));
         let ingested = false;
+        // Stall detection: watch how long the status has been the
+        // same value. If the backend sits on "processing" (or any
+        // other non-terminal value) for >60s we prompt the user
+        // that the backend looks stuck AND expose the jobId so
+        // support can look it up on the Python side.
+        let lastStatusValue = "";
+        let lastChangeMs = Date.now();
+        const STALL_THRESHOLD_MS = 60_000;
+
         for (let attempt = 0; attempt < 120; attempt++) {
-          await new Promise(r => setTimeout(r, 5000));
+          await sleep(5000);
           try {
-            const statusRes = await fetch(`/api/tprm/assessment-factory/status/${encodeURIComponent(jobId)}`);
+            const statusRes = await fetch(`/api/tprm/assessment-factory/status/${encodeURIComponent(jobId)}`, { signal });
             const statusData = await statusRes.json();
             console.log(`[Assessment Factory] Status poll #${attempt + 1}:`, statusData);
-            const status = (statusData.status || "").toUpperCase();
+            const rawStatus = (statusData.status || "").toString();
+            const status = rawStatus.toUpperCase();
             if (status === "COMPLETED" || status === "DONE" || status === "SUCCESS" || status === "READY") {
               ingested = true;
               break;
@@ -277,8 +317,29 @@ export default function AsrAssessmentFactoryPage() {
             if (status === "FAILED" || status === "ERROR") {
               throw new Error(statusData.error || statusData.message || "Document ingestion failed");
             }
-            setJobStatus(`${t("Waiting for AI to process documents...")} (${(attempt + 1) * 5}s)`);
+
+            if (rawStatus !== lastStatusValue) {
+              lastStatusValue = rawStatus;
+              lastChangeMs = Date.now();
+              setStallJobId(null);
+            }
+            const sinceChange = Date.now() - lastChangeMs;
+            const elapsedS = (attempt + 1) * 5;
+            if (sinceChange > STALL_THRESHOLD_MS) {
+              // Reveal the copy-jobId affordance in the button area
+              setStallJobId(jobId);
+              setJobStatus(
+                `${t("Backend still says")} "${rawStatus || "processing"}" ${t("after")} ${Math.floor(sinceChange / 1000)}s — ${t("the AI backend may be stuck")}`,
+              );
+            } else {
+              setJobStatus(`${t("Waiting for AI to process documents...")} (${elapsedS}s)`);
+            }
           } catch (pollErr) {
+            // Propagate a genuine abort so the outer catch handles
+            // it as a cancel; also propagate confirmed FAILED/ERROR
+            // errors from the branch above. Everything else is a
+            // transient network hiccup — log and keep polling.
+            if (pollErr instanceof Error && pollErr.name === "AbortError") throw pollErr;
             if (pollErr instanceof Error && (pollErr.message.includes("failed") || pollErr.message.includes("Failed"))) throw pollErr;
             console.warn("[Assessment Factory] Status poll error:", pollErr);
           }
@@ -289,7 +350,7 @@ export default function AsrAssessmentFactoryPage() {
 
         // Verify the ingest result to check if files were actually processed
         try {
-          const resultRes = await fetch(`/api/tprm/assessment-factory/result/${encodeURIComponent(jobId)}`);
+          const resultRes = await fetch(`/api/tprm/assessment-factory/result/${encodeURIComponent(jobId)}`, { signal });
           const resultData = await resultRes.json();
           console.log("[Assessment Factory] Ingest result:", resultData);
           if (resultData.result?.messages) {
@@ -300,7 +361,7 @@ export default function AsrAssessmentFactoryPage() {
       } else {
         // No job_id returned — give the backend some time to index
         setJobStatus(t("Waiting for AI to index documents..."));
-        await new Promise(r => setTimeout(r, 10000));
+        await sleep(10000);
       }
 
       // Step 4: Query each question against the AI.
@@ -325,16 +386,23 @@ export default function AsrAssessmentFactoryPage() {
       let successCount = 0;
 
       const queryOne = async (row: AssessmentRow, attempt = 0): Promise<AssessmentRow> => {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), QUERY_TIMEOUT_MS);
+        // Per-query controller: aborts on timeout OR when the outer
+        // run-cancel fires. This way clicking Cancel while queries
+        // are in-flight actually kills the in-flight requests instead
+        // of letting them race to completion first.
+        const perQuery = new AbortController();
+        const timer = setTimeout(() => perQuery.abort(), QUERY_TIMEOUT_MS);
+        const outerCancel = () => perQuery.abort();
+        signal.addEventListener("abort", outerCancel, { once: true });
         try {
           const queryRes = await fetch("/api/tprm/assessment-factory/query", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ question: row.question, assessment_id: assessmentId }),
-            signal: controller.signal,
+            signal: perQuery.signal,
           });
           clearTimeout(timer);
+          signal.removeEventListener("abort", outerCancel);
           if (!queryRes.ok) {
             console.warn(`[Assessment Factory] Query failed for #${row.sequenceNumber}:`, await queryRes.text());
             return { ...row, complianceStatus: "", verifAISummary: "", confidenceScore: null };
@@ -358,7 +426,10 @@ export default function AsrAssessmentFactoryPage() {
           };
         } catch (qErr) {
           clearTimeout(timer);
+          signal.removeEventListener("abort", outerCancel);
           const isAbort = qErr instanceof Error && qErr.name === "AbortError";
+          // Outer run-cancel: propagate so the whole run unwinds.
+          if (isAbort && signal.aborted) throw qErr;
           if (attempt === 0) {
             console.warn(`[Assessment Factory] Retrying #${row.sequenceNumber} after ${isAbort ? "timeout" : "error"}`);
             return queryOne(row, 1);
@@ -418,13 +489,43 @@ export default function AsrAssessmentFactoryPage() {
         });
       }
     } catch (err) {
-      console.error("[Assessment Factory] Error:", err);
-      toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to generate report"), variant: "destructive" });
+      const isAbort = err instanceof Error && err.name === "AbortError";
+      if (isAbort) {
+        // User-initiated cancel via the Cancel button. Not a real
+        // error — just close the run quietly with a neutral toast.
+        console.log("[Assessment Factory] Run cancelled by user");
+        toast({ title: t("Cancelled"), description: t("Report generation was cancelled.") });
+      } else {
+        console.error("[Assessment Factory] Error:", err);
+        toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to generate report"), variant: "destructive" });
+      }
     } finally {
       setGenerating(false);
       setJobStatus("");
+      setStallJobId(null);
+      setStallCopied(false);
+      abortRef.current = null;
     }
   };
+
+  // Cancel button handler — aborts the current run's controller.
+  // Every fetch and every sleep inside handleGenerateReport takes the
+  // controller's signal, so this unwinds cleanly without waiting for
+  // the next 5s poll tick.
+  const handleCancelGeneration = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  // Copy the stalled jobId to clipboard so users can paste it into a
+  // support ticket. Silent if the clipboard API isn't available.
+  const handleCopyStallJobId = useCallback(async () => {
+    if (!stallJobId) return;
+    try {
+      await navigator.clipboard.writeText(stallJobId);
+      setStallCopied(true);
+      setTimeout(() => setStallCopied(false), 2000);
+    } catch { /* clipboard blocked — no-op */ }
+  }, [stallJobId]);
 
   const handleDownloadReport = () => {
     if (!activeReport) return;
@@ -762,14 +863,41 @@ export default function AsrAssessmentFactoryPage() {
             ))}
           </div>
         )}
+        {/* Stall diagnostic row — appears when the backend has been
+            sitting on the same non-terminal status for more than
+            60s. Gives the user a "copy jobId" affordance so support
+            can look up the specific job on the Python backend. */}
+        {stallJobId && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 space-y-1">
+            <p className="font-semibold">{t("AI backend hasn't advanced for a while.")}</p>
+            <p>
+              {t("Job ID")}: <code className="text-[11px]">{stallJobId}</code>
+              <button
+                type="button"
+                onClick={handleCopyStallJobId}
+                className="ltr:ml-2 rtl:mr-2 underline hover:no-underline"
+              >
+                {stallCopied ? t("Copied") : t("Copy")}
+              </button>
+            </p>
+            <p>{t("You can cancel and retry, or leave this running while support checks the backend for this job.")}</p>
+          </div>
+        )}
         <div className="flex justify-between">
-          <Button variant="outline" onClick={() => setImportStep(1)}>
+          <Button variant="outline" onClick={() => setImportStep(1)} disabled={generating}>
             <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Previous")}
           </Button>
-          <Button onClick={handleGenerateReport} disabled={generating}>
-            {generating && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
-            {generating && jobStatus ? jobStatus : t("Generate Report")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {generating && (
+              <Button variant="outline" onClick={handleCancelGeneration}>
+                <X className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Cancel")}
+              </Button>
+            )}
+            <Button onClick={handleGenerateReport} disabled={generating}>
+              {generating && <Loader2 className="h-4 w-4 ltr:mr-1 rtl:ml-1 animate-spin" />}
+              {generating && jobStatus ? jobStatus : t("Generate Report")}
+            </Button>
+          </div>
         </div>
       </div>
     );
