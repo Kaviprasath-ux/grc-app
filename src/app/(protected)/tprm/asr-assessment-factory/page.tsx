@@ -99,13 +99,6 @@ export default function AsrAssessmentFactoryPage() {
   const [dragOver, setDragOver] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [jobStatus, setJobStatus] = useState("");
-  // Backend-stuck detection state. The Python VerifAI backend has been
-  // seen sitting on "processing" for 5+ minutes on a single-file
-  // ingest with no diagnostics returned. When status hasn't advanced
-  // in a while we surface a copy-jobId link so support can look up
-  // the specific job on the backend side.
-  const [stallJobId, setStallJobId] = useState<string | null>(null);
-  const [stallCopied, setStallCopied] = useState(false);
   // AbortController for the entire generation run — lets users
   // cancel mid-run instead of waiting for the 10-min ingest timeout.
   const abortRef = useRef<AbortController | null>(null);
@@ -241,8 +234,6 @@ export default function AsrAssessmentFactoryPage() {
     }
 
     setGenerating(true);
-    setStallJobId(null);
-    setStallCopied(false);
     setJobStatus(t("Parsing template..."));
 
     // Fresh AbortController for this run; aborted by handleCancel or
@@ -293,23 +284,13 @@ export default function AsrAssessmentFactoryPage() {
       if (jobId) {
         setJobStatus(t("Waiting for AI to process documents..."));
         let ingested = false;
-        // Stall detection: watch how long the status has been the
-        // same value. If the backend sits on "processing" (or any
-        // other non-terminal value) for >60s we prompt the user
-        // that the backend looks stuck AND expose the jobId so
-        // support can look it up on the Python side.
-        let lastStatusValue = "";
-        let lastChangeMs = Date.now();
-        const STALL_THRESHOLD_MS = 60_000;
-
         for (let attempt = 0; attempt < 120; attempt++) {
           await sleep(5000);
           try {
             const statusRes = await fetch(`/api/tprm/assessment-factory/status/${encodeURIComponent(jobId)}`, { signal });
             const statusData = await statusRes.json();
             console.log(`[Assessment Factory] Status poll #${attempt + 1}:`, statusData);
-            const rawStatus = (statusData.status || "").toString();
-            const status = rawStatus.toUpperCase();
+            const status = (statusData.status || "").toString().toUpperCase();
             if (status === "COMPLETED" || status === "DONE" || status === "SUCCESS" || status === "READY") {
               ingested = true;
               break;
@@ -317,23 +298,7 @@ export default function AsrAssessmentFactoryPage() {
             if (status === "FAILED" || status === "ERROR") {
               throw new Error(statusData.error || statusData.message || "Document ingestion failed");
             }
-
-            if (rawStatus !== lastStatusValue) {
-              lastStatusValue = rawStatus;
-              lastChangeMs = Date.now();
-              setStallJobId(null);
-            }
-            const sinceChange = Date.now() - lastChangeMs;
-            const elapsedS = (attempt + 1) * 5;
-            if (sinceChange > STALL_THRESHOLD_MS) {
-              // Reveal the copy-jobId affordance in the button area
-              setStallJobId(jobId);
-              setJobStatus(
-                `${t("Backend still says")} "${rawStatus || "processing"}" ${t("after")} ${Math.floor(sinceChange / 1000)}s — ${t("the AI backend may be stuck")}`,
-              );
-            } else {
-              setJobStatus(`${t("Waiting for AI to process documents...")} (${elapsedS}s)`);
-            }
+            setJobStatus(`${t("Waiting for AI to process documents...")} (${(attempt + 1) * 5}s)`);
           } catch (pollErr) {
             // Propagate a genuine abort so the outer catch handles
             // it as a cancel; also propagate confirmed FAILED/ERROR
@@ -502,8 +467,6 @@ export default function AsrAssessmentFactoryPage() {
     } finally {
       setGenerating(false);
       setJobStatus("");
-      setStallJobId(null);
-      setStallCopied(false);
       abortRef.current = null;
     }
   };
@@ -515,17 +478,6 @@ export default function AsrAssessmentFactoryPage() {
   const handleCancelGeneration = useCallback(() => {
     abortRef.current?.abort();
   }, []);
-
-  // Copy the stalled jobId to clipboard so users can paste it into a
-  // support ticket. Silent if the clipboard API isn't available.
-  const handleCopyStallJobId = useCallback(async () => {
-    if (!stallJobId) return;
-    try {
-      await navigator.clipboard.writeText(stallJobId);
-      setStallCopied(true);
-      setTimeout(() => setStallCopied(false), 2000);
-    } catch { /* clipboard blocked — no-op */ }
-  }, [stallJobId]);
 
   const handleDownloadReport = () => {
     if (!activeReport) return;
@@ -861,26 +813,6 @@ export default function AsrAssessmentFactoryPage() {
                 </button>
               </div>
             ))}
-          </div>
-        )}
-        {/* Stall diagnostic row — appears when the backend has been
-            sitting on the same non-terminal status for more than
-            60s. Gives the user a "copy jobId" affordance so support
-            can look up the specific job on the Python backend. */}
-        {stallJobId && (
-          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 space-y-1">
-            <p className="font-semibold">{t("AI backend hasn't advanced for a while.")}</p>
-            <p>
-              {t("Job ID")}: <code className="text-[11px]">{stallJobId}</code>
-              <button
-                type="button"
-                onClick={handleCopyStallJobId}
-                className="ltr:ml-2 rtl:mr-2 underline hover:no-underline"
-              >
-                {stallCopied ? t("Copied") : t("Copy")}
-              </button>
-            </p>
-            <p>{t("You can cancel and retry, or leave this running while support checks the backend for this job.")}</p>
           </div>
         )}
         <div className="flex justify-between">
