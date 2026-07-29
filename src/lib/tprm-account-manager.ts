@@ -98,14 +98,16 @@ export interface ProvisionAMResult {
   userId: string;
   created: boolean;
   fullName: string;
+  userName: string;
 }
 
 /**
  * Ensure a login account exists for a vendor's Account Manager during vendor
  * onboarding.
  *
- *  - Username = the AM email; password = the one the BO/RM set while onboarding
- *    (hashed with bcrypt — no random generation).
+ *  - Username = the Account Manager name entered on the onboarding form (falls
+ *    back to the AM email when no name was supplied); password = the one the
+ *    BO/RM set while onboarding (hashed with bcrypt — no random generation).
  *  - The AM's `AccountManager` UserRole is created (tagged moduleCode "TPRM") so
  *    the account can log in and land in the TPRM workspace.
  *  - Email is globally unique, so the lookup is app-wide: if an AM identity
@@ -126,10 +128,10 @@ export async function provisionAccountManagerUser(
   // AM reuse doesn't hit the unique constraint on create.
   const existing = await prisma.user.findFirst({
     where: { email: { equals: email, mode: "insensitive" } },
-    select: { id: true, fullName: true },
+    select: { id: true, fullName: true, userName: true },
   });
   if (existing) {
-    return { userId: existing.id, created: false, fullName: existing.fullName };
+    return { userId: existing.id, created: false, fullName: existing.fullName, userName: existing.userName };
   }
 
   if (!params.password) return null; // no password set during onboarding — can't create a login.
@@ -138,7 +140,10 @@ export async function provisionAccountManagerUser(
   const userCount = await prisma.user.count({ where: { customerAccountId } });
   const userId = `TPRM_${customerAccountId.substring(0, 6)}_${String(userCount + 1).padStart(3, "0")}`;
 
-  const fullName = (params.name || "").trim() || email;
+  // Mirror the email selection: only the first AM (matching the first email
+  // above) is provisioned, so take just the first name segment — not the whole
+  // "name1; name2" join that the form sends when multiple AMs are added.
+  const fullName = (params.name || "").split(";")[0].trim() || email;
   const firstName = fullName.split(/\s+/)[0] || fullName;
   const lastName = fullName.split(/\s+/).slice(1).join(" ") || "-";
 
@@ -150,13 +155,13 @@ export async function provisionAccountManagerUser(
       firstName,
       lastName,
       email,
-      userName: email, // username = AM email, per spec
+      userName: fullName, // username = the AM name entered on the onboarding form
       password: hashedPassword,
       tprmRole: "Account Manager",
       tprmFunctionCategory: "Account Manager",
       isActive: true,
     },
-    select: { id: true, fullName: true },
+    select: { id: true, fullName: true, userName: true },
   });
 
   // Assign the AccountManager system role, tagged to the TPRM module.
@@ -169,5 +174,5 @@ export async function provisionAccountManagerUser(
     data: { userId: user.id, roleId: role.id, moduleCode: "TPRM" },
   });
 
-  return { userId: user.id, created: true, fullName: user.fullName };
+  return { userId: user.id, created: true, fullName: user.fullName, userName: user.userName };
 }

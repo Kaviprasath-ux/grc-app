@@ -217,7 +217,7 @@ export const POST = withAuth(
                     firstName: nameParts[0] || amName,
                     lastName: nameParts.slice(1).join(" ") || amName,
                     email: amEmail,
-                    userName: amEmail.split("@")[0] + "_am",
+                    userName: amName, // username = the AM name from the import file
                     password: hashedPw,
                     tprmRole: "Account Manager",
                     tprmFunctionCategory: "TPRM Team",

@@ -292,60 +292,71 @@ export const POST = withAuth(
         console.error("[TPRM Vendor POST] Failed to auto-create monitoring record:", monErr);
       }
 
-      // Provision / notify the vendor's Account Manager.
-      //  - New AM: create a login (username = AM email, password = the one the
-      //    BO/RM set during onboarding), send an in-app "account created" notice,
-      //    and email the AM their username, password, and login link.
+      // Provision / notify EVERY Account Manager captured on the onboarding form.
+      // The form joins multiple AMs into "; "-separated name/email strings, paired
+      // by position (name[i] belongs to email[i]). Each AM gets their own login:
+      //  - New AM: create a login (username = that AM's name, password = the one
+      //    the BO/RM set during onboarding — shared across the AMs added here),
+      //    send an in-app "account created" notice, and email them their
+      //    username, password, and login link.
       //  - Existing AM (reused across vendors): send the "vendor onboarded"
       //    notice only — the password is never reset.
       if (body.accountManagerEmail) {
-        try {
-          const am = await provisionAccountManagerUser(customerAccountId, {
-            email: body.accountManagerEmail,
-            name: body.accountManagerName,
-            password: body.password,
-          });
+        const amEmails = String(body.accountManagerEmail).split(";").map((s) => s.trim()).filter(Boolean);
+        const amNames = String(body.accountManagerName || "").split(";").map((s) => s.trim());
+        const loginUrl = `${getAppUrl()}/login`;
 
-          if (am?.created) {
-            // In-app notification to the newly created Account Manager.
-            void notificationService.notifyTPRMAccountCreated({
-              customerAccountId,
-              actorId: session.id,
-              newUserId: am.userId,
-              userName: am.fullName,
-              tprmRole: "Account Manager",
+        for (let i = 0; i < amEmails.length; i++) {
+          const amEmail = amEmails[i];
+          const amName = amNames[i] || amEmail; // fall back to email if a name is missing
+          try {
+            const am = await provisionAccountManagerUser(customerAccountId, {
+              email: amEmail,
+              name: amName,
+              password: body.password,
             });
 
-            // Email the AM their login credentials + link.
-            const amEmail = body.accountManagerEmail.split(";")[0].trim();
-            const loginUrl = `${getAppUrl()}/login`;
-            void sendTemplatedEmail(
-              "TPRM_AM_CREDENTIALS",
-              amEmail,
-              {
-                title: "Your TPRM Account Manager Login",
-                message: `An account has been created for you to respond to assessments for "${vendor.name}". Username: ${amEmail} — Password: ${body.password} — Login: ${loginUrl}`,
+            if (am?.created) {
+              // In-app notification to the newly created Account Manager.
+              void notificationService.notifyTPRMAccountCreated({
+                customerAccountId,
+                actorId: session.id,
+                newUserId: am.userId,
+                userName: am.fullName,
+                tprmRole: "Account Manager",
+              });
+
+              // Email the AM their login credentials + link. The username is the
+              // Account Manager name captured on the onboarding form (am.userName),
+              // not the email — that is what they log in with.
+              void sendTemplatedEmail(
+                "TPRM_AM_CREDENTIALS",
+                amEmail,
+                {
+                  title: "Your TPRM Account Manager Login",
+                  message: `An account has been created for you to respond to assessments for "${vendor.name}". Username: ${am.userName} — Password: ${body.password} — Login: ${loginUrl}`,
+                  vendorName: vendor.name,
+                  userName: am.userName,
+                  password: body.password,
+                  entityLink: loginUrl,
+                },
+                am.fullName,
+              );
+            } else if (am) {
+              // Existing AM — just notify about the new vendor.
+              void notificationService.notifyTPRMVendorOnboarded({
+                customerAccountId,
+                actorId: session.id,
+                recipientId: am.userId,
+                vendorId: vendor.id,
                 vendorName: vendor.name,
-                userName: amEmail,
-                password: body.password,
-                entityLink: loginUrl,
-              },
-              am.fullName,
-            );
-          } else if (am) {
-            // Existing AM — just notify about the new vendor.
-            void notificationService.notifyTPRMVendorOnboarded({
-              customerAccountId,
-              actorId: session.id,
-              recipientId: am.userId,
-              vendorId: vendor.id,
-              vendorName: vendor.name,
-              vendorCode: vendor.vendorCode,
-            });
+                vendorCode: vendor.vendorCode,
+              });
+            }
+          } catch (e) {
+            // Don't fail vendor creation if one AM's provisioning/notification hiccups.
+            console.error(`[vendors] AM provisioning/notification failed for ${amEmail}:`, (e as Error).message);
           }
-        } catch (e) {
-          // Don't fail vendor creation if AM provisioning/notification hiccups.
-          console.error("[vendors] AM provisioning/notification failed:", (e as Error).message);
         }
       }
 
