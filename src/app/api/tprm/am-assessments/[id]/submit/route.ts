@@ -38,10 +38,23 @@ export const POST = withAuth(
         return NextResponse.json({ error: `Cannot submit assessment in '${assessment.status}' status` }, { status: 400 });
       }
 
-      // Validate mandatory questions are answered
+      // Validate mandatory questions + attachments before allowing submission.
+      //
+      // `questionnaireTemplate` may hold several comma-separated template names
+      // (the initiation UI joins multi-selected templates with ", "). Resolving
+      // it with a single exact-match `findFirst` returned null for any
+      // multi-template assessment, which silently skipped ALL validation and
+      // let the AM submit with unanswered mandatory questions and missing
+      // mandatory documents. Mirror the GET route: split the names, match every
+      // one, and aggregate their questions de-duplicated by id.
       if (assessment.questionnaireTemplate) {
-        const template = await prisma.tPRMQuestionnaireTemplate.findFirst({
-          where: { customerAccountId, templateName: assessment.questionnaireTemplate },
+        const templateNames = assessment.questionnaireTemplate
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        const templates = await prisma.tPRMQuestionnaireTemplate.findMany({
+          where: { customerAccountId, templateName: { in: templateNames } },
           include: {
             masterQuestionLinks: {
               include: {
@@ -51,44 +64,50 @@ export const POST = withAuth(
           },
         });
 
-        if (template) {
-          const mandatoryQuestions = template.masterQuestionLinks
-            .filter(link => link.question.mandatoryQuestion)
-            .map(link => link.question);
+        // De-duplicate questions by id (the same question can appear in more
+        // than one selected template).
+        const questionMap = new Map<string, { id: string; mandatoryQuestion: boolean; mandatoryAttachment: boolean; questionText: string }>();
+        for (const t of templates) {
+          for (const link of t.masterQuestionLinks) {
+            if (!questionMap.has(link.question.id)) questionMap.set(link.question.id, link.question);
+          }
+        }
+        const allQuestions = Array.from(questionMap.values());
 
-          const responseMap = new Map(
-            assessment.responses.map(r => [r.questionId, r])
-          );
+        const responseMap = new Map(
+          assessment.responses.map(r => [r.questionId, r])
+        );
 
-          const unanswered = mandatoryQuestions.filter(q => {
+        // Mandatory questions must have a response.
+        const unanswered = allQuestions
+          .filter(q => q.mandatoryQuestion)
+          .filter(q => {
             const resp = responseMap.get(q.id);
             return !resp || !resp.response;
           });
 
-          if (unanswered.length > 0) {
-            return NextResponse.json({
-              error: 'Please answer all mandatory questions before submitting',
-              unansweredCount: unanswered.length,
-              unansweredQuestions: unanswered.map(q => q.questionText.substring(0, 100)),
-            }, { status: 400 });
-          }
+        if (unanswered.length > 0) {
+          return NextResponse.json({
+            error: 'Please answer all mandatory questions before submitting',
+            unansweredCount: unanswered.length,
+            unansweredQuestions: unanswered.map(q => q.questionText.substring(0, 100)),
+          }, { status: 400 });
+        }
 
-          // Check mandatory attachments
-          const mandatoryAttachments = template.masterQuestionLinks
-            .filter(link => link.question.mandatoryAttachment)
-            .map(link => link.question);
-
-          const missingAttachments = mandatoryAttachments.filter(q => {
+        // Mandatory attachments must have an uploaded artifact.
+        const missingAttachments = allQuestions
+          .filter(q => q.mandatoryAttachment)
+          .filter(q => {
             const resp = responseMap.get(q.id);
             return !resp || !resp.artifactUrl;
           });
 
-          if (missingAttachments.length > 0) {
-            return NextResponse.json({
-              error: 'Please upload all mandatory attachments before submitting',
-              missingCount: missingAttachments.length,
-            }, { status: 400 });
-          }
+        if (missingAttachments.length > 0) {
+          return NextResponse.json({
+            error: 'Please upload all mandatory documents before submitting',
+            missingCount: missingAttachments.length,
+            missingQuestions: missingAttachments.map(q => q.questionText.substring(0, 100)),
+          }, { status: 400 });
         }
       }
 
