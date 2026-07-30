@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getCustomerAccountId, verifyAMAccess } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
-import { runAIEvaluation } from '@/lib/tprm-ai-evaluation';
+import { startAIEvaluation } from '@/lib/tprm-ai-evaluation';
 import { notificationService } from '@/lib/notification-service';
 
 interface RouteContext {
@@ -130,30 +130,21 @@ export const POST = withAuth(
         },
       });
 
-      // Fire AI evaluation asynchronously (fire-and-forget)
-      const customerAccount = await prisma.customerAccount.findUnique({
-        where: { id: customerAccountId },
-        select: { code: true },
+      // Fire AI evaluation asynchronously (fire-and-forget), through the same
+      // launcher the assessor's rerun-ai route uses — clears any prior verdicts,
+      // logs the trigger, then starts the run. This is what puts Issue / Risk /
+      // Recommendation in front of the assessor without them asking for it.
+      await startAIEvaluation({
+        assessmentId,
+        customerAccountId,
+        logMessage: `AI evaluation triggered by Account Manager submission (${session.name || session.email})`,
       });
-
-      const vendor = await prisma.tPRMVendor.findUnique({
-        where: { id: assessment.vendorId },
-        select: { vendorCode: true, engagementId: true },
-      });
-
-      if (customerAccount && vendor) {
-        runAIEvaluation({
-          assessmentId,
-          customerAccountId,
-          customerCode: customerAccount.code,
-          vendorCode: vendor.vendorCode,
-          engagementId: vendor.engagementId || assessmentId,
-        }).catch(err => {
-          console.error('[TPRM-AI] Fire-and-forget evaluation error:', err);
-        });
-      }
 
       // Get vendor name for notifications
+      const vendor = await prisma.tPRMVendor.findUnique({
+        where: { id: assessment.vendorId },
+        select: { vendorCode: true },
+      });
       const vendorName = vendor?.vendorCode || assessment.vendorId;
 
       // Notify the assessor (if assigned) that assessment has been submitted

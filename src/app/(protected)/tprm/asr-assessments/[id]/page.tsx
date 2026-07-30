@@ -22,7 +22,7 @@ import {
 import {
   Home, ArrowLeft, Eye, ChevronRight, ChevronDown,
   ShieldCheck, ShieldAlert, ShieldOff, Bot, MessageSquare,
-  FileText, FileSpreadsheet, Download, Flag, Send, Loader2, Clock, RefreshCw,
+  FileText, FileSpreadsheet, Download, Flag, Send, Loader2, Clock,
   CheckCircle2, AlertTriangle, XCircle, ChevronLeft, RotateCcw, UserCheck,
 } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
@@ -77,6 +77,8 @@ interface AssessmentDetail {
   status: string;
   assessmentType: string;
   questionnaireTemplate: string | null;
+  aiEvaluationStatus: string | null;
+  aiEvaluationStarted: string | null;
   vendorSubmissionDate: string | null;
   assessorCompletionDate: string | null;
   vendor: { id: string; name: string; vendorCode: string };
@@ -129,6 +131,13 @@ function StatusBadge({ status }: { status: string | null | undefined }) {
       return <Badge variant="outline">{t(status)}</Badge>;
   }
 }
+
+// How long an AI evaluation may sit in an in-progress state before we treat it
+// as dead. Evaluation is fire-and-forget, so a recycled process leaves the
+// assessment flagged "Evaluating" forever with no results — past this window
+// the assessor page restarts it instead of waiting on a job nobody is running.
+// Keep in sync with the same threshold in the rerun-ai API route.
+const STALLED_AI_EVALUATION_MS = 15 * 60 * 1000;
 
 // Report-only remediation SLA (days from report generation).
 // Keep in sync with /api/tprm/asr-assessments/[id]/complete which reads the
@@ -364,6 +373,116 @@ export default function ASRAssessmentDetailPage() {
   }, [assessmentId, toast, t]);
 
   useEffect(() => { loadAssessment(); }, [loadAssessment]);
+
+  // ── AI evaluation: start + poll ───────────────────────────────────────
+  //
+  // AI evaluation is fired fire-and-forget from the AM submit handler, so by
+  // the time the assessor opens the assessment it may still be running, may
+  // have died half-way (the process that owned the promise was recycled), or —
+  // for assessments submitted before evaluation existed — may never have run.
+  // In all three cases the assessor used to see an empty Issue / Risk /
+  // Recommendation until they manually pressed "Re-evaluate AI", which was the
+  // only code path that started an evaluation AND polled for its result. That
+  // button is gone — `startAIEvaluation` is now driven purely by the auto-heal
+  // effect below, so it starts silently: the assessor never asked for it and
+  // only needs to hear about the outcome, not the launch.
+  const startAIEvaluation = useCallback(async () => {
+    setRerunning(true);
+    try {
+      const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/rerun-ai`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed");
+      }
+      // Poll for completion
+      const poll = setInterval(async () => {
+        try {
+          const r = await fetch(`/api/tprm/asr-assessments/${assessmentId}`);
+          if (r.ok) {
+            const d = await r.json();
+            const aiStatus = d.assessment?.aiEvaluationStatus;
+            if (aiStatus === "Completed" || aiStatus === "Failed") {
+              clearInterval(poll);
+              setRerunning(false);
+              loadAssessment();
+              // Only surface the failure — a successful run announces itself by
+              // filling in the VerifAI columns the assessor is already looking at.
+              if (aiStatus === "Failed") {
+                toast({
+                  title: t("AI Evaluation Failed"),
+                  description: t("AI re-evaluation encountered errors."),
+                  variant: "destructive",
+                });
+              }
+            }
+          }
+        } catch { /* ignore poll errors */ }
+      }, 5000);
+      // Safety timeout: stop polling after 10 minutes
+      setTimeout(() => { clearInterval(poll); setRerunning(false); }, 600000);
+    } catch {
+      // Nothing to report: the assessor did not ask for this run. The in-progress
+      // banner clears and the fields stay as they are.
+      setRerunning(false);
+    }
+  }, [assessmentId, loadAssessment, toast, t]);
+
+  // Auto-refresh while an evaluation is running so results appear on their own
+  // the moment the background job finishes — no button press needed.
+  useEffect(() => {
+    const status = assessment?.aiEvaluationStatus;
+    const inProgress = status === "Pending" || status === "Ingesting" || status === "Evaluating";
+    // Skip when nothing is running, or when startAIEvaluation already owns a poll loop.
+    if (!inProgress || rerunning) return;
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/tprm/asr-assessments/${assessmentId}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        const s = d.assessment?.aiEvaluationStatus;
+        if (s === "Completed" || s === "Failed") {
+          clearInterval(poll);
+          loadAssessment();
+        }
+      } catch { /* ignore transient poll errors */ }
+    }, 5000);
+    // Safety timeout so a stuck job doesn't poll forever.
+    const stop = setTimeout(() => clearInterval(poll), 600000);
+    return () => { clearInterval(poll); clearTimeout(stop); };
+  }, [assessment?.aiEvaluationStatus, rerunning, assessmentId, loadAssessment]);
+
+  // Auto-heal: kick the evaluation once, on load, when a submitted assessment
+  // has no AI results to wait for — either it never ran, or it stalled (still
+  // flagged in-progress long past the point where a real run would have
+  // finished). Only the assessor does this; approvers and auditors are
+  // read-only and the API would reject them anyway.
+  const autoEvaluationKickedRef = useRef(false);
+  useEffect(() => {
+    if (autoEvaluationKickedRef.current || rerunning || !assessment) return;
+    if (isApprover || isAuditor) return;
+    if (!["Submitted", "Under Review", "In-Progress", "Returned"].includes(assessment.status)) return;
+
+    const status = assessment.aiEvaluationStatus;
+    const neverRan = !status;
+    const startedAt = assessment.aiEvaluationStarted ? new Date(assessment.aiEvaluationStarted).getTime() : null;
+    const stalled =
+      (status === "Pending" || status === "Ingesting" || status === "Evaluating") &&
+      startedAt != null &&
+      Date.now() - startedAt > STALLED_AI_EVALUATION_MS;
+
+    if (!neverRan && !stalled) return;
+    // Deferred a tick: startAIEvaluation flips `rerunning`, and updating state
+    // straight from an effect body cascades an extra render. The ref is claimed
+    // inside the callback (not here) so StrictMode's double-invoke in dev still
+    // ends up kicking exactly once instead of zero times.
+    setTimeout(() => {
+      if (autoEvaluationKickedRef.current) return;
+      autoEvaluationKickedRef.current = true;
+      void startAIEvaluation();
+    }, 0);
+  }, [assessment, rerunning, isApprover, isAuditor, startAIEvaluation]);
 
   // Honour ?questionNo=… deep-links (used by notification click-throughs,
   // e.g. "Clarification response received"). Once data is loaded, jump to the
@@ -836,49 +955,6 @@ export default function ASRAssessmentDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  // ── Re-run AI Evaluation ──────────────────────────────────────────────
-
-  const handleRerunAI = async () => {
-    setRerunning(true);
-    try {
-      const res = await fetch(`/api/tprm/asr-assessments/${assessmentId}/rerun-ai`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed");
-      }
-      toast({ title: t("Success"), description: t("AI re-evaluation started. This may take a few minutes.") });
-      // Poll for completion
-      const poll = setInterval(async () => {
-        try {
-          const r = await fetch(`/api/tprm/asr-assessments/${assessmentId}`);
-          if (r.ok) {
-            const d = await r.json();
-            const aiStatus = d.assessment?.aiEvaluationStatus;
-            if (aiStatus === "Completed" || aiStatus === "Failed") {
-              clearInterval(poll);
-              setRerunning(false);
-              loadAssessment();
-              toast({
-                title: aiStatus === "Completed" ? t("AI Evaluation Complete") : t("AI Evaluation Failed"),
-                description: aiStatus === "Completed"
-                  ? t("AI re-evaluation finished successfully.")
-                  : t("AI re-evaluation encountered errors."),
-                variant: aiStatus === "Completed" ? "default" : "destructive",
-              });
-            }
-          }
-        } catch { /* ignore poll errors */ }
-      }, 5000);
-      // Safety timeout: stop polling after 10 minutes
-      setTimeout(() => { clearInterval(poll); setRerunning(false); }, 600000);
-    } catch (err) {
-      toast({ title: t("Error"), description: err instanceof Error ? err.message : t("Failed to start AI re-evaluation"), variant: "destructive" });
-      setRerunning(false);
-    }
-  };
-
   // ── Download Report as PDF ─────────────────────────────────────────────
 
   const handleDownloadReport = () => {
@@ -1060,6 +1136,11 @@ export default function ASRAssessmentDetailPage() {
 
   const totalSeverity = (summary?.highCount || 0) + (summary?.mediumCount || 0) + (summary?.lowCount || 0);
 
+  // Drives the "results are still coming" notices, so an empty Issue / Risk /
+  // Recommendation reads as "not ready yet" rather than "the AI found nothing".
+  const aiRunning = rerunning
+    || ["Pending", "Ingesting", "Evaluating"].includes(assessment.aiEvaluationStatus || "");
+
   // ── RENDER: Summary View ─────────────────────────────────────────────
 
   if (view === "summary") {
@@ -1074,12 +1155,9 @@ export default function ASRAssessmentDetailPage() {
             <h1 className="text-xl font-semibold">{t("Assessment Summary")}</h1>
           </div>
           <div className="flex items-center gap-2">
-            {!isApprover && !isAuditor && (assessment.status === "In-Progress" || assessment.status === "Returned" || assessment.status === "Submitted" || assessment.status === "Under Review") && (
-              <Button variant="outline" size="sm" onClick={handleRerunAI} disabled={rerunning}>
-                {rerunning ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" /> : <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />}
-                {rerunning ? t("Re-evaluating...") : t("Re-evaluate AI")}
-              </Button>
-            )}
+            {/* No "Re-evaluate AI" button: evaluation starts on VAM submit and
+                the page picks the results up on its own (polling below), so the
+                assessor never has to ask for it. */}
             <Button size="sm" onClick={() => { setView("detail"); setCurrentPage(0); setSelectedQuestionId(null); }}>
               {t("Detailed Assessment")}
             </Button>
@@ -1092,6 +1170,13 @@ export default function ASRAssessmentDetailPage() {
           <span className="font-medium">{t("VerifAI Summary")}</span>
           <span className="text-sm">{t("Status")}: <span className="font-medium">{t(assessment.status)}</span></span>
         </div>
+
+        {aiRunning && (
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span>{t("AI evaluation is in progress. Issue, Risk and Recommendation will appear here automatically once it completes.")}</span>
+          </div>
+        )}
 
         {/* Tab buttons — full width, two equal columns */}
         <div className="grid grid-cols-2 gap-0">
@@ -1586,9 +1671,14 @@ export default function ASRAssessmentDetailPage() {
                     <div>
                       <h4 className="text-sm font-semibold mb-1">{t("VerifAI Summary")}</h4>
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {/* No re-evaluate button any more, so point the assessor
+                            at the recourse that does exist: "Override AI". */}
                         {selectedResp?.poStatus?.toLowerCase() === "failed"
-                          ? t("AI evaluation could not be completed for this question. Please re-evaluate.")
-                          : selectedResp?.poAnswer || "—"}
+                          ? t("AI evaluation could not be completed for this question. Use \"Override AI\" to record your own finding.")
+                          : selectedResp?.poAnswer
+                            || (aiRunning
+                              ? t("AI evaluation is in progress. Issue, Risk and Recommendation will appear here automatically once it completes.")
+                              : "—")}
                       </p>
                     </div>
 

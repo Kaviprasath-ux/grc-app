@@ -369,6 +369,88 @@ async function evaluateResponse(
 }
 
 /**
+ * Resolve the evaluation context for an assessment, wipe any previous AI
+ * verdicts, write an audit-log line, and fire `runAIEvaluation`.
+ *
+ * Both entry points — the AM submit handler and the assessor's rerun-ai route —
+ * go through here so a submission-triggered run is byte-for-byte the same run
+ * the assessor would have got from "Re-evaluate AI". The clearing step matters
+ * on the submit path too: a returned/resubmitted assessment still carries the
+ * previous run's poIssue/poRisk/poRecommendation, and any question that is no
+ * longer evaluated (answer changed to blank, `validateThroughAI` turned off)
+ * would otherwise keep showing a verdict from the superseded answer.
+ *
+ * Returns false only when the assessment/customer/vendor rows can't be
+ * resolved; the evaluation itself is fire-and-forget and reports through
+ * `aiEvaluationStatus`.
+ */
+export async function startAIEvaluation(opts: {
+  assessmentId: string;
+  customerAccountId: string;
+  logMessage: string;
+}): Promise<boolean> {
+  const { assessmentId, customerAccountId, logMessage } = opts;
+
+  const assessment = await prisma.tPRMAssessment.findFirst({
+    where: { id: assessmentId, customerAccountId },
+    select: { vendorId: true },
+  });
+  if (!assessment) {
+    console.warn(`[TPRM-AI] startAIEvaluation — assessment ${assessmentId} not found`);
+    return false;
+  }
+
+  const [customerAccount, vendor] = await Promise.all([
+    prisma.customerAccount.findUnique({
+      where: { id: customerAccountId },
+      select: { code: true },
+    }),
+    prisma.tPRMVendor.findUnique({
+      where: { id: assessment.vendorId },
+      select: { vendorCode: true, engagementId: true },
+    }),
+  ]);
+
+  if (!customerAccount || !vendor) {
+    console.warn(`[TPRM-AI] startAIEvaluation — missing customer/vendor for assessment ${assessmentId}`);
+    return false;
+  }
+
+  // Clear previous AI verdicts so partially-stale results can't survive the run.
+  await prisma.tPRMAssessmentResponse.updateMany({
+    where: { assessmentId, customerAccountId },
+    data: {
+      poScore: null,
+      poStatus: null,
+      poAnswer: null,
+      poIssue: null,
+      poRisk: null,
+      poRecommendation: null,
+      poSeverity: null,
+      aiEvaluatedAt: null,
+      aiUuid: null,
+    },
+  });
+
+  await prisma.tPRMAssessmentLog.create({
+    data: { customerAccountId, assessmentId, logMessage, logDate: new Date() },
+  }).catch(() => {});
+
+  runAIEvaluation({
+    assessmentId,
+    customerAccountId,
+    customerCode: customerAccount.code,
+    vendorCode: vendor.vendorCode,
+    engagementId: vendor.engagementId || assessmentId,
+  }).catch(err => {
+    console.error(`[TPRM-AI] Fire-and-forget evaluation error for ${assessmentId}:`, err);
+  });
+
+  console.log(`[TPRM-AI] startAIEvaluation — launched for ${assessmentId} (vendor=${vendor.vendorCode})`);
+  return true;
+}
+
+/**
  * Main AI evaluation function - runs asynchronously after assessment submission.
  * Designed to be called fire-and-forget from the submit handler.
  */
@@ -403,10 +485,20 @@ export async function runAIEvaluation(ctx: EvaluationContext): Promise<void> {
     let questionMetaMap = new Map<string, QuestionMeta>();
 
     if (assessment?.questionnaireTemplate) {
-      const template = await prisma.tPRMQuestionnaireTemplate.findFirst({
+      // `questionnaireTemplate` may hold several comma-separated template names
+      // (the initiation UI joins multi-selected templates with ", "). Matching
+      // with a single exact-match findFirst returned null for any multi-template
+      // assessment, leaving questionMetaMap empty — so "No" answers never got
+      // their Issue/Risk/Recommendation copied from the template. Split the
+      // names and match every one, mirroring the GET routes.
+      const templateNames = assessment.questionnaireTemplate
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+      const templates = await prisma.tPRMQuestionnaireTemplate.findMany({
         where: {
           customerAccountId: ctx.customerAccountId,
-          templateName: assessment.questionnaireTemplate,
+          templateName: { in: templateNames },
         },
         include: {
           masterQuestionLinks: {
@@ -434,7 +526,7 @@ export async function runAIEvaluation(ctx: EvaluationContext): Promise<void> {
         },
       });
 
-      if (template) {
+      for (const template of templates) {
         for (const link of template.masterQuestionLinks) {
           const q = link.question;
           questionMetaMap.set(q.id, {

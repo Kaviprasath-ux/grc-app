@@ -5054,6 +5054,8 @@ const translations: [string, string, string][] = [
   ['AI re-evaluation finished successfully.', 'اكتملت إعادة تقييم الذكاء الاصطناعي بنجاح.', 'AI pārvērtēšana veiksmīgi pabeigta.'],
   ['AI re-evaluation encountered errors.', 'واجهت إعادة تقييم الذكاء الاصطناعي أخطاء.', 'AI pārvērtēšanā radās kļūdas.'],
   ['AI evaluation could not be completed for this question. Please re-evaluate.', 'تعذر إكمال تقييم الذكاء الاصطناعي لهذا السؤال. يرجى إعادة التقييم.', 'AI novērtēšanu nevarēja pabeigt šim jautājumam. Lūdzu pārvērtējiet.'],
+  ['AI evaluation could not be completed for this question. Use "Override AI" to record your own finding.', 'تعذر إكمال تقييم الذكاء الاصطناعي لهذا السؤال. استخدم "تجاوز الذكاء الاصطناعي" لتسجيل النتيجة الخاصة بك.', 'AI novērtēšanu šim jautājumam nevarēja pabeigt. Izmantojiet "Pārrakstīt AI", lai reģistrētu savu secinājumu.'],
+  ['AI evaluation is in progress. Issue, Risk and Recommendation will appear here automatically once it completes.', 'تقييم الذكاء الاصطناعي قيد التنفيذ. ستظهر المشكلة والمخاطر والتوصية هنا تلقائيًا بعد اكتماله.', 'AI novērtēšana notiek. Problēma, risks un ieteikums šeit parādīsies automātiski, tiklīdz tā būs pabeigta.'],
   ['Flagged', 'مُعلَّم', 'Atzīmēts'],
   ['No evidence attached', 'لا توجد أدلة مرفقة', 'Nav pievienotu pierādījumu'],
   ['Attached file', 'ملف مرفق', 'Pievienotais fails'],
