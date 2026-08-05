@@ -160,7 +160,45 @@ async function updateAIStatus(
 }
 
 /**
- * Ingest non-image artifacts for the assessment
+ * Write a line to the assessment's activity log. Never throws — a logging
+ * failure must not take down an evaluation run.
+ */
+async function logToAssessment(ctx: EvaluationContext, logMessage: string): Promise<void> {
+  await prisma.tPRMAssessmentLog.create({
+    data: {
+      customerAccountId: ctx.customerAccountId,
+      assessmentId: ctx.assessmentId,
+      logDate: new Date(),
+      logMessage,
+    },
+  }).catch(() => {});
+}
+
+const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+// How long to wait for the backend to finish indexing before giving up and
+// letting the query phase run anyway. Ingest of a handful of documents
+// completes in well under a minute; the ceiling is a stuck-job backstop.
+const INGEST_POLL_INTERVAL_MS = 5_000;
+const INGEST_POLL_TIMEOUT_MS = 5 * 60_000;
+
+/**
+ * Ingest non-image artifacts for the assessment and WAIT for the backend to
+ * finish indexing them.
+ *
+ * `/api/ingest` is asynchronous: the POST returns `{ job_id, status: 'queued' }`
+ * as soon as the upload is accepted, and the documents only become retrievable
+ * once the background job completes. This function previously returned at that
+ * point, so the query phase started against an index that was still empty —
+ * every question came back "No relevant results found." and was scored
+ * Unsatisfactory regardless of the evidence attached.
+ *
+ * The per-file outcome also lives in the job *result*, not the POST response: a
+ * file the backend cannot parse still yields HTTP 200 on the POST but a
+ * `"Failed to process file: X. Error: ..."` message with `status: false` later.
+ * Those failures are now surfaced on the assessment's activity log so the
+ * assessor can tell "the evidence was never read" apart from "the evidence was
+ * read and found wanting".
  */
 async function ingestDocuments(
   responsesWithFiles: ResponseWithQuestion[],
@@ -168,6 +206,7 @@ async function ingestDocuments(
 ): Promise<void> {
   // Collect non-image files
   const filesToIngest: { filePath: string; fileName: string }[] = [];
+  const missingFiles: string[] = [];
 
   for (const resp of responsesWithFiles) {
     if (!resp.artifactUrl || !resp.artifactName) continue;
@@ -179,7 +218,17 @@ async function ingestDocuments(
       filesToIngest.push({ filePath: absolutePath, fileName: resp.artifactName });
     } else {
       console.warn(`[TPRM-AI] File not found: ${absolutePath}`);
+      missingFiles.push(resp.artifactName);
     }
+  }
+
+  // A missing upload used to be a console-only warning, which made an empty
+  // index indistinguishable from a genuinely unsatisfactory answer.
+  if (missingFiles.length > 0) {
+    await logToAssessment(
+      ctx,
+      `AI evaluation: ${missingFiles.length} uploaded document(s) could not be read and were not sent for analysis — ${missingFiles.join(', ')}`
+    );
   }
 
   if (filesToIngest.length === 0) {
@@ -200,12 +249,117 @@ async function ingestDocuments(
     formData.append('files', blob, file.fileName);
   }
 
-  await aiRequest(
+  const submitted = await aiRequest(
     AI_ENDPOINTS.TPRM_INGEST,
     { method: 'POST', body: formData },
     ctx,
     { documentName: filesToIngest.map(f => f.fileName).join(', ') }
   );
+
+  const jobId = String(submitted.data.job_id || '');
+  if (!jobId) {
+    // Older/synchronous backend, or an unexpected payload — nothing to poll.
+    console.warn('[TPRM-AI] Ingest returned no job_id, proceeding without waiting');
+    return;
+  }
+
+  // --- Wait for the background indexing job to finish ---
+  const deadline = Date.now() + INGEST_POLL_TIMEOUT_MS;
+  let jobStatus = String(submitted.data.status || 'queued').toLowerCase();
+
+  while (jobStatus !== 'completed' && jobStatus !== 'failed' && Date.now() < deadline) {
+    await sleep(INGEST_POLL_INTERVAL_MS);
+    const poll = await aiRequest(
+      `${AI_ENDPOINTS.TPRM_INGEST_STATUS}/${jobId}`,
+      { method: 'GET' },
+      ctx,
+      {}
+    );
+    jobStatus = String(poll.data.status || '').toLowerCase();
+    if (jobStatus === 'failed' && poll.data.error) {
+      console.error(`[TPRM-AI] Ingest job ${jobId} failed: ${String(poll.data.error)}`);
+    }
+  }
+
+  if (jobStatus !== 'completed' && jobStatus !== 'failed') {
+    console.warn(`[TPRM-AI] Ingest job ${jobId} still '${jobStatus}' after timeout — continuing`);
+    await logToAssessment(
+      ctx,
+      `AI evaluation: document indexing did not finish in time. Results may be based on incomplete evidence — re-evaluate once indexing completes.`
+    );
+    return;
+  }
+
+  // --- Read the per-file outcome ---
+  const resultRes = await aiRequest(
+    `${AI_ENDPOINTS.TPRM_INGEST_RESULT}/${jobId}`,
+    { method: 'GET' },
+    ctx,
+    {}
+  );
+
+  const result = resultRes.data.result as { messages?: unknown; status?: unknown } | undefined;
+  const messages = Array.isArray(result?.messages) ? result!.messages.map(String) : [];
+  const failures = messages.filter(m => /^failed to process/i.test(m.trim()));
+
+  console.log(`[TPRM-AI] Ingest job ${jobId} ${jobStatus} — ${messages.length} message(s), ${failures.length} failure(s)`);
+
+  if (failures.length > 0) {
+    await logToAssessment(
+      ctx,
+      `AI evaluation: ${failures.length} document(s) could not be processed by the AI engine and were excluded from the analysis — ${failures.join(' | ')}`
+    );
+  } else if (result?.status === false || jobStatus === 'failed') {
+    await logToAssessment(
+      ctx,
+      `AI evaluation: document indexing reported a failure — the analysis may not reflect the uploaded evidence.${messages.length ? ` (${messages.join(' | ')})` : ''}`
+    );
+  }
+}
+
+/**
+ * Copy an AI backend verdict onto the response update payload.
+ *
+ * `/api/image` and `/api/query` return the same shape, so both paths share this.
+ * Handles the two issue/risk/recommendation encodings the backend can emit
+ * (nested `issue_risk_recommendation` object, or flat keys) and falls back to
+ * the master question's template values when the AI marks a question
+ * unsatisfactory without supplying its own detail.
+ */
+function applyAIResult(
+  updateData: Record<string, unknown>,
+  aiData: Record<string, unknown>,
+  questionMeta: QuestionMeta
+): void {
+  updateData.poScore = typeof aiData.score === 'number' ? aiData.score : parseFloat(String(aiData.score || '0'));
+  updateData.poStatus = normalizeStatus(String(aiData.status || 'Satisfactory'));
+  updateData.poAnswer = String(aiData.answer || aiData.response || '');
+  if (aiData.uuid || aiData.id) updateData.aiUuid = String(aiData.uuid || aiData.id);
+
+  if (aiData.issue_risk_recommendation && typeof aiData.issue_risk_recommendation === 'object') {
+    const irr = aiData.issue_risk_recommendation as Record<string, string>;
+    updateData.poIssue = irr.issue || null;
+    updateData.poRisk = irr.risk || null;
+    updateData.poRecommendation = irr.recommendation || null;
+  } else {
+    updateData.poIssue = String(aiData.issue || '') || null;
+    updateData.poRisk = String(aiData.risk || '') || null;
+    updateData.poRecommendation = String(aiData.recommendation || '') || null;
+  }
+
+  const rawSeverity = String(aiData.severity || '').trim();
+  updateData.poSeverity = rawSeverity
+    ? rawSeverity.charAt(0).toUpperCase() + rawSeverity.slice(1).toLowerCase()
+    : null;
+
+  // Fall back to the template question's issue/risk/recommendation/severity when
+  // AI marks as unsatisfactory but doesn't provide specific details.
+  if (String(updateData.poStatus).toLowerCase() === 'unsatisfactory') {
+    if (!updateData.poIssue) updateData.poIssue = questionMeta.issue || null;
+    if (!updateData.poRisk) updateData.poRisk = questionMeta.risk || null;
+    if (!updateData.poRecommendation) updateData.poRecommendation = questionMeta.recommendation || null;
+    if (!updateData.poSeverity) updateData.poSeverity = questionMeta.severity || null;
+  }
 }
 
 /**
@@ -216,7 +370,6 @@ async function evaluateResponse(
   ctx: EvaluationContext
 ): Promise<void> {
   const { questionMeta } = resp;
-  const answer = resp.response?.trim() || '';
 
   // Default update data
   const updateData: Record<string, unknown> = {
@@ -224,44 +377,38 @@ async function evaluateResponse(
   };
 
   try {
-    // --- NA → Not applicable, no AI needed ---
-    if (answer === 'NA') {
-      updateData.poScore = 0;
-      updateData.poStatus = 'Not_Applicable';
-      updateData.poAnswer = null;
-      updateData.poIssue = null;
-      updateData.poRisk = null;
-      updateData.poRecommendation = null;
-      updateData.poSeverity = null;
-    }
-    // --- No → Unsatisfactory, copy template fields ---
-    else if (answer === 'No') {
-      updateData.poScore = 0;
-      updateData.poStatus = 'Unsatisfactory';
-      updateData.poAnswer = null;
-      updateData.poIssue = questionMeta.issue || null;
-      updateData.poRisk = questionMeta.risk || null;
-      updateData.poRecommendation = questionMeta.recommendation || null;
-      updateData.poSeverity = questionMeta.severity || null;
-    }
-    // --- Yes + image artifact → api/image ---
-    else if (answer === 'Yes' && isImageFile(resp.artifactName)) {
-      const prompt = questionMeta.verifaiPrompt || questionMeta.questionText;
-      const absolutePath = path.join(process.cwd(), (resp.artifactUrl || '').replace(/^\//, ''));
+    // Every answered question goes through the AI backend — Yes, No and NA
+    // alike. Previously NA and No short-circuited without an AI call, so the
+    // assessor only ever saw template boilerplate for them; now the backend
+    // gets to check the vendor's claim against the ingested evidence in all
+    // three cases.
+    //
+    // Endpoint selection is driven by the artifact type, not by the answer:
+    // an image attachment goes to /api/image (which reads the image directly),
+    // everything else goes to /api/query (RAG over the ingested documents,
+    // scoped by assessment_id + customer_id).
+    const prompt = questionMeta.verifaiPrompt || questionMeta.questionText;
+    const imagePath = isImageFile(resp.artifactName) && resp.artifactUrl
+      ? path.join(process.cwd(), resp.artifactUrl.replace(/^\//, ''))
+      : null;
+    const useImageEndpoint = !!imagePath && fs.existsSync(imagePath);
 
-      if (!fs.existsSync(absolutePath)) {
-        throw new Error(`Image file not found: ${absolutePath}`);
-      }
+    if (imagePath && !useImageEndpoint) {
+      // Attachment row exists but the file is gone — don't fail the question,
+      // fall through to /api/query so it is still evaluated against the docs.
+      console.warn(`[TPRM-AI] Image file not found, falling back to /api/query: ${imagePath}`);
+    }
 
+    let aiData: Record<string, unknown>;
+
+    if (useImageEndpoint) {
       const imageFormData = new FormData();
-      const buffer = fs.readFileSync(absolutePath);
+      const buffer = fs.readFileSync(imagePath!);
       const blob = new Blob([buffer]);
       imageFormData.append('image', blob, resp.artifactName || 'image.png');
 
-      const endpoint = `${AI_ENDPOINTS.TPRM_IMAGE}?prompt=${encodeURIComponent(prompt)}`;
-
       const result = await aiRequest(
-        endpoint,
+        `${AI_ENDPOINTS.TPRM_IMAGE}?prompt=${encodeURIComponent(prompt)}`,
         { method: 'POST', body: imageFormData },
         ctx,
         {
@@ -270,40 +417,8 @@ async function evaluateResponse(
           documentName: resp.artifactName || undefined,
         }
       );
-
-      // Parse image API response
-      const aiData = result.data;
-      updateData.poScore = typeof aiData.score === 'number' ? aiData.score : parseFloat(String(aiData.score || '0'));
-      updateData.poStatus = normalizeStatus(String(aiData.status || 'Satisfactory'));
-      updateData.poAnswer = String(aiData.answer || aiData.response || '');
-
-      // Try to extract issue/risk/recommendation from image response
-      if (aiData.issue_risk_recommendation && typeof aiData.issue_risk_recommendation === 'object') {
-        const irr = aiData.issue_risk_recommendation as Record<string, string>;
-        updateData.poIssue = irr.issue || null;
-        updateData.poRisk = irr.risk || null;
-        updateData.poRecommendation = irr.recommendation || null;
-      } else {
-        updateData.poIssue = String(aiData.issue || '') || null;
-        updateData.poRisk = String(aiData.risk || '') || null;
-        updateData.poRecommendation = String(aiData.recommendation || '') || null;
-      }
-      const rawImgSeverity = String(aiData.severity || '').trim();
-      updateData.poSeverity = rawImgSeverity ? rawImgSeverity.charAt(0).toUpperCase() + rawImgSeverity.slice(1).toLowerCase() : null;
-
-      // Fall back to template question's issue/risk/recommendation/severity
-      const imgStatus = String(updateData.poStatus).toLowerCase();
-      if (imgStatus === 'unsatisfactory') {
-        if (!updateData.poIssue) updateData.poIssue = questionMeta.issue || null;
-        if (!updateData.poRisk) updateData.poRisk = questionMeta.risk || null;
-        if (!updateData.poRecommendation) updateData.poRecommendation = questionMeta.recommendation || null;
-        if (!updateData.poSeverity) updateData.poSeverity = questionMeta.severity || null;
-      }
-    }
-    // --- Yes + no image → api/query (AI validates the response against ingested docs) ---
-    else if (answer === 'Yes') {
-      const prompt = questionMeta.verifaiPrompt || questionMeta.questionText;
-
+      aiData = result.data;
+    } else {
       const result = await aiRequest(
         AI_ENDPOINTS.TPRM_QUERY,
         {
@@ -320,39 +435,15 @@ async function evaluateResponse(
           questionTitle: questionMeta.questionText.substring(0, 100),
         }
       );
-
-      // Parse query API response
-      const aiData = result.data;
-      updateData.poScore = typeof aiData.score === 'number' ? aiData.score : parseFloat(String(aiData.score || '0'));
-      updateData.poStatus = normalizeStatus(String(aiData.status || 'Satisfactory'));
-      updateData.poAnswer = String(aiData.answer || aiData.response || '');
-      updateData.aiUuid = String(aiData.uuid || aiData.id || '');
-
-      // Parse combined issue_risk_recommendation if present
-      if (aiData.issue_risk_recommendation && typeof aiData.issue_risk_recommendation === 'object') {
-        const irr = aiData.issue_risk_recommendation as Record<string, string>;
-        updateData.poIssue = irr.issue || null;
-        updateData.poRisk = irr.risk || null;
-        updateData.poRecommendation = irr.recommendation || null;
-      } else {
-        updateData.poIssue = String(aiData.issue || '') || null;
-        updateData.poRisk = String(aiData.risk || '') || null;
-        updateData.poRecommendation = String(aiData.recommendation || '') || null;
-      }
-
-      const rawSeverity = String(aiData.severity || '').trim();
-      updateData.poSeverity = rawSeverity ? rawSeverity.charAt(0).toUpperCase() + rawSeverity.slice(1).toLowerCase() : null;
-
-      // Fall back to template question's issue/risk/recommendation/severity
-      // when AI marks as unsatisfactory but doesn't provide specific details
-      const status = String(updateData.poStatus).toLowerCase();
-      if (status === 'unsatisfactory') {
-        if (!updateData.poIssue) updateData.poIssue = questionMeta.issue || null;
-        if (!updateData.poRisk) updateData.poRisk = questionMeta.risk || null;
-        if (!updateData.poRecommendation) updateData.poRecommendation = questionMeta.recommendation || null;
-        if (!updateData.poSeverity) updateData.poSeverity = questionMeta.severity || null;
-      }
+      aiData = result.data;
     }
+
+    // The backend's verdict is the verdict. The vendor's own answer no longer
+    // overrides it — a "No" whose ingested evidence actually shows the control
+    // in place comes back Satisfactory, and an "NA" the backend disagrees with
+    // comes back Unsatisfactory. Satisfactory / Unsatisfactory / Not_Applicable
+    // are all whatever /api/query (or /api/image) returned.
+    applyAIResult(updateData, aiData, questionMeta);
   } catch (error) {
     console.error(`[TPRM-AI] Error evaluating question ${questionMeta.id}:`, error);
     updateData.poStatus = 'Failed';

@@ -87,7 +87,13 @@ export const AI_ENDPOINTS = {
   // ─────────────────────────────────────────────────────────────────────────
   // TPRM (Third-Party Risk Management)
   // ─────────────────────────────────────────────────────────────────────────
+  // `/api/ingest` is asynchronous — it returns { job_id, status: 'queued' } and
+  // indexes in the background. Callers must poll TPRM_INGEST_STATUS until the
+  // job completes and then read TPRM_INGEST_RESULT for the per-file outcome,
+  // otherwise queries race ahead of indexing and retrieve nothing.
   TPRM_INGEST: '/api/ingest',
+  TPRM_INGEST_STATUS: '/api/ingest_status',
+  TPRM_INGEST_RESULT: '/api/ingest_result',
   TPRM_IMAGE: '/api/image',
   TPRM_QUERY: '/api/query',
 
@@ -152,6 +158,8 @@ export const ENDPOINT_NAMES: Record<string, string> = {
   [AI_ENDPOINTS.SIMPLE_INGEST_STATUS]: 'Document Library Ingest Status',
   [AI_ENDPOINTS.SIMPLE_INGEST_RESULT]: 'Document Library Ingest Result',
   [AI_ENDPOINTS.TPRM_INGEST]: 'TPRM Document Ingest',
+  [AI_ENDPOINTS.TPRM_INGEST_STATUS]: 'TPRM Ingest Status',
+  [AI_ENDPOINTS.TPRM_INGEST_RESULT]: 'TPRM Ingest Result',
   [AI_ENDPOINTS.TPRM_IMAGE]: 'TPRM Image Analysis',
   [AI_ENDPOINTS.TPRM_QUERY]: 'TPRM AI Query',
   [AI_ENDPOINTS.QPOST_GENERATE_FRAMEWORK_JOB]: 'QPost Framework Generation Job',
