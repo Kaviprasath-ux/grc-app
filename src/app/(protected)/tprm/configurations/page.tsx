@@ -1204,6 +1204,9 @@ function QuestionnaireManagementSection() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<QuestionnaireTemplate | null>(null);
   const [editForm, setEditForm] = useState({ templateName: "", frameworkName: "", templateCategory: "Default" });
+  // Selection-logic gate for the template being edited. Mirrors the wizard's
+  // Step 3 selection so an existing template's logic can be reviewed/changed.
+  const [editProfileQuestionIds, setEditProfileQuestionIds] = useState<Set<string>>(new Set());
 
   // ---- Cover Image ----
   const [coverImageTemplate, setCoverImageTemplate] = useState<QuestionnaireTemplate | null>(null);
@@ -1368,6 +1371,19 @@ function QuestionnaireManagementSection() {
       if (res.ok) setOnboardingQuestions(await res.json());
     } catch { /* silent */ }
   }, []);
+
+  // Parse the JSON-encoded gate list stored on a template. Anything other
+  // than a non-empty array of strings means "no gating" — the template is a
+  // universal default and is suggested for every vendor.
+  const parseProfileQuestionIds = (raw: string | null | undefined): string[] => {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  };
 
   // Handle image file selection
   const handleImageSelect = (file: File) => {
@@ -1534,7 +1550,14 @@ function QuestionnaireManagementSection() {
       const res = await fetch("/api/tprm/configurations/questionnaire-templates", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editItem.id, ...editForm }),
+        body: JSON.stringify({
+          id: editItem.id,
+          ...editForm,
+          // Empty selection → null → template is suggested for every vendor.
+          vendorProfileQuestionIds: editProfileQuestionIds.size > 0
+            ? JSON.stringify(Array.from(editProfileQuestionIds))
+            : null,
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -2039,6 +2062,21 @@ function QuestionnaireManagementSection() {
       ),
     },
     {
+      id: "selectionLogic",
+      header: t("Selection Logic"),
+      cell: ({ row }) => {
+        const gateIds = parseProfileQuestionIds(row.original.vendorProfileQuestionIds);
+        if (gateIds.length === 0) {
+          return <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded font-medium">{t("Always suggested")}</span>;
+        }
+        return (
+          <span className="text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded font-medium">
+            {gateIds.length} {gateIds.length === 1 ? t("condition") : t("conditions")}
+          </span>
+        );
+      },
+    },
+    {
       id: "actions",
       header: t("Action"),
       cell: ({ row }) => (
@@ -2060,6 +2098,8 @@ function QuestionnaireManagementSection() {
                   frameworkName: row.original.frameworkName || "",
                   templateCategory: row.original.templateCategory,
                 });
+                setEditProfileQuestionIds(new Set(parseProfileQuestionIds(row.original.vendorProfileQuestionIds)));
+                loadOnboardingQuestions();
                 setEditDialogOpen(true);
               }}>
               <Pencil className="h-3.5 w-3.5" />
@@ -2262,7 +2302,7 @@ function QuestionnaireManagementSection() {
           {wizardStep === 3 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {t("Select onboarding questions to include in the vendor profile for this template. This step is optional.")}
+                {t("This template is suggested only for vendors who answered \"Yes\" to at least one of the selected onboarding questions. Select none to always suggest this template.")}
               </p>
               {onboardingQuestions.length === 0 ? (
                 <div className="border rounded-lg p-6 text-center text-muted-foreground">
@@ -2366,13 +2406,13 @@ function QuestionnaireManagementSection() {
 
       {/* Edit Template Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex-shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-base sm:text-lg font-semibold text-slate-800">{t("Edit Template")}</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
             <div className="grid grid-cols-2 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Template Name")} <span className="text-red-500">*</span></Label>
@@ -2399,8 +2439,84 @@ function QuestionnaireManagementSection() {
                 ))}
               </div>
             </div>
+
+            {/* Selection logic — which vendors this template is suggested for */}
+            <div className="space-y-3 border-t border-slate-100 pt-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Selection Logic")}</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t("This template is suggested only for vendors who answered \"Yes\" to at least one of the selected onboarding questions. Select none to always suggest this template.")}
+                </p>
+              </div>
+              {onboardingQuestions.length === 0 ? (
+                <div className="border rounded-lg p-6 text-center text-muted-foreground">
+                  <CheckSquare className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">{t("No onboarding questions configured")}</p>
+                  <p className="text-xs mt-1">{t("Add questions in Vendor Onboarding configuration first")}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">
+                      {editProfileQuestionIds.size === 0
+                        ? t("No conditions — always suggested")
+                        : `${editProfileQuestionIds.size} ${t("selected")}`}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        const allIds = new Set<string>();
+                        onboardingQuestions.forEach((q) => {
+                          allIds.add(q.id);
+                          q.children?.forEach((c) => allIds.add(c.id));
+                        });
+                        setEditProfileQuestionIds(allIds);
+                      }}>{t("Select All")}</Button>
+                      <Button variant="outline" size="sm" onClick={() => setEditProfileQuestionIds(new Set())}>
+                        {t("Deselect All")}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="border rounded-lg max-h-[35vh] overflow-y-auto divide-y">
+                    {onboardingQuestions.filter((q) => !q.parentId).map((parent) => (
+                      <div key={parent.id}>
+                        <label className="flex items-start gap-3 p-3 hover:bg-muted/50 cursor-pointer">
+                          <Checkbox checked={editProfileQuestionIds.has(parent.id)}
+                            onCheckedChange={() => {
+                              setEditProfileQuestionIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(parent.id)) next.delete(parent.id); else next.add(parent.id);
+                                return next;
+                              });
+                            }} className="mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{parent.title}</p>
+                            {parent.question && <p className="text-xs text-muted-foreground mt-0.5">{parent.question}</p>}
+                          </div>
+                        </label>
+                        {parent.children?.map((child) => (
+                          <label key={child.id} className="flex items-start gap-3 p-3 ltr:pl-10 rtl:pr-10 hover:bg-muted/50 cursor-pointer border-t border-dashed">
+                            <Checkbox checked={editProfileQuestionIds.has(child.id)}
+                              onCheckedChange={() => {
+                                setEditProfileQuestionIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(child.id)) next.delete(child.id); else next.add(child.id);
+                                  return next;
+                                });
+                              }} className="mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm">{child.title}</p>
+                              {child.question && <p className="text-xs text-muted-foreground mt-0.5">{child.question}</p>}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <div className="flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+          <div className="flex-shrink-0 flex items-center ltr:justify-end rtl:justify-start gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(false)}>{t("Cancel")}</Button>
             <Button size="sm" onClick={handleEditSave}>{t("Save")}</Button>
           </div>

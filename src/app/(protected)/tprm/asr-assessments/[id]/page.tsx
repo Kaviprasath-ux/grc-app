@@ -598,8 +598,10 @@ export default function ASRAssessmentDetailPage() {
   // non-empty, inflating the issue count; (2) it preserved question order,
   // so a Low finding could appear above High ones. Filter on the effective
   // status instead, and sort highest severity first.
+  // Case-insensitive so this table and the API's High/Medium/Low counts
+  // (which lowercase before comparing) can never disagree on what a finding is.
   const reportIssueRows = verifaiRows
-    .filter(row => row.status === "Unsatisfactory")
+    .filter(row => row.status.toLowerCase() === "unsatisfactory")
     .slice()
     .sort((a, b) => {
       const r = severityRank(a.severity) - severityRank(b.severity);

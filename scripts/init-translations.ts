@@ -6483,6 +6483,14 @@ const translations: [string, string, string][] = [
   ['Multi-year, risk-based audit strategy', 'استراتيجية التدقيق متعددة السنوات المبنية على المخاطر', 'Daudzgadu, uz riskiem balstīta revīzijas stratēģija'],
   ['No audits yet. Use Add Plan on an assessed risk above.', "لا توجد عمليات تدقيق بعد. استخدم 'إضافة خطة' على مخاطرة مقيّمة أعلاه.", "Vēl nav auditu. Izmantojiet 'Pievienot plānu' virs novērtētā riska."],
   ['Years', 'سنوات', 'Gadi'],
+
+  // TPRM — questionnaire template selection logic
+  ['Selection Logic', 'منطق الاختيار', 'Atlases loģika'],
+  ['This template is suggested only for vendors who answered "Yes" to at least one of the selected onboarding questions. Select none to always suggest this template.', 'يُقترح هذا النموذج فقط للموردين الذين أجابوا بـ "نعم" على سؤال واحد على الأقل من أسئلة التسجيل المحددة. لا تحدد أي سؤال لاقتراح هذا النموذج دائماً.', 'Šī veidne tiek ieteikta tikai piegādātājiem, kuri atbildēja "Jā" vismaz uz vienu no atlasītajiem uzņemšanas jautājumiem. Neatlasiet nevienu, lai vienmēr ieteiktu šo veidni.'],
+  ['No conditions — always suggested', 'لا توجد شروط — يُقترح دائماً', 'Nav nosacījumu — vienmēr ieteikts'],
+  ['Always suggested', 'يُقترح دائماً', 'Vienmēr ieteikts'],
+  ['condition', 'شرط', 'nosacījums'],
+  ['conditions', 'شروط', 'nosacījumi'],
 ];
 
 function createExcelFile(): void {

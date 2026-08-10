@@ -30,6 +30,8 @@ interface AssessmentRow {
   issue: string;
   risk: string;
   recommendation: string;
+  // Optional: reports stored before severity was captured have no such key.
+  severity?: string;
 }
 
 interface AssessmentReport {
@@ -42,6 +44,14 @@ function statusColor(status: string) {
   const s = status.toLowerCase();
   if (s.includes("satisfactory") && !s.includes("unsatisfactory")) return "text-green-700";
   if (s.includes("unsatisfactory")) return "text-red-600";
+  return "text-slate-700";
+}
+
+function severityColor(severity: string) {
+  const s = severity.toLowerCase();
+  if (s === "high") return "text-red-600";
+  if (s === "medium") return "text-amber-600";
+  if (s === "low") return "text-green-700";
   return "text-slate-700";
 }
 
@@ -126,13 +136,13 @@ export default function AsrFactoryReportsPage() {
     const headers = [
       t("Sequence Number"), t("Domain Name"), t("Questions"), t("Response"), t("Comments"),
       t("Compliance Status"), t("VerifAI Summary"), t("Confidence Score"),
-      t("Issue"), t("Risk"), t("Recommendation"),
+      t("Issue"), t("Risk"), t("Severity"), t("Recommendation"),
     ];
     const data = report.rows.map(r => [
       r.sequenceNumber, r.domainName, r.question, r.response, r.comments,
       r.complianceStatus, r.verifAISummary,
       r.confidenceScore != null ? r.confidenceScore : "",
-      r.issue, r.risk, r.recommendation,
+      r.issue, r.risk, r.severity || "", r.recommendation,
     ]);
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
 
@@ -249,7 +259,13 @@ export default function AsrFactoryReportsPage() {
                 )}
                 {row.issue && <div><span className="font-semibold text-sm">{t("Issue")}</span><br />{row.issue}</div>}
                 {row.risk && <div><span className="font-semibold text-sm">{t("Risk")}</span><br />{row.risk}</div>}
-                {row.recommendation && <div><span className="font-semibold text-sm">{t("Recommendation")}</span><br />{row.recommendation}</div>}
+                {row.severity && (
+                  <div>
+                    <span className="font-semibold text-sm">{t("Severity")}</span><br />
+                    <span className={`font-semibold ${severityColor(row.severity)}`}>{t(row.severity)}</span>
+                  </div>
+                )}
+                {row.recommendation &&<div><span className="font-semibold text-sm">{t("Recommendation")}</span><br />{row.recommendation}</div>}
               </div>
             </div>
           ))}

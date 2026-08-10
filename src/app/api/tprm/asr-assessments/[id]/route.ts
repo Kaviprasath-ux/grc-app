@@ -148,9 +148,24 @@ export const GET = withAuth(
       const naCount = resps.filter(r => r.response === 'NA').length;
       const satisfactoryCount = resps.filter(r => (r.assessorStatus || r.poStatus || '').toLowerCase() === 'satisfactory').length;
       const unsatisfactoryCount = resps.filter(r => (r.assessorStatus || r.poStatus || '').toLowerCase() === 'unsatisfactory').length;
-      const highCount = resps.filter(r => (r.assessorSeverity || r.poSeverity || '').toLowerCase() === 'high').length;
-      const mediumCount = resps.filter(r => (r.assessorSeverity || r.poSeverity || '').toLowerCase() === 'medium').length;
-      const lowCount = resps.filter(r => (r.assessorSeverity || r.poSeverity || '').toLowerCase() === 'low').length;
+      // Severity counts describe FINDINGS, so they must be scoped the same way
+      // the VerifAI Summary table and the Assessment Report are: answered
+      // questions whose effective status is Unsatisfactory. Previously these
+      // counted every response carrying a severity — and the AI writes
+      // `poSeverity` on Satisfactory verdicts too — so the High/Medium/Low
+      // strip reported more findings than the table below it listed. Matches
+      // the "only count if the status is Unsatisfactory (an actual issue)"
+      // rule already used by the rm-/bo-/it-issues registers.
+      const findings = resps.filter(r =>
+        Boolean(r.response) &&
+        (r.assessorStatus || r.poStatus || '').toLowerCase() === 'unsatisfactory'
+      );
+      const severityOf = (r: typeof resps[number]) =>
+        (r.assessorSeverity || r.poSeverity || '').toLowerCase();
+      // "Critical" is folded into High, consistent with the issue registers.
+      const highCount = findings.filter(r => ['high', 'critical'].includes(severityOf(r))).length;
+      const mediumCount = findings.filter(r => severityOf(r) === 'medium').length;
+      const lowCount = findings.filter(r => severityOf(r) === 'low').length;
 
       const summary = {
         yesCount, noCount, naCount,

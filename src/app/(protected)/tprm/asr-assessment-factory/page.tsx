@@ -31,6 +31,9 @@ interface AssessmentRow {
   issue: string;
   risk: string;
   recommendation: string;
+  // Optional because reports saved to localStorage before severity was
+  // captured have no such key — every read must tolerate undefined.
+  severity?: string;
 }
 
 interface AssessmentReport {
@@ -44,6 +47,21 @@ function statusColor(status: string) {
   const s = status.toLowerCase();
   if (s.includes("satisfactory") && !s.includes("unsatisfactory")) return "text-green-700";
   if (s.includes("unsatisfactory")) return "text-red-600";
+  return "text-slate-700";
+}
+
+// Normalise the backend's severity ("HIGH", "high", "High") to Title case,
+// matching what applyAIResult() in src/lib/tprm-ai-evaluation.ts stores.
+function normalizeSeverity(raw: unknown): string {
+  const s = String(raw ?? "").trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+}
+
+function severityColor(severity: string) {
+  const s = severity.toLowerCase();
+  if (s === "high") return "text-red-600";
+  if (s === "medium") return "text-amber-600";
+  if (s === "low") return "text-green-700";
   return "text-slate-700";
 }
 
@@ -69,6 +87,9 @@ function parseXlsRows(file: File): Promise<AssessmentRow[]> {
           issue: (r["Issue"] as string) || "",
           risk: (r["Risk"] as string) || "",
           recommendation: (r["Recommendation"] as string) || "",
+          // Template-provided severity. Used as the fallback when the AI
+          // returns a finding but no severity of its own.
+          severity: normalizeSeverity(r["Severity"]),
         }));
         resolve(rows);
       } catch (err) {
@@ -373,7 +394,21 @@ export default function AsrAssessmentFactoryPage() {
             return { ...row, complianceStatus: "", verifAISummary: "", confidenceScore: null };
           }
           const ai = await queryRes.json();
-          const irr = ai.issue_risk_recommendation || {};
+          // Field extraction mirrors applyAIResult() in
+          // src/lib/tprm-ai-evaluation.ts — both paths hit the same
+          // /api/query backend, so they must read the same shape. This
+          // previously read only `ai.answer` and ignored `ai.severity`
+          // entirely, which is why the report showed a blank AI summary
+          // and no severity at all.
+          const irr = (ai.issue_risk_recommendation && typeof ai.issue_risk_recommendation === "object")
+            ? ai.issue_risk_recommendation
+            : {};
+          const status = ai.status ? String(ai.status).charAt(0).toUpperCase() + String(ai.status).slice(1) : "";
+          // Fall back to the template's severity when the AI flags a
+          // finding without grading it, same as the assessment path does.
+          const aiSeverity = normalizeSeverity(ai.severity);
+          const severity = aiSeverity
+            || (status.toLowerCase() === "unsatisfactory" ? (row.severity || "") : "");
           successCount++;
           return {
             sequenceNumber: row.sequenceNumber,
@@ -381,13 +416,14 @@ export default function AsrAssessmentFactoryPage() {
             question: ai.question || row.question,
             response: row.response,
             comments: row.comments,
-            complianceStatus: ai.status ? ai.status.charAt(0).toUpperCase() + ai.status.slice(1) : "",
-            verifAISummary: ai.answer || "",
+            complianceStatus: status,
+            verifAISummary: ai.answer || ai.response || "",
             confidenceScore: ai.score != null ? Number(ai.score) * 100 : null,
             verifAIPrompt: row.verifAIPrompt,
-            issue: irr.issue || "",
-            risk: irr.risk || "",
-            recommendation: irr.recommendation || "",
+            issue: irr.issue || ai.issue || "",
+            risk: irr.risk || ai.risk || "",
+            recommendation: irr.recommendation || ai.recommendation || "",
+            severity,
           };
         } catch (qErr) {
           clearTimeout(timer);
@@ -494,6 +530,7 @@ export default function AsrAssessmentFactoryPage() {
       "VerifAI Prompt": r.verifAIPrompt,
       "Issue": r.issue,
       "Risk": r.risk,
+      "Severity": r.severity || "",
       "Recommendation": r.recommendation,
     }));
     const wb = XLSX.utils.book_new();
@@ -672,6 +709,12 @@ export default function AsrAssessmentFactoryPage() {
                     <div>
                       <p className="text-xs font-bold text-slate-700">{t("Risk")}</p>
                       <p className="text-sm">{row.risk}</p>
+                    </div>
+                  )}
+                  {row.severity && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-700">{t("Severity")}</p>
+                      <p className={`text-sm font-semibold ${severityColor(row.severity)}`}>{t(row.severity)}</p>
                     </div>
                   )}
                   {row.recommendation && (
