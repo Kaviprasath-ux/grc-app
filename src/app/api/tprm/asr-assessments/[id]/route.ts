@@ -162,10 +162,25 @@ export const GET = withAuth(
       );
       const severityOf = (r: typeof resps[number]) =>
         (r.assessorSeverity || r.poSeverity || '').toLowerCase();
-      // "Critical" is folded into High, consistent with the issue registers.
-      const highCount = findings.filter(r => ['high', 'critical'].includes(severityOf(r))).length;
-      const mediumCount = findings.filter(r => severityOf(r) === 'medium').length;
-      const lowCount = findings.filter(r => severityOf(r) === 'low').length;
+      // The AI backend and manual assessor overrides use multiple
+      // vocabularies for severity — assessment finding words
+      // (High/Medium/Low), VRR words (Critical/Moderate/Nominal), and
+      // sometimes both mixed. Fold into three display buckets so a
+      // finding with severity "Moderate" shows up in Medium instead
+      // of silently disappearing from the count while still rendering
+      // in the table below.
+      //
+      // Matches the bucketOf logic in src/app/api/tprm/asr-dashboard/route.ts.
+      const bucketOf = (r: typeof resps[number]): 'high' | 'medium' | 'low' | null => {
+        const s = severityOf(r);
+        if (s === 'critical' || s === 'high') return 'high';
+        if (s === 'moderate' || s === 'medium') return 'medium';
+        if (s === 'nominal' || s === 'low') return 'low';
+        return null;
+      };
+      const highCount = findings.filter(r => bucketOf(r) === 'high').length;
+      const mediumCount = findings.filter(r => bucketOf(r) === 'medium').length;
+      const lowCount = findings.filter(r => bucketOf(r) === 'low').length;
 
       const summary = {
         yesCount, noCount, naCount,
