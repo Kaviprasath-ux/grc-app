@@ -584,6 +584,10 @@ export default function ASRAssessmentDetailPage() {
         domainName: fq.domainName,
         response: resp.response || "—",
         status: effectiveStatus || "—",
+        // AI's narrative answer (poAnswer) — what the assessor calls
+        // the "AI Summary". No assessor-override sibling exists in
+        // the schema; assessor edits go through issue/risk/rec.
+        summary: resp.poAnswer || "—",
         issue: resp.assessorIssue || resp.poIssue || "—",
         risk: resp.assessorRisk || resp.poRisk || "—",
         recommendation: resp.assessorRecommendation || resp.poRecommendation || "—",
@@ -926,9 +930,10 @@ export default function ASRAssessmentDetailPage() {
     };
 
     // Build CSV content
-    const headers = [t("Sr"), t("Issue"), t("Risk"), t("Severity"), t("Due By"), t("Recommendation")];
+    const headers = [t("Sr"), t("AI Summary"), t("Issue"), t("Risk"), t("Severity"), t("Due By"), t("Recommendation")];
     const rows = issueRows.map((row, idx) => [
       idx + 1,
+      `"${(row.summary !== "—" ? row.summary : "").replace(/"/g, '""')}"`,
       `"${(row.issue !== "—" ? row.issue : "").replace(/"/g, '""')}"`,
       `"${(row.risk !== "—" ? row.risk : "").replace(/"/g, '""')}"`,
       row.severity !== "—" ? row.severity : "",
@@ -978,14 +983,18 @@ export default function ASRAssessmentDetailPage() {
       : "—";
     const todayFmt = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
 
+    // Cell renderer that surfaces "—" for missing values so the PDF
+    // reads as "no data" instead of an unexplained blank cell.
+    const cell = (v: string) => v && v !== "—" ? v : "—";
     const tableRows = issueRows.map((row, idx) => `
       <tr>
         <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;width:40px;">${idx + 1}</td>
-        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${row.issue !== "—" ? row.issue : ""}</td>
-        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${row.risk !== "—" ? row.risk : ""}</td>
-        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;width:70px;">${row.severity !== "—" ? row.severity : ""}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${cell(row.summary)}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${cell(row.issue)}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${cell(row.risk)}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;width:70px;">${cell(row.severity)}</td>
         <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;width:90px;white-space:nowrap;">${getDueBy(row.severity !== "—" ? row.severity : "")}</td>
-        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${row.recommendation !== "—" ? row.recommendation : ""}</td>
+        <td style="padding:10px 8px;border:1px solid #e0e0e0;vertical-align:top;">${cell(row.recommendation)}</td>
       </tr>
     `).join("");
 
@@ -1082,6 +1091,7 @@ export default function ASRAssessmentDetailPage() {
     <thead>
       <tr>
         <th style="width:40px;">${t("Sr")}</th>
+        <th>${t("AI Summary")}</th>
         <th>${t("Issue")}</th>
         <th>${t("Risk")}</th>
         <th style="width:70px;">${t("Severity")}</th>
@@ -1090,7 +1100,7 @@ export default function ASRAssessmentDetailPage() {
       </tr>
     </thead>
     <tbody>
-      ${tableRows.length > 0 ? tableRows : `<tr><td colspan="6" style="padding:20px;text-align:center;border:1px solid #e0e0e0;">${t("No issues found")}</td></tr>`}
+      ${tableRows.length > 0 ? tableRows : `<tr><td colspan="7" style="padding:20px;text-align:center;border:1px solid #e0e0e0;">${t("No issues found")}</td></tr>`}
     </tbody>
   </table>
 
@@ -2079,6 +2089,7 @@ export default function ASRAssessmentDetailPage() {
                   <thead>
                     <tr className="bg-muted/60">
                       <th className="border border-border/60 px-3 py-2.5 text-left font-semibold w-[45px]">{t("Sr")}</th>
+                      <th className="border border-border/60 px-3 py-2.5 text-left font-semibold">{t("AI Summary")}</th>
                       <th className="border border-border/60 px-3 py-2.5 text-left font-semibold">{t("Issue")}</th>
                       <th className="border border-border/60 px-3 py-2.5 text-left font-semibold">{t("Risk")}</th>
                       <th className="border border-border/60 px-3 py-2.5 text-left font-semibold w-[80px]">{t("Severity")}</th>
@@ -2092,20 +2103,27 @@ export default function ASRAssessmentDetailPage() {
                         const dueDays = remediationDaysForSeverity(row.severity);
                         const dueDate = new Date(); if (dueDays) dueDate.setDate(dueDate.getDate() + dueDays);
                         const dueBy = dueDays ? dueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-") : "—";
+                        // Show "—" (not blank) when a field is genuinely
+                        // empty so it's obvious it's missing data, not a
+                        // rendering bug. Applies especially to Severity —
+                        // an Unsatisfactory row without severity should
+                        // read as "we don't know", not as a hidden value.
+                        const cell = (v: string) => v && v !== "—" ? v : "—";
                         return (
                           <tr key={row.questionNo} className="align-top">
                             <td className="border border-border/60 px-3 py-2.5">{idx + 1}</td>
-                            <td className="border border-border/60 px-3 py-2.5">{row.issue !== "—" ? row.issue : ""}</td>
-                            <td className="border border-border/60 px-3 py-2.5 text-muted-foreground">{row.risk !== "—" ? row.risk : ""}</td>
-                            <td className="border border-border/60 px-3 py-2.5">{row.severity !== "—" ? row.severity : ""}</td>
+                            <td className="border border-border/60 px-3 py-2.5 text-muted-foreground">{cell(row.summary)}</td>
+                            <td className="border border-border/60 px-3 py-2.5">{cell(row.issue)}</td>
+                            <td className="border border-border/60 px-3 py-2.5 text-muted-foreground">{cell(row.risk)}</td>
+                            <td className="border border-border/60 px-3 py-2.5">{cell(row.severity)}</td>
                             <td className="border border-border/60 px-3 py-2.5 whitespace-nowrap">{dueBy}</td>
-                            <td className="border border-border/60 px-3 py-2.5 text-muted-foreground">{row.recommendation !== "—" ? row.recommendation : ""}</td>
+                            <td className="border border-border/60 px-3 py-2.5 text-muted-foreground">{cell(row.recommendation)}</td>
                           </tr>
                         );
                       })}
                     {reportIssueRows.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="border border-border/60 px-3 py-8 text-center text-muted-foreground">{t("No issues found")}</td>
+                        <td colSpan={7} className="border border-border/60 px-3 py-8 text-center text-muted-foreground">{t("No issues found")}</td>
                       </tr>
                     )}
                   </tbody>
