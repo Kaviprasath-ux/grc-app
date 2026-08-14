@@ -65,6 +65,7 @@ interface OnboardingQuestion {
   responseType: string;
   questionType: string;
   isActive: boolean;
+  parentId?: string | null;
   children: OnboardingQuestion[];
 }
 
@@ -742,7 +743,12 @@ function VendorRiskProfile({
   } catch { /* ignore */ }
 
   const rows: { id: string; label: string; value: string; indent: boolean }[] = [];
-  for (const pq of questions) {
+  // Walk only top-level questions: the onboarding-questions endpoint returns
+  // a flat list in which every child ALSO appears as its own entry (with its
+  // `children` populated), so iterating it raw emitted each answered child
+  // twice — once here and once through its parent — and produced duplicate
+  // rows (and duplicate React keys) in the Vendor Risk Profile panel.
+  for (const pq of questions.filter((q) => !q.parentId)) {
     const pAns = answers[pq.id];
     if (pAns) rows.push({ id: pq.id, label: pq.title, value: pAns, indent: false });
     for (const child of pq.children?.filter((c) => c.isActive) || []) {

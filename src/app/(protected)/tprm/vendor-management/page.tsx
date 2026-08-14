@@ -131,7 +131,7 @@ function VendorAccordionItem({
   t: (s: string) => string;
   hideEditDelete?: boolean;
   isAdmin?: boolean;
-  onboardingQuestions: { id: string; title: string; isActive?: boolean; children?: { id: string; title: string; isActive?: boolean }[] }[];
+  onboardingQuestions: { id: string; title: string; isActive?: boolean; parentId?: string | null; children?: { id: string; title: string; isActive?: boolean }[] }[];
 }) {
   const a = vendor.monitoringVendor?.assessments[0];
   const effOverall = a?.calculatedOverallScore ?? a?.overallScore ?? null;
@@ -288,7 +288,11 @@ function VendorAccordionItem({
             } catch { /* ignore */ }
 
             const rows: { id: string; label: string; value: string }[] = [];
-            for (const pq of onboardingQuestions) {
+            // Walk only top-level questions: the onboarding-questions endpoint
+            // returns a flat list in which every child ALSO appears as its own
+            // entry (with its `children` populated), so iterating it raw emitted
+            // each answered child twice — once here and once through its parent.
+            for (const pq of onboardingQuestions.filter((q) => !q.parentId)) {
               const pAns = answers[pq.id];
               if (pAns) rows.push({ id: pq.id, label: pq.title, value: pAns });
               for (const child of (pq.children || []).filter((c) => c.isActive !== false)) {
@@ -384,7 +388,7 @@ export default function VendorManagementPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [rawServiceCategories, setRawServiceCategories] = useState<{ id: string; name: string }[]>([]);
   const { data: serviceCategories } = useTranslatedData(rawServiceCategories, { modelName: 'TPRMServiceCategory' });
-  const [onboardingQuestions, setOnboardingQuestions] = useState<{ id: string; title: string; isActive?: boolean; children?: { id: string; title: string; isActive?: boolean }[] }[]>([]);
+  const [onboardingQuestions, setOnboardingQuestions] = useState<{ id: string; title: string; isActive?: boolean; parentId?: string | null; children?: { id: string; title: string; isActive?: boolean }[] }[]>([]);
 
   // Configuration check state
   const [configCheck, setConfigCheck] = useState<{ complete: boolean; missing: string[] } | null>(null);
