@@ -91,6 +91,9 @@ export const POST = withAuth(
             error: 'Please answer all mandatory questions before submitting',
             unansweredCount: unanswered.length,
             unansweredQuestions: unanswered.map(q => q.questionText.substring(0, 100)),
+            // Ids let the UI filter the list down to exactly the blocking
+            // questions instead of leaving the AM to hunt through the set.
+            unansweredQuestionIds: unanswered.map(q => q.id),
           }, { status: 400 });
         }
 
@@ -107,6 +110,7 @@ export const POST = withAuth(
             error: 'Please upload all mandatory documents before submitting',
             missingCount: missingAttachments.length,
             missingQuestions: missingAttachments.map(q => q.questionText.substring(0, 100)),
+            missingQuestionIds: missingAttachments.map(q => q.id),
           }, { status: 400 });
         }
       }

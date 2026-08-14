@@ -46,6 +46,24 @@ interface Question {
   children: { id: string; questionText: string; mandatoryAttachment: boolean; mandatoryQuestion: boolean; validateThroughAI?: boolean; sortOrder: number }[];
 }
 
+// What kind of gap is blocking submission — drives the wording of the
+// on-screen banner and the per-question hint.
+type BlockingKind = "answer" | "attachment";
+
+interface BlockingState {
+  ids: Set<string>;
+  kind: BlockingKind;
+}
+
+// Filter-mode value → the stored response it selects. Keys are the
+// SelectItem values; the values must match what the answer RadioGroup
+// writes ("Yes" / "No" / "NA").
+const ANSWER_FILTERS: Record<string, string | undefined> = {
+  "answered-yes": "Yes",
+  "answered-no": "No",
+  "answered-na": "NA",
+};
+
 interface AssessmentResponse {
   id: string;
   questionId: string;
@@ -139,6 +157,8 @@ export default function AMResponseQuestionnairePage() {
   const [saving, setSaving] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState("all");
   const [filterMode, setFilterMode] = useState("all");
+  // Questions the server rejected on the last submit attempt, if any.
+  const [blocking, setBlocking] = useState<BlockingState | null>(null);
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -170,7 +190,13 @@ export default function AMResponseQuestionnairePage() {
   const [retriggering, setRetriggering] = useState(false);
   const aiPollRef = useRef<NodeJS.Timeout | null>(null);
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Auto-save bookkeeping, keyed BY QUESTION. A single shared timer used to
+  // back all questions, so answering B within the debounce window cancelled
+  // the pending save for A and A was never persisted — the UI still showed it
+  // answered (local state), but the server never received it.
+  const saveTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const pendingSavesRef = useRef<Map<string, Partial<AssessmentResponse>>>(new Map());
+  const inFlightSavesRef = useRef<Set<Promise<unknown>>>(new Set());
 
   const fetchAssessment = useCallback(async () => {
     try {
@@ -213,9 +239,13 @@ export default function AMResponseQuestionnairePage() {
   }, [assessmentId, toast, t]);
 
   useEffect(() => {
+    const timers = saveTimersRef.current;
     fetchAssessment();
     return () => {
       if (aiPollRef.current) clearInterval(aiPollRef.current);
+      // Don't leave debounced answers stranded when the AM navigates away.
+      for (const timer of timers.values()) clearTimeout(timer);
+      timers.clear();
     };
   }, [fetchAssessment]);
 
@@ -257,25 +287,56 @@ export default function AMResponseQuestionnairePage() {
     }, 5000);
   }, [assessmentId]);
 
-  // Auto-save debounced
-  const autoSave = useCallback((questionId: string, data: Partial<AssessmentResponse>) => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        await fetch(`/api/tprm/am-assessments/${assessmentId}/responses`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            questionId,
-            domainId: questions.find(q => q.id === questionId)?.domainId,
-            ...data,
-          }),
-        });
-      } catch {
-        console.error("Auto-save failed for question", questionId);
-      }
-    }, 800);
+  // POST one question's pending edits immediately. Tracked in
+  // inFlightSavesRef so flushPendingSaves() can await requests that have
+  // already left the debounce but not yet returned.
+  const persistSave = useCallback((questionId: string) => {
+    const data = pendingSavesRef.current.get(questionId);
+    if (!data) return Promise.resolve();
+    pendingSavesRef.current.delete(questionId);
+
+    const req = fetch(`/api/tprm/am-assessments/${assessmentId}/responses`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId,
+        domainId: questions.find(q => q.id === questionId)?.domainId,
+        ...data,
+      }),
+    })
+      .catch(() => { console.error("Auto-save failed for question", questionId); })
+      .finally(() => { inFlightSavesRef.current.delete(req); });
+
+    inFlightSavesRef.current.add(req);
+    return req;
   }, [assessmentId, questions]);
+
+  // Auto-save, debounced PER QUESTION. Edits accumulate per question so a
+  // response change followed by a comment on the same question are sent
+  // together rather than one overwriting the other.
+  const autoSave = useCallback((questionId: string, data: Partial<AssessmentResponse>) => {
+    pendingSavesRef.current.set(questionId, {
+      ...(pendingSavesRef.current.get(questionId) || {}),
+      ...data,
+    });
+
+    const existing = saveTimersRef.current.get(questionId);
+    if (existing) clearTimeout(existing);
+    saveTimersRef.current.set(questionId, setTimeout(() => {
+      saveTimersRef.current.delete(questionId);
+      void persistSave(questionId);
+    }, 800));
+  }, [persistSave]);
+
+  // Send everything still queued and wait for it to land. Called before
+  // submitting so the server validates against what the AM actually sees
+  // rather than whatever happened to survive the debounce.
+  const flushPendingSaves = useCallback(async () => {
+    for (const timer of saveTimersRef.current.values()) clearTimeout(timer);
+    saveTimersRef.current.clear();
+    const queued = Array.from(pendingSavesRef.current.keys()).map(id => persistSave(id));
+    await Promise.all([...queued, ...Array.from(inFlightSavesRef.current)]);
+  }, [persistSave]);
 
   const handleResponseChange = (questionId: string, value: string) => {
     setResponses(prev => ({
@@ -379,19 +440,42 @@ export default function AMResponseQuestionnairePage() {
     setSubmitting(true);
     setShowSubmitConfirm(false);
     try {
+      // Persist anything still sitting in the debounce first, otherwise the
+      // server validates a stale set and rejects answers the AM can see
+      // on screen.
+      await flushPendingSaves();
+
       const res = await fetch(`/api/tprm/am-assessments/${assessmentId}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
       const json = await res.json();
       if (!res.ok) {
+        // The submit route reports exactly which questions block submission.
+        // Surface them: name the first few in the toast, and pin the list to
+        // those questions so the AM doesn't have to hunt through the set.
+        const ids: string[] = json.unansweredQuestionIds || json.missingQuestionIds || [];
+        const texts: string[] = json.unansweredQuestions || json.missingQuestions || [];
+        const kind: BlockingKind = json.missingQuestionIds ? "attachment" : "answer";
+
+        if (ids.length > 0) {
+          setBlocking({ ids: new Set(ids), kind });
+          setFilterMode("needs-attention");
+          setSelectedDomain("all");
+        }
+
+        const preview = texts.slice(0, 3).map((q) => `• ${q}`).join("\n");
+        const more = texts.length > 3 ? `\n${t("and")} ${texts.length - 3} ${t("more")}…` : "";
         toast({
           title: t("Validation Error"),
-          description: json.error || t("Cannot submit assessment"),
+          description: texts.length > 0
+            ? `${json.error}\n\n${preview}${more}`
+            : json.error || t("Cannot submit assessment"),
           variant: "destructive",
         });
         return;
       }
+      setBlocking(null);
       toast({ title: t("Success"), description: t("Assessment submitted successfully. AI evaluation has started.") });
       // Trigger translation for the assessment record
       if (assessment) {
@@ -641,6 +725,11 @@ export default function AMResponseQuestionnairePage() {
     if (filterMode === "mandatory-attachments" && !q.mandatoryAttachment) return false;
     if (filterMode === "flagged" && !responses[q.id]?.isFlagged) return false;
     if (filterMode === "unanswered" && responses[q.id]?.response) return false;
+    // Answer filters. Like "unanswered" above, these match on the question's
+    // own response — a parent is not kept just because one of its child
+    // questions carries the selected answer.
+    if (ANSWER_FILTERS[filterMode] && responses[q.id]?.response !== ANSWER_FILTERS[filterMode]) return false;
+    if (filterMode === "needs-attention" && !blocking?.ids.has(q.id)) return false;
     if (filterMode === "assigned-to-me") {
       const resp = responses[q.id];
       if (!resp?.isDelegated || resp?.delegatedToId !== currentUserId) return false;
@@ -856,10 +945,42 @@ export default function AMResponseQuestionnairePage() {
               <SelectItem value="mandatory-attachments">{t("Mandatory Attachments")}</SelectItem>
               <SelectItem value="flagged">{t("Flagged")}</SelectItem>
               <SelectItem value="unanswered">{t("Unanswered")}</SelectItem>
+              {blocking && blocking.ids.size > 0 && (
+                <SelectItem value="needs-attention">
+                  {t("Needs attention")} ({blocking.ids.size})
+                </SelectItem>
+              )}
+              <SelectItem value="answered-yes">{t("Answered: Yes")}</SelectItem>
+              <SelectItem value="answered-no">{t("Answered: No")}</SelectItem>
+              <SelectItem value="answered-na">{t("Answered: NA")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
+
+      {/* Submission blockers — names what is missing and pins the list to it. */}
+      {blocking && blocking.ids.size > 0 && (
+        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 flex items-start gap-3">
+          <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+          <div className="flex-1 text-sm">
+            <p className="font-medium text-red-800">
+              {blocking.ids.size}{" "}
+              {blocking.kind === "attachment"
+                ? t("mandatory document(s) are missing before this assessment can be submitted")
+                : t("mandatory question(s) are unanswered before this assessment can be submitted")}
+            </p>
+            <p className="text-red-700 mt-0.5">
+              {filterMode === "needs-attention"
+                ? t("The list below shows only those questions.")
+                : t("Choose \"Needs attention\" in the filter to see only those questions.")}
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" className="text-red-700 shrink-0"
+            onClick={() => { setBlocking(null); setFilterMode("all"); }}>
+            {t("Dismiss")}
+          </Button>
+        </div>
+      )}
 
       {/* Questions */}
       <div className="space-y-4">
@@ -875,7 +996,11 @@ export default function AMResponseQuestionnairePage() {
           filteredQuestions.map((q, idx) => {
             const resp = responses[q.id];
             return (
-              <Card key={q.id} className={`${resp?.isFlagged ? "border-amber-400 bg-amber-50/30" : ""}`}>
+              <Card key={q.id} className={`${
+                blocking?.ids.has(q.id)
+                  ? "border-red-400 bg-red-50/30"
+                  : resp?.isFlagged ? "border-amber-400 bg-amber-50/30" : ""
+              }`}>
                 <CardContent className="p-4 space-y-3">
                   {/* Question header */}
                   <div className="flex items-start justify-between gap-4">
