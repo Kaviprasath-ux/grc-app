@@ -57,7 +57,6 @@ interface Vendor {
   vendorUrl: string | null;
   status: string;
   vrr: string | null;
-  vrrScore?: number | null;
   engagementId: string | null;
   createdAt: string;
   department: { id: string; name: string } | null;
@@ -622,7 +621,7 @@ export default function RMInventoryPage() {
       const res = await fetch("/api/tprm/vendors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...buildPayload(), vrr: vrrLabel, vrrScore, status }),
+        body: JSON.stringify({ ...buildPayload(), vrr: vrrLabel, status }),
       });
       if (res.ok) {
         const created = await res.json();
@@ -633,7 +632,7 @@ export default function RMInventoryPage() {
         await fetch(`/api/tprm/vendors/${created.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vrr: vrrLabel, vrrScore }),
+          body: JSON.stringify({ vrr: vrrLabel }),
         });
         triggerTranslation('TPRMVendor', created.id, { name: vendorName.trim(), serviceCategory: serviceCategory || undefined });
         // When "Perform Monitoring" is on, register this vendor in the monitoring
@@ -1535,12 +1534,7 @@ export default function RMInventoryPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (() => {
-            // Prefer the stored numeric score. Vendors onboarded before vrrScore
-            // existed have none, so fall back to deriving a value from the label
-            // (which yields the band minimum — the old behaviour).
-            const vrrScore = riskRatingVendor?.vrrScore != null
-              ? Math.min(100, Math.max(0, riskRatingVendor.vrrScore))
-              : parseVrrScore(riskRatingVendor?.vrr ?? null);
+            const vrrScore = parseVrrScore(riskRatingVendor?.vrr ?? null);
             const level = getVrrLevel(vrrScore);
             const cx = 150, cy = 140, r = 110;
             const arcSegments = vrrLevels.map((l, i) => ({

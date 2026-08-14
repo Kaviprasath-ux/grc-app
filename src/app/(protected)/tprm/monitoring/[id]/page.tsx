@@ -420,7 +420,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showRiskRatingDialog, setShowRiskRatingDialog] = useState(false);
-  const [riskRatingVendor, setRiskRatingVendor] = useState<{ id: string; name: string; vrr: string | null; vrrScore?: number | null; onboardingAnswers: string | null } | null>(null);
+  const [riskRatingVendor, setRiskRatingVendor] = useState<{ id: string; name: string; vrr: string | null; onboardingAnswers: string | null } | null>(null);
   const [riskRatingLoading, setRiskRatingLoading] = useState(false);
   const [rawQuestionnaireTemplates, setRawQuestionnaireTemplates] = useState<QuestionnaireTemplate[]>([]);
   const { data: questionnaireTemplates } = useTranslatedData(rawQuestionnaireTemplates, { modelName: 'TPRMQuestionnaireTemplate' });
@@ -601,7 +601,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
       await fetch(`/api/tprm/vendors/${newVendorId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vrr: vrrLabel, vrrScore }),
+        body: JSON.stringify({ vrr: vrrLabel }),
       });
 
       // Link monitoring vendor to TPRM vendor
@@ -941,12 +941,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
           {riskRatingLoading ? (
             <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : (() => {
-            // Prefer the stored numeric score. Vendors onboarded before vrrScore
-            // existed have none, so fall back to deriving a value from the label
-            // (which yields the band minimum — the old behaviour).
-            const vrrScore = riskRatingVendor?.vrrScore != null
-              ? Math.min(100, Math.max(0, riskRatingVendor.vrrScore))
-              : parseVrrScore(riskRatingVendor?.vrr ?? null);
+            const vrrScore = parseVrrScore(riskRatingVendor?.vrr ?? null);
             const level = getVrrLevel(vrrScore);
             const cx = 150, cy = 140, r = 110;
             const arcSegments = vrrLevels.map((l, i) => ({

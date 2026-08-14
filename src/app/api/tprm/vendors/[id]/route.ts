@@ -85,9 +85,6 @@ export const PATCH = withAuth<RouteContext>(
           departmentId: body.departmentId,
           status: body.status,
           vrr: body.vrr,
-          // Left undefined when absent so a partial PATCH (eg. the cover-image
-          // or status-only updates) doesn't wipe a stored score.
-          vrrScore: typeof body.vrrScore === "number" ? body.vrrScore : undefined,
           engagementId: body.engagementId,
           vendorCertification: body.vendorCertification,
           vendorUrl: body.vendorUrl,

@@ -237,9 +237,6 @@ export const POST = withAuth(
           departmentId: effectiveDepartmentId,
           status: body.status || "Onboarding",
           vrr: body.vrr,
-          // Numeric score behind the vrr label, so the gauge can show the
-          // vendor's real score instead of the labelled band's minimum.
-          vrrScore: typeof body.vrrScore === "number" ? body.vrrScore : null,
           engagementId,
           vendorCertification: body.vendorCertification,
           vendorUrl: body.vendorUrl || null,

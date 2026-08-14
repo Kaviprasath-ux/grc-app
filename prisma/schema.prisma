@@ -4443,12 +4443,6 @@ model TPRMVendor {
   status                   String                        @default("Onboarding") // Onboarding, Onboarded, Offboarding, Offboarded
   engagementId             String? // External engagement identifier
   vrr                      String? // Vendor Risk Rating: Critical, High, Moderate, Low, Nominal
-  // Numeric VRR score the label above was derived from (sum of the onboarding
-  // questions answered "Yes"). Stored so the risk-rating gauge can show the
-  // vendor's actual score; without it the UI could only fall back to the
-  // minimum of the labelled band, making every Critical vendor read the same.
-  // Null for vendors onboarded before this field existed.
-  vrrScore                 Int?
   serviceDescription       String?                       @db.Text
   contractStartDate        DateTime?
   contractEndDate          DateTime?
