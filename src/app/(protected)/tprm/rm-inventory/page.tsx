@@ -798,7 +798,12 @@ export default function RMInventoryPage() {
 
   const calculateVrrScore = (): number => {
     let total = 0;
-    for (const q of onboardingQuestions) {
+    // Only walk top-level questions. The onboarding-questions endpoint returns
+    // a flat list where every child ALSO appears as its own entry (each with
+    // `children` populated), so iterating the raw list scored a child twice —
+    // once on its own pass and once through its parent — inflating the total
+    // and pushing vendors into a higher risk band than their answers warrant.
+    for (const q of onboardingQuestions.filter((x) => !x.parentId)) {
       if (questionAnswers[q.id] === "Yes") {
         total += q.score || 0;
       }
@@ -1576,13 +1581,16 @@ export default function RMInventoryPage() {
                     </svg>
                   </div>
 
-                  {/* Color bar */}
+                  {/* Color bar — widths derived from the same vrrLevels the arc
+                      uses, so a tenant with custom VRR thresholds doesn't get a
+                      bar that contradicts the gauge above it. */}
                   <div className="flex h-3 rounded-full overflow-hidden">
-                    <div className="flex-[20] bg-green-500" />
-                    <div className="flex-[10] bg-lime-500" />
-                    <div className="flex-[10] bg-yellow-500" />
-                    <div className="flex-[10] bg-orange-500" />
-                    <div className="flex-[50] bg-red-500" />
+                    {arcSegments.map((seg) => (
+                      <div
+                        key={seg.from}
+                        style={{ flexGrow: Math.max(seg.to - seg.from, 1), backgroundColor: seg.color }}
+                      />
+                    ))}
                   </div>
 
                   {/* Risk Level Badges */}
