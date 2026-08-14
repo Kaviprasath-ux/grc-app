@@ -78,6 +78,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasPermission } from "@/hooks/usePermissions";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import { TemplateCoverImage } from "@/components/shared/TemplateCoverImage";
 
 // ==================== TYPES ====================
 
@@ -1043,7 +1044,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
                               </div>
                             )}
                             <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden">
-                              {tmpl.imageUrl ? <img src={tmpl.imageUrl} alt={tmpl.templateName} className="w-full h-full object-cover" /> : <Building2 className="h-7 w-7 text-slate-400" />}
+                              <TemplateCoverImage src={tmpl.imageUrl} alt={tmpl.templateName} className="w-full h-full object-cover" fallback={<Building2 className="h-7 w-7 text-slate-400" />} />
                             </div>
                             <span className="text-xs font-medium text-slate-700 line-clamp-2">{tmpl.templateName}</span>
                             {tmpl.frameworkName && <span className="text-[10px] text-slate-500 line-clamp-1">{tmpl.frameworkName}</span>}

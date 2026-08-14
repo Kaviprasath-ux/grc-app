@@ -33,6 +33,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { normalizeVrrLabel } from "@/lib/tprm-vrr";
+import { TemplateCoverImage } from "@/components/shared/TemplateCoverImage";
 
 // ── Types ──────────────────────────────────────────────
 interface MonitoringAssessmentSummary {
@@ -1634,11 +1635,12 @@ export default function BOInventoryPage() {
                               </div>
                             )}
                             <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden">
-                              {tmpl.imageUrl ? (
-                                <img src={tmpl.imageUrl} alt={tmpl.templateName} className="w-full h-full object-cover" />
-                              ) : (
-                                <Building2 className="h-7 w-7 text-slate-400" />
-                              )}
+                              <TemplateCoverImage
+                                src={tmpl.imageUrl}
+                                alt={tmpl.templateName}
+                                className="w-full h-full object-cover"
+                                fallback={<Building2 className="h-7 w-7 text-slate-400" />}
+                              />
                             </div>
                             <span className="text-xs font-medium text-slate-700 line-clamp-2">{tmpl.templateName}</span>
                             {tmpl.frameworkName && (

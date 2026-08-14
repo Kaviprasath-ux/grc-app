@@ -10,6 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { TemplateCoverImage } from "@/components/shared/TemplateCoverImage";
 
 interface QuestionLink {
   id: string;
@@ -154,18 +155,17 @@ export default function AsrTemplatePage() {
             >
               {/* Thumbnail */}
               <div className="relative aspect-[4/3] bg-slate-50 overflow-hidden">
-                {tmpl.imageUrl ? (
-                  <img
-                    src={tmpl.imageUrl}
-                    alt={tmpl.templateName}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-blue-50">
-                    <FileText className="h-12 w-12 text-primary-300 mb-2" />
-                    <span className="text-xs text-primary-400 font-medium">{t("Questionnaire")}</span>
-                  </div>
-                )}
+                <TemplateCoverImage
+                  src={tmpl.imageUrl}
+                  alt={tmpl.templateName}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fallback={
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-blue-50">
+                      <FileText className="h-12 w-12 text-primary-300 mb-2" />
+                      <span className="text-xs text-primary-400 font-medium">{t("Questionnaire")}</span>
+                    </div>
+                  }
+                />
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2.5 shadow-lg">
