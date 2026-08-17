@@ -33,6 +33,7 @@ import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 // ── Field Validation ──────────────────────────────────
 // Blocklist approach: allow all normal text (letters, numbers, punctuation like ? , . - & ' " etc.)
@@ -1990,22 +1991,36 @@ function QuestionnaireManagementSection() {
           </Button>
           <div className="flex items-center gap-2">
             {!isAuditor && (
-              <Button size="sm" variant="outline"
-                disabled={!selectedTemplateId || enablingAI === selectedTemplateId}
-                onClick={() => selectedTemplateId && handleEnableAI(selectedTemplateId)}>
-                {enablingAI === selectedTemplateId ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : <Bot className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
-                {enablingAI === selectedTemplateId ? t("Enabling...") : t("Enable AI Validation")}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline"
+                    disabled={!selectedTemplateId || enablingAI === selectedTemplateId}
+                    onClick={() => selectedTemplateId && handleEnableAI(selectedTemplateId)}>
+                    {enablingAI === selectedTemplateId ? <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" /> : <Bot className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
+                    {enablingAI === selectedTemplateId ? t("Enabling...") : t("Enable AI Validation")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  {t("Turns on AI-based answer validation for every question in this template (and their sub-questions). The AI engine will check each vendor response against the uploaded evidence. For any question that doesn't already have a VerifAI prompt, the question text is used as the prompt.")}
+                </TooltipContent>
+              </Tooltip>
             )}
             <Button size="sm" variant="outline">
               <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Export")}
             </Button>
             {!isAuditor && (
-              <Button size="sm" variant="outline" onClick={() => {
-                setSelectedLinkIds(new Set()); setLinkSearch(""); setLinkDialogOpen(true);
-              }}>
-                <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Link Existing")}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    setSelectedLinkIds(new Set()); setLinkSearch(""); setLinkDialogOpen(true);
+                  }}>
+                    <Link2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t("Link Existing")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  {t("Attach questions that already exist in the master question bank to this template — no need to re-create them. Use Add to write a brand-new question instead.")}
+                </TooltipContent>
+              </Tooltip>
             )}
             {!isAuditor && (
               <Button size="sm" onClick={openAddQuestion}>
