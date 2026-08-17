@@ -24,6 +24,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { normalizeVrrLabel } from "@/lib/tprm-vrr";
+import { securityScoreBand } from "@/lib/tprm-security-score";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -138,13 +139,9 @@ function VendorAccordionItem({
   const effSP = a?.calculatedSecurityPosture ?? a?.securityPostureScore ?? null;
   const effTE = a?.calculatedThreatExposure ?? a?.threatExposureScore ?? null;
   const vrrLabel = normalizeVrrLabel(vendor.vrr);
-  const scoreBand = effOverall === null
-    ? null
-    : effOverall >= 80
-      ? { label: "Good", className: "text-green-600" }
-      : effOverall >= 50
-        ? { label: "Moderate", className: "text-yellow-600" }
-        : { label: "Poor", className: "text-red-600" };
+  // Uses the shared 5-band vocabulary from tprm-security-score so the
+  // labels here match what an admin sees in Control Center.
+  const scoreBand = securityScoreBand(effOverall);
 
   return (
     <div className="border border-slate-200 rounded-md bg-white overflow-hidden">
@@ -161,7 +158,7 @@ function VendorAccordionItem({
         </span>
         <span className="flex items-center gap-3 flex-shrink-0">
           {scoreBand && (
-            <span className={`text-xs font-semibold ${scoreBand.className}`}>
+            <span className={`text-xs font-semibold ${scoreBand.textClass}`}>
               {t("Security Score")} - {t(scoreBand.label)}
             </span>
           )}

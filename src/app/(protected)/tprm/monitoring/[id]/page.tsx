@@ -79,6 +79,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasPermission } from "@/hooks/usePermissions";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { TemplateCoverImage } from "@/components/shared/TemplateCoverImage";
+import { securityScoreBand } from "@/lib/tprm-security-score";
 
 // ==================== TYPES ====================
 
@@ -192,13 +193,21 @@ function scoreColor(score: number | null): string {
   return "#ef4444"; // red-500
 }
 
-// Trust rating based on score — used for KPI card styling
+// Trust rating based on score — used for KPI card styling.
+// Label mapping delegates to the shared securityScoreBand so the
+// monitoring KPIs read from the same vocabulary as Control Center
+// (Excellent / Good / Moderate / Low / Nominal). The tone/tailwind
+// classes below are card-styling and remain local because the
+// KPI card treatment differs from the compact chip used elsewhere.
 function scoreRating(score: number | null): { bg: string; iconBg: string; numColor: string; label: string } {
   if (score === null) return { bg: "", iconBg: "bg-slate-50 text-slate-400", numColor: "text-slate-400", label: "N/A" };
-  if (score >= 80) return { bg: "bg-green-50/70", iconBg: "bg-green-100 text-green-700", numColor: "text-green-700", label: "Excellent" };
-  if (score >= 65) return { bg: "bg-emerald-50/50", iconBg: "bg-emerald-50 text-emerald-600", numColor: "text-emerald-600", label: "Good" };
-  if (score >= 50) return { bg: "bg-yellow-50/60", iconBg: "bg-yellow-50 text-yellow-600", numColor: "text-yellow-600", label: "Average" };
-  return { bg: "bg-red-50/50", iconBg: "bg-red-50 text-red-500", numColor: "text-red-500", label: "Low" };
+  const band = securityScoreBand(score);
+  const label = band?.label ?? "Nominal";
+  if (score >= 80) return { bg: "bg-green-50/70", iconBg: "bg-green-100 text-green-700", numColor: "text-green-700", label };
+  if (score >= 60) return { bg: "bg-emerald-50/50", iconBg: "bg-emerald-50 text-emerald-600", numColor: "text-emerald-600", label };
+  if (score >= 40) return { bg: "bg-yellow-50/60", iconBg: "bg-yellow-50 text-yellow-600", numColor: "text-yellow-600", label };
+  if (score >= 20) return { bg: "bg-orange-50/60", iconBg: "bg-orange-50 text-orange-600", numColor: "text-orange-600", label };
+  return { bg: "bg-red-50/50", iconBg: "bg-red-50 text-red-500", numColor: "text-red-500", label };
 }
 
 function severityBadgeClass(sev: string): string {

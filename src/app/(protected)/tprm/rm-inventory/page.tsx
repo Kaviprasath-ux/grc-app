@@ -33,6 +33,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { normalizeVrrLabel } from "@/lib/tprm-vrr";
+import { securityScoreBand } from "@/lib/tprm-security-score";
 import { TemplateCoverImage } from "@/components/shared/TemplateCoverImage";
 
 // ── Types ──────────────────────────────────────────────
@@ -73,12 +74,9 @@ interface VendorGroup {
   vendors: Vendor[];
 }
 
-function securityScoreBand(score: number | null): { label: string; className: string } | null {
-  if (score === null) return null;
-  if (score >= 80) return { label: "Good", className: "text-green-600" };
-  if (score >= 50) return { label: "Moderate", className: "text-yellow-600" };
-  return { label: "Poor", className: "text-red-600" };
-}
+// securityScoreBand now lives in src/lib/tprm-security-score.ts —
+// see bo-inventory for the same import. Reason: keeps the vendor
+// list vocabulary aligned with Control Center.
 
 interface AccountManager {
   name: string;
@@ -168,7 +166,7 @@ function VendorAccordionItem({
         <span className="font-medium text-sm text-slate-800">{group.name}{headerVrr ? ` - ${t(headerVrr)}` : ""}</span>
         <span className="flex items-center gap-3 flex-shrink-0">
           {scoreBand && (
-            <span className={`text-xs font-semibold ${scoreBand.className}`}>
+            <span className={`text-xs font-semibold ${scoreBand.textClass}`}>
               {t("Security Score")} - {t(scoreBand.label)}
             </span>
           )}
