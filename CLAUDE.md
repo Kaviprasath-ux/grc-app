@@ -94,6 +94,12 @@ Protected routes use route groups: `(protected)` applies the `MainLayout` wrappe
 npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/schema.sql
 ```
 
+**Deploy-time schema sync:** the `start` script runs `prisma db push --skip-generate` before `next start`. So on every DigitalOcean deploy, the cloud DB is brought into sync with `schema.prisma` before the app boots. Consequences:
+
+- **Additive changes** (add column/table/index) apply automatically on the next deploy — no manual step needed.
+- **Destructive changes** (drop / rename column, type change requiring DROP+ADD) will make `db push` refuse and the container will fail to start. That's intentional — it forces you to apply the migration by hand (`--accept-data-loss` on a known-good box) BEFORE the deploy, so no data is silently lost.
+- For pure code deploys with no schema change, `db push` is a fast no-op (~1–2s).
+
 ### UI Components
 
 - **`src/components/ui/`** - shadcn/ui components (Radix UI + Tailwind)
