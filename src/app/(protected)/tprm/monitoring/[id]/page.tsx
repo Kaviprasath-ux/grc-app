@@ -420,7 +420,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showRiskRatingDialog, setShowRiskRatingDialog] = useState(false);
-  const [riskRatingVendor, setRiskRatingVendor] = useState<{ id: string; name: string; vrr: string | null; onboardingAnswers: string | null } | null>(null);
+  const [riskRatingVendor, setRiskRatingVendor] = useState<{ id: string; name: string; vrr: string | null; vrrScore: number | null; onboardingAnswers: string | null } | null>(null);
   const [riskRatingLoading, setRiskRatingLoading] = useState(false);
   const [rawQuestionnaireTemplates, setRawQuestionnaireTemplates] = useState<QuestionnaireTemplate[]>([]);
   const { data: questionnaireTemplates } = useTranslatedData(rawQuestionnaireTemplates, { modelName: 'TPRMQuestionnaireTemplate' });
@@ -454,6 +454,15 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
     const level = vrrLevels.find((l) => l.name.toLowerCase() === vrr.toLowerCase());
     if (level) return level.min;
     return 0;
+  };
+
+  // Prefer the raw score stored on the vendor. Without this the gauge
+  // always plots the band minimum instead of the actual score.
+  const resolveVrrScore = (v: { vrr?: string | null; vrrScore?: number | null } | null | undefined): number => {
+    if (v?.vrrScore != null && Number.isFinite(v.vrrScore)) {
+      return Math.min(100, Math.max(0, v.vrrScore));
+    }
+    return parseVrrScore(v?.vrr ?? null);
   };
 
   const getVrrLevel = (score: number) => [...vrrLevels].reverse().find((l) => score >= l.min) || vrrLevels[0];
@@ -679,7 +688,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
         fetch(`/api/tprm/vendors/${createdVendorId}`),
         fetch("/api/tprm/master-data/questionnaires"),
       ]);
-      let fetchedVendor: { id: string; name: string; vrr: string | null; onboardingAnswers: string | null } | null = null;
+      let fetchedVendor: { id: string; name: string; vrr: string | null; vrrScore: number | null; onboardingAnswers: string | null } | null = null;
       if (vendorRes.ok) {
         fetchedVendor = await vendorRes.json();
         setRiskRatingVendor(fetchedVendor);
@@ -941,7 +950,7 @@ function OnboardDialog({ open, onClose, vendor, onSuccess }: {
           {riskRatingLoading ? (
             <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : (() => {
-            const vrrScore = parseVrrScore(riskRatingVendor?.vrr ?? null);
+            const vrrScore = resolveVrrScore(riskRatingVendor);
             const level = getVrrLevel(vrrScore);
             const cx = 150, cy = 140, r = 110;
             const arcSegments = vrrLevels.map((l, i) => ({

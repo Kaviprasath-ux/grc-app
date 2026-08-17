@@ -4443,6 +4443,7 @@ model TPRMVendor {
   status                   String                        @default("Onboarding") // Onboarding, Onboarded, Offboarding, Offboarded
   engagementId             String? // External engagement identifier
   vrr                      String? // Vendor Risk Rating: Critical, High, Moderate, Low, Nominal
+  vrrScore                 Int? // Raw 0–100 onboarding score. `vrr` band alone hides the score within a band, so the risk-rating gauge would always point at the band minimum. Save both.
   serviceDescription       String?                       @db.Text
   contractStartDate        DateTime?
   contractEndDate          DateTime?

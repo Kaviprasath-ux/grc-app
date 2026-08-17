@@ -85,6 +85,10 @@ export const PATCH = withAuth<RouteContext>(
           departmentId: body.departmentId,
           status: body.status,
           vrr: body.vrr,
+          // Only overwrite vrrScore when the caller explicitly sends
+          // one; otherwise leave the stored value alone so unrelated
+          // PATCHes (e.g. contract updates) don't clear it.
+          ...(typeof body.vrrScore === 'number' ? { vrrScore: body.vrrScore } : {}),
           engagementId: body.engagementId,
           vendorCertification: body.vendorCertification,
           vendorUrl: body.vendorUrl,

@@ -237,6 +237,12 @@ export const POST = withAuth(
           departmentId: effectiveDepartmentId,
           status: body.status || "Onboarding",
           vrr: body.vrr,
+          // Raw onboarding score (0–100). Persisting this alongside the
+          // band label so the risk-rating gauge can plot the actual
+          // score rather than the band minimum. See
+          // src/app/(protected)/tprm/bo-inventory/page.tsx handleCreate
+          // for the caller.
+          vrrScore: typeof body.vrrScore === 'number' ? body.vrrScore : null,
           engagementId,
           vendorCertification: body.vendorCertification,
           vendorUrl: body.vendorUrl || null,

@@ -57,6 +57,7 @@ interface Vendor {
   vendorUrl: string | null;
   status: string;
   vrr: string | null;
+  vrrScore: number | null;
   engagementId: string | null;
   createdAt: string;
   department: { id: string; name: string } | null;
@@ -621,18 +622,21 @@ export default function RMInventoryPage() {
       const res = await fetch("/api/tprm/vendors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...buildPayload(), vrr: vrrLabel, status }),
+        // Send BOTH the band label and the raw 0-100 score. Without
+        // vrrScore the gauge falls back to the band minimum for
+        // every vendor.
+        body: JSON.stringify({ ...buildPayload(), vrr: vrrLabel, vrrScore, status }),
       });
       if (res.ok) {
         const created = await res.json();
         // Calculate VRR from onboarding answers before resetForm clears them
         const vrrScore = calculateVrrScore();
         const vrrLabel = getVrrLevel(vrrScore).name;
-        // Save VRR label to the vendor
+        // Save VRR label + score to the vendor
         await fetch(`/api/tprm/vendors/${created.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vrr: vrrLabel }),
+          body: JSON.stringify({ vrr: vrrLabel, vrrScore }),
         });
         triggerTranslation('TPRMVendor', created.id, { name: vendorName.trim(), serviceCategory: serviceCategory || undefined });
         // When "Perform Monitoring" is on, register this vendor in the monitoring
@@ -792,6 +796,18 @@ export default function RMInventoryPage() {
     const level = vrrLevels.find((l) => l.name.toLowerCase() === vrr.toLowerCase());
     if (level) return level.min;
     return 0;
+  };
+
+  // Prefer the raw score stored on the vendor. Falls back to
+  // parseVrrScore(vrr) — which returns the band's `min` — for legacy
+  // rows written before vrrScore existed. Without this the gauge
+  // needle always points at the band minimum instead of the actual
+  // onboarding score.
+  const resolveVrrScore = (v: { vrr?: string | null; vrrScore?: number | null } | null | undefined): number => {
+    if (v?.vrrScore != null && Number.isFinite(v.vrrScore)) {
+      return Math.min(100, Math.max(0, v.vrrScore));
+    }
+    return parseVrrScore(v?.vrr ?? null);
   };
 
   const getVrrLevel = (score: number) => [...vrrLevels].reverse().find((l) => score >= l.min) || vrrLevels[0];
@@ -1534,7 +1550,7 @@ export default function RMInventoryPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (() => {
-            const vrrScore = parseVrrScore(riskRatingVendor?.vrr ?? null);
+            const vrrScore = resolveVrrScore(riskRatingVendor);
             const level = getVrrLevel(vrrScore);
             const cx = 150, cy = 140, r = 110;
             const arcSegments = vrrLevels.map((l, i) => ({
