@@ -742,6 +742,25 @@ export default function AMResponseQuestionnairePage() {
   const answeredQuestions = translatedQuestions.filter(q => responses[q.id]?.response).length;
   const isReadOnly = assessment?.status && !["Draft", "In Progress", "In-Progress", "Initiated", "Awaiting_Response"].includes(assessment.status);
 
+  // Client-side pre-flight for the Submit Confirm dialog. Mirrors the
+  // backend's validation in /api/tprm/am-assessments/[id]/submit so
+  // the AM sees WHICH questions are still blocking submission before
+  // clicking Submit, not after. Server-side check remains authoritative.
+  const pendingSubmit = useMemo(() => {
+    const unanswered: { id: string; questionText: string }[] = [];
+    const missingAttachments: { id: string; questionText: string }[] = [];
+    for (const q of translatedQuestions) {
+      const resp = responses[q.id];
+      if (q.mandatoryQuestion && !resp?.response) {
+        unanswered.push({ id: q.id, questionText: q.questionText });
+      }
+      if (q.mandatoryAttachment && !resp?.artifactUrl) {
+        missingAttachments.push({ id: q.id, questionText: q.questionText });
+      }
+    }
+    return { unanswered, missingAttachments, total: unanswered.length + missingAttachments.length };
+  }, [translatedQuestions, responses]);
+
   // AI evaluation status helpers
   const isAIInProgress = aiStatus?.aiEvaluationStatus === "Pending" || aiStatus?.aiEvaluationStatus === "Ingesting" || aiStatus?.aiEvaluationStatus === "Evaluating";
   const isAICompleted = aiStatus?.aiEvaluationStatus === "Completed";
@@ -1223,15 +1242,61 @@ export default function AMResponseQuestionnairePage() {
           <DialogHeader>
             <DialogTitle>{t("Confirm Submission")}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {t("Are you sure you want to submit this assessment? Once submitted, AI evaluation will begin and you will not be able to make further changes.")}
-          </p>
+
+          {pendingSubmit.total > 0 ? (
+            // Pre-flight: server will reject this submit. Surface the
+            // blocking questions here so the AM can jump straight to
+            // them instead of trying-and-failing.
+            <div className="space-y-3">
+              <p className="text-sm text-destructive font-medium">
+                {pendingSubmit.total} {t("mandatory item(s) still need attention before you can submit:")}
+              </p>
+              <div className="max-h-64 overflow-y-auto rounded-md border border-slate-200 divide-y divide-slate-100 text-sm">
+                {pendingSubmit.unanswered.map((q) => (
+                  <div key={`u-${q.id}`} className="px-3 py-2">
+                    <span className="text-xs font-semibold text-red-600 uppercase tracking-wider block mb-0.5">{t("Unanswered")}</span>
+                    <span className="text-slate-800">{q.questionText}</span>
+                  </div>
+                ))}
+                {pendingSubmit.missingAttachments.map((q) => (
+                  <div key={`a-${q.id}`} className="px-3 py-2">
+                    <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider block mb-0.5">{t("Missing attachment")}</span>
+                    <span className="text-slate-800">{q.questionText}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {t("Are you sure you want to submit this assessment? Once submitted, AI evaluation will begin and you will not be able to make further changes.")}
+            </p>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSubmitConfirm(false)}>{t("Cancel")}</Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
-              {t("Submit")}
-            </Button>
+            {pendingSubmit.total > 0 ? (
+              // Same shortcut the server-side error path uses: switch
+              // the questions list to needs-attention with only these
+              // IDs so the AM lands on the blocking set immediately.
+              <Button onClick={() => {
+                const ids = new Set<string>([
+                  ...pendingSubmit.unanswered.map((q) => q.id),
+                  ...pendingSubmit.missingAttachments.map((q) => q.id),
+                ]);
+                const kind: BlockingKind = pendingSubmit.unanswered.length > 0 ? "answer" : "attachment";
+                setBlocking({ ids, kind });
+                setFilterMode("needs-attention");
+                setSelectedDomain("all");
+                setShowSubmitConfirm(false);
+              }}>
+                {t("Show me the pending question(s)")}
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={submitting}>
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />}
+                {t("Submit")}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
