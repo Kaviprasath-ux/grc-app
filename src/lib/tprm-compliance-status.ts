@@ -7,15 +7,15 @@
  * server aggregate, client donut, and domain-summary bars drift.
  *
  * Priority order (first non-empty wins):
- *   1. Assessor override (assessorStatus)
- *   2. AI verdict (poStatus)
- *   3. Rule-based default: "No" answer ⇒ Unsatisfactory
- *
- * The No-⇒-Unsatisfactory default fixes a real bug: the AI Reviewer
- * panel intentionally skips No/NA answers ("AI review is not required
- * when the vendor answered No or N/A"), which left poStatus null on
- * every No answer. The donut then read 100% Satisfactory because null
- * contributed to neither Sat nor Unsat.
+ *   1. Assessor override (assessorStatus) — always wins, even over
+ *      the No-answer rule (assessor can Satisfy a No-answered question
+ *      when a compensating control makes it moot).
+ *   2. "No" answer ⇒ Unsatisfactory. Runs BEFORE the AI verdict on
+ *      purpose: the vendor admitting "No" is a stronger signal than
+ *      an AI that reads evidence and mis-classifies the response as
+ *      Satisfactory (observed in the wild — bad AI verdicts on No
+ *      answers used to leak through and inflate compliance).
+ *   3. AI verdict (poStatus) — applies to Yes/NA answers.
  *
  * Yes and NA fall through with no default — Yes without an AI verdict
  * is genuinely unassessed (waiting on AI), and NA is by definition
@@ -46,13 +46,13 @@ export function effectiveComplianceStatus(r: ComplianceInput): EffectiveComplian
   const override = normalize(r.assessorStatus);
   if (override) return override;
 
-  const ai = normalize(r.poStatus);
-  if (ai) return ai;
-
+  // The No-answer rule runs BEFORE the AI verdict on purpose (see the
+  // module docblock). The vendor admitting "No" is a stronger signal
+  // than an AI that misreads the evidence and calls it Satisfactory.
   const answer = (r.response || '').toLowerCase();
   if (answer === 'no') return 'Unsatisfactory';
 
-  return null;
+  return normalize(r.poStatus);
 }
 
 /** True when the response counts as a compliance finding (Unsatisfactory). */
