@@ -3,6 +3,7 @@ import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { notificationService } from '@/lib/notification-service';
 import { translateRecord } from '@/lib/translation-service';
+import { effectiveComplianceStatus } from '@/lib/tprm-compliance-status';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -227,11 +228,7 @@ export const POST = withAuth(
 
         const now = new Date();
         const issueData = responses
-          .filter(r => {
-            // Use assessor override status if available, otherwise AI status
-            const status = r.assessorStatus || r.poStatus;
-            return status === 'Unsatisfactory';
-          })
+          .filter(r => effectiveComplianceStatus(r) === 'Unsatisfactory')
           .map(r => {
             const severity = r.assessorSeverity || r.poSeverity || 'Medium';
             const dueDays = getRemediationDays(severity);

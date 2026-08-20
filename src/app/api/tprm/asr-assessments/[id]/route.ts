@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getTenantFilter } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
+import { effectiveComplianceStatus } from '@/lib/tprm-compliance-status';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -146,8 +147,11 @@ export const GET = withAuth(
       const yesCount = resps.filter(r => r.response === 'Yes').length;
       const noCount = resps.filter(r => r.response === 'No').length;
       const naCount = resps.filter(r => r.response === 'NA').length;
-      const satisfactoryCount = resps.filter(r => (r.assessorStatus || r.poStatus || '').toLowerCase() === 'satisfactory').length;
-      const unsatisfactoryCount = resps.filter(r => (r.assessorStatus || r.poStatus || '').toLowerCase() === 'unsatisfactory').length;
+      // Effective status priority: assessor override → AI verdict →
+      // rule-based default (No ⇒ Unsatisfactory). Centralized in
+      // effectiveComplianceStatus so donut/domain/findings can't drift.
+      const satisfactoryCount = resps.filter(r => effectiveComplianceStatus(r) === 'Satisfactory').length;
+      const unsatisfactoryCount = resps.filter(r => effectiveComplianceStatus(r) === 'Unsatisfactory').length;
       // Severity counts describe FINDINGS, so they must be scoped the same way
       // the VerifAI Summary table and the Assessment Report are: answered
       // questions whose effective status is Unsatisfactory. Previously these
@@ -157,11 +161,19 @@ export const GET = withAuth(
       // the "only count if the status is Unsatisfactory (an actual issue)"
       // rule already used by the rm-/bo-/it-issues registers.
       const findings = resps.filter(r =>
-        Boolean(r.response) &&
-        (r.assessorStatus || r.poStatus || '').toLowerCase() === 'unsatisfactory'
+        Boolean(r.response) && effectiveComplianceStatus(r) === 'Unsatisfactory'
       );
-      const severityOf = (r: typeof resps[number]) =>
-        (r.assessorSeverity || r.poSeverity || '').toLowerCase();
+      // Same "No ⇒ default" rule as compliance status: a No-answered
+      // finding with no assessor/AI severity would otherwise be
+      // Unsatisfactory yet contribute to none of the H/M/L buckets,
+      // making the severity strip disagree with the donut. Assessor
+      // can override to a different level.
+      const severityOf = (r: typeof resps[number]) => {
+        const explicit = (r.assessorSeverity || r.poSeverity || '').toLowerCase();
+        if (explicit) return explicit;
+        if ((r.response || '').toLowerCase() === 'no') return 'medium';
+        return '';
+      };
       // The AI backend and manual assessor overrides use multiple
       // vocabularies for severity — assessment finding words
       // (High/Medium/Low), VRR words (Critical/Moderate/Nominal), and

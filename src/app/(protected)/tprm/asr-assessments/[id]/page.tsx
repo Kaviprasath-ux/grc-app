@@ -26,6 +26,7 @@ import {
   CheckCircle2, AlertTriangle, XCircle, ChevronLeft, RotateCcw, UserCheck,
 } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
+import { effectiveComplianceStatus } from "@/lib/tprm-compliance-status";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -547,7 +548,7 @@ export default function ASRAssessmentDetailPage() {
   // Apply filter
   const filteredQuestions = flatQuestions.filter(fq => {
     const resp = responses[fq.question.id];
-    const effectiveStatus = resp?.assessorStatus || resp?.poStatus;
+    const effectiveStatus = effectiveComplianceStatus(resp || {});
     switch (filterMode) {
       case "satisfactory": return effectiveStatus === "Satisfactory";
       case "unsatisfactory": return effectiveStatus === "Unsatisfactory";
@@ -578,7 +579,7 @@ export default function ASRAssessmentDetailPage() {
     })
     .map(fq => {
       const resp = responses[fq.question.id]!;
-      const effectiveStatus = resp.assessorStatus || resp.poStatus;
+      const effectiveStatus = effectiveComplianceStatus(resp);
       return {
         questionNo: fq.questionNo,
         domainName: fq.domainName,
@@ -618,7 +619,7 @@ export default function ASRAssessmentDetailPage() {
 
   const openOverride = () => {
     if (!selectedResp) return;
-    setOverrideStatus(selectedResp.assessorStatus || selectedResp.poStatus || "");
+    setOverrideStatus(effectiveComplianceStatus(selectedResp) || "");
     setOverrideIssue(selectedResp.assessorIssue || selectedResp.poIssue || "");
     setOverrideRisk(selectedResp.assessorRisk || selectedResp.poRisk || "");
     setOverrideRec(selectedResp.assessorRecommendation || selectedResp.poRecommendation || "");
@@ -1315,9 +1316,9 @@ export default function ASRAssessmentDetailPage() {
               let unsat = 0;
               for (const fq of domainResps) {
                 const r = responses[fq.question.id];
-                const effStatus = (r?.assessorStatus || r?.poStatus || "").toLowerCase();
-                if (effStatus === "satisfactory") sat++;
-                else if (effStatus === "unsatisfactory") unsat++;
+                const effStatus = effectiveComplianceStatus(r || {});
+                if (effStatus === "Satisfactory") sat++;
+                else if (effStatus === "Unsatisfactory") unsat++;
               }
               // Bar widths and the compliance % share the same
               // denominator so a "100%" label always matches a
@@ -1541,7 +1542,7 @@ export default function ASRAssessmentDetailPage() {
             {pageQuestions.map(fq => {
               const isSelected = fq.question.id === (selectedQuestionId || pageQuestions[0]?.question.id);
               const resp = responses[fq.question.id];
-              const effectiveStatus = resp?.assessorStatus || resp?.poStatus;
+              const effectiveStatus = effectiveComplianceStatus(resp || {});
               const isSat = effectiveStatus === "Satisfactory";
               const isUnsat = effectiveStatus === "Unsatisfactory";
 
@@ -1666,10 +1667,22 @@ export default function ASRAssessmentDetailPage() {
                 );
 
                 if (aiNotApplicable && !hasAssessorOverride) {
+                  const isNoAnswer = vendorAnswer === "no";
                   return (
-                    <p className="text-sm text-muted-foreground text-center py-6">
-                      {t("AI review is not required when the vendor answered No or N/A.")}
-                    </p>
+                    <div className="text-sm text-center py-6 space-y-2">
+                      {isNoAnswer ? (
+                        <>
+                          <StatusBadge status="Unsatisfactory" />
+                          <p className="text-muted-foreground">
+                            {t("Vendor answered No — automatically flagged as Unsatisfactory. Use Override to change the verdict, severity, issue, or recommendation.")}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-muted-foreground">
+                          {t("AI review is not required when the vendor answered N/A.")}
+                        </p>
+                      )}
+                    </div>
                   );
                 }
 
@@ -1677,7 +1690,7 @@ export default function ASRAssessmentDetailPage() {
                   <>
                     {/* Status badge + Confidence */}
                     <div className="flex items-center justify-between">
-                      <StatusBadge status={selectedResp?.assessorStatus || selectedResp?.poStatus} />
+                      <StatusBadge status={effectiveComplianceStatus(selectedResp || {})} />
                       {selectedResp?.poScore != null && (
                         <div className="text-right">
                           <span className="text-xs text-muted-foreground">{t("Confidence level of AI")}</span>
