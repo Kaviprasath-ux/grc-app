@@ -22,12 +22,42 @@ export const GET = withAuth(
 
       // Build status filter based on tab
       let statusFilter: string[] = [];
+      // Some tabs need to filter on aiEvaluationStatus in addition to status
+      // — see the Active/Submitted split below.
+      let extraWhere: Record<string, unknown> | null = null;
       switch (tab) {
         case 'active':
+          // Submitted-but-AI-not-Completed rows belong here (AM keeps custody
+          // until AI succeeds — see /submit and /retry-ai handlers). Includes
+          // the Failed case, which is what a "please resubmit" surface needs.
           statusFilter = ['Draft', 'In Progress', 'In-Progress', 'Initiated', 'Awaiting_Response'];
+          extraWhere = {
+            OR: [
+              { status: { in: statusFilter } },
+              {
+                AND: [
+                  { status: 'Submitted' },
+                  { aiEvaluationStatus: { not: 'Completed' } },
+                ],
+              },
+            ],
+          };
           break;
         case 'submitted':
+          // Only expose Submitted rows once AI has finished — otherwise the
+          // AM would see two copies (Active + Submitted) for the same row.
           statusFilter = ['Submitted', 'Under Review', 'Returned', 'In-Progress(approver)'];
+          extraWhere = {
+            OR: [
+              { status: { in: ['Under Review', 'Returned', 'In-Progress(approver)'] } },
+              {
+                AND: [
+                  { status: 'Submitted' },
+                  { aiEvaluationStatus: 'Completed' },
+                ],
+              },
+            ],
+          };
           break;
         case 'past':
           statusFilter = ['Completed', 'Approved', 'Rejected', 'Reviewed'];
@@ -40,12 +70,17 @@ export const GET = withAuth(
       // Override with explicit status if provided
       if (status) {
         statusFilter = [status];
+        extraWhere = null;
       }
 
       const where: Record<string, unknown> = {
         customerAccountId,
         vendorId: { in: vendorIds },
-        ...(statusFilter.length > 0 ? { status: { in: statusFilter } } : {}),
+        ...(extraWhere
+          ? extraWhere
+          : statusFilter.length > 0
+            ? { status: { in: statusFilter } }
+            : {}),
       };
 
       if (search) {

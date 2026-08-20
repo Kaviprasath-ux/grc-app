@@ -14,7 +14,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Home, Search, PlayCircle, FileText, Loader2 } from "lucide-react";
+import { Home, Search, PlayCircle, FileText, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 
 interface Assessment {
   id: string;
@@ -26,10 +26,33 @@ interface Assessment {
   updatedAt: string;
   vendorSubmissionDate: string | null;
   dueDate: string | null;
+  // AI evaluation state — populated after AM submits. While the AI is
+  // running or has failed, the assessment stays in the AM's Active tab
+  // rather than reaching the assessor's queue.
+  aiEvaluationStatus: string | null;
+  aiEvaluationStarted: string | null;
+  aiEvaluationCompleted: string | null;
+  aiEvaluationError: string | null;
   vendor: { id: string; name: string; vendorCode: string };
   customerAccount?: { id: string; name: string };
   initiatedBy: { id: string; fullName: string } | null;
   assessor: { id: string; fullName: string } | null;
+}
+
+// AI states while it's still working the assessment.
+const AI_IN_FLIGHT = new Set(["Pending", "Ingesting", "Evaluating"]);
+
+function isAIInFlight(a: Pick<Assessment, "status" | "aiEvaluationStatus">): boolean {
+  if (a.status !== "Submitted") return false;
+  const s = a.aiEvaluationStatus;
+  // A Submitted row that never got an AI status wired is treated as
+  // in-flight too — same guard we use in the assessor helper so a
+  // legacy row doesn't render as "no AI at all → looks fine".
+  return !s || AI_IN_FLIGHT.has(s);
+}
+
+function isAIFailed(a: Pick<Assessment, "status" | "aiEvaluationStatus">): boolean {
+  return a.status === "Submitted" && a.aiEvaluationStatus === "Failed";
 }
 
 const STATUS_VARIANTS: Record<string, string> = {
@@ -93,6 +116,38 @@ export default function AMAssessmentsPage() {
     }
     router.push(`/tprm/am-assessments/${assessment.id}`);
   };
+
+  // Track which row is currently POSTing to /ai-evaluate so the Retry
+  // button locks per-row instead of freezing the whole grid.
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const handleRetryAI = useCallback(async (a: Assessment) => {
+    setRetryingId(a.id);
+    try {
+      const res = await fetch(`/api/tprm/am-assessments/${a.id}/ai-evaluate`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast({
+          title: t("Retry failed"),
+          description: err.error || t("Could not restart AI evaluation. Please try again."),
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: t("AI evaluation restarted"),
+        description: t("The AI is re-analyzing this assessment. It will move to Submitted once complete."),
+      });
+      fetchAssessments(activeTab);
+    } catch {
+      toast({
+        title: t("Retry failed"),
+        description: t("Could not restart AI evaluation. Please try again."),
+        variant: "destructive",
+      });
+    } finally {
+      setRetryingId(null);
+    }
+  }, [fetchAssessments, activeTab, toast, t]);
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "-";
@@ -167,13 +222,44 @@ export default function AMAssessmentsPage() {
                           <TableCell>{t(a.assessmentType)}</TableCell>
                           <TableCell>{a.initiatedBy?.fullName || "-"}</TableCell>
                           <TableCell>
-                            <Badge className={STATUS_VARIANTS[a.status] || "bg-gray-100 text-gray-700"}>
-                              {t(a.status.replace(/_/g, " "))}
-                            </Badge>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge className={STATUS_VARIANTS[a.status] || "bg-gray-100 text-gray-700"}>
+                                {t(a.status.replace(/_/g, " "))}
+                              </Badge>
+                              {isAIInFlight(a) && (
+                                <Badge className="bg-amber-100 text-amber-800 border border-amber-300 gap-1">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  {t("AI evaluating")}
+                                </Badge>
+                              )}
+                              {isAIFailed(a) && (
+                                <Badge className="bg-red-100 text-red-800 border border-red-300 gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {t("AI evaluation failed")}
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>{formatDate(a.dueDate)}</TableCell>
                           <TableCell>
-                            {tab === "active" || (tab === "offboard" && ["Offboard_In_Progress", "Offboard_Awaiting_Response"].includes(a.status)) ? (
+                            {isAIFailed(a) ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-300 text-red-700 hover:bg-red-50"
+                                disabled={retryingId === a.id}
+                                onClick={() => handleRetryAI(a)}
+                              >
+                                {retryingId === a.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />
+                                ) : (
+                                  <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                                )}
+                                {t("Retry AI")}
+                              </Button>
+                            ) : isAIInFlight(a) ? (
+                              <span className="text-xs text-muted-foreground">{t("Waiting for AI…")}</span>
+                            ) : tab === "active" || (tab === "offboard" && ["Offboard_In_Progress", "Offboard_Awaiting_Response"].includes(a.status)) ? (
                               <Button
                                 size="sm"
                                 variant="outline"

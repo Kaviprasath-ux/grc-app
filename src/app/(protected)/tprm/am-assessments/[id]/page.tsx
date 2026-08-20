@@ -859,6 +859,56 @@ export default function AMResponseQuestionnairePage() {
         <span className="text-foreground font-medium">{assessment.assessmentCode}</span>
       </div>
 
+      {/* AI evaluation banner — surfaces the state the AM's queue row
+          already advertised (Failed / evaluating / just-submitted). The
+          Retry button here is the same handler used everywhere: POST
+          /api/tprm/am-assessments/:id/ai-evaluate. Keep the copy plain
+          — this is the AM's failsafe, not a debugging aid. */}
+      {showAIBanner && (
+        <div>
+          {isAIFailed && (
+            <div className="flex items-start gap-3 rounded-md border border-red-300 bg-red-50 px-4 py-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+              <div className="flex-1 space-y-1">
+                <p className="text-sm font-medium text-red-900">
+                  {t("AI evaluation failed for this assessment")}
+                </p>
+                <p className="text-sm text-red-800">
+                  {t("This assessment has not reached the assessor. Please retry the AI evaluation — if it keeps failing, contact support.")}
+                </p>
+                {aiStatus?.aiEvaluationError && (
+                  <p className="text-xs text-red-700 font-mono truncate">
+                    {aiStatus.aiEvaluationError}
+                  </p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-300 text-red-700 hover:bg-red-100"
+                disabled={retriggering}
+                onClick={handleRetriggerAI}
+              >
+                {retriggering ? (
+                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-1 rtl:ml-1" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                )}
+                {t("Retry AI evaluation")}
+              </Button>
+            </div>
+          )}
+          {(isAIInProgress || isAINotStarted) && (
+            <div className="flex items-center gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+              <Loader2 className="h-5 w-5 animate-spin text-amber-700 shrink-0" />
+              <p className="text-sm text-amber-900">
+                {t("AI evaluation is running. Once complete, this assessment will move to the assessor's queue for review.")}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
