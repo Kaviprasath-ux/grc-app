@@ -1235,6 +1235,21 @@ export default function ASRAssessmentDetailPage() {
               </div>
             </div>
 
+            {/* AI-in-flight banner. The summary cards below sum the
+                stored poStatus / assessorStatus per response — if AI
+                hasn't finished, every response is null and the donut
+                reads "0/0" (visually indistinguishable from "0
+                findings, all compliant"). Surface the actual pipeline
+                state so the assessor isn't misled. */}
+            {aiRunning && (
+              <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+                <span>
+                  {t("AI evaluation is still running. The compliance donut and severity totals below are counts of stored verdicts — they may read as 0 until the AI finishes.")}
+                </span>
+              </div>
+            )}
+
             {/* Two large pie charts side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="flex flex-col items-center">

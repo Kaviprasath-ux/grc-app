@@ -40,6 +40,10 @@ interface AssessmentItem {
   completionDate: string | null;
   assessmentResult: string | null;
   approverComment: string | null;
+  // Populated whenever AM has submitted at least once — used to show
+  // "AI evaluating…" on the queue row so a Submitted assessment isn't
+  // mistaken for "all compliant" during the fire-and-forget AI run.
+  aiEvaluationStatus: string | null;
   vendor: { id: string; name: string; vendorCode: string; serviceCategory: string | null };
   initiatedBy: { id: string; fullName: string } | null;
   assessor: { id: string; fullName: string } | null;
@@ -67,6 +71,22 @@ function getStatusVariant(status: string): "default" | "secondary" | "destructiv
     default:
       return "outline";
   }
+}
+
+// Reflects whether AI evaluation is still in flight for this assessment.
+// Anything other than 'Completed' or 'Failed' — or a null value on an
+// already-submitted assessment — means the assessor is looking at data
+// whose AI verdicts haven't landed yet, so the summary cards below
+// (compliance donut, severity strip) can visually read as "0 issues =
+// all compliant" even though the AI simply hasn't scored anything.
+function isAIEvaluationInFlight(row: { status: string; aiEvaluationStatus: string | null }): boolean {
+  const s = row.aiEvaluationStatus;
+  if (s === "Pending" || s === "Ingesting" || s === "Evaluating") return true;
+  // Some legacy rows may have status='Submitted' with a null
+  // aiEvaluationStatus because they submitted before the field was
+  // wired — treat that as "unknown / probably not done" too.
+  if (!s && (row.status === "Submitted" || row.status === "Under Review")) return true;
+  return false;
 }
 
 function formatDate(dateStr: string | null | undefined): string {
@@ -400,7 +420,17 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "status",
       header: t("Status"),
-      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>
+          {isAIEvaluationInFlight(row.original) && (
+            <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50 gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {t("AI evaluating")}
+            </Badge>
+          )}
+        </div>
+      ),
     },
     {
       id: "actions",
@@ -494,7 +524,17 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "status",
       header: t("Status"),
-      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>
+          {isAIEvaluationInFlight(row.original) && (
+            <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50 gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {t("AI evaluating")}
+            </Badge>
+          )}
+        </div>
+      ),
     },
     {
       id: "actions",
@@ -543,7 +583,17 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "status",
       header: t("Status"),
-      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>
+          {isAIEvaluationInFlight(row.original) && (
+            <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50 gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {t("AI evaluating")}
+            </Badge>
+          )}
+        </div>
+      ),
     },
     {
       id: "actions",
@@ -609,7 +659,17 @@ export default function AsrAssessmentsPage() {
     {
       accessorKey: "status",
       header: t("Status"),
-      cell: ({ row }) => <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <Badge variant={getStatusVariant(row.getValue("status"))}>{t(row.getValue("status") as string)}</Badge>
+          {isAIEvaluationInFlight(row.original) && (
+            <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50 gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {t("AI evaluating")}
+            </Badge>
+          )}
+        </div>
+      ),
     },
     {
       accessorKey: "vendorSubmissionDate",
