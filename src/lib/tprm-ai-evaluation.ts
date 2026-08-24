@@ -117,9 +117,11 @@ async function aiRequest(
   const responseText = await response.text();
 
   let data: Record<string, unknown> = {};
+  let parseFailed = false;
   try {
     data = JSON.parse(responseText);
   } catch {
+    parseFailed = true;
     console.error(`[TPRM-AI] Non-JSON response from ${endpoint}: ${responseText.substring(0, 200)}`);
   }
 
@@ -127,6 +129,14 @@ async function aiRequest(
 
   if (!response.ok) {
     throw new Error(`AI API ${endpoint} returned ${response.status}: ${JSON.stringify(data)}`);
+  }
+
+  // A 200 that isn't parseable JSON used to sail past this check with
+  // data={}, which the per-question handler happily read as a
+  // Satisfactory verdict. Treat it as an error so evaluateResponse's
+  // catch fires and the response is marked Failed.
+  if (parseFailed) {
+    throw new Error(`AI API ${endpoint} returned 200 with non-JSON body (${responseText.length} bytes)`);
   }
 
   return { data, status: response.status };
@@ -258,9 +268,16 @@ async function ingestDocuments(
 
   const jobId = String(submitted.data.job_id || '');
   if (!jobId) {
-    // Older/synchronous backend, or an unexpected payload — nothing to poll.
-    console.warn('[TPRM-AI] Ingest returned no job_id, proceeding without waiting');
-    return;
+    // Older/synchronous backend paths do exist, but the failure mode
+    // we've been burned by is: ingest returned 200 with an unusable
+    // body (no job_id, no synchronous result), the code continued
+    // to evaluateResponse for every question, /api/query had no
+    // indexed evidence, and the backend replied with generic
+    // Satisfactory verdicts. Throw so the whole run is marked Failed
+    // by runAIEvaluation's catch — this routes back to the AM via
+    // the Failed-AI failsafe with a Retry button rather than
+    // fabricating compliance.
+    throw new Error('AI ingest did not return a job_id — cannot proceed without indexed evidence');
   }
 
   // --- Wait for the background indexing job to finish ---
@@ -282,12 +299,16 @@ async function ingestDocuments(
   }
 
   if (jobStatus !== 'completed' && jobStatus !== 'failed') {
-    console.warn(`[TPRM-AI] Ingest job ${jobId} still '${jobStatus}' after timeout — continuing`);
+    console.warn(`[TPRM-AI] Ingest job ${jobId} still '${jobStatus}' after timeout — aborting`);
     await logToAssessment(
       ctx,
-      `AI evaluation: document indexing did not finish in time. Results may be based on incomplete evidence — re-evaluate once indexing completes.`
+      `AI evaluation: document indexing did not finish in time — the run has been marked Failed. Retry from the AM's inbox.`
     );
-    return;
+    // Same reasoning as the missing-job_id branch: continuing here
+    // would send every question to /api/query with no indexed
+    // evidence and land on empty-verdict-defaulted-to-Satisfactory.
+    // Better to Fail the run cleanly so the failsafe routes it back.
+    throw new Error(`AI ingest job ${jobId} did not complete before timeout (last status: ${jobStatus})`);
   }
 
   // --- Read the per-file outcome ---
@@ -312,8 +333,13 @@ async function ingestDocuments(
   } else if (result?.status === false || jobStatus === 'failed') {
     await logToAssessment(
       ctx,
-      `AI evaluation: document indexing reported a failure — the analysis may not reflect the uploaded evidence.${messages.length ? ` (${messages.join(' | ')})` : ''}`
+      `AI evaluation: document indexing reported a failure — run marked Failed. Retry from the AM's inbox.${messages.length ? ` (${messages.join(' | ')})` : ''}`
     );
+    // Whole-job ingest failure means zero indexed evidence. Same
+    // reasoning as the no-job_id and timeout branches: don't fall
+    // through to /api/query with an empty index — it lands on
+    // empty-verdict-defaulted-to-Satisfactory.
+    throw new Error(`AI ingest job ${jobId} reported failure`);
   }
 }
 
@@ -331,9 +357,39 @@ function applyAIResult(
   aiData: Record<string, unknown>,
   questionMeta: QuestionMeta
 ): void {
-  updateData.poScore = typeof aiData.score === 'number' ? aiData.score : parseFloat(String(aiData.score || '0'));
-  updateData.poStatus = normalizeStatus(String(aiData.status || 'Satisfactory'));
-  updateData.poAnswer = String(aiData.answer || aiData.response || '');
+  const rawStatus = String(aiData.status || '').trim();
+  const rawAnswer = String(aiData.answer || aiData.response || '').trim();
+
+  // Historically this branch defaulted a missing status to
+  // 'Satisfactory' and a missing score to 0 — which meant an AI
+  // backend that returned {} (or lost a network call and produced no
+  // usable body) landed on the response as a compliant verdict with
+  // zero confidence and no explanation. Yogesh's ticket:
+  //   'AI Doesn't seem to be working... no summary, confidence level,
+  //    and none of the question came out as unsat.'
+  // If the backend returned an empty verdict on both fronts (no
+  // status AND no answer), treat the question as an evaluation
+  // failure rather than a fake pass, so the assessor sees Failed
+  // instead of an unearned Satisfactory.
+  if (!rawStatus && !rawAnswer) {
+    console.warn(`[TPRM-AI] Empty AI verdict for question ${questionMeta.id} — marking Failed`);
+    updateData.poStatus = 'Failed';
+    updateData.poAnswer = 'AI evaluation returned an empty response for this question. Please retry the AI run.';
+    updateData.poScore = null;
+    updateData.poIssue = null;
+    updateData.poRisk = null;
+    updateData.poRecommendation = null;
+    updateData.poSeverity = null;
+    return;
+  }
+
+  updateData.poScore = typeof aiData.score === 'number'
+    ? aiData.score
+    : (aiData.score != null && String(aiData.score).trim() !== ''
+        ? parseFloat(String(aiData.score))
+        : null);
+  updateData.poStatus = rawStatus ? normalizeStatus(rawStatus) : 'Failed';
+  updateData.poAnswer = rawAnswer;
   if (aiData.uuid || aiData.id) updateData.aiUuid = String(aiData.uuid || aiData.id);
 
   if (aiData.issue_risk_recommendation && typeof aiData.issue_risk_recommendation === 'object') {
