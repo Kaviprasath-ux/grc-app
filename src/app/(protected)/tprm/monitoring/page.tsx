@@ -61,6 +61,13 @@ interface TPRMMonitoringAssessment {
 interface TPRMMonitoringVendor {
   id: string; vendorName: string; vendorURL: string; vendorOnboarded: boolean;
   tprmVendorId: string | null;
+  // Derived on the server from the linked TPRM vendor's latest
+  // Onboarding Assessment. 'Onboarded' only after Completed/Approved;
+  // any earlier state (In Progress, Awaiting_Response, Under Review,
+  // Returned, Submitted, etc., or a linked vendor with no assessment
+  // yet) is 'Onboarding'. Null when this row is not linked to a TPRM
+  // vendor at all.
+  onboardingStatus: "Onboarded" | "Onboarding" | null;
   assessments: TPRMMonitoringAssessment[];
 }
 
@@ -492,10 +499,16 @@ export default function MonitoringPage() {
                           <td className="px-4 py-3 min-w-[180px] sticky ltr:left-0 rtl:right-0 bg-white z-10">
                             <div className="flex items-center gap-2">
                               <div className="font-semibold text-sm text-slate-800">{v.vendorName}</div>
-                              {v.vendorOnboarded && (
+                              {v.onboardingStatus === "Onboarded" && (
                                 <Badge className="bg-green-50 text-green-600 text-[10px] h-5 border border-green-200">
                                   <CheckCircle2 className="h-3 w-3 ltr:mr-0.5 rtl:ml-0.5" />
                                   {t("Onboarded")}
+                                </Badge>
+                              )}
+                              {v.onboardingStatus === "Onboarding" && (
+                                <Badge className="bg-amber-50 text-amber-700 text-[10px] h-5 border border-amber-200">
+                                  <Loader2 className="h-3 w-3 ltr:mr-0.5 rtl:ml-0.5 animate-spin" />
+                                  {t("Onboarding")}
                                 </Badge>
                               )}
                             </div>

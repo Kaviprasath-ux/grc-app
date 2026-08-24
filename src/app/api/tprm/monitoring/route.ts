@@ -143,6 +143,20 @@ export const GET = withAuth(
               },
               orderBy: { createdAt: "desc" },
             },
+            // Latest onboarding-assessment status — same derivation
+            // as the list endpoint feeds the detail page's pill.
+            tprmVendor: {
+              select: {
+                id: true,
+                status: true,
+                assessments: {
+                  where: { assessmentType: "Onboarding Assessment" },
+                  orderBy: { createdAt: "desc" },
+                  take: 1,
+                  select: { status: true },
+                },
+              },
+            },
           },
         });
 
@@ -151,7 +165,13 @@ export const GET = withAuth(
         // Recalculate scores from current scorecard config on every load
         await recalcAssessmentScores(customerAccountId, vendor.assessments);
 
-        return NextResponse.json({ data: vendor });
+        const ONBOARDED_STATUSES = new Set(["Completed", "Approved"]);
+        const latest = vendor.tprmVendor?.assessments[0]?.status;
+        const onboardingStatus: "Onboarded" | "Onboarding" | null = vendor.tprmVendor
+          ? (latest && ONBOARDED_STATUSES.has(latest) ? "Onboarded" : "Onboarding")
+          : null;
+
+        return NextResponse.json({ data: { ...vendor, onboardingStatus } });
       }
 
       const where: Record<string, unknown> = { ...tenantFilter };
@@ -182,6 +202,24 @@ export const GET = withAuth(
             orderBy: { createdAt: "desc" },
             take: 1,
           },
+          // Latest onboarding assessment status on the linked TPRM
+          // vendor — drives the Onboarding/Onboarded pill on the
+          // monitoring list. Historically the pill just read
+          // vendorOnboarded (a boolean set on link/unlink), so a
+          // vendor whose onboarding assessment was still in
+          // progress was already shown as fully "Onboarded".
+          tprmVendor: {
+            select: {
+              id: true,
+              status: true,
+              assessments: {
+                where: { assessmentType: "Onboarding Assessment" },
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { status: true },
+              },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
       });
@@ -192,7 +230,33 @@ export const GET = withAuth(
         await recalcAssessmentScores(customerAccountId, allAssessments);
       }
 
-      return NextResponse.json({ data: vendors });
+      // Derive onboarding pill state from the linked TPRM vendor's
+      // latest Onboarding Assessment. Three states:
+      //   'Onboarded'  — vendor linked AND onboarding assessment is
+      //                  Completed or Approved (assessor closed it out)
+      //   'Onboarding' — vendor linked but onboarding assessment is
+      //                  still in progress (any other status), OR
+      //                  linked with no assessment on record yet
+      //   null         — no linked TPRM vendor (monitoring-only row)
+      //
+      // We do NOT trust the stored `vendorOnboarded` boolean alone: it
+      // flips to true on link and never flips back, so a vendor whose
+      // onboarding is still open would previously show as fully
+      // Onboarded on the monitoring grid.
+      const ONBOARDED_STATUSES = new Set(["Completed", "Approved"]);
+      const withPillState = vendors.map((v) => {
+        const linked = v.tprmVendor;
+        let onboardingStatus: "Onboarded" | "Onboarding" | null = null;
+        if (linked) {
+          const latest = linked.assessments[0]?.status;
+          onboardingStatus = latest && ONBOARDED_STATUSES.has(latest)
+            ? "Onboarded"
+            : "Onboarding";
+        }
+        return { ...v, onboardingStatus };
+      });
+
+      return NextResponse.json({ data: withPillState });
     } catch (err) {
       console.error("[TPRM Monitoring GET]", err);
       return NextResponse.json({ error: "Failed to fetch monitoring data" }, { status: 500 });

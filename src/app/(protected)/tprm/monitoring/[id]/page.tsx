@@ -126,6 +126,11 @@ interface TPRMMonitoringAssessment {
 interface TPRMMonitoringVendor {
   id: string; vendorName: string; vendorURL: string; vendorOnboarded: boolean;
   tprmVendorId: string | null;
+  // Server-derived from the linked TPRM vendor's latest Onboarding
+  // Assessment status (see /api/tprm/monitoring GET). Only
+  // Completed/Approved counts as Onboarded; anything else is
+  // Onboarding; null when this monitoring row is not linked yet.
+  onboardingStatus: "Onboarded" | "Onboarding" | null;
   assessments: TPRMMonitoringAssessment[];
 }
 interface AccountManager { name: string; email: string; contactNo: string }
@@ -1168,7 +1173,16 @@ export default function MonitoringDetailPage() {
 
   const handleOnboardSuccess = (monitoringVendorId: string, newTprmVendorId: string) => {
     if (vendor?.id === monitoringVendorId) {
-      setVendor({ ...vendor, vendorOnboarded: true, tprmVendorId: newTprmVendorId });
+      // Freshly linked — the onboarding assessment on the new TPRM
+      // vendor hasn't been Completed yet, so this is "Onboarding",
+      // not "Onboarded". The pill will flip to Onboarded on the next
+      // load once the assessor completes the assessment.
+      setVendor({
+        ...vendor,
+        vendorOnboarded: true,
+        tprmVendorId: newTprmVendorId,
+        onboardingStatus: "Onboarding",
+      });
     }
   };
 
@@ -1405,10 +1419,19 @@ export default function MonitoringDetailPage() {
             </div>
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              {vendor.vendorOnboarded ? (
+              {vendor.onboardingStatus === "Onboarded" ? (
                 <>
                   <Badge className="bg-green-100 text-green-800">
                     <CheckCircle2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1" /> {t("Onboarded")}
+                  </Badge>
+                  <Button size="sm" variant="destructive" onClick={() => setReportIssueOpen(true)}>
+                    <AlertTriangle className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Report Issue")}
+                  </Button>
+                </>
+              ) : vendor.onboardingStatus === "Onboarding" ? (
+                <>
+                  <Badge className="bg-amber-100 text-amber-800 border border-amber-300">
+                    <Loader2 className="h-3.5 w-3.5 ltr:mr-1 rtl:ml-1 animate-spin" /> {t("Onboarding")}
                   </Badge>
                   <Button size="sm" variant="destructive" onClick={() => setReportIssueOpen(true)}>
                     <AlertTriangle className="h-4 w-4 ltr:mr-1 rtl:ml-1" /> {t("Report Issue")}
