@@ -74,6 +74,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 // import { EvidenceAIReview } from "@/components/evidence/EvidenceAIReview";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 // Cycle status types
 type CycleStatus = "none" | "submitted" | "validated" | "rejected";
 
@@ -3107,9 +3108,8 @@ export default function EvidenceDetailPage() {
                 }}
                 onClick={() => document.getElementById("attachment-file-input")?.click()}
               >
-                <input
+                <FileInput
                   id="attachment-file-input"
-                  type="file"
                   className="hidden"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"

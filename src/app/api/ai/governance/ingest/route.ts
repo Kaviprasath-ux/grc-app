@@ -12,6 +12,7 @@ import {
   notFoundResponse,
   errorResponse,
 } from "@/lib/ai-route-helpers";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 /**
  * POST /api/ai/governance/ingest
@@ -40,6 +41,13 @@ export async function POST(req: NextRequest) {
 
         if (!policyId) {
             return badRequestResponse("policyId is required");
+        }
+
+        if (file) {
+            const check = validateUploadedFile(file);
+            if (!check.ok) {
+                return badRequestResponse(check.reason || "Invalid file");
+            }
         }
 
         // Fetch policy details with attachments and vault document links

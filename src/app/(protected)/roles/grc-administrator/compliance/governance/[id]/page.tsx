@@ -64,6 +64,7 @@ import {
 import Link from "next/link";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Policy {
   id: string;
   code: string;
@@ -1431,8 +1432,7 @@ export default function GovernanceDetailPage() {
                   <div className="py-4 space-y-4">
                     <div>
                       <Label>{t("Select File")}</Label>
-                      <Input
-                        type="file"
+                      <FileInput
                         onChange={handleFileSelect}
                         className="mt-2"
                         accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"

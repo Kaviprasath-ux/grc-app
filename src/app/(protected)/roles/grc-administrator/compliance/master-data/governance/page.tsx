@@ -43,6 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -1346,9 +1347,8 @@ export default function GovernanceMasterDataPage() {
                 >
                   {t("Browse...")}
                 </Button>
-                <input
+                <FileInput
                   ref={fileInputRef}
-                  type="file"
                   className="hidden"
                   accept=".csv"
                   onChange={handleFileChange}

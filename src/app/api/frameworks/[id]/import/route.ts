@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import { parseExcelFile, ColumnDefinition, ValidationError } from "@/lib/excel-import";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 // Column definitions for framework requirements import
 const REQUIREMENT_COLUMNS: ColumnDefinition[] = [
@@ -110,6 +111,11 @@ export const POST = withAuth(
         { error: "No file uploaded" },
         { status: 400 }
       );
+    }
+
+    const check = validateUploadedFile(file);
+    if (!check.ok) {
+      return NextResponse.json({ error: check.reason }, { status: 400 });
     }
 
     // Validate file type

@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { saveUploadedFile } from '@/lib/file-upload';
 import { translateRecord } from '@/lib/translation-service';
 import { notificationService } from '@/lib/notification-service';
+import { validateUploadedFiles } from '@/lib/upload-validation';
 
 // GET /api/tprm/am-follow-ups/clarifications — List clarifications for AM's assessments
 export const GET = withAuth(
@@ -95,6 +96,13 @@ export const PATCH = withAuth(
 
       if (!id || !amResponse?.trim()) {
         return NextResponse.json({ error: 'ID and response are required' }, { status: 400 });
+      }
+
+      if (uploadedFiles.length > 0) {
+        const check = validateUploadedFiles(uploadedFiles);
+        if (!check.ok) {
+          return NextResponse.json({ error: check.reason }, { status: 400 });
+        }
       }
 
       const clarification = await prisma.tPRMClarification.findFirst({

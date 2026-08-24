@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
+import { validateUploadedFile } from '@/lib/upload-validation';
 
 const ALLOWED_MIME: Record<string, string> = {
   pdf: 'application/pdf',
@@ -27,6 +28,10 @@ export const POST = withAuth(
 
       if (!file) {
         return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      }
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       const mimeType = extMime(file.name);

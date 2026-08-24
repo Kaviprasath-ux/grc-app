@@ -60,6 +60,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { confirm } from "@/components/ui/confirm";
 
+import { FileInput } from "@/components/shared/file-input";
 interface OpItem {
   id: string;
   title: string;
@@ -730,8 +731,7 @@ export default function OperationalPlanDetailPage() {
                       )}
                       {canEdit && (
                         <label className="cursor-pointer">
-                          <input
-                            type="file"
+                          <FileInput
                             className="hidden"
                             onChange={(e) => {
                               const f = e.target.files?.[0];
@@ -899,8 +899,7 @@ export default function OperationalPlanDetailPage() {
                               )}
                               {canEdit && (
                                 <label className="cursor-pointer" title={report ? t("Replace") : t("Upload")}>
-                                  <input
-                                    type="file"
+                                  <FileInput
                                     className="hidden"
                                     onChange={(e) => {
                                       const f = e.target.files?.[0];

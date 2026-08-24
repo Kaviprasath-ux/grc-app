@@ -74,6 +74,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { confirm } from "@/components/ui/confirm";
 import { formatLocalDate } from "@/lib/utils";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -1759,7 +1760,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
               </div>
               <p className="text-sm font-medium text-slate-700">{t("Drag and drop files here, or click to browse")}</p>
               <p className="text-xs text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
-              <input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
+              <FileInput ref={fileInputRef} className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
             </div>
             {uploadFilesError && <p className="text-sm text-red-500 mt-1">{uploadFilesError}</p>}
             {uploadedFiles.length > 0 && (<div className="space-y-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeFile(file.id)}><X className="h-4 w-4" /></Button></div>))}</div>)}
@@ -1951,8 +1952,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                   <p className="text-sm font-medium text-slate-700">{t("Drag and drop files here, or click to browse")}</p>
                   <p className="text-xs text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
                 </div>
-                <input
-                  type="file"
+                <FileInput
                   ref={findingAttachmentInputRef}
                   onChange={(e) => {
                     if (e.target.files) {
@@ -2126,7 +2126,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                 </div>
                 <p className="text-sm text-slate-600">{t("Drag and drop files here, or click to browse")}</p>
                 <p className="text-xs text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
-                <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
+                <FileInput ref={fileInputRef} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
               </div>
               {newDocumentFileError && <p className="text-sm text-red-500 mt-1">{newDocumentFileError}</p>}
               {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); removeFile(file.id); }}><X className="h-4 w-4" /></Button></div>))}</div>)}
@@ -2563,7 +2563,7 @@ export function FieldworkDetailModal({ open, onClose, engagementId, mode }: Fiel
                 </div>
                 <p className="text-sm font-medium text-slate-700">{t("Drag and drop files here, or click to browse")}</p>
                 <p className="text-xs text-slate-400 mt-1">{t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
-                <input ref={attachmentFileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
+                <FileInput ref={attachmentFileInputRef} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleFileSelect} />
               </div>
               {attachmentFileError && <p className="text-sm text-red-500 mt-1">{attachmentFileError}</p>}
               {uploadedFiles.length > 0 && (<div className="space-y-2 mt-2">{uploadedFiles.map((file) => (<div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"><div className="flex items-center gap-3"><FileText className="h-5 w-5 text-primary-500" /><div><span className="text-sm font-medium text-slate-700">{file.name}</span><span className="text-xs text-slate-400 ltr:ml-2 rtl:mr-2">({formatFileSize(file.size)})</span></div></div><Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => removeFile(file.id)}><X className="h-4 w-4" /></Button></div>))}</div>)}

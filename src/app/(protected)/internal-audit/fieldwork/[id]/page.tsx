@@ -80,6 +80,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { confirm } from "@/components/ui/confirm";
 import Link from "next/link";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -2649,9 +2650,8 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
               <p className="text-sm text-slate-400 mt-1">
                 {t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG
               </p>
-              <input
+              <FileInput
                 ref={fileInputRef}
-                type="file"
                 className="hidden"
                 multiple
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
@@ -2910,8 +2910,7 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                     <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Choose Files")}
                   </Button>
-                  <input
-                    type="file"
+                  <FileInput
                     ref={findingAttachmentInputRef}
                     onChange={(e) => {
                       if (e.target.files) {
@@ -3203,9 +3202,8 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
-                  <input
+                  <FileInput
                     ref={fileInputRef}
-                    type="file"
                     className="hidden"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                     onChange={handleFileSelect}
@@ -4391,9 +4389,8 @@ export function FieldworkDetailsView({ embedded = false }: { embedded?: boolean 
                 onClick={() => attachmentFileInputRef.current?.click()}
               >
                 <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
-                <input
+                <FileInput
                   ref={attachmentFileInputRef}
-                  type="file"
                   className="hidden"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                   onChange={handleFileSelect}

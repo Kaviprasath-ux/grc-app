@@ -32,6 +32,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Question {
   id: string;
   questionText: string;
@@ -958,9 +959,8 @@ export default function AMResponseQuestionnairePage() {
                 <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Import")}
               </Button>
-              <input
+              <FileInput
                 ref={fileInputRef}
-                type="file"
                 accept=".xlsx,.xls"
                 className="hidden"
                 onChange={handleImport}
@@ -1212,8 +1212,7 @@ export default function AMResponseQuestionnairePage() {
                     })() : null}
                     {!isReadOnly && (
                       <Label className="cursor-pointer">
-                        <Input
-                          type="file"
+                        <FileInput
                           className="hidden"
                           onChange={e => {
                             const file = e.target.files?.[0];

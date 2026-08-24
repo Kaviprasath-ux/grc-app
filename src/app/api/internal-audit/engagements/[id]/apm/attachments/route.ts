@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter, getCustomerAccountId } from '@/lib/api-auth';
 import { saveUploadedFile } from '@/lib/file-upload';
 import { isSpreadsheetFile, validateAuditProgramWorkbook } from '@/lib/audit-program-template';
+import { validateUploadedFiles } from '@/lib/upload-validation';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -88,6 +89,10 @@ export const POST = withAuth(
           { error: 'No files provided' },
           { status: 400 }
         );
+      }
+      const check = validateUploadedFiles(files as File[]);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // Validation pass: any uploaded spreadsheet must match the Audit Program

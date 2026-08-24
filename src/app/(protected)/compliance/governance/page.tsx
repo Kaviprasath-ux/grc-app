@@ -71,6 +71,7 @@ import {
 import Link from "next/link";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Policy {
   id: string;
   code: string;
@@ -1084,8 +1085,7 @@ export default function GovernancePage() {
                     <p className="text-xs text-slate-500 mt-1">{t("or click to browse from your computer")}</p>
                   </div>
                 </div>
-                <input
-                  type="file"
+                <FileInput
                   className="hidden"
                   id="vault-file"
                   onChange={(e) => {
@@ -1910,8 +1910,7 @@ export default function GovernancePage() {
                       {t("Supported formats")}: CSV, XLSX, XLS
                     </p>
                   </div>
-                  <input
-                    type="file"
+                  <FileInput
                     accept=".csv,.xlsx,.xls"
                     className="hidden"
                     id="import-file"

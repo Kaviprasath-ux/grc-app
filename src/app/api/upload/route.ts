@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import { saveUploadedFile } from "@/lib/file-upload";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +13,11 @@ export async function POST(request: NextRequest) {
         { error: "No file provided" },
         { status: 400 }
       );
+    }
+
+    const check = validateUploadedFile(file);
+    if (!check.ok) {
+      return NextResponse.json({ error: check.reason }, { status: 400 });
     }
 
     const { urlPath, fileName } = await saveUploadedFile(file, "artifacts");

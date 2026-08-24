@@ -33,6 +33,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
 import { validateEmail } from "@/lib/validations/email";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Customer {
   id: string;
   customerCode: string;
@@ -547,8 +548,7 @@ export default function CustomersPage() {
                           {t("Drag and Drop or")}{" "}
                           <label className="text-primary cursor-pointer hover:underline">
                             {t("Click to upload")}
-                            <input
-                              type="file"
+                            <FileInput
                               accept="image/*"
                               className="hidden"
                               onChange={handleLogoFileSelect}

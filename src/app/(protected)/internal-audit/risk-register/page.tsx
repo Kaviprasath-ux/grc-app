@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -1651,9 +1652,8 @@ export default function RiskRegisterPage() {
                 >
                   {t("Browse")}
                 </Button>
-                <input
+                <FileInput
                   id="import-file-input"
-                  type="file"
                   accept=".csv,.xlsx,.xls"
                   className="hidden"
                   onChange={handleFileSelect}
@@ -2407,9 +2407,8 @@ export default function RiskRegisterPage() {
                         <p className="text-slate-400 text-xs mt-1">{t("or click to browse")}</p>
                       </div>
                     )}
-                    <input
+                    <FileInput
                       ref={fileInputRef}
-                      type="file"
                       className="hidden"
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
                       onChange={handleAttachmentSelect}
@@ -2824,9 +2823,8 @@ export default function RiskRegisterPage() {
                         <p className="text-slate-400 text-xs mt-1">{t("or click to browse")}</p>
                       </div>
                     )}
-                    <input
+                    <FileInput
                       ref={fileInputRef}
-                      type="file"
                       className="hidden"
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
                       onChange={handleAttachmentSelect}

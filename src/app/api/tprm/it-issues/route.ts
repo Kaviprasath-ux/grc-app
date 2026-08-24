@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { saveUploadedFile } from "@/lib/file-upload";
 import { translateRecord } from "@/lib/translation-service";
+import { validateUploadedFiles } from "@/lib/upload-validation";
 
 /**
  * GET /api/tprm/it-issues — Issue data for Internal IT Team
@@ -250,6 +251,11 @@ export const PATCH = withAuth(
         let itArtifactName: string | null = remediation.itArtifactName;
 
         if (files && files.length > 0) {
+          const fileOnly = files.filter((f): f is File => f instanceof File);
+          const check = validateUploadedFiles(fileOnly);
+          if (!check.ok) {
+            return NextResponse.json({ error: check.reason }, { status: 400 });
+          }
           const existingNames = itArtifactName ? itArtifactName.split(", ") : [];
           const existingUrls = itArtifactUrl ? itArtifactUrl.split(", ") : [];
           for (const file of files) {

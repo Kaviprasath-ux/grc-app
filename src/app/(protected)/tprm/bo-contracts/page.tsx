@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Home, ChevronRight, Loader2, Search, Eye, LogOut, RefreshCw, Upload, Download, FileText } from "lucide-react";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 // ── Types ──────────────────────────────────────────────
 interface Vendor {
   id: string;
@@ -393,8 +394,7 @@ export default function BOContractsPage() {
                                   <span className="max-w-[150px] truncate">{v.contractDocumentName}</span>
                                 </Button>
                                 <label className="cursor-pointer">
-                                  <input
-                                    type="file"
+                                  <FileInput
                                     className="hidden"
                                     accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                                     onChange={(e) => {
@@ -410,8 +410,7 @@ export default function BOContractsPage() {
                               </>
                             ) : (
                               <label className="cursor-pointer">
-                                <input
-                                  type="file"
+                                <FileInput
                                   className="hidden"
                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                                   onChange={(e) => {

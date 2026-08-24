@@ -35,6 +35,7 @@ import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
+import { FileInput } from "@/components/shared/file-input";
 // ── Field Validation ──────────────────────────────────
 // Blocklist approach: allow all normal text (letters, numbers, punctuation like ? , . - & ' " etc.)
 // and strip only characters that open HTML/script injection vectors ( < and > ).
@@ -1093,9 +1094,8 @@ function SimpleCrudSection({ type, nameLabel }: { type: string; nameLabel: strin
     <>
       {!isAuditor && (
         <div className="flex ltr:justify-end rtl:justify-start gap-2 mb-4">
-          <input
+          <FileInput
             ref={importInputRef}
-            type="file"
             accept=".xlsx,.xls,.csv"
             className="hidden"
             onChange={(e) => {
@@ -2229,7 +2229,7 @@ function QuestionnaireManagementSection() {
               {/* Image Upload */}
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Cover Image")} *</Label>
-                <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
+                <FileInput ref={imageInputRef} accept="image/*" className="hidden"
                   onChange={(e) => { if (e.target.files?.[0]) handleImageSelect(e.target.files[0]); }} />
                 {wizardImagePreview ? (
                   <div className="mt-2 relative inline-block">
@@ -2273,7 +2273,7 @@ function QuestionnaireManagementSection() {
                 <div className="border rounded-lg p-4 text-center space-y-3">
                   <Upload className="h-8 w-8 mx-auto text-blue-600" />
                   <p className="text-sm font-medium">{t("Import Questions")}</p>
-                  <input ref={importInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
+                  <FileInput ref={importInputRef} accept=".xlsx,.xls,.csv" className="hidden"
                     onChange={(e) => { if (e.target.files?.[0]) handleImportFileSelect(e.target.files[0]); }} />
                   {importFile ? (
                     <div className="space-y-2">
@@ -2547,7 +2547,7 @@ function QuestionnaireManagementSection() {
             </DialogHeader>
           </div>
           <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
-          <input ref={coverImageInputRef} type="file" accept="image/*" className="hidden"
+          <FileInput ref={coverImageInputRef} accept="image/*" className="hidden"
             onChange={(e) => {
               if (e.target.files?.[0] && coverImageTemplate) {
                 handleCoverImageUpload(e.target.files[0], coverImageTemplate.id);
@@ -2830,9 +2830,8 @@ function OffboardingSection() {
     <>
       {!isAuditor && (
         <div className="flex ltr:justify-end rtl:justify-start gap-2 mb-4">
-          <input
+          <FileInput
             ref={importInputRef}
-            type="file"
             accept=".xlsx,.xls,.csv"
             className="hidden"
             onChange={(e) => {

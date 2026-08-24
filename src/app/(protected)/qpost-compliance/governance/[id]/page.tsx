@@ -82,6 +82,7 @@ import { format } from "date-fns";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { toast } from "sonner";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Policy {
   id: string;
   code: string;
@@ -2506,9 +2507,8 @@ export default function GovernanceDetailPage() {
                             : "border-slate-300 hover:border-slate-400"
                         }`}
                       >
-                        <input
+                        <FileInput
                           ref={fileInputRef}
-                          type="file"
                           onChange={handleFileSelect}
                           className="hidden"
                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
@@ -2687,8 +2687,7 @@ export default function GovernanceDetailPage() {
                               <div className="border border-slate-200 rounded-lg p-3 bg-slate-50">
                                 <Label className="text-sm font-medium text-slate-700">{t("Or upload a new template")}</Label>
                                 <div className="mt-2 flex gap-2">
-                                  <Input
-                                    type="file"
+                                  <FileInput
                                     accept=".docx"
                                     onChange={(e) => setNewTemplateFile(e.target.files?.[0] || null)}
                                     className="flex-1"

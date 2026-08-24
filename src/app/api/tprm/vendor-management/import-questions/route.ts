@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 const FIXED_COL_COUNT = 2; // Vendor Name, Engagement ID
 
@@ -20,6 +21,11 @@ export const POST = withAuth(
 
       if (!file) {
         return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       const buffer = await file.arrayBuffer();

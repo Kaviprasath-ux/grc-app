@@ -50,6 +50,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Evidence {
   id: string;
   evidenceCode: string;
@@ -1534,8 +1535,7 @@ export default function EvidencesMasterDataPage() {
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
-              <Input
-                type="file"
+              <FileInput
                 accept=".csv,.xlsx,.xls"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
                 className="mt-1.5 w-full bg-white"

@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName, isNumericOnly } from "@/lib/validations";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Branch {
   id?: string;
   location: string;
@@ -393,7 +394,7 @@ export function EditProfileWizard({
                     <p className="text-xs text-slate-500 mb-2">{t("PNG or JPG, max 2MB")}</p>
                     <div className="flex gap-2">
                       <label>
-                        <Input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "logo")} />
+                        <FileInput accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "logo")} />
                         <Button type="button" variant="outline" size="sm" className="h-7 text-xs" asChild>
                           <span>{t("Upload")}</span>
                         </Button>
@@ -639,7 +640,7 @@ export function EditProfileWizard({
                     <label className="flex flex-col items-center cursor-pointer py-2">
                       <Upload className="h-6 w-6 text-slate-300 mb-2" />
                       <span className="text-sm text-slate-500">{t("Click to upload")}</span>
-                      <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, "brochure")} />
+                      <FileInput className="hidden" onChange={(e) => handleFileUpload(e, "brochure")} />
                     </label>
                   )}
                 </div>

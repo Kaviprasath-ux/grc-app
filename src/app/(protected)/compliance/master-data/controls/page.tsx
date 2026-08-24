@@ -61,6 +61,7 @@ import { useHasRole } from "@/hooks/usePermissions";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface ControlDomain {
   id: string;
   name: string;
@@ -1633,9 +1634,8 @@ export default function ControlsMasterDataPage() {
                 >
                   {t("Browse...")}
                 </Button>
-                <input
+                <FileInput
                   ref={fileInputRef}
-                  type="file"
                   className="hidden"
                   accept=".csv"
                   onChange={handleFileChange}

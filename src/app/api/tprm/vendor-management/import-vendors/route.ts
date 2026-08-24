@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import { checkVendorLimit } from "@/lib/tprm-subscription";
 import { validateAccountManagerEmails } from "@/lib/tprm-account-manager";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 const FIXED_COL_COUNT = 7; // Vendor Name through Vendor URL
 
@@ -26,6 +27,11 @@ export const POST = withAuth(
 
       if (!file) {
         return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       const buffer = await file.arrayBuffer();

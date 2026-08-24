@@ -32,6 +32,7 @@ import { format } from "date-fns";
 import { Home, ChevronRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
+import { FileInput } from "@/components/shared/file-input";
 // ==================== TYPES ====================
 
 interface Department { id: string; name: string; }
@@ -1036,8 +1037,7 @@ export default function VendorManagementPage() {
           </div>
           <div className="px-6 py-5 space-y-4">
             <p className="text-sm text-slate-600">{t("Upload the filled vendor profile template (.xlsx or .xls)")}</p>
-            <Input
-              type="file"
+            <FileInput
               accept=".xlsx,.xls"
               onChange={(e) => setImportFile(e.target.files?.[0] || null)}
               className="cursor-pointer"
@@ -1065,8 +1065,7 @@ export default function VendorManagementPage() {
           </div>
           <div className="px-6 py-5 space-y-4">
             <p className="text-sm text-slate-600">{t("Upload the filled vendor questionnaire with responses (.xlsx or .xls)")}</p>
-            <Input
-              type="file"
+            <FileInput
               accept=".xlsx,.xls"
               onChange={(e) => setImportFile(e.target.files?.[0] || null)}
               className="cursor-pointer"

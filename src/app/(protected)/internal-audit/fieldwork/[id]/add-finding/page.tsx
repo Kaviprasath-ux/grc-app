@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 
+import { FileInput } from "@/components/shared/file-input";
 interface User {
   id: string;
   firstName: string;
@@ -412,9 +413,8 @@ export default function AddFindingPage() {
               onClick={() => fileInputRef.current?.click()}
             >
               <p className="text-gray-500">{t("Drag and drop or select file.")}</p>
-              <input
+              <FileInput
                 ref={fileInputRef}
-                type="file"
                 className="hidden"
                 multiple
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"

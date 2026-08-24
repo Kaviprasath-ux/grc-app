@@ -3,6 +3,7 @@ import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import * as XLSX from 'xlsx';
 import { translateRecord } from '@/lib/translation-service';
+import { validateUploadedFile } from '@/lib/upload-validation';
 
 // Each field can match multiple possible column header names (case-insensitive)
 const COLUMN_ALIASES: Record<string, { aliases: string[]; required: boolean }> = {
@@ -42,6 +43,11 @@ export const POST = withAuth(
 
       if (!file) {
         return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // Read the Excel file

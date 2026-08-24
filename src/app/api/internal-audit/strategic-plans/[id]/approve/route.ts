@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { validateUploadedFile } from "@/lib/upload-validation";
 import path from "path";
 import { saveUploadedFile } from "@/lib/file-upload";
 import { maybeEncryptBytes } from "@/lib/encryption";
@@ -30,6 +31,10 @@ export const POST = withAuth(
 
       if (!file) {
         return NextResponse.json({ error: "No signed copy file provided" }, { status: 400 });
+      }
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       const { urlPath, buffer } = await saveUploadedFile(file, "strategic-plans");

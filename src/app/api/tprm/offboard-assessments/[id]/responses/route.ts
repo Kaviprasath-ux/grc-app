@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuthOnly, getCustomerAccountId } from "@/lib/api-auth";
 import { saveUploadedFile } from "@/lib/file-upload";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -208,6 +209,11 @@ export const PUT = withAuthOnly(
 
       if (!questionId || !file) {
         return NextResponse.json({ error: "questionId and file are required" }, { status: 400 });
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // SME write guard for artifact upload — same shape as POST.

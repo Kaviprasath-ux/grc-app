@@ -21,6 +21,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -831,9 +832,8 @@ export default function EditRiskPage() {
                     </p>
                   </div>
                 )}
-                <input
+                <FileInput
                   ref={fileInputRef}
-                  type="file"
                   className="hidden"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
                   onChange={handleFileSelect}

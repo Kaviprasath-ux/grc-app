@@ -4,6 +4,7 @@ import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
 import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 /**
  * POST /api/ai/generate-framework
@@ -41,6 +42,13 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
 
         if (!frameworkName) {
             return NextResponse.json({ error: "framework_name is required" }, { status: 400 });
+        }
+
+        if (attachment) {
+            const check = validateUploadedFile(attachment);
+            if (!check.ok) {
+                return NextResponse.json({ error: check.reason }, { status: 400 });
+            }
         }
 
         // Check for duplicate

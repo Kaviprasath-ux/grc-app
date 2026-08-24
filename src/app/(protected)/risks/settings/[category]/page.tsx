@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { isValidName, isValidNumber } from "@/lib/validations";
 import * as XLSX from "xlsx";
 
+import { FileInput } from "@/components/shared/file-input";
 // Type definitions
 interface VulnerabilityCategory {
   id: string;
@@ -3422,8 +3423,7 @@ export default function RiskSettingsCategoryPage() {
                     {t("Click to select a CSV or Excel file")}
                   </p>
                 )}
-                <input
-                  type="file"
+                <FileInput
                   accept=".csv,.xlsx,.xls"
                   className="hidden"
                   id="vuln-file-upload"
@@ -3549,8 +3549,7 @@ export default function RiskSettingsCategoryPage() {
                     {t("Click to select a CSV or Excel file")}
                   </p>
                 )}
-                <input
-                  type="file"
+                <FileInput
                   accept=".csv,.xlsx,.xls"
                   className="hidden"
                   id="threat-file-upload"

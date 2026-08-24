@@ -52,6 +52,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Framework {
   id: string;
   code?: string;
@@ -968,9 +969,8 @@ export default function FrameworkOverviewPage() {
                     onDrop={handleDrop}
                     onClick={() => document.getElementById("file-upload")?.click()}
                   >
-                    <input
+                    <FileInput
                       id="file-upload"
-                      type="file"
                       className="hidden"
                       onChange={handleFileSelect}
                       accept=".pdf,.doc,.docx,.xlsx,.xls"
@@ -1091,9 +1091,8 @@ export default function FrameworkOverviewPage() {
                   onDrop={handleImportDrop}
                   onClick={() => document.getElementById("import-file-upload")?.click()}
                 >
-                  <input
+                  <FileInput
                     id="import-file-upload"
-                    type="file"
                     className="hidden"
                     onChange={handleImportFileSelect}
                     accept=".xlsx,.xls"

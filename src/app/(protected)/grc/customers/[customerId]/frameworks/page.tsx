@@ -42,6 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
 import Link from "next/link";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Framework {
   id: string;
   code?: string;
@@ -1001,9 +1002,8 @@ export default function CustomerFrameworkOverviewPage() {
                 onDrop={handleImportDrop}
                 onClick={() => document.getElementById("import-file-upload")?.click()}
               >
-                <input
+                <FileInput
                   id="import-file-upload"
-                  type="file"
                   className="hidden"
                   onChange={handleImportFileSelect}
                   accept=".xlsx,.xls"

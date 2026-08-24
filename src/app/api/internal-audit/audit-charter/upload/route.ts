@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import { parseDocxToBlocks } from '@/lib/charter-parser';
+import { validateUploadedFile } from '@/lib/upload-validation';
 
 const CHARTER_SELECT = {
   id: true,
@@ -26,6 +27,10 @@ export const POST = withAuth(
 
       if (!file) {
         return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      }
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
       if (!file.name.toLowerCase().endsWith('.docx')) {
         return NextResponse.json({ error: 'Only .docx files are supported' }, { status: 400 });

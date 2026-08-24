@@ -38,6 +38,7 @@ import { confirm } from "@/components/ui/confirm";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface User {
   id: string;
   firstName: string;
@@ -576,8 +577,7 @@ function ViewFindingContent() {
                       )}
                     </Button>
                   )}
-                  <input
-                    type="file"
+                  <FileInput
                     ref={attachmentInputRef}
                     onChange={(e) => {
                       if (e.target.files) {

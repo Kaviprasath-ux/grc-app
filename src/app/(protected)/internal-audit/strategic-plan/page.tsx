@@ -58,6 +58,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface PlanItem {
   id: string;
   year: number;
@@ -939,8 +940,7 @@ export default function StrategicPlanPage() {
                           </div>
                           <div>
                             <Label>{t("Signed Copy")}</Label>
-                            <Input
-                              type="file"
+                            <FileInput
                               onChange={(e) =>
                                 setSignedFile(e.target.files?.[0] || null)
                               }

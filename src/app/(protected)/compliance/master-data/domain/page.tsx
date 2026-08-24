@@ -37,6 +37,7 @@ import {
 import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronLeft, ChevronRight, Home, Layers } from "lucide-react";
 import Link from "next/link";
 
+import { FileInput } from "@/components/shared/file-input";
 interface ControlDomain {
   id: string;
   code: string | null;
@@ -644,8 +645,7 @@ export default function DomainMasterDataPage() {
                   placeholder={t("Choose a file...")}
                   className="flex-1 bg-white min-w-0"
                 />
-                <input
-                  type="file"
+                <FileInput
                   ref={fileInputRef}
                   onChange={handleFileSelect}
                   accept=".csv,.xlsx,.xls"

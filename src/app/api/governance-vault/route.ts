@@ -3,6 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 // Allow larger file uploads (up to 50MB)
 export const maxDuration = 60;
@@ -93,6 +94,11 @@ export const POST = withAuth(
           { error: "No file provided" },
           { status: 400 }
         );
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // Generate document code (Gov-001, Gov-002, etc.)

@@ -8,6 +8,7 @@ import {
   badRequestResponse,
   errorResponse,
 } from "@/lib/ai-route-helpers";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 /**
  * POST /api/ai/governance/regenerate-policy
@@ -35,6 +36,11 @@ export async function POST(req: NextRequest) {
 
         if (!document_type || !document_name || !policy_document) {
             return badRequestResponse("document_type, document_name, and policy_document are required");
+        }
+
+        const check = validateUploadedFile(policy_document);
+        if (!check.ok) {
+            return badRequestResponse(check.reason || "Invalid file");
         }
 
         // Extract arrays (framework_names and missing_controls)

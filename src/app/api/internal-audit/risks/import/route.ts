@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 // POST import internal audit risks from CSV
 export const POST = withAuth(
@@ -15,6 +16,10 @@ export const POST = withAuth(
         { error: "No file provided" },
         { status: 400 }
       );
+    }
+    const check = validateUploadedFile(file);
+    if (!check.ok) {
+      return NextResponse.json({ error: check.reason }, { status: 400 });
     }
 
     const text = await file.text();

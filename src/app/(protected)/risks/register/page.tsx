@@ -65,6 +65,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Risk {
   id: string;
   riskId: string;
@@ -843,8 +844,7 @@ function RiskRegisterContent() {
                     {t("Click to select a CSV file")}
                   </p>
                 )}
-                <input
-                  type="file"
+                <FileInput
                   accept=".csv"
                   className="hidden"
                   id="risk-file-upload"

@@ -66,6 +66,7 @@ import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData
 import { isValidName } from "@/lib/validations";
 import Link from "next/link";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Control {
   id: string;
   controlCode: string;
@@ -1027,9 +1028,8 @@ export default function GRCAdminControlListPage() {
                 >
                   {t("Browse...")}
                 </Button>
-                <input
+                <FileInput
                   ref={importFileInputRef}
-                  type="file"
                   className="hidden"
                   accept=".csv,.xlsx,.xls"
                   onChange={handleImportFileSelect}

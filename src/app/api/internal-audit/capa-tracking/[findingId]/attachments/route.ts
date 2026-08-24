@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
 import { saveUploadedFile } from '@/lib/file-upload';
 import { translateRecord, isTranslationConfigured } from '@/lib/translation-service';
+import { validateUploadedFiles } from '@/lib/upload-validation';
 
 interface RouteContext {
   params: Promise<{ findingId: string }>;
@@ -95,6 +96,10 @@ export const POST = withAuth(
           { error: 'No files provided' },
           { status: 400 }
         );
+      }
+      const check = validateUploadedFiles(files as File[]);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       const uploadedFiles = [];

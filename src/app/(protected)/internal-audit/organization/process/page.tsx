@@ -53,6 +53,7 @@ import {
   triggerTranslation,
 } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -798,9 +799,8 @@ export default function InternalAuditProcessPage() {
                   <p className="text-xs text-muted-foreground">
                     {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
                   </p>
-                  <input
+                  <FileInput
                     ref={fileInputRef}
-                    type="file"
                     multiple
                     className="hidden"
                     onChange={handleFileChange}

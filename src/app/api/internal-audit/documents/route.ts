@@ -5,6 +5,7 @@ import path from "path";
 import { saveUploadedFile } from "@/lib/file-upload";
 import { translateRecord, isTranslationConfigured } from "@/lib/translation-service";
 import { maybeEncryptBytes } from "@/lib/encryption";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 // GET documents organized by category with pagination
 export const GET = withAuth(
@@ -163,6 +164,10 @@ export const POST = withAuth(
           { error: "No file provided" },
           { status: 400 }
         );
+      }
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // Save file to disk (uses /tmp on Vercel)

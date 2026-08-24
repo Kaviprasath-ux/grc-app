@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -817,9 +818,8 @@ export default function AddEngagementPage() {
             onClick={() => attachFileRef.current?.click()}
           >
             <p className="text-gray-600">{t("Drag and drop or select file.")}</p>
-            <input
+            <FileInput
               ref={attachFileRef}
-              type="file"
               className="hidden"
               multiple
               onChange={(e) => handleFileSelect(e, "attach")}
@@ -856,9 +856,8 @@ export default function AddEngagementPage() {
             onClick={() => workpaperRef.current?.click()}
           >
             <p className="text-gray-600">{t("Drag and drop or select file.")}</p>
-            <input
+            <FileInput
               ref={workpaperRef}
-              type="file"
               className="hidden"
               multiple
               onChange={(e) => handleFileSelect(e, "workpaper")}

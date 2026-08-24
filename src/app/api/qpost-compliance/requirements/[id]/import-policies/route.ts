@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
+import { validateUploadedFile } from "@/lib/upload-validation";
 import { parseExcelFile, generateExcelTemplate, ColumnDefinition } from "@/lib/excel-import";
 import { translateRecord } from "@/lib/translation-service";
 
@@ -89,6 +90,11 @@ export const POST = withAuth(
           { error: "No file uploaded" },
           { status: 400 }
         );
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // Validate file type

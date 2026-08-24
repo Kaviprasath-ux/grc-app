@@ -4,6 +4,7 @@ import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 import { saveUploadedFile } from "@/lib/file-upload";
 import { maybeEncryptBytes } from "@/lib/encryption";
 import { generateEngagementsFromOperationalPlan } from "@/lib/audit-engagement-from-plan";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -27,6 +28,10 @@ export const POST = withAuth(
       const file = formData.get("file") as File | null;
       if (!file) {
         return NextResponse.json({ error: "No approval document provided" }, { status: 400 });
+      }
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       const { urlPath, buffer } = await saveUploadedFile(file, "operational-plans");

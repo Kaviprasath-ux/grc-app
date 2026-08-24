@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Engagement {
   id: string;
   auditId: string;
@@ -541,9 +542,8 @@ export default function AddEvidenceRequestPage() {
             <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600">{t("Drag and drop files here, or click to browse")}</p>
             <p className="text-sm text-gray-400 mt-1">{t("Supported formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG")}</p>
-            <input
+            <FileInput
               ref={fileInputRef}
-              type="file"
               className="hidden"
               multiple
               accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"

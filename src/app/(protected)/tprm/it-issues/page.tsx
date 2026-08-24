@@ -32,6 +32,7 @@ import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 
+import { FileInput } from "@/components/shared/file-input";
 // ==================== TYPES ====================
 
 interface IssueRegisterEntry {
@@ -888,9 +889,8 @@ export default function ITIssuesPage() {
                           </Button>
                         </div>
                       ))}
-                      <input
+                      <FileInput
                         ref={fileInputRef}
-                        type="file"
                         multiple
                         className="hidden"
                         onChange={handleFileSelect}

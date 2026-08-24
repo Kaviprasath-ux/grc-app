@@ -164,6 +164,15 @@ const form = useForm<FormValues>({
 ### File Uploads
 Files are stored in `uploads/` directory. API routes handle multipart form data with `formData.getAll('files')`.
 
+**MANDATORY: Type validation for every upload site.** Executables (and script/XXE carriers like SVG, HTML, ZIP) must never be accepted. Enforcement is centralized:
+
+- **Server (security boundary):** `src/lib/upload-validation.ts` — every upload endpoint MUST call `validateUploadedFile(file)` or `validateUploadedFiles(files)` before writing to disk, parsing, or forwarding to an AI backend, and return `NextResponse.json({ error: check.reason }, { status: 400 })` on rejection.
+- **Client (UX early-reject):** `src/components/shared/file-input.tsx` — every widget MUST use `<FileInput>` instead of native `<input type="file">`. It auto-sets `accept` to the shared whitelist and toasts on rejection so users can't even pick a disallowed file.
+
+Allowlist (documents + raster images + Visio): `.pdf .doc .docx .xls .xlsx .ppt .pptx .txt .csv .rtf .odt .ods .odp .jpg .jpeg .png .gif .bmp .webp .vsd .vsdx`. Explicit deny for `.svg .html .xml .zip` and every OS-executable / source-script format. Update `src/lib/upload-validation.ts` if the allowlist itself needs to change; do not fork per-endpoint lists.
+
+The one exception is `src/app/api/ai/voice/transcribe/route.ts` — voice/audio is deliberately out of scope and uses its own MIME check.
+
 ### Cron Jobs / Scheduled Tasks
 
 The app uses scheduled API endpoints for automated tasks. These are configured in `vercel.json` for Vercel Cron.

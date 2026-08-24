@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
+import { validateUploadedFile } from '@/lib/upload-validation';
 import { unlink } from 'fs/promises';
 import path from 'path';
 import { saveUploadedFile, getUploadBaseDir } from '@/lib/file-upload';
@@ -48,6 +49,10 @@ export const POST = withAuth(
           { error: 'No file provided' },
           { status: 400 }
         );
+      }
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // Delete old document file if replacing

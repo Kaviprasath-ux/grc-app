@@ -49,6 +49,7 @@ import { isValidName } from "@/lib/validations";
 import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -3134,9 +3135,8 @@ export default function ProcessPage() {
                   <p className="text-xs text-muted-foreground">
                     {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
                   </p>
-                  <input
+                  <FileInput
                     ref={onboardingFileInputRef}
-                    type="file"
                     multiple
                     className="hidden"
                     onChange={(e) => {
@@ -3510,9 +3510,8 @@ export default function ProcessPage() {
                     <p className="text-xs text-muted-foreground">
                       {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
                     </p>
-                    <input
+                    <FileInput
                       ref={editOnboardingFileInputRef}
-                      type="file"
                       multiple
                       className="hidden"
                       onChange={(e) => {
@@ -3874,8 +3873,7 @@ export default function ProcessPage() {
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <div className="flex items-center gap-3 mt-1.5">
-                <input
-                  type="file"
+                <FileInput
                   accept=".xlsx,.xls"
                   ref={fileInputRef}
                   onChange={handleFileChange}

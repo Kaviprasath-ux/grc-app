@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden, getCustomerAccountId } from "@/lib/api-auth";
+import { validateUploadedFile } from "@/lib/upload-validation";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import { notificationService, NOTIFICATION_EVENTS, NOTIFICATION_CHANNELS } from "@/lib/notification-service";
@@ -91,6 +92,11 @@ export const POST = withAuth(
           { error: "No file provided" },
           { status: 400 }
         );
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // Parse custom upload date if provided, otherwise use current time

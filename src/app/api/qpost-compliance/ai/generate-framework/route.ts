@@ -3,6 +3,7 @@ import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import prisma from "@/lib/prisma";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 const ENDPOINT = "/api/Qp_generate_framework_job";
 
@@ -45,6 +46,13 @@ async function handler(req: NextRequest, _context: unknown, session: Authenticat
 
     if (!frameworkName) {
       return NextResponse.json({ error: "framework_name is required" }, { status: 400 });
+    }
+
+    if (attachment) {
+      const check = validateUploadedFile(attachment);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
+      }
     }
 
     // Check for duplicate in QPost frameworks

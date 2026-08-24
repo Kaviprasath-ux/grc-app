@@ -57,6 +57,7 @@ import {
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Template {
   id: string;
   name: string;
@@ -439,9 +440,8 @@ export default function GovernanceTemplatesPage() {
                             {t("Drag and Drop or")}{" "}
                             <label className="text-primary cursor-pointer hover:underline">
                               {t("Click to upload")}
-                              <input
+                              <FileInput
                                 ref={fileInputRef}
-                                type="file"
                                 accept=".docx"
                                 className="hidden"
                                 onChange={handleFileChange}
@@ -701,9 +701,8 @@ export default function GovernanceTemplatesPage() {
                         {t("Drag and Drop or")}{" "}
                         <label className="text-primary cursor-pointer hover:underline">
                           {t("Click to upload")}
-                          <input
+                          <FileInput
                             ref={editFileInputRef}
-                            type="file"
                             accept=".docx"
                             className="hidden"
                             onChange={handleFileChange}

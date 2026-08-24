@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { parseClosingMeetingWorkbook } from "@/lib/closing-meeting-template";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -135,6 +136,10 @@ export const POST = withAuth(
       const file = formData.get("file") as File | null;
       if (!file) {
         return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
       if (!/\.(xlsx|xlsm|xls)$/i.test(file.name)) {
         return NextResponse.json(

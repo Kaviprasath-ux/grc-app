@@ -60,6 +60,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Designation {
   id: string;
   name: string;
@@ -2193,8 +2194,7 @@ export default function UsersPage() {
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <div className="flex items-center gap-3 mt-1.5">
-                <input
-                  type="file"
+                <FileInput
                   accept=".csv"
                   ref={fileInputRef}
                   onChange={handleFileChange}

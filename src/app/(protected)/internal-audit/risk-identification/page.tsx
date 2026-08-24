@@ -19,6 +19,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface AuditCategory {
   id: string;
   name: string;
@@ -554,9 +555,8 @@ export default function RiskIdentificationPage() {
               {t("Supporting Documents")}
               <span className="text-slate-400 font-normal ml-1">({t("Optional")})</span>
             </label>
-            <input
+            <FileInput
               ref={fileInputRef}
-              type="file"
               multiple
               accept={ACCEPT}
               className="hidden"

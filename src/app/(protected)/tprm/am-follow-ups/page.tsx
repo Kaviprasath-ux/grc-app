@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { RemediationComments } from "@/components/tprm/remediation-comments";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Clarification {
   id: string;
   questionNo: string | null;
@@ -632,9 +633,8 @@ export default function AMFollowUpsPage() {
                   {t("Drop files here or click to browse")}
                 </p>
               </div>
-              <input
+              <FileInput
                 ref={respondFileInputRef}
-                type="file"
                 multiple
                 className="hidden"
                 onChange={(e) => {

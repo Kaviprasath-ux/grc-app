@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
 
+import { FileInput } from "@/components/shared/file-input";
 interface EmailTemplate {
   id: string;
   code: string;
@@ -909,8 +910,7 @@ export default function EmailTemplatesPage() {
   return (
     <div className="space-y-6">
       {/* Hidden file input for import */}
-      <input
-        type="file"
+      <FileInput
         ref={fileInputRef}
         accept=".xml"
         onChange={handleFileSelect}

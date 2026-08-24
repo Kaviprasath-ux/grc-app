@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { saveUploadedFile } from '@/lib/file-upload';
 import { notificationService } from '@/lib/notification-service';
 import { translateRecord } from '@/lib/translation-service';
+import { validateUploadedFiles } from '@/lib/upload-validation';
 
 // GET /api/tprm/am-follow-ups/issue-remediations — List issue remediations for AM
 export const GET = withAuth(
@@ -96,6 +97,11 @@ export const PATCH = withAuth(
       let artifactName: string | null = null;
 
       if (files && files.length > 0) {
+        const fileOnly = files.filter((f): f is File => f instanceof File);
+        const check = validateUploadedFiles(fileOnly);
+        if (!check.ok) {
+          return NextResponse.json({ error: check.reason }, { status: 400 });
+        }
         const uploadedNames: string[] = [];
         const uploadedUrls: string[] = [];
         for (const file of files) {

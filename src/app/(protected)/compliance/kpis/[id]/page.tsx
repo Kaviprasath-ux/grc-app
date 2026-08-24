@@ -54,6 +54,7 @@ import {
   ReferenceLine,
 } from "recharts";
 
+import { FileInput } from "@/components/shared/file-input";
 interface KPIActionPlan {
   id: string;
   plannedAction: string;
@@ -1182,8 +1183,7 @@ export default function KPIDetailPage({
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Upload document")}</Label>
               <label className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-colors block">
-                <input
-                  type="file"
+                <FileInput
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -1617,8 +1617,7 @@ export default function KPIDetailPage({
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("Upload Document (Optional)")}</Label>
               <label className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-colors block">
-                <input
-                  type="file"
+                <FileInput
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];

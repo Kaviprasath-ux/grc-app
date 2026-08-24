@@ -54,6 +54,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { confirm } from "@/components/ui/confirm";
 
+import { FileInput } from "@/components/shared/file-input";
 interface FindingAttachment {
   id: string;
   fileName: string;
@@ -1210,9 +1211,8 @@ export default function CAPATrackingPage() {
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleFileDrop}
               >
-                <input
+                <FileInput
                   ref={fileInputRef}
-                  type="file"
                   multiple
                   className="hidden"
                   onChange={handleFileSelect}

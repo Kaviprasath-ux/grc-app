@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 export const POST = withAuth(
   async (request: NextRequest, context, session) => {
@@ -15,6 +16,11 @@ export const POST = withAuth(
         { error: "No file provided" },
         { status: 400 }
       );
+    }
+
+    const check = validateUploadedFile(file);
+    if (!check.ok) {
+      return NextResponse.json({ error: check.reason }, { status: 400 });
     }
 
     if (!frameworkId) {

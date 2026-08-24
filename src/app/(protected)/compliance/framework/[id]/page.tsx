@@ -52,6 +52,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Framework {
   id: string;
   name: string;
@@ -2582,8 +2583,7 @@ export default function FrameworkDetailPage({
                   placeholder={t("Select a file...")}
                   className="flex-1 bg-slate-50"
                 />
-                <input
-                  type="file"
+                <FileInput
                   accept=".csv"
                   ref={fileInputRef}
                   onChange={handleFileSelect}

@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import * as XLSX from "xlsx-js-style";
 
+import { FileInput } from "@/components/shared/file-input";
 // ── Types ──────────────────────────────────────────
 interface AssessmentRow {
   sequenceNumber: number;
@@ -797,9 +798,8 @@ export default function AsrAssessmentFactoryPage() {
             <Button variant="outline" size="sm" onClick={() => templateInputRef.current?.click()}>
               {t("Browse...")}
             </Button>
-            <input
+            <FileInput
               ref={templateInputRef}
-              type="file"
               accept=".xls,.xlsx,.csv"
               className="hidden"
               onChange={(e) => {
@@ -834,9 +834,8 @@ export default function AsrAssessmentFactoryPage() {
           <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">{t("Upload Artifacts")}</p>
         </div>
-        <input
+        <FileInput
           ref={artifactInputRef}
-          type="file"
           multiple
           accept=".doc,.docx,.pdf,.png,.jpg,.jpeg,.gif,.bmp"
           className="hidden"

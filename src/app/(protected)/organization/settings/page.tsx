@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { isValidName } from "@/lib/validations";
 import { useLogo } from "@/contexts/LogoContext";
 
+import { FileInput } from "@/components/shared/file-input";
 interface SettingItem {
   id: string;
   name: string;
@@ -663,9 +664,8 @@ export default function OrganizationSettingsPage() {
           </div>
           {/* Actions */}
           <div className="flex flex-col gap-2">
-            <input
+            <FileInput
               ref={logoInputRef}
-              type="file"
               accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
               className="hidden"
               onChange={handleLogoUpload}

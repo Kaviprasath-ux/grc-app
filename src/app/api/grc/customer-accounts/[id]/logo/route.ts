@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 /**
  * GET /api/grc/customer-accounts/[id]/logo
@@ -75,6 +76,11 @@ export async function POST(
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    const check = validateUploadedFile(file);
+    if (!check.ok) {
+      return NextResponse.json({ error: check.reason }, { status: 400 });
     }
 
     // Validate file type

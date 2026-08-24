@@ -61,6 +61,7 @@ import {
 import Link from "next/link";
 import { triggerTranslation, useTranslatedRecord, useTranslatedData } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -1382,8 +1383,7 @@ export default function QPostRequirementDetailPage() {
             {/* File input */}
             <div className="space-y-2">
               <Label>{t("Excel File")}</Label>
-              <Input
-                type="file"
+              <FileInput
                 accept=".xlsx,.xls"
                 onChange={(e) => {
                   setImportFile(e.target.files?.[0] || null);
@@ -1456,8 +1456,7 @@ export default function QPostRequirementDetailPage() {
             {/* File input */}
             <div className="space-y-2">
               <Label>{t("Excel File")}</Label>
-              <Input
-                type="file"
+              <FileInput
                 accept=".xlsx,.xls"
                 onChange={(e) => {
                   setImportPolicyFile(e.target.files?.[0] || null);
@@ -1677,8 +1676,7 @@ export default function QPostRequirementDetailPage() {
             {/* File input */}
             <div className="space-y-2">
               <Label>{t("Excel File")}</Label>
-              <Input
-                type="file"
+              <FileInput
                 accept=".xlsx,.xls"
                 onChange={(e) => {
                   setImportExceptionFile(e.target.files?.[0] || null);

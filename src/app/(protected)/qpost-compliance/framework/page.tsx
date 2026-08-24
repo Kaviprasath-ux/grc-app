@@ -43,6 +43,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Framework {
   id: string;
   code?: string;
@@ -1186,9 +1187,8 @@ export default function QPostFrameworkPage() {
                 onDrop={handleDrop}
                 onClick={() => document.getElementById("ai-file-upload")?.click()}
               >
-                <input
+                <FileInput
                   id="ai-file-upload"
-                  type="file"
                   className="hidden"
                   onChange={handleFileSelect}
                   accept=".pdf,.doc,.docx,.xlsx,.xls"
@@ -1424,9 +1424,8 @@ export default function QPostFrameworkPage() {
                 onDrop={handleImportDrop}
                 onClick={() => document.getElementById("import-file-upload")?.click()}
               >
-                <input
+                <FileInput
                   id="import-file-upload"
-                  type="file"
                   className="hidden"
                   onChange={handleImportFileSelect}
                   accept=".xlsx,.xls"

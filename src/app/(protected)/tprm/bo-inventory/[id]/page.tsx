@@ -18,6 +18,7 @@ import {
   Home, ChevronRight, ArrowLeft, Download, Loader2, Upload, FileText, Trash2, Plus, X, Send,
 } from "lucide-react";
 
+import { FileInput } from "@/components/shared/file-input";
 // ── Types ──────────────────────────────────────────────
 interface Assessment {
   id: string;
@@ -583,8 +584,7 @@ export default function BOVendorDetailPage() {
                 <p className="text-sm text-slate-600 mb-1">{t("Drag and drop your contract file here")}</p>
                 <p className="text-xs text-slate-400 mb-3">{t("or")}</p>
                 <label className="cursor-pointer">
-                  <input
-                    type="file"
+                  <FileInput
                     className="hidden"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
                     onChange={(e) => {
@@ -814,8 +814,7 @@ function DocumentSection({
         {!hideUpload && (
           <div className="flex justify-center pt-3">
             <label className="cursor-pointer">
-              <input
-                type="file"
+              <FileInput
                 className="hidden"
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
                 onChange={(e) => {

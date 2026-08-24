@@ -61,6 +61,7 @@ import { isValidName } from "@/lib/validations";
 import { Pagination as PaginationUI } from "@/components/ui/pagination";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Evidence {
   id: string;
   evidenceCode: string;
@@ -1101,9 +1102,8 @@ export default function GRCAdminEvidencePage() {
                       {t("Supported formats")}: CSV, XLSX, XLS
                     </p>
                   </div>
-                  <input
+                  <FileInput
                     ref={importFileInputRef}
-                    type="file"
                     accept=".csv,.xlsx,.xls"
                     className="hidden"
                     id="import-file"

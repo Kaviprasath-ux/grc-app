@@ -50,6 +50,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import Link from "next/link";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Evidence {
   id: string;
   evidenceCode: string;
@@ -1543,8 +1544,7 @@ export default function EvidencesMasterDataPage() {
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
-              <Input
-                type="file"
+              <FileInput
                 accept=".csv,.xlsx,.xls"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
                 className="mt-1.5 w-full bg-white"

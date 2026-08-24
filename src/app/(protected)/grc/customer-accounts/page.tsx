@@ -41,6 +41,7 @@ import { validateEmail } from "@/lib/validations/email";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import CancellationRequestsTab from "@/components/shared/CancellationRequestsTab";
 
+import { FileInput } from "@/components/shared/file-input";
 interface CustomerAccount {
   id: string;
   customerAccountId?: string | null;
@@ -1353,8 +1354,7 @@ export default function CustomerAccountsPage() {
                           {t("Drag and Drop or")}{" "}
                           <label className="text-primary cursor-pointer hover:underline">
                             {t("Click to upload")}
-                            <input
-                              type="file"
+                            <FileInput
                               accept="image/*"
                               className="hidden"
                               onChange={handleLogoFileSelect}
@@ -1739,8 +1739,7 @@ export default function CustomerAccountsPage() {
                           {t("Drag and Drop or")}{" "}
                           <label className="text-primary cursor-pointer hover:underline">
                             {t("Click to upload")}
-                            <input
-                              type="file"
+                            <FileInput
                               accept="image/*"
                               className="hidden"
                               onChange={handleLogoFileSelect}

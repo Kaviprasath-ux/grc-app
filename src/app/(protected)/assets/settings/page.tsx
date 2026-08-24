@@ -35,6 +35,7 @@ import { useTranslatedData } from "@/hooks/useTranslatedData";
 import { triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName, isValidNumber } from "@/lib/validations";
 
+import { FileInput } from "@/components/shared/file-input";
 interface AssetCategory {
   id: string;
   name: string;
@@ -1867,8 +1868,7 @@ export default function AssetSettingsPage() {
         {/* Action Buttons - ABOVE the card */}
         <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
           <label>
-            <input
-              type="file"
+            <FileInput
               accept=".csv"
               onChange={getImportHandler()}
               className="hidden"
@@ -3104,8 +3104,7 @@ export default function AssetSettingsPage() {
         {/* Action Buttons - ABOVE the card */}
         <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2">
           <label>
-            <input
-              type="file"
+            <FileInput
               accept=".csv"
               onChange={handleImportLifecycleStatuses}
               className="hidden"

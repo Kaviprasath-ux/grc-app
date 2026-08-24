@@ -82,6 +82,7 @@ import { format } from "date-fns";
 import { useTranslatedData, useTranslatedRecord, triggerTranslation } from "@/hooks/useTranslatedData";
 import { toast } from "sonner";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Policy {
   id: string;
   code: string;
@@ -2467,9 +2468,8 @@ export default function GovernanceDetailPage() {
                             : "border-slate-300 hover:border-slate-400"
                         }`}
                       >
-                        <input
+                        <FileInput
                           ref={fileInputRef}
-                          type="file"
                           onChange={handleFileSelect}
                           className="hidden"
                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"

@@ -70,6 +70,7 @@ import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Building2 } from "lucide-react";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -1379,9 +1380,8 @@ export default function AuditPlanningPage() {
             <p className="text-sm text-slate-600 font-medium">{t("Drag and drop or select file.")}</p>
             <p className="text-xs text-slate-400">{t("Upload supporting documents")}</p>
           </div>
-          <input
+          <FileInput
             ref={attachFileRef}
-            type="file"
             className="hidden"
             multiple
             onChange={(e) => handleFileSelect(e, "attach")}
@@ -1428,9 +1428,8 @@ export default function AuditPlanningPage() {
             <p className="text-sm text-slate-600 font-medium">{t("Drag and drop or select file.")}</p>
             <p className="text-xs text-slate-400">{t("Upload audit workpapers")}</p>
           </div>
-          <input
+          <FileInput
             ref={workpaperRef}
-            type="file"
             className="hidden"
             multiple
             onChange={(e) => handleFileSelect(e, "workpaper")}

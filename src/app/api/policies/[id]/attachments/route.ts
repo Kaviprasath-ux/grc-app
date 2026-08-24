@@ -3,6 +3,7 @@ import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -93,6 +94,11 @@ export const POST = withAuth(
           { error: "No file provided" },
           { status: 400 }
         );
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       const originalName = file.name;

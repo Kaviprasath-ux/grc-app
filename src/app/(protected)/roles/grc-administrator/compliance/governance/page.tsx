@@ -62,6 +62,7 @@ import { isValidName } from "@/lib/validations";
 import Link from "next/link";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Policy {
   id: string;
   code: string;
@@ -1127,8 +1128,7 @@ export default function GRCAdminGovernancePage() {
                       {t("Supported formats")}: CSV, XLSX, XLS
                     </p>
                   </div>
-                  <input
-                    type="file"
+                  <FileInput
                     accept=".csv,.xlsx,.xls"
                     className="hidden"
                     id="import-file"

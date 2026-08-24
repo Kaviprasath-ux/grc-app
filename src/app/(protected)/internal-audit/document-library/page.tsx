@@ -32,6 +32,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { confirm } from "@/components/ui/confirm";
 
+import { FileInput } from "@/components/shared/file-input";
 interface RecentSearch {
   id: string;
   query: string;
@@ -445,9 +446,8 @@ export default function DocumentLibraryPage() {
           input?.click();
         }}
       >
-        <input
+        <FileInput
           id={`file-input-${categoryMap[category]}`}
-          type="file"
           multiple
           className="hidden"
           onChange={(e) => handleFileUpload(e.target.files, category)}

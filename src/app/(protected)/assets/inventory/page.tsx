@@ -41,6 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -2140,9 +2141,8 @@ export default function AssetInventoryPage() {
                 >
                   {t("Browse...")}
                 </Button>
-                <input
+                <FileInput
                   ref={fileInputRef}
-                  type="file"
                   className="hidden"
                   accept=".csv,.xlsx,.xls"
                   onChange={handleFileChange}

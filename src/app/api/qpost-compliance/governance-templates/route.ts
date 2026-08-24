@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { saveUploadedFile } from "@/lib/file-upload";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 /**
  * GET /api/governance-templates
@@ -78,6 +79,11 @@ export async function POST(req: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
+    }
+
+    const check = validateUploadedFile(file);
+    if (!check.ok) {
+      return NextResponse.json({ error: check.reason }, { status: 400 });
     }
 
     // Validate file type - only .docx allowed for AI generation

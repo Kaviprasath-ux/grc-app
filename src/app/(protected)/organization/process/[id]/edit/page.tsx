@@ -21,6 +21,7 @@ import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -721,9 +722,8 @@ export default function EditProcessPage() {
                     <p className="text-xs text-muted-foreground">
                       {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
                     </p>
-                    <input
+                    <FileInput
                       ref={fileInputRef}
-                      type="file"
                       className="hidden"
                       onChange={handleFileChange}
                       accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.ppt,.pptx"
@@ -824,9 +824,8 @@ export default function EditProcessPage() {
                     <p className="text-xs text-muted-foreground">
                       {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
                     </p>
-                    <input
+                    <FileInput
                       ref={onboardingFileInputRef}
-                      type="file"
                       multiple
                       className="hidden"
                       onChange={handleOnboardingFileChange}

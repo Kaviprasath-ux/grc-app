@@ -27,6 +27,7 @@ import { Progress } from "@/components/ui/progress";
 import * as ComplianceService from "@/services/ai-compliance-service";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Policy {
     id: string;
     code: string;
@@ -103,9 +104,8 @@ export function PolicyAIActions({ policy, onPolicyUpdate }: PolicyAIActionsProps
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="files">{t("Select Files")}</Label>
-                            <Input
+                            <FileInput
                                 id="files"
-                                type="file"
                                 multiple
                                 onChange={(e) => setSelectedFiles(e.target.files)}
                             />

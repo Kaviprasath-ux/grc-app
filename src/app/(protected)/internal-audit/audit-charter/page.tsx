@@ -23,6 +23,7 @@ import type {
   CharterRow,
 } from "@/lib/charter-parser";
 
+import { FileInput } from "@/components/shared/file-input";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface CharterData {
@@ -504,9 +505,8 @@ export default function AuditCharterPage() {
           {/* Upload Signed Copy — editors only */}
           {canEdit && (
             <>
-              <input
+              <FileInput
                 ref={signedFileRef}
-                type="file"
                 accept=".pdf,.docx,.jpg,.jpeg,.png,.webp"
                 className="hidden"
                 disabled={uploadingSigned}

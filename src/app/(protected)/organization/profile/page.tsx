@@ -42,6 +42,7 @@ import { format } from "date-fns";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Branch {
   id?: string;
   location: string;
@@ -1889,8 +1890,7 @@ function ProfilePageContent() {
                   <label className="flex flex-col items-center cursor-pointer py-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
                     <Upload className="h-5 w-5 text-slate-300 mb-1" />
                     <span className="text-sm text-slate-500">{t("Click to upload documents")}</span>
-                    <input
-                      type="file"
+                    <FileInput
                       multiple
                       className="hidden"
                       onChange={(e) => {
@@ -1926,8 +1926,7 @@ function ProfilePageContent() {
                   <label className="flex flex-col items-center cursor-pointer py-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
                     <Upload className="h-5 w-5 text-slate-300 mb-1" />
                     <span className="text-sm text-slate-500">{t("Click to upload certificates")}</span>
-                    <input
-                      type="file"
+                    <FileInput
                       multiple
                       className="hidden"
                       onChange={(e) => {
@@ -2077,8 +2076,7 @@ function ProfilePageContent() {
                     <label className="flex flex-col items-center cursor-pointer py-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
                       <Upload className="h-5 w-5 text-slate-300 mb-1" />
                       <span className="text-sm text-slate-500">{t("Click to upload documents")}</span>
-                      <input
-                        type="file"
+                      <FileInput
                         multiple
                         className="hidden"
                         onChange={(e) => {
@@ -2124,8 +2122,7 @@ function ProfilePageContent() {
                     <label className="flex flex-col items-center cursor-pointer py-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
                       <Upload className="h-5 w-5 text-slate-300 mb-1" />
                       <span className="text-sm text-slate-500">{t("Click to upload certificates")}</span>
-                      <input
-                        type="file"
+                      <FileInput
                         multiple
                         className="hidden"
                         onChange={(e) => {

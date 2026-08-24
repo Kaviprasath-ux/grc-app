@@ -35,6 +35,7 @@ import {
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -864,8 +865,7 @@ export default function MyAssetInventoryPage() {
         <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
           <PermissionGate resource="asset.my-inventory" action="create">
             <label>
-              <input
-                type="file"
+              <FileInput
                 accept=".csv"
                 onChange={handleImport}
                 className="hidden"

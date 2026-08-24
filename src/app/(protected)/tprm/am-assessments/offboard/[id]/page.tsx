@@ -20,6 +20,7 @@ import {
   Loader2, FileText, AlertCircle, CheckCircle2,
 } from "lucide-react";
 
+import { FileInput } from "@/components/shared/file-input";
 interface OffboardResponse {
   id: string;
   questionId: string;
@@ -399,8 +400,7 @@ export default function AMOffboardQuestionnairePage() {
                   )}
                   {!isReadOnly && (
                     <Label className="cursor-pointer">
-                      <Input
-                        type="file"
+                      <FileInput
                         className="hidden"
                         onChange={e => {
                           const file = e.target.files?.[0];

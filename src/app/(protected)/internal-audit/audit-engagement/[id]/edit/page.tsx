@@ -40,6 +40,7 @@ import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Building2, Info } from "lucide-react";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -829,9 +830,8 @@ export default function EditEngagementPage({ params }: PageProps) {
             onClick={() => attachFileRef.current?.click()}
           >
             <p className="text-slate-600">{t("Drag and drop or select file.")}</p>
-            <input
+            <FileInput
               ref={attachFileRef}
-              type="file"
               className="hidden"
               multiple
               onChange={(e) => handleFileSelect(e, "attach")}
@@ -868,9 +868,8 @@ export default function EditEngagementPage({ params }: PageProps) {
             onClick={() => workpaperRef.current?.click()}
           >
             <p className="text-slate-600">{t("Drag and drop or select file.")}</p>
-            <input
+            <FileInput
               ref={workpaperRef}
-              type="file"
               className="hidden"
               multiple
               onChange={(e) => handleFileSelect(e, "workpaper")}

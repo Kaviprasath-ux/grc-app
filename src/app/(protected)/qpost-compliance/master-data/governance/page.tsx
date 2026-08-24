@@ -44,6 +44,7 @@ import { useHasRole } from "@/hooks/usePermissions";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -1161,8 +1162,7 @@ export default function GovernanceMasterDataPage() {
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
-              <Input
-                type="file"
+              <FileInput
                 accept=".csv"
                 ref={fileInputRef}
                 onChange={handleFileChange}

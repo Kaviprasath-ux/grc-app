@@ -80,6 +80,7 @@ import { toast } from "sonner";
 import { isValidName } from "@/lib/validations";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Evidence {
   id: string;
   evidenceCode: string;
@@ -1158,9 +1159,8 @@ export default function EvidencePage() {
             onDragLeave={handleArtifactDragLeave}
             onDrop={handleArtifactDrop}
           >
-            <input
+            <FileInput
               ref={artifactFileInputRef}
-              type="file"
               multiple
               className="hidden"
               onChange={handleArtifactFileChange}
@@ -1679,9 +1679,8 @@ export default function EvidencePage() {
                       {t("Supported formats: CSV, XLSX, XLS")}
                     </p>
                   </div>
-                  <input
+                  <FileInput
                     ref={importFileInputRef}
-                    type="file"
                     accept=".csv,.xlsx,.xls"
                     className="hidden"
                     id="import-file"

@@ -35,6 +35,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 import { isValidName } from "@/lib/validations";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Department {
   id: string;
   name: string;
@@ -4106,9 +4107,8 @@ export default function ContextPage() {
                       </p>
                     </div>
                   )}
-                  <input
+                  <FileInput
                     ref={actionFileInputRef}
-                    type="file"
                     className="hidden"
                     onChange={handleActionFileChange}
                   />
@@ -4294,9 +4294,8 @@ export default function ContextPage() {
               <p className="text-center text-slate-500 py-4">{t("No actions found")}</p>
             )}
             {/* Hidden file input for View Actions */}
-            <input
+            <FileInput
               ref={viewActionFileInputRef}
-              type="file"
               className="hidden"
               onChange={(e) => {
                 const actionId = viewActionFileInputRef.current?.getAttribute("data-action-id");
@@ -4632,8 +4631,7 @@ export default function ContextPage() {
             <div>
               <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <div className="flex items-center gap-3 mt-1.5">
-                <input
-                  type="file"
+                <FileInput
                   accept=".csv"
                   ref={fileInputRef}
                   onChange={handleFileChange}

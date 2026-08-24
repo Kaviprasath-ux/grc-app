@@ -42,6 +42,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, Che
 import Link from "next/link";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
 
+import { FileInput } from "@/components/shared/file-input";
 interface Framework {
   id: string;
   name: string;
@@ -579,8 +580,7 @@ export default function FrameworkMasterDataPage() {
                         placeholder={t("Choose a file...")}
                         className="flex-1 bg-white"
                       />
-                      <input
-                        type="file"
+                      <FileInput
                         ref={fileInputRef}
                         onChange={handleFileSelect}
                         accept=".csv,.xlsx,.xls"

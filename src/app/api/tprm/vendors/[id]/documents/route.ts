@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { validateUploadedFile } from "@/lib/upload-validation";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -67,6 +68,11 @@ export const POST = withAuth<RouteContext>(
 
       if (!file) {
         return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       const uploadDir = path.join(process.cwd(), "uploads", "tprm-vendor-docs");

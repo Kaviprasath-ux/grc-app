@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { EXTERNAL_API_SECRETS, getExternalApiUrl } from "@/config/external-apis";
+import { validateUploadedFiles } from "@/lib/upload-validation";
 
 const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".txt"];
 const MAX_FILE_SIZE_MB = 20;
@@ -94,9 +95,17 @@ export async function POST(request: NextRequest) {
 
     console.log("[RunPod assess-risks] Target language:", targetLanguage);
 
-    const validFiles = files.filter(
-      (f): f is File => f instanceof File && f.size > 0 && isAllowedFile(f.name, f.size)
+    const uploadedFiles = files.filter(
+      (f): f is File => f instanceof File && f.size > 0
     );
+    if (uploadedFiles.length > 0) {
+      const check = validateUploadedFiles(uploadedFiles);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
+      }
+    }
+
+    const validFiles = uploadedFiles.filter((f) => isAllowedFile(f.name, f.size));
     if (validFiles.length > MAX_FILES) {
       return NextResponse.json(
         { error: `Maximum ${MAX_FILES} files allowed` },

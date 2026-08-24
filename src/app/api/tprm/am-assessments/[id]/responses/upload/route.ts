@@ -3,6 +3,7 @@ import { withAuth, getCustomerAccountId } from '@/lib/api-auth';
 import prisma from '@/lib/prisma';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { validateUploadedFile } from '@/lib/upload-validation';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -21,6 +22,11 @@ export const POST = withAuth(
 
       if (!file) {
         return NextResponse.json({ error: 'File is required' }, { status: 400 });
+      }
+
+      const check = validateUploadedFile(file);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
       }
 
       // Server-side write guard for SMEs. The page now shows every
