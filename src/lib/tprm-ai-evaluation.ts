@@ -169,16 +169,45 @@ async function updateAIStatus(
     data,
   });
 
-  // On terminal failure, notify the AM (in-app + email) so they can
-  // retry from their Active tab. Every failure path — bad AI verdict,
-  // non-JSON body, ingest fail/timeout — funnels through this single
-  // status update, so wiring the notification here covers all of them.
-  // Never throws: notification failure must not break the eval run.
+  // On terminal failure, write an activity-log entry AND notify the
+  // AM (in-app + email) so they can retry from their Active tab.
+  // Every failure path — bad AI verdict, non-JSON body,
+  // ingest fail/timeout — funnels through this single status update,
+  // so wiring both hooks here covers all of them. Never throws:
+  // logging or notification failure must not break the eval run.
   if (status === 'Failed') {
+    const errorLine = error ? `AI evaluation failed — ${error}` : `AI evaluation failed`;
+    console.error(`[TPRM-AI] ${assessmentId}: ${errorLine}`);
+    void logAIFailureToAssessment(assessmentId, errorLine).catch(err => {
+      console.error(`[TPRM-AI] Failed to write activity log for ${assessmentId}:`, err);
+    });
     void notifyAMOfAIFailure(assessmentId, error).catch(err => {
       console.error(`[TPRM-AI] Failed to notify AM of AI failure for ${assessmentId}:`, err);
     });
   }
+}
+
+/**
+ * Persist the AI failure to the assessment's activity log so it shows
+ * up in the Activity Logs viewer for both the AM and the assessor.
+ * Kept separate from logToAssessment(ctx, ...) because updateAIStatus
+ * only has the assessmentId — the EvaluationContext isn't available
+ * on every failure path.
+ */
+async function logAIFailureToAssessment(assessmentId: string, message: string): Promise<void> {
+  const asm = await prisma.tPRMAssessment.findUnique({
+    where: { id: assessmentId },
+    select: { customerAccountId: true },
+  });
+  if (!asm) return;
+  await prisma.tPRMAssessmentLog.create({
+    data: {
+      customerAccountId: asm.customerAccountId,
+      assessmentId,
+      logMessage: message,
+      logDate: new Date(),
+    },
+  });
 }
 
 /**
