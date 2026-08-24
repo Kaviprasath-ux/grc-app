@@ -1010,6 +1010,29 @@ export const DEFAULT_EMAIL_TEMPLATES = [
     placeholders: JSON.stringify(['recipientName', 'entityName', 'vendorName', 'message', 'entityLink']),
   },
   {
+    code: 'TPRM_ASSESSMENT_AI_FAILED',
+    name: 'AI Evaluation Failed',
+    description: 'Sent to the AM when AI evaluation on a submitted assessment fails and needs a retry',
+    category: 'notification',
+    subject: 'AI Evaluation Failed: {entityName}',
+    bodyHtml: tprmTemplate({
+      color: '#dc2626',
+      heading: 'AI Evaluation Failed',
+      body: `<p>Hello {recipientName},</p>
+      <p>The AI evaluation for the following assessment did not complete successfully. This assessment has <strong>not</strong> reached the assessor's queue and requires you to retry the AI evaluation before it can move forward.</p>
+      <table style="width:100%;border-collapse:collapse;margin:12px 0;">
+        <tr><td style="padding:6px 0;color:#666;">Assessment:</td><td style="padding:6px 0;"><strong>{entityName}</strong></td></tr>
+        <tr><td style="padding:6px 0;color:#666;">Vendor:</td><td style="padding:6px 0;"><strong>{vendorName}</strong></td></tr>
+      </table>
+      <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:12px 16px;margin:12px 0;">
+        <strong>What to do:</strong> Open the assessment and click <em>Retry AI evaluation</em>. If it keeps failing, contact support.
+      </div>
+      <p style="color:#666;font-size:13px;">Details: {message}</p>`,
+      buttonText: 'Open Assessment',
+    }),
+    placeholders: JSON.stringify(['recipientName', 'entityName', 'vendorName', 'message', 'entityLink']),
+  },
+  {
     code: 'TPRM_ASSESSMENT_DUE_REMINDER',
     name: 'Assessment Due Reminder',
     description: 'Sent when an assessment is approaching its due date',

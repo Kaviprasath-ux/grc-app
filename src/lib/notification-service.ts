@@ -498,6 +498,7 @@ class NotificationService {
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_SUBMITTED]: 'TPRM_ASSESSMENT_SUBMITTED',
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_COMPLETED]: 'TPRM_ASSESSMENT_COMPLETED',
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_RETURNED]: 'TPRM_ASSESSMENT_RETURNED',
+      [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_AI_FAILED]: 'TPRM_ASSESSMENT_AI_FAILED',
       [NOTIFICATION_EVENTS.TPRM_ASSESSMENT_REASSIGNED]: 'TPRM_ASSESSMENT_REASSIGNED',
       [NOTIFICATION_EVENTS.TPRM_SME_ASSIGNED]: 'TPRM_SME_ASSIGNED',
       [NOTIFICATION_EVENTS.TPRM_CLARIFICATION_REQUESTED]: 'TPRM_CLARIFICATION_REQUESTED',
@@ -1449,6 +1450,41 @@ class NotificationService {
    * Notify when an assessment is returned/rejected by assessor.
    * Notifies the account manager.
    */
+  /**
+   * Notify the AM when the AI evaluation on their just-submitted
+   * assessment fails. Sent via INBOX + EMAIL by default so the AM
+   * catches it even if they aren't logged in. The link deep-links to
+   * the AM detail page where the red "AI evaluation failed — Retry
+   * AI evaluation" banner lives (see the Failed-AI failsafe path).
+   */
+  async notifyTPRMAssessmentAIFailed(params: {
+    customerAccountId: string;
+    actorId: string;
+    recipientId: string;
+    assessmentId: string;
+    assessmentCode: string;
+    vendorName: string;
+    error?: string;
+    channels?: NotificationChannel[];
+  }) {
+    return this.send({
+      customerAccountId: params.customerAccountId,
+      actorId: params.actorId,
+      recipientId: params.recipientId,
+      event: NOTIFICATION_EVENTS.TPRM_ASSESSMENT_AI_FAILED,
+      title: 'AI evaluation failed',
+      message: params.error
+        ? `AI evaluation failed for assessment ${params.assessmentCode} (${params.vendorName}). This assessment has not reached the assessor. Please retry the AI evaluation. Details: ${params.error}`
+        : `AI evaluation failed for assessment ${params.assessmentCode} (${params.vendorName}). This assessment has not reached the assessor. Please retry the AI evaluation from your Active tab.`,
+      relatedEntityType: 'assessment',
+      relatedEntityId: params.assessmentId,
+      link: `/tprm/am-assessments/${params.assessmentId}`,
+      priority: NOTIFICATION_PRIORITIES.HIGH,
+      channels: params.channels,
+      metadata: { entityName: params.assessmentCode, vendorName: params.vendorName, error: params.error },
+    });
+  }
+
   async notifyTPRMAssessmentReturned(params: {
     customerAccountId: string;
     actorId: string;

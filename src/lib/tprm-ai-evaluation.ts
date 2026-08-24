@@ -10,6 +10,7 @@
 
 import prisma from '@/lib/prisma';
 import { AI_ENDPOINTS } from '@/lib/ai-endpoints';
+import { notificationService } from '@/lib/notification-service';
 import path from 'path';
 import fs from 'fs';
 
@@ -167,6 +168,79 @@ async function updateAIStatus(
     where: { id: assessmentId },
     data,
   });
+
+  // On terminal failure, notify the AM (in-app + email) so they can
+  // retry from their Active tab. Every failure path — bad AI verdict,
+  // non-JSON body, ingest fail/timeout — funnels through this single
+  // status update, so wiring the notification here covers all of them.
+  // Never throws: notification failure must not break the eval run.
+  if (status === 'Failed') {
+    void notifyAMOfAIFailure(assessmentId, error).catch(err => {
+      console.error(`[TPRM-AI] Failed to notify AM of AI failure for ${assessmentId}:`, err);
+    });
+  }
+}
+
+/**
+ * Find the AM(s) attached to this assessment's vendor and send the
+ * AI-failed notification. The notification service handles both the
+ * in-app inbox row and the email through its default channels.
+ *
+ * Recipients: every user whose email matches one of the vendor's
+ * `accountManagerEmail` entries (the onboarding form stores AMs as a
+ * semicolon-separated string). Falls back silently if none can be
+ * resolved — the assessment record still carries aiEvaluationStatus
+ * and aiEvaluationError for the AM to discover on next login.
+ */
+async function notifyAMOfAIFailure(assessmentId: string, error?: string): Promise<void> {
+  const assessment = await prisma.tPRMAssessment.findUnique({
+    where: { id: assessmentId },
+    select: {
+      id: true,
+      customerAccountId: true,
+      assessmentCode: true,
+      initiatedById: true,
+      vendor: { select: { name: true, accountManagerEmail: true } },
+    },
+  });
+  if (!assessment) return;
+
+  const emails = String(assessment.vendor?.accountManagerEmail || '')
+    .split(';')
+    .map(e => e.trim())
+    .filter(Boolean);
+  if (emails.length === 0) return;
+
+  const users = await prisma.user.findMany({
+    where: {
+      customerAccountId: assessment.customerAccountId,
+      email: { in: emails, mode: 'insensitive' },
+    },
+    select: { id: true },
+  });
+  if (users.length === 0) return;
+
+  // Actor is the BO who initiated the assessment when known, so the
+  // notification's actor column reads like "Business Owner Finance
+  // triggered this workflow whose AI just failed" — the AM isn't the
+  // actor and would get filtered out by the sendBulk actor-guard.
+  const actorId = assessment.initiatedById || users[0].id;
+
+  await Promise.all(
+    users.map(u =>
+      notificationService.notifyTPRMAssessmentAIFailed({
+        customerAccountId: assessment.customerAccountId,
+        actorId,
+        recipientId: u.id,
+        assessmentId: assessment.id,
+        assessmentCode: assessment.assessmentCode,
+        vendorName: assessment.vendor?.name || '',
+        error,
+      }).catch(err => {
+        console.error(`[TPRM-AI] AI-failed notification to user ${u.id} failed:`, err);
+      })
+    )
+  );
 }
 
 /**
@@ -732,20 +806,13 @@ export async function runAIEvaluation(ctx: EvaluationContext): Promise<void> {
     // --- Phase 1: Ingest documents ---
     await updateAIStatus(ctx.assessmentId, 'Ingesting');
 
-    try {
-      await ingestDocuments(responsesWithQuestions, ctx);
-    } catch (error) {
-      console.error('[TPRM-AI] Ingest phase error (continuing with evaluation):', error);
-      // Log but don't fail the whole evaluation
-      await prisma.tPRMAssessmentLog.create({
-        data: {
-          customerAccountId: ctx.customerAccountId,
-          assessmentId: ctx.assessmentId,
-          logDate: new Date(),
-          logMessage: `Document ingest encountered an issue`,
-        },
-      }).catch(() => {});
-    }
+    // Deliberately NOT wrapped in try/catch. Ingest failures — no
+    // job_id, poll timeout, whole-job-failed — throw from
+    // ingestDocuments precisely so the outer catch below routes the
+    // run to Failed. A prior version swallowed these here and let
+    // Phase 2 run against an empty index, which the AI backend then
+    // answered with generic Satisfactory verdicts (Yogesh's ticket).
+    await ingestDocuments(responsesWithQuestions, ctx);
 
     // --- Phase 2: Evaluate each response ---
     await updateAIStatus(ctx.assessmentId, 'Evaluating');
