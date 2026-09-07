@@ -40,8 +40,11 @@ export interface ScorecardCompleteness {
   errors: string[];
 }
 
-const SECURITY_POSTURE = 'security_posture';
-const THREAT_EXPOSURE = 'threat_exposure';
+// scoreType values match what the DB stores — PascalCase. Kept in
+// sync with the filters on the configurations page (SecurityPosture /
+// ThreatExposure).
+const SECURITY_POSTURE = 'SecurityPosture';
+const THREAT_EXPOSURE = 'ThreatExposure';
 
 /**
  * Pure function — safe to call from a server route or a client
