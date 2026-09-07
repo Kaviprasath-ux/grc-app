@@ -31,6 +31,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSearchParams } from "next/navigation";
+import { validateScorecardConfig } from "@/lib/tprm-scorecard-status";
 import { useTranslatedData, triggerTranslation, clearTranslationCache } from "@/hooks/useTranslatedData";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -194,7 +196,11 @@ const configCards = [
 export default function ConfigurationsPage() {
   const { toast } = useToast();
   const { t, isRTL } = useLanguage();
-  const [activeCard, setActiveCard] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  // Allow deep-linking straight to a section — e.g. the Monitoring
+  // page's "Complete config" CTA lands here as ?section=scorecard.
+  const initialCard = searchParams.get('section');
+  const [activeCard, setActiveCard] = useState<string | null>(initialCard);
 
   // ==================== LANDING PAGE ====================
   if (!activeCard) {
@@ -3138,19 +3144,10 @@ function ScorecardSection() {
   }
 
   const handleValidate = () => {
-    const errors: string[] = [];
-    if (!config.scoringFormula) errors.push(t("Scoring formula is not set"));
-    if ((config.securityPostureWeight ?? 0) + (config.threatExposureWeight ?? 0) !== 100)
-      errors.push(t("Security Posture and Threat Exposure weights must sum to 100%"));
-    const spMandatory = securityPostureFactors.filter(f => f.isMandatory);
-    const teMandatory = threatExposureFactors.filter(f => f.isMandatory);
-    const spTotal = spMandatory.reduce((s, f) => s + f.weightage, 0);
-    const teTotal = teMandatory.reduce((s, f) => s + f.weightage, 0);
-    if (spMandatory.length === 0) errors.push(t("No mandatory Security Posture factors configured"));
-    else if (spTotal !== 100) errors.push(t("Security Posture mandatory weightage must equal 100%") + ` (${t("current")}: ${spTotal}%)`);
-    if (teMandatory.length === 0) errors.push(t("No mandatory Threat Exposure factors configured"));
-    else if (teTotal !== 100) errors.push(t("Threat Exposure mandatory weightage must equal 100%") + ` (${t("current")}: ${teTotal}%)`);
-    setValidationResults({ errors, passed: errors.length === 0 });
+    // Single source of truth — the Monitoring page gates the Vendor
+    // Scorecard render on the same rules.
+    const { complete, errors } = validateScorecardConfig(config, factors, t);
+    setValidationResults({ errors, passed: complete });
   };
 
   return (

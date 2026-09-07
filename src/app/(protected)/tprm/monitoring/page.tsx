@@ -33,6 +33,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useTranslatedData, triggerTranslation } from "@/hooks/useTranslatedData";
+import { validateScorecardConfig, ScorecardCompleteness } from "@/lib/tprm-scorecard-status";
+import { Settings } from "lucide-react";
 
 // ==================== TYPES ====================
 
@@ -150,13 +152,34 @@ export default function MonitoringPage() {
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [vendorToDelete, setVendorToDelete] = useState<TPRMMonitoringVendor | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Scorecard config gate — the Vendor Scorecard section only renders
+  // if the TPRM admin has filled in the scorecard config completely
+  // (see src/lib/tprm-scorecard-status.ts). Until then the page shows
+  // an actionable empty state instead of a meaningless score column.
+  const [scorecardStatus, setScorecardStatus] = useState<ScorecardCompleteness | null>(null);
 
   const { data: translatedVendors } = useTranslatedData(vendors, { modelName: 'TPRMMonitoringVendor' });
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/tprm/monitoring");
+      // Fetch monitoring vendors AND scorecard config in parallel —
+      // the scorecard render is gated on the config being complete.
+      const [res, cfgRes, factorsRes] = await Promise.all([
+        fetch("/api/tprm/monitoring"),
+        fetch("/api/tprm/configurations/scorecard-config"),
+        fetch("/api/tprm/configurations/scorecard-factors"),
+      ]);
+      if (cfgRes.ok && factorsRes.ok) {
+        const cfg = await cfgRes.json();
+        const factors = await factorsRes.json();
+        setScorecardStatus(validateScorecardConfig(cfg, Array.isArray(factors) ? factors : [], t));
+      } else {
+        // If the config endpoint refuses (e.g. permission), treat as
+        // incomplete so we surface the empty-state rather than a stale
+        // scorecard the user can't trust.
+        setScorecardStatus({ complete: false, errors: [t('Unable to load scorecard configuration')] });
+      }
       if (res.ok) {
         const json = await res.json();
         const vendorList: TPRMMonitoringVendor[] = json.data || [];
@@ -383,8 +406,41 @@ export default function MonitoringPage() {
         </div>
       </div>
 
+      {/* Scorecard-config gate. Until the admin finishes the scorecard
+          config (see src/lib/tprm-scorecard-status.ts), the Security
+          Score number and every downstream stat here is meaningless —
+          so we hide everything below and prompt the admin to finish
+          it. Shown only after scorecardStatus resolves (not on the
+          initial render) to avoid flashing the empty state during
+          normal loads. */}
+      {!loading && scorecardStatus && !scorecardStatus.complete && (
+        <div className="border border-amber-300 bg-amber-50/70 rounded-xl px-6 py-8 text-center">
+          <Settings className="h-10 w-10 mx-auto mb-3 text-amber-500" />
+          <h2 className="text-lg font-semibold text-slate-800">{t("Scorecard configuration is incomplete")}</h2>
+          <p className="text-sm text-slate-600 mt-2 max-w-lg mx-auto">
+            {t("The vendor scorecard needs the scoring formula, category weights, and mandatory factors set before any security score can be shown. Finish the config to unlock this page.")}
+          </p>
+          {scorecardStatus.errors.length > 0 && (
+            <ul className="text-sm text-slate-700 mt-4 inline-block ltr:text-left rtl:text-right space-y-1">
+              {scorecardStatus.errors.map((err, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-amber-600 mt-0.5">•</span>
+                  <span>{err}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-6">
+            <Button size="sm" onClick={() => router.push("/tprm/configurations?section=scorecard")}>
+              <Settings className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Complete configuration")}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Stat Cards */}
-      {!loading && (
+      {!loading && scorecardStatus?.complete && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard icon={Shield} label={t("Vendors Monitored")} value={totalMonitored} color="bg-primary-50 text-primary-600" />
           <StatCard icon={TrendingUp} label={t("Average Security Score")} value={avgScore} color="bg-emerald-50 text-emerald-600" />
@@ -394,7 +450,7 @@ export default function MonitoringPage() {
       )}
 
       {/* Queued Assessments Banner */}
-      {(activeScans.length > 0 || queuedVendors.length > 0) && (
+      {scorecardStatus?.complete && (activeScans.length > 0 || queuedVendors.length > 0) && (
         <div className="border border-amber-200 bg-amber-50/50 rounded-xl px-5 py-3">
           <div className="flex items-center gap-2 mb-2">
             <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
@@ -448,6 +504,9 @@ export default function MonitoringPage() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
+      ) : !scorecardStatus?.complete ? (
+        // Incomplete-config empty state above already handles this — render nothing here.
+        null
       ) : filtered.length === 0 && search === "" && latestVendors.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground border border-slate-200 rounded-xl bg-white">
           <Shield className="h-10 w-10 mx-auto mb-3 opacity-40" />
