@@ -45,12 +45,19 @@ export function MultiSelect({
   const selectedOptions = selected
     .map((value) => ({ value, label: options.find((opt) => opt.value === value)?.label || value }));
 
+  // The label used to hardcode "risk" / "risks" because the component
+  // was first built for a risk picker. That leaked into every other
+  // reuse (Industry/Sector on Regulatory Intelligence Hub, process
+  // pickers on Internal Audit, etc.), so it's now a noun-less
+  // "N selected". Callers that want a domain-specific label can put
+  // it in `placeholder` — the label falls back to that when nothing
+  // is selected.
   const triggerLabel =
     selected.length === 0
       ? placeholder
       : selected.length === 1
-      ? t("1 risk selected")
-      : `${selected.length} ${t("risks selected")}`;
+      ? t("1 selected")
+      : `${selected.length} ${t("selected")}`;
 
   return (
     <div className={cn("w-full", className)}>
